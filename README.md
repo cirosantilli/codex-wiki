@@ -34,3 +34,7 @@ There are a few important ourbigbook features which you must master and use well
 * `{wiki}` to point to wiki pages that already exist for concepts you come across
 
 When in doubt, double check that the HTML output is awesome.
+
+## Mathematics guidelines
+
+For mathematical concept headers which have a standard mathematical symbol, don't forget to title2 it.
