@@ -11,6 +11,8 @@ Important guidelines:
 * interlink every scientific and mathematical concept that is mentioned HEAVILY. Interlink every time it appears in an article, not just the first one
 * maintain nice concept hierarchies: e.g. mathematics > calculus > fundamental theorem of calculus (don't be afraid of arbitrarily deep nodes, if it makes sense, do it). Use pieces of knowledge as wide or granular as needed. If it is a concept, create a stub at least and interlink.
 
+  Stubs can be left empty. But if you write anything, try to interlink to existing articles and possibly create empty stubs for anything missing that shows up. You should not completely forget the task at hand and go crazy with infinite interlink depth, but equally it is worth to at least setup a nice base for a next pass when we might further improve concepts. Maybe also as you link back to something from different new locations, consider adding a little more there, as it is becoming more important.
+
 ## Exam solutions
 
 One important activity done in this wiki is solving past undergraduate exams.
