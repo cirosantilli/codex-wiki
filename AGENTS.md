@@ -26,6 +26,8 @@ There are two goals of this:
 
 As such, when creating such solutions, interlink heavily as usual, and create at least stubs to every possibly reusable subject you come across. Do this even for things that seem simple like "eigenvalue". Especially for things which are not super well established, expand the stub so it will be clear what it is about. For super well established concepts, a shorter description is fine. We can expand those in a second pass when we are done solving a bunch of old exams.
 
+Do not add model-attribution lines to solutions.
+
 ## OurBigBook primer
 
 There are a few important ourbigbook features which you must master and use well, notably for headers:
