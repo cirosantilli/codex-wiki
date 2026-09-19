@@ -1,0 +1,429 @@
+= Paper 218
+{scope}
+{title2=Statistical Learning in Practice}
+
+https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2024/Paper_218.pdf
+
+= 1
+{parent=Paper 218}
+{scope}
+
+= a
+{parent=1}
+{scope}
+
+= Solution
+{parent=a}
+
+Write $Y_i$ for the colony count and $d_i$ for the dose on plate $i$. The first fit is the <Poisson regression>
+$$
+Y_i\mathrel{\perp\!\!\!\perp}Y_j\quad(i\ne j),
+\qquad
+Y_i\sim\operatorname{Pois}(\mu_i),
+\qquad
+\log\mu_i=\beta_0+\beta_1d_i.
+$$
+Thus its <log-likelihood> is
+$$
+\ell(\beta_0,\beta_1)
+=\sum_{i=1}^{18}\left[y_i(\beta_0+\beta_1d_i)
+-e^{\beta_0+\beta_1d_i}-\log(y_i!)\right].
+$$
+The <Poisson deviance> relative to the saturated model is
+$$
+D=2\sum_{i=1}^{18}
+\left\{y_i\log\frac{y_i}{\widehat\mu_i}
+-(y_i-\widehat\mu_i)\right\},
+$$
+where a summand with $y_i=0$ uses $0\log0=0$.
+
+At dose zero the fitted <expected value> is $e^{\widehat\beta_0}=e^{3.321995}\simeq27.72$ eradicated colonies. Increasing dose by one unit multiplies the fitted mean by $e^{\widehat\beta_1}=e^{0.0001901}\simeq1.000190$; for example, an increase of $100$ units multiplies it by about $1.0192$. The positive fitted effect is small and its displayed two-sided $p$-value, $0.105$, gives little evidence against a zero dose coefficient.
+
+Solved by gpt-5.6-sol high.
+
+= b
+{parent=1}
+{scope}
+
+= Solution
+{parent=b}
+
+For the Poisson <variance function> $V(\mu)=\mu$, the code computes the <Pearson chi-squared statistic>
+$$
+X_P^2=\sum_{i=1}^{18}\frac{(Y_i-\widehat\mu_i)^2}{\widehat\mu_i}
+$$
+and the <Pearson dispersion estimator>
+$$
+\widehat\phi=\frac{X_P^2}{18-2}=\frac{X_P^2}{16}.
+$$
+The first quantity measures <goodness of fit>; the second estimates the <dispersion parameter>, which equals one in a correctly specified <Poisson regression>. A standard rough calculation substitutes the residual deviance for the Pearson statistic and gives
+$$
+\widehat\phi\simeq\frac{75.806}{16}=4.74.
+$$
+If the reported upper-tail probability $4.908651\times10^{-11}$ is inverted numerically, the actual Pearson statistic used by the code is about $82.93$, giving $\widehat\phi\simeq5.18$. Either calculation reveals severe <overdispersion>.
+
+Solved by gpt-5.6-sol high.
+
+= c
+{parent=1}
+{scope}
+
+= Solution
+{parent=c}
+
+The Pearson <goodness-of-fit test> has null hypothesis that the independent counts follow the fitted <Poisson regression>, in particular $\operatorname{Var}(Y_i\mid d_i)=\mu_i$, against the alternative that the model does not fit; in this setting the scientifically relevant direction is <overdispersion>, $\operatorname{Var}(Y_i\mid d_i)>\mu_i$. Under the null, $X_P^2$ is approximately <chi-squared distribution> with $16$ degrees of freedom. Its tiny $p$-value decisively rejects the Poisson variance assumption.
+
+The <negative binomial regression> keeps the logarithmic mean model but allows $\operatorname{Var}(Y_i\mid d_i)=\mu_i+\mu_i^2/\theta$. It improves the residual deviance from $75.806$ to $18.011$, close to its $16$ residual degrees of freedom, and lowers the <Akaike information criterion> from $172.34$ to $141.66$. Both comparisons strongly favour the negative-binomial fit, although its dose coefficient remains statistically insignificant.
+
+Solved by gpt-5.6-sol high.
+
+= d
+{parent=1}
+{scope}
+
+= Solution
+{parent=d}
+
+The variance $\mu+\mu^2/\theta$ approaches the <Poisson distribution> variance $\mu$ when $\theta\to\infty$. Equivalently, with $\alpha=1/\theta\geq0$, the Poisson model is the boundary value $\alpha=0$. The usual <Wilks theorem> for a <likelihood-ratio test> assumes that the null parameter is an interior point of a smooth parameter space, so comparing the statistic with an ordinary $\chi_1^2$ law is invalid here.
+
+A valid <parametric bootstrap> proceeds as follows. First fit the null Poisson model and retain its fitted means $\widehat\mu_i$. For each bootstrap repetition $b=1,\ldots,B$, independently simulate
+$$
+Y_i^{(b)}\sim\operatorname{Pois}(\widehat\mu_i),
+$$
+using the original doses, refit both the Poisson and negative-binomial models to that simulated data, and calculate
+$$
+T_b=2\left\{\ell_{NB}^{(b)}-\ell_P^{(b)}\right\}.
+$$
+For the observations calculate the analogous $T_{obs}$. The bootstrap $p$-value
+$$
+\widehat p=\frac{1+\sum_{b=1}^B\mathbf1_{\{T_b\geq T_{obs}\}}}{B+1}
+$$
+uses the null distribution with its boundary and finite-sample fitting behaviour automatically reproduced. A large $B$ controls the <Monte Carlo error> of this estimate.
+
+Solved by gpt-5.6-sol high.
+
+= 2
+{parent=Paper 218}
+{scope}
+
+= a
+{parent=2}
+{scope}
+
+= Solution
+{parent=a}
+
+Because the columns of the <design matrix> are centred, <ridge regression> with an unpenalized intercept solves
+$$
+(\widehat\alpha_\lambda,\widehat\beta_\lambda)
+=\underset{\alpha\in\mathbb R,\,\beta\in\mathbb R^p}{\operatorname{argmin}}
+\left\{\|Y-\alpha\mathbf1-X\beta\|_2^2
++\lambda\|\beta\|_2^2\right\}.
+$$
+The <normal equations> give, for $\lambda>0$,
+$$
+\widehat\alpha_\lambda=\overline Y,
+\qquad
+\widehat\beta_\lambda=(X^TX+\lambda I_p)^{-1}X^T(Y-\overline Y\mathbf1)
+=(X^TX+\lambda I_p)^{-1}X^TY.
+$$
+The <fitted values> are consequently
+$$
+\widehat Y_\lambda
+=\overline Y\mathbf1+X(X^TX+\lambda I_p)^{-1}X^TY.
+$$
+If the objective is normalized by $n$, the same formulas hold after replacing $\lambda$ by $n\lambda$.
+
+Solved by gpt-5.6-sol high.
+
+= b
+{parent=2}
+{scope}
+
+= Solution
+{parent=b}
+
+Choose $\lambda$ to minimize an estimate of out-of-sample <mean squared prediction error>, commonly <K-fold cross-validation> or a separate <validation set>. As $\lambda$ increases, the coefficient vector is shrunk toward zero. This generally increases <bias of an estimator> but decreases <variance of an estimator>; the minimizing value balances the two contributions in the <bias-variance tradeoff>. The independent test set in the question can assess the final choice, but repeatedly selecting $\lambda$ on that same set would cause <data leakage>.
+
+Solved by gpt-5.6-sol high.
+
+= c
+{parent=2}
+{scope}
+
+= Solution
+{parent=c}
+
+<Coordinate descent> cycles through the intercept and coefficient coordinates, minimizing the convex ridge objective in one coordinate while holding the others fixed. Given current coefficients, update
+$$
+\alpha\leftarrow\frac1n\sum_{i=1}^n
+\left(Y_i-\sum_{k=1}^pX_{ik}\beta_k\right).
+$$
+For coordinate $j$, form the partial residual
+$$
+r^{(j)}=Y-\alpha\mathbf1-\sum_{k\ne j}X_k\beta_k
+$$
+and update it by the exact one-dimensional minimizer
+$$
+\beta_j\leftarrow
+\frac{X_j^Tr^{(j)}}{X_j^TX_j+\lambda}.
+$$
+Repeated sweeps converge to the unique fitted value because the objective is a <convex function>; with $\lambda>0$ it is strictly convex in $\beta$.
+
+Solved by gpt-5.6-sol high.
+
+= d
+{parent=2}
+{scope}
+
+= Solution
+{parent=d}
+
+The solid curve is the <test error>
+$$
+\frac1n\|Y^*-\widehat Y_\lambda\|_2^2,
+$$
+and the dashed curve is the <training error> $n^{-1}\|Y-\widehat Y_\lambda\|_2^2$. As the horizontal coordinate tends to $+\infty$, $\lambda\to\infty$, so every penalized slope tends to zero and $\widehat Y_\lambda\to\overline Y\mathbf1$. The two limits are therefore
+$$
+\frac1n\|Y^*-\overline Y\mathbf1\|_2^2
+\quad\hbox{and}\quad
+\frac1n\|Y-\overline Y\mathbf1\|_2^2,
+$$
+respectively.
+
+As the horizontal coordinate tends to $-\infty$, $\lambda\downarrow0$ and the fit approaches the <ordinary least squares> fit $H_0Y$. Hence the solid curve tends to $n^{-1}\|Y^*-H_0Y\|_2^2$, which the plot shows is approximately $0.4$.
+
+Solved by gpt-5.6-sol high.
+
+= e
+{parent=2}
+{scope}
+
+= Solution
+{parent=e}
+
+Put $f=(f(x_1),\ldots,f(x_n))^T$, so $Y=f+\varepsilon$ and $Y^*=f+\varepsilon^*$ with independent noise vectors having <covariance matrix> $I_n$. For any deterministic <linear smoother> $H$,
+$$
+\mathbb E\|Y-HY\|_2^2
+=\|(I-H)f\|_2^2
++\operatorname{tr}\!\left((I-H)^T(I-H)\right),
+$$
+whereas independence gives
+$$
+\mathbb E\|Y^*-HY\|_2^2
+=\|(I-H)f\|_2^2+n+\operatorname{tr}(H^TH).
+$$
+Expanding the first trace shows that the second expression exceeds the first by $2\operatorname{tr}(H)$, proving the identity.
+
+For ridge regression,
+$$
+H_\lambda=\frac1n\mathbf1\mathbf1^T
++X(X^TX+\lambda I_p)^{-1}X^T.
+$$
+Its <effective degrees of freedom> are $\operatorname{tr}(H_\lambda)$. Thus training error is optimistically biased for independent-copy prediction error by $2\operatorname{tr}(H_\lambda)/n$. The graph exhibits exactly this effect: the dashed training curve keeps falling as $\lambda$ decreases, while the solid test curve eventually rises through <overfitting>.
+
+Solved by gpt-5.6-sol high.
+
+= 3
+{parent=Paper 218}
+{scope}
+
+= a
+{parent=3}
+{scope}
+
+= Solution
+{parent=a}
+
+The classification form of <CART> starts with the root rectangle $R=[0,1]^2$. For any current region $A$, let $N(A)=\#\{i:X_i\in A\}$ and let
+$$
+\widehat p(A)=\frac{\#\{i:X_i\in A,\,Y_i=\text{circle}\}}{N(A)},
+\qquad
+G(A)=\widehat p(A)(1-\widehat p(A))
+$$
+be its empirical class proportion and <Gini impurity>. A candidate axis-aligned split $X_j\leq s$ partitions $R$ into $U$ and $V$. Its impurity change is
+$$
+Q=\frac{N(U)}{N(R)}G(U)
++\frac{N(V)}{N(R)}G(V)-G(R).
+$$
+Among all coordinates and thresholds between consecutive observed coordinates, CART chooses a split minimizing $Q$, then applies the same <recursive partitioning> independently to the children until a stopping rule is met. Each terminal region predicts its majority class. Pruning may then select a smaller subtree by penalizing the number of leaves.
+
+For the resulting classifier $\widehat C$, the <training error> is
+$$
+\widehat R_{train}=\frac19\sum_{i=1}^9
+\mathbf1_{\{\widehat C(X_i)\ne Y_i\}},
+$$
+while its <prediction error> is $R(\widehat C)=\mathbb P\{\widehat C(X_{new})\ne Y_{new}\}$ for an independent observation drawn from the target population.
+
+Solved by gpt-5.6-sol high.
+
+= b
+{parent=3}
+{scope}
+
+= Solution
+{parent=b}
+
+Let $w=N(U)/N(R)$, so $1-w=N(V)/N(R)$. Since class counts add,
+$$
+\widehat p(R)=w\widehat p(U)+(1-w)\widehat p(V).
+$$
+The function $g(p)=p(1-p)$ is <concave function> on $[0,1]$. <Jensen inequality> therefore gives
+$$
+G(R)=g(\widehat p(R))
+\geq wg(\widehat p(U))+(1-w)g(\widehat p(V)),
+$$
+which is precisely $Q\leq0$. Thus an axis-aligned split cannot increase the weighted empirical Gini impurity.
+
+Solved by gpt-5.6-sol high.
+
+= c
+{parent=3}
+{scope}
+
+= Solution
+{parent=c}
+
+A <random forest> fits each of its $500$ classification trees to an independent <bootstrap sample> of the nine observations. At each node it draws `mtry=2` candidate coordinates; because the data have exactly two coordinates, both are available, and a CART impurity calculation chooses the split. The trees are grown deeply without ordinary cost-complexity pruning, and their <majority vote> is the forest prediction.
+
+R reports an <out-of-bag error estimate>: an observation is predicted only by trees whose bootstrap samples omitted it. The <confusion matrix> says that class 1 has three correct and three incorrect out-of-bag predictions, while class 2 has one correct and two incorrect predictions. Hence the total out-of-bag error is $5/9$.
+
+Solved by gpt-5.6-sol high.
+
+= d
+{parent=3}
+{scope}
+
+= Solution
+{parent=d}
+
+The loop performs <leave-one-out cross-validation>: for each $i$ it fits a forest to the other eight observations, tests it on observation $i$, and averages the nine zero-one losses. A random forest's <out-of-bag error estimate> approximates the same held-out prediction error from one fit, because each tree automatically omits roughly a proportion $e^{-1}$ of the observations in its <bootstrap sample>.
+
+Solved by gpt-5.6-sol high.
+
+= e
+{parent=3}
+{scope}
+
+= i
+{parent=e}
+{scope}
+
+= Solution
+{parent=i}
+
+The <one-nearest-neighbour classification> boundary consists of the portions of the <Voronoi diagram> separating cells whose observed labels differ. For these nine grid points it forms diagonal and vertical or horizontal perpendicular-bisector segments around the three triangular observations. Every training point is its own nearest neighbour, so, absent a distance tie convention that excludes the query itself, its training error is zero.
+
+Solved by gpt-5.6-sol high.
+
+= ii
+{parent=e}
+{scope}
+
+= Solution
+{parent=ii}
+
+An unpruned maximal <CART> classifier repeatedly cuts with vertical or horizontal lines until every terminal rectangle is pure or contains observations that cannot be separated by an axis-aligned split. Here the distinct grid points can be isolated into pure rectangles, producing a step-shaped, axis-aligned <decision boundary> and zero training error.
+
+Solved by gpt-5.6-sol high.
+
+= iii
+{parent=e}
+{scope}
+
+= Solution
+{parent=iii}
+
+The <random forest> boundary is the majority vote of many bootstrap-grown axis-aligned trees. It remains piecewise axis-aligned but averages away many unstable individual cuts, so one should sketch a less extreme boundary enclosing regions supported repeatedly by the triangular points. Its resubstitution training error is typically small and can be zero, but bootstrap omission and voting mean that zero is not guaranteed. The relevant built-in estimate is instead the out-of-bag error, which the output gives as $5/9$; this large value reflects the tiny sample and unstable labels near the class boundary.
+
+Solved by gpt-5.6-sol high.
+
+= 4
+{parent=Paper 218}
+{scope}
+
+= a
+{parent=4}
+{scope}
+
+= Solution
+{parent=a}
+
+For $X_i^*=(1,X_i^T)^T$ and $\gamma=(\gamma_0,\beta^T)^T$, a linear <support vector machine> predicts
+$$
+\widehat C_\gamma(x)=\operatorname{sign}(\gamma_0+x^T\beta).
+$$
+One penalized formulation minimizes empirical <hinge loss> plus a squared <Euclidean norm> penalty:
+$$
+\widehat\gamma\in\underset{\gamma\in\mathbb R^{p+1}}{\operatorname{argmin}}
+\left\{
+\sum_{i=1}^n\max(0,1-Y_iX_i^{*T}\gamma)
++\lambda\|\gamma\|_2^2
+\right\},
+\qquad \lambda>0.
+$$
+Conventions often leave the intercept unpenalized, replacing $\|\gamma\|_2^2$ by $\|\beta\|_2^2$; this does not change the role of the two terms.
+
+Solved by gpt-5.6-sol high.
+
+= b
+{parent=4}
+{scope}
+
+= Solution
+{parent=b}
+
+A <separating hyperplane> for signed data satisfies $Y_i(\gamma_0+X_i^T\beta)>0$ for every $i$; its geometric set is $\{x:\gamma_0+x^T\beta=0\}$. The plot marks three <support vectors>. At the shown fit they lie on the two <support-vector-machine margin boundaries>, so their signed functional margins satisfy
+$$
+Y_iX_i^{*T}\widehat\gamma=1.
+$$
+The solid line is the decision hyperplane $X^{*T}\widehat\gamma=0$, while the dashed parallel lines are $X^{*T}\widehat\gamma=1$ and $X^{*T}\widehat\gamma=-1$.
+
+If $\lambda=0$, every parameter vector with all margins at least one has zero hinge loss. Scaling or changing a separating vector can therefore give another minimizer, so the objective need not select the displayed maximum-margin direction or the same three lines. Positive quadratic regularization selects a finite, minimum-norm compromise.
+
+Solved by gpt-5.6-sol high.
+
+= c
+{parent=4}
+{scope}
+
+= Solution
+{parent=c}
+
+This is a normalized <perceptron algorithm>. Because $\|Z_i\|_2=1$, an update on a misclassified point obeys
+$$
+\begin{aligned}
+\|\gamma^{(m+1)}-\widehat\gamma\|_2^2
+&=\|\gamma^{(m)}-\widehat\gamma+Y_iZ_i\|_2^2\\
+&=\|\gamma^{(m)}-\widehat\gamma\|_2^2+1
++2Y_iZ_i^T\gamma^{(m)}-2Y_iZ_i^T\widehat\gamma\\
+&\leq\|\gamma^{(m)}-\widehat\gamma\|_2^2+1+0-2\\
+&=\|\gamma^{(m)}-\widehat\gamma\|_2^2-1.
+\end{aligned}
+$$
+Here the two inequalities use the update condition $Y_iZ_i^T\gamma^{(m)}\leq0$ and the assumed unit margin $Y_iZ_i^T\widehat\gamma\geq1$. A squared distance cannot become negative, so there can be at most $\|\gamma^{(0)}-\widehat\gamma\|_2^2$ updates. The algorithm then returns a vector that correctly separates every training point. The estimate $\widehat\gamma$ is the comparison vector for the proof; without an additional uniqueness condition the returned separator need not equal that particular vector.
+
+Solved by gpt-5.6-sol high.
+
+= d
+{parent=4}
+{scope}
+
+= Solution
+{parent=d}
+
+A binary <logistic regression> sets
+$$
+\mathbb P(Y=1\mid X=x)
+=\frac{1}{1+e^{-(\gamma_0+x^T\beta)}}
+$$
+and classifies by the sign of $\gamma_0+x^T\beta$. Its unpenalized <maximum likelihood estimator> minimizes the empirical <logistic loss>
+$$
+L(\gamma)=\sum_{i=1}^n
+\log\left(1+e^{-Y_iX_i^{*T}\gamma}\right).
+$$
+The plotted data are <complete separation> data: there is a vector $v$ with every signed margin $Y_iX_i^{*T}v>0$. For every finite $c>0$, increasing $c$ strictly decreases each term of $L(cv)$, and $L(cv)\to0$ as $c\to\infty$. No finite parameter attains zero, so the unpenalized optimization has no solution.
+
+Adding an $L^2$ penalty $\lambda\|\gamma\|_2^2$ with $\lambda>0$, constraining $\|\gamma\|_2$, or using a finite stopping rule makes the problem attain a finite approximate solution. The penalized option is preferable because <cross-validation> can select the strength of <regularization>.
+
+Solved by gpt-5.6-sol high.

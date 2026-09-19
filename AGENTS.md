@@ -66,6 +66,8 @@ There are a few important ourbigbook features which you must master and use well
   {parent=Bogomolny equations}
   ```
 
+  `{wiki}` is not a tag. It means "That wiki article is exactly about this topic".
+
 Newlines render as `<br>`, so don't indent code, keep long lines. You almost never want a newline, unless it is followed by a block construct. This is fine though:
 
 ```
