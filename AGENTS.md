@@ -44,6 +44,28 @@ There are a few important ourbigbook features which you must master and use well
 
   just `{wiki}` would suffice here.
 
+  Only link up to Wikipedia if it matches the exact concept of the header. E.g. this is not great:
+
+  ```
+  = Bogomolny bound
+  {c}
+  {parent=Quantum field theory}
+  {wiki=Bogomolny_equations}
+  ```
+
+  much better would be to have an exact wiki match with either a synonym or child header:
+
+  ```
+  = Bogomolny equations
+  {c}
+  {parent=Quantum field theory}
+  {wiki}
+
+  = Bogomolny bound
+  {c}
+  {parent=Bogomolny equations}
+  ```
+
 Newlines render as `<br>`, so don't indent code, keep long lines. You almost never want a newline, unless it is followed by a block construct. This is fine though:
 
 ```
