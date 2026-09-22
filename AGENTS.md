@@ -8,7 +8,7 @@ This knowledge base aims to explain things very well and to make them very inter
 
 Some guidelines:
 
-* interlink every scientific and mathematical subject that is mentioned HEAVILY. Interlink every time it appears in an article, not just the first one
+* interlink every scientific and mathematical concept that is mentioned HEAVILY. Interlink every time it appears in an article, not just the first one
 * maintain nice concept hierarchies: e.g. mathematics > calculus > fundamental theorem of calculus (don't be afraid of arbitrarily deep nodes, if it makes sense, do it). Use pieces of knowledge as wide or granular as needed. If it is a concept, create a stub at least and interlink. 
 
 ## Exam solutions
@@ -30,8 +30,8 @@ There are a few important ourbigbook features which you must master and use well
 
 * `{c}` for capitalization. You want to set this for every header that has a fixed capitalization
 * `{disambiguate}` when something might mean something else. Feel free then to `{synonym}` to something more specific that you are using often in our STEM heavy context for example
-* `{synonym}` to create different names for the same thing, in particular ones that will allow you to seamlessly `<>` interlink from other places to a given concept
-* `{wiki}` to point to wiki pages that already exist for concepts you come across
+* `{synonym}` to create different names for the same thing, in particular ones that will allow you to seamlessly `<>` interlink from other places to a given concept. You rarely want to give explicit `<id>[text]` link text, most of the time you want a synonym (or a new section) and just `<synonym-id>`.
+* `{wiki}` to point to wiki pages that already exist for concepts you come across. But note that not every concept header needs to have a wiki. Notably, we are much more granular than wikipedia, and don't have notability criteria: if it's cute and potentially reusable, make a header. Concepts don't even need to be just knows: we can have proper short sentences, for example stating theorems.
 
 When in doubt, double check that the HTML output is awesome.
 
