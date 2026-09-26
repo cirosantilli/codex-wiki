@@ -92,10 +92,22 @@ When documenting a generally useful STEM concepts, we want to aim try to have th
 * examples
 * why the concept is useful and beautiful/interesting
 * discovery history
-* images. We are currently not handling images in this setup, but we will in the future. This raises storage and copyright challenges, but we will create guidelines in the future.
+* images
 
 When you are doing another big job, it is OK to just create stubs for concepts without going into all this detail. But when it gets closer to the matter, this is the ideal we should strive for. To one day make the one book to rule them all.
 
 ### Mathematics guidelines
 
 For mathematical concept headers which have a standard mathematical symbol, don't forget to title2 it.
+
+## Image guidelines
+
+For now we are currently only accepting relatively small self generated images.
+
+When you generate an image, if the image was generated via a script, keep the generator script right next to the image with same basename but different extension, e.g. my-image.py generates my-image.svg.
+
+Prefer Python for generating images, e.g. matplotlib or another Python library if something more relevant exists. Maintain a toplevel pyproject.toml documenting all dependencies and also document python version tested at. Attempt to make every script work under those versions. If one is particularly difficult, fine, create a subdirectory pyproject.toml for it.
+
+Use SVG for anything that maps well to vector graphics.
+
+When dealing with images be mindful of copyright. Only select images compatible with our license.
