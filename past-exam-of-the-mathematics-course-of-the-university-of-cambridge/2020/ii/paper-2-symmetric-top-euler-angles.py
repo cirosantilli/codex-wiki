@@ -8,8 +8,7 @@ import numpy as np
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 
-OUTPUT = Path(__file__).with_suffix(".svg")
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
+OUTPUT = Path(Path(__file__).stem + ".png")
 
 phi = np.deg2rad(38.0)
 theta = np.deg2rad(34.0)
@@ -68,4 +67,4 @@ ax.set_box_aspect((1.25, 1.15, 1.0))
 ax.view_init(elev=22, azim=-115)
 ax.set_axis_off()
 fig.tight_layout()
-fig.savefig(OUTPUT, metadata={"Date": None}, transparent=True)
+fig.savefig(OUTPUT, dpi=160, facecolor="white")

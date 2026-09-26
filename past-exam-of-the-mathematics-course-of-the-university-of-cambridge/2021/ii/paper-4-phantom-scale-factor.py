@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Generate paper-4-phantom-scale-factor.svg."""
+"""Generate paper-4-phantom-scale-factor.png."""
 
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
 
 
 transition_time = 1.0
@@ -46,9 +45,6 @@ ax.set_title("Matter era followed by phantom-energy domination")
 ax.grid(alpha=0.2)
 ax.legend(loc="upper left")
 
-output = Path(__file__).with_suffix(".svg")
-fig.savefig(output, metadata={"Date": None})
+output = Path(Path(__file__).stem + ".png")
+fig.savefig(output, dpi=160, facecolor="white")
 plt.close(fig)
-output.write_text(
-    "\n".join(line.rstrip() for line in output.read_text().splitlines()) + "\n"
-)

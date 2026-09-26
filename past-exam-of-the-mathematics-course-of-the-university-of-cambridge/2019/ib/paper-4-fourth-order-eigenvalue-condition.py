@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-output = Path(__file__).with_suffix(".svg")
+output = Path(Path(__file__).stem + ".png")
 c = np.linspace(0.0, np.pi, 1001)
 f_plus = np.cos(c) * np.sinh(c) + np.sin(c) * np.cosh(c)
 f_minus = np.cos(c) * np.sinh(c) - np.sin(c) * np.cosh(c)
@@ -37,4 +37,4 @@ ax.set_xticks([0.0, np.pi / 2.0, np.pi], [r"$0$", r"$\pi/2$", r"$\pi$"])
 ax.legend(loc="lower left")
 ax.set_title(r"The $+$ condition has the unique root in $(0,\pi)$")
 fig.tight_layout()
-fig.savefig(output, metadata={"Date": None})
+fig.savefig(output, dpi=160, facecolor="white")

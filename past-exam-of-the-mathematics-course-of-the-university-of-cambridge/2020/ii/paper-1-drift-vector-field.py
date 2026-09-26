@@ -7,9 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-OUTPUT = Path(__file__).with_suffix(".svg")
+OUTPUT = Path(Path(__file__).stem + ".png")
 
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
 
 x1, x2 = np.meshgrid(np.linspace(-1, 1, 17), np.linspace(-1, 1, 17))
 a1 = -x1 + x2
@@ -37,4 +36,4 @@ ax.set_aspect("equal")
 ax.set_xlabel("$x_1$")
 ax.set_ylabel("$x_2$", rotation=0)
 fig.tight_layout()
-fig.savefig(OUTPUT, metadata={"Date": None})
+fig.savefig(OUTPUT, dpi=160, facecolor="white")

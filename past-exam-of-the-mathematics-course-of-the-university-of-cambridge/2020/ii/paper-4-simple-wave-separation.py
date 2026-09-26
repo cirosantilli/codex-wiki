@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-OUTPUT = Path(__file__).with_suffix(".svg")
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
+OUTPUT = Path(Path(__file__).stem + ".png")
 
 # Dimensionless axes use L=c_0=1, so separation occurs at t=1/2.
 t = np.linspace(0.0, 1.45, 300)
@@ -45,4 +44,4 @@ ax.set_xlim(-1.55, 2.55)
 ax.set_ylim(-0.02, 1.45)
 ax.spines[["top", "right"]].set_visible(False)
 fig.tight_layout()
-fig.savefig(OUTPUT, metadata={"Date": None})
+fig.savefig(OUTPUT, dpi=160, facecolor="white")

@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-OUTPUT = Path(__file__).with_suffix('.svg')
-plt.rcParams['svg.hashsalt'] = 'codex-wiki'
+OUTPUT = Path(Path(__file__).stem + '.png')
 
 alpha = 0.55
 gamma = 0.8
@@ -30,4 +29,4 @@ ax.axhline(0, color='0.5', linewidth=0.6)
 ax.legend(loc='lower right', fontsize=8)
 ax.spines[['top', 'right']].set_visible(False)
 fig.tight_layout()
-fig.savefig(OUTPUT, metadata={'Date': None})
+fig.savefig(OUTPUT, dpi=160, facecolor="white")

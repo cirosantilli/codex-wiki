@@ -7,9 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-OUTPUT = Path(__file__).with_suffix(".svg")
+OUTPUT = Path(Path(__file__).stem + ".png")
 
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
 
 x = np.linspace(-2.2, 2.2, 900)
 z = np.linspace(-2.2, 2.2, 900)
@@ -43,4 +42,4 @@ ax.set_xlabel("$x$")
 ax.set_ylabel("$z$", rotation=0)
 ax.legend(loc="upper right", frameon=False)
 fig.tight_layout()
-fig.savefig(OUTPUT, metadata={"Date": None})
+fig.savefig(OUTPUT, dpi=160, facecolor="white")

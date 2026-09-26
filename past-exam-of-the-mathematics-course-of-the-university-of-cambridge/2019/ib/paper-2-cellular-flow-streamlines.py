@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-output = Path(__file__).with_suffix(".svg")
+output = Path(Path(__file__).stem + ".png")
 x = np.linspace(0.0, 2.0 * np.pi, 501)
 y = np.linspace(0.0, 2.0 * np.pi, 501)
 xx, yy = np.meshgrid(x, y)
@@ -22,4 +22,4 @@ ax.set_xticks([0.0, np.pi, 2.0 * np.pi], [r"$0$", r"$\pi$", r"$2\pi$"])
 ax.set_yticks([0.0, np.pi, 2.0 * np.pi], [r"$0$", r"$\pi$", r"$2\pi$"])
 ax.set_title(r"Streamlines $\sin x\,\sin y=\mathrm{constant}$")
 fig.tight_layout()
-fig.savefig(output, metadata={"Date": None})
+fig.savefig(output, dpi=160, facecolor="white")

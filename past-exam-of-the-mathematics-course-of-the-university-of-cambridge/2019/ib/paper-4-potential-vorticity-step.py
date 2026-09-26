@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-output = Path(__file__).with_suffix(".svg")
+output = Path(Path(__file__).stem + ".png")
 X = np.linspace(-5.0, 5.0, 1001)
 eta = np.where(X < 0.0, -0.5 + 0.5 * np.exp(X), 0.5 - 0.5 * np.exp(-X))
 v = 0.5 * np.exp(-np.abs(X))
@@ -25,4 +25,4 @@ ax_v.set_ylabel(r"$v/[R(q_1-q_2)]$")
 ax_v.set_yticks([0.0, 0.25, 0.5])
 
 fig.tight_layout()
-fig.savefig(output, metadata={"Date": None})
+fig.savefig(output, dpi=160, facecolor="white")

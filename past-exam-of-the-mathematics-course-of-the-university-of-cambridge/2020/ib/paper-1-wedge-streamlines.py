@@ -7,9 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-OUTPUT = Path(__file__).with_suffix(".svg")
+OUTPUT = Path(Path(__file__).stem + ".png")
 
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
 
 alpha = 2 * np.pi / 3
 gamma = np.pi / alpha
@@ -46,4 +45,4 @@ ax.set_xlim(-2.8, 5.1)
 ax.set_ylim(-0.25, 4.7)
 ax.axis("off")
 fig.tight_layout()
-fig.savefig(OUTPUT, metadata={"Date": None})
+fig.savefig(OUTPUT, dpi=160, facecolor="white")

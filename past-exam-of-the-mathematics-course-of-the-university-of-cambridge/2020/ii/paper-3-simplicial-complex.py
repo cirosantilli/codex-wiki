@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 
 
-OUTPUT = Path(__file__).with_suffix(".svg")
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
+OUTPUT = Path(Path(__file__).stem + ".png")
 
 vertices = {
     "v1": (-1.15, 0.0),
@@ -50,4 +49,4 @@ ax.set_xlim(-1.55, 1.55)
 ax.set_ylim(-1.8, 2.0)
 ax.set_axis_off()
 fig.tight_layout()
-fig.savefig(OUTPUT, metadata={"Date": None}, transparent=True)
+fig.savefig(OUTPUT, dpi=160, facecolor="white")

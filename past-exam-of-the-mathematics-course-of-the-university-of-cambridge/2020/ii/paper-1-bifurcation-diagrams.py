@@ -7,9 +7,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-OUTPUT = Path(__file__).with_suffix(".svg")
+OUTPUT = Path(Path(__file__).stem + ".png")
 
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
 
 
 def equilibria(mu: float, a: float, epsilon: float) -> list[tuple[float, bool]]:
@@ -67,4 +66,4 @@ handles = [
 ]
 fig.legend(handles=handles, loc="upper center", ncol=2, frameon=False)
 fig.tight_layout(rect=(0, 0, 1, 0.95))
-fig.savefig(OUTPUT, metadata={"Date": None})
+fig.savefig(OUTPUT, dpi=160, facecolor="white")

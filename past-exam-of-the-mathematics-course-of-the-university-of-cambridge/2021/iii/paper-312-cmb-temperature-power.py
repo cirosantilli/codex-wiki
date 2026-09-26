@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Generate paper-312-cmb-temperature-power.svg."""
+"""Generate paper-312-cmb-temperature-power.png."""
 
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
 
 
 def gaussian(x: np.ndarray, centre: float, width: float, height: float) -> np.ndarray:
@@ -53,11 +52,6 @@ ax.set_title("Schematic CMB temperature anisotropy spectrum")
 ax.grid(alpha=0.2)
 ax.legend(loc="upper right")
 
-output = Path(__file__).with_suffix(".svg")
-fig.savefig(output, metadata={"Date": None})
+output = Path(Path(__file__).stem + ".png")
+fig.savefig(output, dpi=160, facecolor="white")
 plt.close(fig)
-# Matplotlib writes spaces after many SVG path commands. Removing them keeps
-# the generated artifact clean under \`git diff --check\`.
-output.write_text(
-    "\n".join(line.rstrip() for line in output.read_text().splitlines()) + "\n"
-)

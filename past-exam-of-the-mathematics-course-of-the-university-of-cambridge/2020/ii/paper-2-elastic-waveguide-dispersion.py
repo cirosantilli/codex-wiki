@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-OUTPUT = Path(__file__).with_suffix(".svg")
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
+OUTPUT = Path(Path(__file__).stem + ".png")
 
 # Representative dimensionless values. The repeated tangent branches, rather
 # than the particular numerical material ratio, are the point of the sketch.
@@ -42,4 +41,4 @@ ax.set_title(r"Representative branches: $c_P/c_S=1.8$, $kH=1$")
 ax.grid(alpha=0.18)
 ax.legend(loc="upper right")
 fig.tight_layout()
-fig.savefig(OUTPUT, metadata={"Date": None}, transparent=True)
+fig.savefig(OUTPUT, dpi=160, facecolor="white")

@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Generate paper-2-paraboloid-annulus.svg."""
+"""Generate paper-2-paraboloid-annulus.png."""
 
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
 
 theta = np.linspace(0.0, 2.0 * np.pi, 180)
 radius = np.linspace(1.0, 2.0, 60)
@@ -30,9 +29,6 @@ ax.set_title(r"$z=5-x^2-y^2$, $1<z<4$")
 ax.set_box_aspect((1.0, 1.0, 0.85))
 ax.view_init(elev=25.0, azim=-55.0)
 
-output = Path(__file__).with_suffix(".svg")
-fig.savefig(output, metadata={"Date": None})
+output = Path(Path(__file__).stem + ".png")
+fig.savefig(output, dpi=160, facecolor="white")
 plt.close(fig)
-output.write_text(
-    "\n".join(line.rstrip() for line in output.read_text().splitlines()) + "\n"
-)

@@ -104,10 +104,8 @@ For mathematical concept headers which have a standard mathematical symbol, don'
 
 For now we are currently only accepting relatively small self generated images.
 
-When you generate an image, if the image was generated via a script, keep the generator script right next to the image with same basename but different extension, e.g. my-image.py generates my-image.svg.
+When you generate an image, if the image was generated via a script, keep the generator script right next to the image with same basename but different extension, e.g. my-image.py generates my-image.png. Use PNG as your preferred output format. SVG can be unreliable due to font variations, and it is less portable. Make sure not to use transparent backgrounds, normally white background unless there's reason to do otherwise.
 
 Prefer Python for generating images, e.g. matplotlib or another Python library if something more relevant exists. Maintain a toplevel pyproject.toml documenting all dependencies and also document python version tested at. Attempt to make every script work under those versions. If one is particularly difficult, fine, create a subdirectory pyproject.toml for it.
-
-Use SVG for anything that maps well to vector graphics.
 
 When dealing with images be mindful of copyright. Only select images compatible with our license.

@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-OUTPUT = Path(__file__).with_suffix(".svg")
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
+OUTPUT = Path(Path(__file__).stem + ".png")
 
 # Dimensionless coordinates with v/Omega = 1. The initial point is (1, 0, 0),
 # the guiding-centre axis is x = 2, y = 0, and the equal parallel and
@@ -34,4 +33,4 @@ ax.set_zlim(0, 4 * np.pi)
 ax.view_init(elev=20, azim=-58)
 ax.set_box_aspect((1, 1, 2.4))
 fig.tight_layout()
-fig.savefig(OUTPUT, metadata={"Date": None})
+fig.savefig(OUTPUT, dpi=160, facecolor="white")

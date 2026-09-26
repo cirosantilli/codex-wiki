@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Generate paper-315-earth-m-dwarf-eclipse.svg."""
+"""Generate paper-315-earth-m-dwarf-eclipse.png."""
 
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
 
 
 PLANCK = 6.62607015e-34
@@ -46,9 +45,6 @@ ax.set_title("600 K Earth-size planet / 3500 K, 0.1-solar-radius star")
 ax.grid(alpha=0.2, which="both")
 ax.legend(loc="upper left")
 
-output = Path(__file__).with_suffix(".svg")
-fig.savefig(output, metadata={"Date": None})
+output = Path(Path(__file__).stem + ".png")
+fig.savefig(output, dpi=160, facecolor="white")
 plt.close(fig)
-output.write_text(
-    "\n".join(line.rstrip() for line in output.read_text().splitlines()) + "\n"
-)

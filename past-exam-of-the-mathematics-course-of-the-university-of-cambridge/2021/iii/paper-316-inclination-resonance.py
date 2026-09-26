@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate paper-316-inclination-resonance.svg."""
+"""Generate paper-316-inclination-resonance.png."""
 
 from pathlib import Path
 
@@ -7,7 +7,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle, FancyArrowPatch
 
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
 
 fig,axs=plt.subplots(1,3,figsize=(12,4),constrained_layout=True)
 # Face-on
@@ -59,9 +58,6 @@ ax.axhline(0,color='#777',ls=':',lw=1)
 ax.axvline(0,color='#777',ls=':',lw=1)
 ax.set_aspect('equal'); ax.set_title('$q=2$, $p=1$: rotating-frame view')
 ax.set_xlabel('transverse displacement'); ax.set_ylabel('height'); ax.grid(alpha=.18)
-output = Path(__file__).with_suffix(".svg")
-fig.savefig(output, metadata={"Date": None})
+output = Path(Path(__file__).stem + ".png")
+fig.savefig(output, dpi=160, facecolor="white")
 plt.close(fig)
-output.write_text(
-    "\n".join(line.rstrip() for line in output.read_text().splitlines()) + "\n"
-)

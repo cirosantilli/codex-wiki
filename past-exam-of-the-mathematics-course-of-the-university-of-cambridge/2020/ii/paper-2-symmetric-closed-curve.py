@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-OUTPUT = Path(__file__).with_suffix(".svg")
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
+OUTPUT = Path(Path(__file__).stem + ".png")
 
 parameter = np.linspace(0.0, 2.0 * np.pi, 900)
 major_radius = 2.0
@@ -36,4 +35,4 @@ ax.set_box_aspect((1.0, 1.0, 0.52))
 ax.view_init(elev=58, azim=-55)
 ax.set_axis_off()
 fig.tight_layout()
-fig.savefig(OUTPUT, metadata={"Date": None}, transparent=True)
+fig.savefig(OUTPUT, dpi=160, facecolor="white")

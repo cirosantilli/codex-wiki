@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate paper-316-dust-loci.svg."""
+"""Generate paper-316-dust-loci.png."""
 
 from pathlib import Path
 
@@ -7,7 +7,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import sqrt, tan, pi
 
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
 
 mu=1.0
 q=1.0
@@ -72,9 +71,6 @@ axs[1].set_title(r'Same $\beta$: syndynes')
 for ax in axs:
     ax.legend(fontsize=8,loc='best')
 fig.suptitle('Zero-ejection-speed dust released from a parabolic comet',fontsize=13)
-output = Path(__file__).with_suffix(".svg")
-fig.savefig(output, metadata={"Date": None})
+output = Path(Path(__file__).stem + ".png")
+fig.savefig(output, dpi=160, facecolor="white")
 plt.close(fig)
-output.write_text(
-    "\n".join(line.rstrip() for line in output.read_text().splitlines()) + "\n"
-)

@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Generate paper-315-pressure-temperature.svg."""
+"""Generate paper-315-pressure-temperature.png."""
 
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-plt.rcParams["svg.hashsalt"] = "codex-wiki"
 
 
 pressure = np.logspace(-5.0, 2.0, 1000)  # bar
@@ -30,9 +29,6 @@ ax.set_ylabel("pressure [bar]")
 ax.set_title("Retrieved-profile extrapolation")
 ax.grid(alpha=0.2, which="both")
 
-output = Path(__file__).with_suffix(".svg")
-fig.savefig(output, metadata={"Date": None})
+output = Path(Path(__file__).stem + ".png")
+fig.savefig(output, dpi=160, facecolor="white")
 plt.close(fig)
-output.write_text(
-    "\n".join(line.rstrip() for line in output.read_text().splitlines()) + "\n"
-)
