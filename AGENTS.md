@@ -83,6 +83,40 @@ as it contains a block construct. It places the block construct inside the parag
 
 When in doubt, double check that the HTML output is awesome!
 
+## Header guidelines
+
+### Header pluralization
+
+We prefer plural form strongly unless there is specific reason not to. In particular, simple pluralized magic links seamlessly work:
+
+```
+= Dog
+
+I like <dogs>.
+```
+
+so there's no need for:
+
+```
+= Dog
+
+= Dogs
+{synonym}
+
+I like <dogs>.
+```
+
+This synonym makes sense when it's not the last word that is pluralized, this is good:
+
+```
+= Root of a polynomial
+
+= Roots of a polynomial
+{synonym}
+
+I like <roots of a polynomial>.
+```
+
 ## STEM guidelines 
 
 When documenting a generally useful STEM concepts, we want to aim try to have the following elements when they apply:
