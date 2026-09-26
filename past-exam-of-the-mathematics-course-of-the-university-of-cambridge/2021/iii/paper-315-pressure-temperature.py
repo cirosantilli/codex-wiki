@@ -30,5 +30,5 @@ ax.set_title("Retrieved-profile extrapolation")
 ax.grid(alpha=0.2, which="both")
 
 output = Path(Path(__file__).stem + ".png")
-fig.savefig(output, dpi=160, facecolor="white")
+fig.savefig(output, dpi=100, facecolor="white")
 plt.close(fig)

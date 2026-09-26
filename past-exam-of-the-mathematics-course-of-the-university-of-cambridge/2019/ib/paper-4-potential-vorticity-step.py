@@ -25,4 +25,4 @@ ax_v.set_ylabel(r"$v/[R(q_1-q_2)]$")
 ax_v.set_yticks([0.0, 0.25, 0.5])
 
 fig.tight_layout()
-fig.savefig(output, dpi=160, facecolor="white")
+fig.savefig(output, dpi=100, facecolor="white")

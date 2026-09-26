@@ -46,5 +46,5 @@ ax.grid(alpha=0.2)
 ax.legend(loc="upper left")
 
 output = Path(Path(__file__).stem + ".png")
-fig.savefig(output, dpi=160, facecolor="white")
+fig.savefig(output, dpi=100, facecolor="white")
 plt.close(fig)

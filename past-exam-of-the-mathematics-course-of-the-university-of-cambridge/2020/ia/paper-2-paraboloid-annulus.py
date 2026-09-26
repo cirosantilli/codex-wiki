@@ -30,5 +30,5 @@ ax.set_box_aspect((1.0, 1.0, 0.85))
 ax.view_init(elev=25.0, azim=-55.0)
 
 output = Path(Path(__file__).stem + ".png")
-fig.savefig(output, dpi=160, facecolor="white")
+fig.savefig(output, dpi=100, facecolor="white")
 plt.close(fig)

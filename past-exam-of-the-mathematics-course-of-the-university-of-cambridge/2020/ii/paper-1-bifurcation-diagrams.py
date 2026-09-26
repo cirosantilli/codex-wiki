@@ -66,4 +66,4 @@ handles = [
 ]
 fig.legend(handles=handles, loc="upper center", ncol=2, frameon=False)
 fig.tight_layout(rect=(0, 0, 1, 0.95))
-fig.savefig(OUTPUT, dpi=160, facecolor="white")
+fig.savefig(OUTPUT, dpi=100, facecolor="white")

@@ -72,5 +72,5 @@ for ax in axs:
     ax.legend(fontsize=8,loc='best')
 fig.suptitle('Zero-ejection-speed dust released from a parabolic comet',fontsize=13)
 output = Path(Path(__file__).stem + ".png")
-fig.savefig(output, dpi=160, facecolor="white")
+fig.savefig(output, dpi=100, facecolor="white")
 plt.close(fig)
