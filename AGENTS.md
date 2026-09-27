@@ -144,3 +144,5 @@ Prefer Python for generating images, e.g. matplotlib or another Python library i
 When dealing with images be mindful of copyright. Only select images compatible with our license.
 
 For every image you generate, select a reasonable image height or width, as large as needed for good viewing but not larger, and add matching `{height}` to the bigb matching the final image height exactly. It is OK to have large images on the output where needed, better have a large image that is viewable than require users to click tiny images to see them at all.
+
+ASCII art may be acceptable in some cases, e.g. box and arrow diagrams. But don't go overboard on it, e.g. for X-Y graphs, just do an image instead generally.
