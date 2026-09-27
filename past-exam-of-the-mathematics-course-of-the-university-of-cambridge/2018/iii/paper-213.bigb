@@ -15,12 +15,80 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2018/paper_213.pd
 = Solution
 {parent=i}
 
+A <loss network> models calls that require several resources simultaneously and are rejected if any required capacity is unavailable; rejected calls do not queue. For <fixed routing>, let $A_{jr}\in\mathbb Z_{\geq0}$ be the number of units of resource $j$ used by a call of type $r$, and let $C_j$ be its capacity. Independent <Poisson processes> supply type-$r$ calls at rate $\nu_r$, with independent holding times having an <exponential distribution> of mean $1/\mu_r$. Write $\alpha_r=\nu_r/\mu_r$ for the <offered traffic>, and
+$$
+\mathcal N(C)=\{n\in\mathbb Z_{\geq0}^R:An\leq C\}.
+$$
+Assume finitely many resources and call types, with every call using a resource, so this set is finite. The occupancy <continuous-time Markov chain> has rates
+$$
+q(n,n+e_r)=\nu_r\,\mathbf1_{\{n+e_r\in\mathcal N(C)\}},\qquad
+q(n,n-e_r)=\mu_r n_r.
+$$
+Its <stationary distribution> is
+$$
+\boxed{\pi(n)=\frac1{Z(C)}\prod_{r\in R}\frac{\alpha_r^{n_r}}{n_r!},\quad n\in\mathcal N(C),\qquad
+Z(C)=\sum_{n\in\mathcal N(C)}\prod_r\frac{\alpha_r^{n_r}}{n_r!}.}
+$$
+Indeed, for each feasible upward transition,
+$$
+\pi(n)\nu_r=\pi(n+e_r)\mu_r(n_r+1),
+$$
+which is <detailed balance for a continuous-time Markov chain>. Thus this is a <reversible Markov chain>. With positive arrival rates it is irreducible on $\mathcal N(C)$: departures reach the empty state, and any feasible state can be assembled by arrivals. Its <stationary distribution> is consequently unique.
+
+The formula is a <product-form stationary distribution of a loss network>: equivalently, independent <Poisson random variables> of means $\alpha_r$ conditioned on $An\leq C$. The conditioning couples the occupancies, so the resources are generally not independent. By <Poisson arrivals see time averages>, the acceptance probability for a type-$r$ arrival is
+$$
+\boxed{1-L_r=\frac{Z(C-A_{\cdot r})}{Z(C)},}
+$$
+because the prearrival state must leave $A_{jr}$ free units at each resource. Set the numerator to zero if its capacity vector has a negative entry. This exact formula is often expensive to evaluate, which motivates the <Erlang fixed point approximation>.
+
+The same occupancy <stationary distribution> extends to independent general holding-time distributions with these means by <insensitivity of loss networks>; the exponential assumption above makes the occupancy process itself a <continuous-time Markov chain> and permits the direct <detailed balance> proof.
+
 = ii
 {parent=1}
 {scope}
 
 = Solution
 {parent=ii}
+
+First consider unit requirements, $A_{jr}\in\{0,1\}$. The <Erlang loss formula> for a resource with capacity $C$ and <offered traffic> $a$ is
+$$
+E(a,C)=\frac{a^C/C!}{\sum_{k=0}^C a^k/k!}.
+$$
+The <Erlang fixed point approximation> assumes that resources block independently and that the traffic retained after screening at other resources can be treated as a <Poisson process>. If $B_j$ is the approximate blocking probability and $q_j=1-B_j$, the <reduced-load approximation> gives
+$$
+\boxed{a_j=\sum_{r:A_{jr}=1}\alpha_r\prod_{k\ne j}q_k^{A_{kr}},\qquad
+B_j=E(a_j,C_j),\qquad
+L_r\approx1-\prod_jq_j^{A_{jr}}.}
+$$
+The link whose load is being calculated is excluded from the screening product. Otherwise one would confuse its offered load with its carried load.
+
+For existence, these equations define a continuous map from $[0,1]^J$ into itself. The <Brouwer fixed-point theorem> gives a <fixed point>. Assume $C_j\geq1$; a zero-capacity resource forces rejection of every call needing it and can be removed together with those call types.
+
+For uniqueness, let $K$ have probabilities proportional to $a^k/k!$, $0\leq k\leq C$, and write $m_C(a)=\mathbb E K$. Direct differentiation gives
+$$
+m_C(a)=a\bigl(1-E(a,C)\bigr),\qquad
+m_C'(a)=\frac{\operatorname{Var}(K)}a>0,\qquad
+\frac{\partial E(a,C)}{\partial a}
+=\frac{E(a,C)}a\bigl(C-m_C(a)\bigr)>0.
+$$
+These identities hold for $a>0$, and $m_C(0)=0$. Also $E(a,C)$ increases from zero to one and $m_C(a)$ increases from zero to $C$.
+
+Put $p_j=-\log q_j$. Define $a_C(p)$ by $E(a_C(p),C)=1-e^{-p}$, and define $h_C(p)=m_C(a_C(p))$. This is a continuous, strictly increasing function on $[0,\infty)$, starting at zero and tending to $C$. Multiplying each <Erlang fixed point approximation> load equation by $q_j$ transforms it into
+$$
+h_{C_j}(p_j)=\sum_r A_{jr}\alpha_r\exp\left(-\sum_kA_{kr}p_k\right).
+$$
+These are exactly the zero-<gradient> conditions of
+$$
+\Phi(p)=\sum_j\int_0^{p_j}h_{C_j}(u)\,du
++\sum_r\alpha_r\exp\left(-\sum_jA_{jr}p_j\right),\qquad p\geq0.
+$$
+Each integral is a <strictly convex function>; the exponential terms are <convex functions>. Thus $\Phi$ is a <strictly convex function>. It is also a <coercive function>, since $h_{C_j}(p)\to C_j>0$, so it has a unique minimizer. At $p_j=0$, its partial derivative is negative if some positive-traffic route uses $j$, so that coordinate of the minimizer is positive. If no route uses $j$, the unique minimizing coordinate is zero. The minimizer therefore satisfies the equations in every coordinate. Conversely any <fixed point> has $B_j<1$, finite $p$, and these zero-<gradient> equations, so must equal that unique minimizer. Hence \b[the <Erlang fixed point approximation> exists and is unique for <fixed routing>].
+
+For integer requirements, the common generalized <Erlang fixed point approximation> uses
+$$
+a_j=\sum_{r:A_{jr}>0}A_{jr}\alpha_rq_j^{A_{jr}-1}\prod_{k\ne j}q_k^{A_{kr}}.
+$$
+Multiplication by $q_j$ gives the same equations for $\Phi$, so the existence and uniqueness argument also covers this generalized approximation. It remains an approximation, rather than the exact blocking law for a call requesting several units.
 
 = iii
 {parent=1}
@@ -29,12 +97,93 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2018/paper_213.pd
 = Solution
 {parent=iii}
 
+Consider a triangle of three links, each with capacity $C$. Calls for each pair of its three nodes arrive as independent <Poisson processes> at rate $\lambda$ and have independent holding times with an <exponential distribution> of mean one. Try the direct link first; if it is full, try the two-link path through the third node; if either alternative link is full, reject the call. This is <alternative routing> in a <loss network>.
+
+In the symmetric <Erlang fixed point approximation>, let $B$ be each link's blocking probability. A given link receives direct <offered traffic> $\lambda$. Each of the other two call types contributes overflow traffic $\lambda B$, screened by the availability $1-B$ of the other link on its alternative path. Thus
+$$
+\boxed{B=E\bigl(\lambda[1+2B(1-B)],C\bigr).}
+$$
+The extra term expresses a feedback: blocking sends calls onto longer paths, which consume more total capacity and can create still more blocking.
+
+Here is an explicit finite-capacity example, not just a limiting argument. Take $C=1000$ and $\lambda=950$, and let $F(B)=E(950[1+2B(1-B)],1000)-B$. Evaluating the <Erlang loss formula> gives
+$$
+\begin{array}{c|rrrr}
+B&0&1/100&1/10&2/5\\\hline
+F(B)&0.00364929&-0.000923093&0.0144598&-0.109515
+\end{array}
+$$
+The displayed decimals are rounded, but the four signs can be checked exactly using the rational recursion $E(a,0)=1$, $E(a,k)=aE(a,k-1)/(k+aE(a,k-1))$. By the <intermediate value theorem>, there is a <fixed point> in each of $(0,0.01)$, $(0.01,0.1)$, and $(0.1,0.4)$. Numerically these three are
+$$
+\boxed{B\approx0.00731475,\qquad0.0392115,\qquad0.217394.}
+$$
+Thus \b[<alternative routing> can produce multiple <Erlang fixed points>]. This does not imply multiple <stationary distributions> for the exact finite <continuous-time Markov chain>, which is irreducible and has a unique <stationary distribution>; the multiplicity belongs to the approximation. The symmetric alternative-routing model is also discussed in \a[https://www.cambridge.org/core/services/aop-cambridge-core/content/view/FD5AA6764623CC6E4836E7893DFA1524/S0334270000006597a.pdf/fixed_point_models_of_loss_networks.pdf][Kelly's review of fixed point models of loss networks].
+
 = 2
 {parent=Paper 213}
 {scope}
 
 = Solution
 {parent=2}
+
+Let $R_s$ be the finite, nonempty set of available routes for source-sink pair $s$, and write $x_r$ for a route flow. The <link-route incidence matrix> has $A_{jr}=1$ when route $r$ uses link $j$, and zero otherwise. The <source-sink route incidence matrix> has $H_{sr}=1$ when $r\in R_s$. Thus $y=Ax$ gives link throughputs and $f=Hx$ gives aggregate source-sink flows. A route's delay is
+$$
+d_r(x)=\sum_jA_{jr}D_j(y_j).
+$$
+A <Wardrop equilibrium> uses only routes of minimum delay for their source-sink pair:
+$$
+\boxed{d_r(x)\geq\lambda_s:=\min_{q\in R_s}d_q(x),\qquad
+x_r>0\ \Longrightarrow\ d_r(x)=\lambda_s\quad(r\in R_s).}
+$$
+An infinitesimal user cannot improve its delay by changing route.
+
+For fixed $f_s\geq0$, the feasible route flows form a nonempty <compact> <convex set>: for each $s$, $x_r\geq0$ and $\sum_{r\in R_s}x_r=f_s$. Define the <Beckmann potential>
+$$
+V(y)=\sum_j\int_0^{y_j}D_j(u)\,du.
+$$
+It is continuous, so the <extreme value theorem> gives a minimizer. Since every $D_j$ is strictly increasing, $V$ is a <strictly convex function> of $y$. Its route-flow <gradient> is $\partial V(Ax)/\partial x_r=d_r(x)$.
+
+If an occupied route $r\in R_s$ has greater delay than another route $q\in R_s$, moving a small amount of flow from $r$ to $q$ gives a negative directional <derivative>, contradicting minimality. Conversely, at a <Wardrop equilibrium>, for any feasible $\widetilde x$,
+$$
+\begin{aligned}
+\nabla_xV(Ax)\cdot(\widetilde x-x)
+&=\sum_s\sum_{r\in R_s}d_r(x)(\widetilde x_r-x_r)\\
+&\geq\sum_s\lambda_s\sum_{r\in R_s}(\widetilde x_r-x_r)=0.
+\end{aligned}
+$$
+The first-order condition for <convex optimization> therefore proves optimality. Consequently
+$$
+\boxed{\text{Wardrop equilibria are exactly the minimizers of }V(Ax)
+\text{ subject to }x\geq0,\ Hx=f.}
+$$
+If two minimizers had different $y$, their midpoint would give a strictly smaller <Beckmann potential>. Thus \b[the equilibrium link throughputs are unique]. The route flows need not be unique, since $V(Ax)$ need not be a <strictly convex function> of $x$.
+
+For a concrete example, take two successive stages of parallel links: $a,b$ in the first stage and $c,d$ in the second, with one source-sink pair and four routes $ac,ad,bc,bd$. Put $D_j(y)=y$ on every link and total flow $f=2$. All allocations
+$$
+\boxed{(x_{ac},x_{ad},x_{bc},x_{bd})=(t,1-t,1-t,t),\qquad0\leq t\leq1}
+$$
+have the same link throughputs $(1,1,1,1)$ and every route has delay two. These distinct allocations are all <Wardrop equilibria>.
+
+For elastic demand, use the standard physical convention that $D_j\geq0$ and $B_s:[0,\infty)\to[0,\infty)$ is finite, continuous, and strictly decreasing. Set $M_s=B_s(0)$ and $\ell_s=\lim_{\lambda\to\infty}B_s(\lambda)$, and define the <inverse demand function> $P_s=B_s^{-1}$ on $(\ell_s,M_s]$. It is continuous and strictly decreasing, with $P_s(M_s)=0$ and $P_s(u)\to\infty$ as $u\downarrow\ell_s$. Choose any reference value $f_s^0\in(\ell_s,M_s)$ and set
+$$
+\boxed{G(f)=\sum_s\int_{f_s^0}^{f_s}P_s(u)\,du,\qquad
+\Psi(x)=V(Ax)-G(Hx).}
+$$
+Each summand of $-G$ is a <strictly convex function>. The reference values only add a constant to the objective. In the usual case $\ell_s=0$, one may use a lower limit zero whenever the improper integral is finite; that integrability is not guaranteed merely by continuity of $B_s$.
+
+Minimize $\Psi$ over the <compact> feasible set $x\geq0$, $\ell_s\leq(Hx)_s\leq M_s$, interpreting the objective at $f_s=\ell_s$ by its one-sided limit, which can be $+\infty$. This extension is <sequentially lower semicontinuous>, and an interior-demand feasible point has finite value, so a minimizer exists. It cannot have $f_s=\ell_s$: adding a small amount on any route for $s$ has bounded marginal link cost, whereas its marginal demand benefit $P_s(f_s)$ tends to infinity. Thus $f_s>\ell_s$.
+
+For $\ell_s<f_s<M_s$, the route-flow partial <derivative> is $d_r-P_s(f_s)$. The first-order conditions for <convex optimization> give
+$$
+d_r\geq P_s(f_s),\qquad x_r>0\ \Longrightarrow\ d_r=P_s(f_s).
+$$
+If $f_s=M_s$, reducing any occupied route cannot improve the objective only if that route has zero delay; nonnegative link delays then give $\lambda_s=0=P_s(M_s)$. Therefore the conditions in every case are
+$$
+\boxed{\lambda_s=P_s(f_s),\qquad f_s=B_s(\lambda_s),\qquad
+x_r>0\ \Longrightarrow\ d_r=\lambda_s.}
+$$
+Conversely these conditions give the nonnegative directional <derivative> for every feasible competitor and hence minimize the <convex function> $\Psi$. Allowing $f$ explicitly yields the stated form with $Hx=f$ and $Ax=y$, with inverse-demand endpoint conventions understood. In particular, $G$ is defined on its demand range, rather than evaluating $B_s^{-1}$ outside that range.
+
+Strict convexity in the pair $(y,f)$ proves that \b[the equilibrium aggregate source-sink flows and link throughputs are unique]. Individual route flows may still be nonunique. Nonnegative, finite demand, nonnegative delays, finite route sets, and a usable route for each source-sink pair are the implicit modeling assumptions needed for the existence assertions.
 
 = 3
 {parent=Paper 213}
@@ -43,9 +192,155 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2018/paper_213.pd
 = Solution
 {parent=3}
 
+Use the <slotted ALOHA> model with one outstanding packet per active station and a collision channel: a slot with exactly one attempt succeeds, whereas an idle slot or a slot with two or more attempts delivers nothing. Let $Y_t$ be independent <Poisson random variables> of mean $\nu$, independent also of the transmission choices. Arrivals join after the current slot's attempts. Given $(S_t,N_t)=(S,N)$, the attempt count has a <binomial distribution> with parameters $N$ and $1/S$. Consequently, for $N\geq1$,
+$$
+p_0(N,S)=(1-1/S)^N,\qquad
+p_1(N,S)=\frac NS(1-1/S)^{N-1},\qquad p_*=1-p_0-p_1.
+$$
+For $N=0$, set $p_0=1$ and $p_1=0$. The equation $N_{t+1}=N_t+Y_t-\mathbf1_{\{Z_t=1\}}$ adds arrivals and removes precisely one packet following a successful slot. The estimate $S_t\geq1$ controls the common transmission probability and updates using the idle, success, or collision feedback. The <conditional distribution> of the next state depends only on $(S_t,N_t)$, so this pair is a <Markov chain>.
+
+Away from the reflecting floor in $S$, its one-step <conditional expectations> are
+$$
+\mathbb E[\Delta N\mid S,N]=\nu-p_1,
+\qquad\mathbb E[\Delta S\mid S,N]=ap_0+bp_1+cp_*.
+$$
+When $N$ and $S$ are large with $N/S\approx\kappa$, the <Poisson limit theorem> gives $p_0\approx e^{-\kappa}$ and $p_1\approx\kappa e^{-\kappa}$. Treating these approximate drifts as derivatives motivates the <fluid approximation of slotted ALOHA>:
+$$
+\boxed{\dot s=(a-c)e^{-\kappa}+(b-c)\kappa e^{-\kappa}+c,\qquad
+\dot n=\nu-\kappa e^{-\kappa},\qquad\kappa=n/s.}
+$$
+The floor at $S=1$ is negligible in this interior scaling. This calculation motivates the <ordinary differential equations>; it is not a proof of a stochastic <fluid limit>.
+
+For $(a,b,c)=(2-e,0,1)$, put
+$$
+g(\kappa)=1-(e-1+\kappa)e^{-\kappa},\qquad
+h(\kappa)=\nu-\kappa e^{-\kappa}.
+$$
+Then $g'(\kappa)=(e-2+\kappa)e^{-\kappa}>0$ and $g(1)=0$. On the domain $s>0$, introduce time $\tau$ by $d\tau/dt=1/s$. Differentiating $\kappa=n/s$ gives
+$$
+\frac{d\kappa}{d\tau}=\nu-r(\kappa),\qquad
+\frac{ds}{d\tau}=s\,g(\kappa),\qquad
+\frac{dt}{d\tau}=s,
+$$
+where $r(\kappa)=\kappa[1-(e-2+\kappa)e^{-\kappa}]$.
+
+The function $r$ is strictly increasing from zero to infinity, and $r(1)=e^{-1}$. To check the monotonicity explicitly,
+$$
+r'(\kappa)=1-e^{-\kappa}\bigl[e-2+(4-e)\kappa-\kappa^2\bigr]>0.
+$$
+Indeed, with $d=3-e\in(0,1)$,
+$$
+1+\kappa-\bigl[e-2+(4-e)\kappa-\kappa^2\bigr]
+=\kappa^2-d\kappa+d>0,
+$$
+because its discriminant is $d^2-4d<0$; and $e^\kappa\geq1+\kappa$. Thus the scalar <ordinary differential equation> for $\kappa$ points toward the unique value $\kappa_*$ satisfying $r(\kappa_*)=\nu$. Every trajectory with $s(0)>0$, $n(0)\geq0$ has bounded $\kappa$ and $\kappa(\tau)\to\kappa_*$. Positivity of $s$ follows from $s(\tau)=s(0)\exp(\int_0^\tau g(\kappa(u))\,du)$.
+
+If $0\leq\nu<e^{-1}$, then $\kappa_*<1$ and $g(\kappa_*)<0$. Thus $s(\tau)$ decays exponentially for large $\tau$, and
+$$
+T=\int_0^\infty s(\tau)\,d\tau<\infty,\qquad
+\boxed{(s(t),n(t))\longrightarrow(0,0)\quad\text{as }t\uparrow T.}
+$$
+This is <finite-time draining of a fluid model>. The unmodified equations have $n/s$ undefined at the origin, so the statement that trajectories converge to the origin needs this endpoint interpretation; continuing with an absorbing zero trajectory is an additional fluid-model convention, not a solution of the displayed equations at the origin.
+
+If $\nu>e^{-1}$, then $\kappa_*>1$ and $g(\kappa_*)>0$. Now $s(\tau)$ grows exponentially, physical time tends to infinity, and
+$$
+\boxed{\frac{s(t)}t\to g(\kappa_*),\qquad
+\frac{n(t)}t\to\kappa_*g(\kappa_*)>0.}
+$$
+In particular the trajectory escapes to infinity. Even without the ratio analysis, $\dot n\geq\nu-e^{-1}>0$, since $\max_{\kappa\geq0}\kappa e^{-\kappa}=e^{-1}$.
+
+For the actual <Markov chain>, it is essential not to replace the finite-$N$ success probability by $e^{-1}$: a single backlogged packet can succeed with probability one. Instead, for $N\geq2$, maximizing over $S\geq1$ gives the <ALOHA throughput bound>
+$$
+p_1(N,S)\leq\left(1-\frac1N\right)^{N-1}\longrightarrow e^{-1}.
+$$
+If $\nu>e^{-1}$, choose $K_0$ and $r_0<\nu$ so that $p_1(N,S)\leq r_0$ for all $N>K_0$, uniformly in $S$. For sufficiently small $\theta>0$,
+$$
+q_\theta:=\exp\bigl(\nu(e^{-\theta}-1)\bigr)
+\bigl[1+r_0(e^\theta-1)\bigr]<1,
+$$
+because its derivative at zero is $r_0-\nu<0$. Independence of arrivals and attempts gives
+$$
+\mathbb E[e^{-\theta\Delta N}\mid S,N]
+=\exp\bigl(\nu(e^{-\theta}-1)\bigr)
+\bigl[1+p_1(N,S)(e^\theta-1)\bigr]\leq q_\theta
+$$
+whenever $N>K_0$. For any integer $K\geq K_0$, stop at the <stopping time> $\sigma_K=\inf\{t:N_t\leq K\}$. The stopped process $e^{-\theta N_{t\wedge\sigma_K}}$ is a nonnegative <supermartingale>. The <optional stopping theorem>, first at bounded times and then by a limit, yields the <exponential-supermartingale escape bound>
+$$
+\boxed{\mathbb P_{S,N}(\sigma_K<\infty)\leq e^{-\theta(N-K)}\qquad(N>K).}
+$$
+From every state with $N\leq K$, a <Poisson distribution> arrival burst has a uniformly positive probability of sending the next backlog to at least $K+m$, for any fixed $m>0$. From there the probability of never revisiting $N\leq K$ is at least $1-e^{-\theta m}$. By the <Markov property> at successive visits, the probability of infinitely many visits to this strip is zero: each visit has a uniform positive chance of being the last. This holds for every integer $K\geq K_0$, so
+$$
+\boxed{N_t\to\infty\quad\text{almost surely when }\nu>e^{-1}.}
+$$
+Therefore \b[the <Markov chain> is transient for every finite choice of $a,b,c$]. The proof is uniform in $S$ and does not infer stochastic transience merely from the approximate <ordinary differential equations>.
+
 = 4
 {parent=Paper 213}
 {scope}
 
 = Solution
 {parent=4}
+
+For a fixed occupancy $n$, let $x_r>0$ be the per-flow rate on every active route, so feasibility means $\sum_{r:j\in r}n_rx_r\leq C_j$. A <proportionally fair allocation> is a feasible allocation satisfying, for every other feasible $\widetilde x$,
+$$
+\boxed{\sum_{r:n_r>0}n_r\frac{\widetilde x_r-x_r}{x_r}\leq0.}
+$$
+The sum counts the proportional changes over individual flows. By the first-order condition for a <concave function>, it is exactly the allocation solving
+$$
+\boxed{\max_{x>0}\sum_{r:n_r>0}n_r\log x_r
+\quad\text{subject to}\quad\sum_{r:j\in r}n_rx_r\leq C_j\quad(j\in J).}
+$$
+This is <weighted logarithmic utility> optimization, and its negative objective is a <strictly convex function>, which gives unique rates on active routes. Routes with $n_r=0$ have no per-flow rate to determine.
+
+Index the four routes by $1=\{1,2\}$, $2=\{2,3\}$, $3=\{3,4\}$, $4=\{4,1\}$, and let $\Lambda_r=n_rx_r$ be each route's total service. Write
+$$
+P=n_1+n_3,\qquad Q=n_2+n_4,\qquad N=P+Q.
+$$
+The four capacity constraints say $\Lambda_1+\Lambda_2\leq1$, $\Lambda_2+\Lambda_3\leq1$, $\Lambda_3+\Lambda_4\leq1$, and $\Lambda_4+\Lambda_1\leq1$. Equivalently,
+$$
+\max(\Lambda_1,\Lambda_3)+\max(\Lambda_2,\Lambda_4)\leq1.
+$$
+For fixed maxima $u,v$, every active route in the first group optimally takes total service $u$, and every active route in the second takes $v$, because its logarithmic objective is increasing. Up to the constant $-\sum_rn_r\log n_r$, the objective therefore becomes $P\log u+Q\log v$ with $u+v\leq1$. Its maximizer is $u=P/N$, $v=Q/N$ when $N>0$, with the evident endpoint choices when one group is empty. Hence the <proportionally fair allocation on a four-cycle> is
+$$
+\boxed{x_r=\begin{cases}
+P/(Nn_r),&r\in\{1,3\},\ n_r>0,\\
+Q/(Nn_r),&r\in\{2,4\},\ n_r>0.
+\end{cases}}
+$$
+Set $\Lambda_r=0$ on inactive routes. If $N=0$, all service totals are zero. In particular, for $n_1>0$, $n_1x_1=P/N$, as required. Two disjoint active routes in the same group can each receive the same total service; service totals need not sum to one over the entire network.
+
+With independent document arrivals given by <Poisson processes> of rates $\rho_r$ and independent unit-mean <exponential distributions> for document sizes, each of the $n_r$ active documents has completion rate $x_r$. The <flow-level network model> is consequently a <continuous-time Markov chain> with
+$$
+\boxed{q(n,n+e_r)=\rho_r,\qquad
+q(n,n-e_r)=\begin{cases}
+P/N,&r\in\{1,3\},\ n_r>0,\\
+Q/N,&r\in\{2,4\},\ n_r>0,\\
+0,&n_r=0.
+\end{cases}}
+$$
+At $n=0$ all downward rates are zero. The total departure rate is at most four, so the bounded total jump rate ensures no explosion.
+
+The original PDF's displayed factor is a <binomial coefficient>, not the plain quotient produced by the TeX extraction. The candidate <stationary distribution> for this <reversible four-cycle flow model> is
+$$
+\boxed{\pi(n)=B^{-1}\binom{N}{P}\prod_{r=1}^4\rho_r^{n_r},\qquad
+B=\sum_{n\in\mathbb Z_{\geq0}^4}\binom{N}{P}\prod_r\rho_r^{n_r}.}
+$$
+Use $\binom00=1$. For $r\in\{1,3\}$ and $n_r>0$,
+$$
+\frac{\pi(n)}{\pi(n-e_r)}
+=\rho_r\frac{\binom NP}{\binom{N-1}{P-1}}
+=\rho_r\frac NP,
+$$
+so $\pi(n)q(n,n-e_r)=\pi(n-e_r)\rho_r$. For $r\in\{2,4\}$ the corresponding ratio is $\rho_rN/Q$. Thus <detailed balance for a continuous-time Markov chain> holds for every adjacent pair, proving the displayed <stationary distribution> whenever $B<\infty$.
+
+For completeness, its existence condition can be made explicit. Put $\alpha=\max(\rho_1,\rho_3)$ and $\beta=\max(\rho_2,\rho_4)$. At fixed $P,Q$,
+$$
+\sum_{n_1+n_3=P}\rho_1^{n_1}\rho_3^{n_3}\leq(P+1)\alpha^P,\qquad
+\sum_{n_2+n_4=Q}\rho_2^{n_2}\rho_4^{n_4}\leq(Q+1)\beta^Q.
+$$
+Therefore the sum over states with $N=m$ is at most $(m+1)^2(\alpha+\beta)^m$, using the <binomial theorem>. This is summable if $\alpha+\beta<1$. Conversely, restricting to the single maximizing route in each group leaves the series $\sum_{m\geq0}(\alpha+\beta)^m$, which diverges if $\alpha+\beta\geq1$. Hence
+$$
+\boxed{B<\infty\iff\max(\rho_1,\rho_3)+\max(\rho_2,\rho_4)<1
+\iff\rho_1+\rho_2,\ \rho_2+\rho_3,\ \rho_3+\rho_4,\ \rho_4+\rho_1<1.}
+$$
+These are exactly the four strict resource-load inequalities. With positive arrival rates the <Markov chain> is irreducible, so the normalized <stationary distribution> is unique.

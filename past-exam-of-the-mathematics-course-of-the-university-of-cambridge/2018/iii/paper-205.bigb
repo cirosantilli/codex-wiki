@@ -11,12 +11,92 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2018/paper_205.pd
 = Solution
 {parent=1}
 
+Estimate the signal by <one-dimensional total variation denoising>, which penalizes adjacent differences rather than the constant level:
+$$
+\boxed{\widehat\mu_\lambda=\arg\min_{\mu\in\mathbb R^n}\left\{\frac1{2n}\|Y-\mu\|_2^2+\lambda\sum_{i=1}^{n-1}|\mu_{i+1}-\mu_i|\right\},\qquad\lambda>0.}
+$$
+This is a <fused Lasso> objective. Its <L1 norm> penalty makes many adjacent differences exactly zero, producing a piecewise-constant fit. For <change-point detection>, estimate the locations by $\widehat S=\{i:\widehat\mu_i\ne\widehat\mu_{i+1}\}$. The tuning parameter controls the strength of the penalty; it can be chosen, for example, using a validation criterion appropriate to the noise model.
+
+For a general family of elementary nulls $H_1,\ldots,H_m$, the <closed testing procedure> forms every nonempty intersection $H_B=\bigcap_{j\in B}H_j$ and gives it a local test of level $\alpha$. Reject $H_j$ precisely when all intersections with $j\in B$ are locally rejected. This gives strong control of the <familywise error rate>: let $T_0$ be the indices of the true elementary nulls. If $T_0$ is empty there is no false rejection. Otherwise, rejecting any $H_j$ with $j\in T_0$ requires rejection of the true intersection $H_{T_0}$. Its local test has rejection probability at most $\alpha$, hence
+$$
+\boxed{\mathbb P(\text{at least one false rejection})\leq\alpha.}
+$$
+This proof of <closed-testing control of the familywise error rate> needs no independence of the tests.
+
+For the interval procedure, a true tested interval is contained in one maximal constant block $B\in\mathcal T$. If $I\subseteq B$, the intervals over which $p_B$ takes its maximum are a subset of those used for $p_I$, so $p_I\geq p_B$. Therefore rejection of a true $I$ forces rejection of its containing block. Conversely, a rejected block is itself a rejected true null.
+
+There is a small indexing issue in the PDF: its testing family excludes singleton intervals, while $\mathcal T$ may contain singleton blocks. Put $\mathcal T_* =\{B\in\mathcal T:|B|\geq2\}$. Every true tested interval lies in one of these blocks, so the exact statement, using only hypotheses defined in the paper, is
+$$
+\boxed{\{\text{some false rejection}\}=\bigcup_{B\in\mathcal T_*}\{p_B\leq\alpha\}.}
+$$
+Singleton blocks contain no eligible tested interval and can be ignored. Equivalently, one may define their nulls as never rejected.
+
+For each $B\in\mathcal T_*$, the term $J=B$ occurs in the maximum defining $p_B$, giving $p_B\geq nq_B/|B|$. A valid <p-value> is a <super-uniform random variable> under its null, so for $0\leq\alpha\leq1$,
+$$
+\mathbb P(p_B\leq\alpha)\leq\mathbb P\left(q_B\leq\frac{\alpha|B|}{n}\right)\leq\frac{\alpha|B|}{n}.
+$$
+The <union bound> and disjointness of the constant blocks now give
+$$
+\mathbb P(\text{some false rejection})\leq\frac\alpha n\sum_{B\in\mathcal T_*}|B|\leq\alpha,
+\qquad
+\boxed{\mathbb P(\text{no false rejections})\geq1-\alpha.}
+$$
+This establishes <weighted interval testing for a piecewise-constant mean> even when the interval p-values are dependent. Values $p_I>1$ do not affect rejection at levels at most one.
+
 = 2
 {parent=Paper 205}
 {scope}
 
 = Solution
 {parent=2}
+
+Use the convention that <ridge regression> minimizes $\|Y-Xb\|_2^2/(2n)+(\gamma/2)\|b\|_2^2$. Its <closed-form ridge regression estimator> is
+$$
+\boxed{\widehat b_\gamma=(X^TX+n\gamma I_p)^{-1}X^TY.}
+$$
+The factors $n$ and $1/2$ here specify the tuning convention. No intercept is needed for the centred responses and predictors.
+
+For the two-component procedure, fix $\delta$ and put $\theta=Y-X\delta$. Differentiating the objective with respect to its dense coefficient $\beta$ gives
+$$
+-\frac1nX^T(\theta-X\beta)+2\lambda_2\beta=0.
+$$
+Thus, with $Q=(X^TX+2n\lambda_2I_p)^{-1}$,
+$$
+\boxed{\widehat\beta_\lambda=QX^T(Y-X\widehat\delta_\lambda).}
+$$
+The inverse exists because $\lambda_2>0$, even for a rank-deficient design. The sum of the fitted sparse and dense components is the <Lava estimator>.
+
+Multiplying by $2n$ and completing the square gives the exact profile calculation
+$$
+\begin{aligned}
+\|\theta-X\beta\|_2^2+2n\lambda_2\|\beta\|_2^2
+&=\theta^T\theta-2\beta^TX^T\theta+\beta^TQ^{-1}\beta\\
+&=(\beta-QX^T\theta)^TQ^{-1}(\beta-QX^T\theta)+\theta^T(I_n-XQX^T)\theta.
+\end{aligned}
+$$
+Let $B=I_n-XQX^T$. A <singular value decomposition> of $X$ shows that its eigenvalues are $2n\lambda_2/(r_i^2+2n\lambda_2)$ in nonzero singular directions and one in the orthogonal complement. Hence $B$ is a <positive-definite matrix>. Take its symmetric <principal square root of a positive semidefinite matrix>, $A=B^{1/2}$. Profiling out $\beta$ therefore yields the <Lasso reduction for the Lava estimator>:
+$$
+\boxed{\widehat\delta_\lambda\in\arg\min_\delta\left\{\frac1{2n}\|AY-AX\delta\|_2^2+\lambda_1\|\delta\|_1\right\},\qquad A=(I_n-XQX^T)^{1/2}.}
+$$
+No restandardization of $AX$ is needed: this is the exact transformed objective with its original penalty.
+
+Write $\widetilde X=AX$, $h=\widehat\delta_\lambda-\delta^0$, and $\eta=\widetilde X\beta^0+A\varepsilon$. Then $AY=\widetilde X\delta^0+\eta$. Comparing the transformed <Lasso> objective at $\widehat\delta_\lambda$ and $\delta^0$ gives the <basic inequality for the Lasso>
+$$
+\frac1{2n}\|\widetilde Xh\|_2^2\leq\frac1n\eta^T\widetilde Xh+\lambda_1(\|\delta^0\|_1-\|\widehat\delta_\lambda\|_1).
+$$
+On $\Omega$, <Holder inequality> bounds the score by $\lambda_1\|h\|_1$. Using $\|h\|_1\leq\|\widehat\delta_\lambda\|_1+\|\delta^0\|_1$ cancels the fitted penalty and yields the <slow-rate prediction bound for the Lasso>:
+$$
+\boxed{\frac1n\|\widetilde Xh\|_2^2\leq4\lambda_1\|\delta^0\|_1.}
+$$
+Finally, if $\kappa=\lambda_{\max}(XQX^T)<1$, then $B\succeq(1-\kappa)I_n$, so
+$$
+\|\widetilde Xh\|_2^2=(Xh)^TB(Xh)\geq(1-\kappa)\|Xh\|_2^2.
+$$
+Consequently
+$$
+\boxed{\frac1n\|X(\widehat\delta_\lambda-\delta^0)\|_2^2\leq\frac{4\lambda_1\|\delta^0\|_1}{1-\kappa}.}
+$$
+Positive $\lambda_2$ actually guarantees $\kappa<1$ for every finite design; the factor measures how much prediction norm the profiling transformation can remove.
 
 = 3
 {parent=Paper 205}
@@ -25,12 +105,96 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2018/paper_205.pd
 = Solution
 {parent=3}
 
+For a diagonal entry, put $Z_j=\sum_{i=1}^d(A_{ij}^2-1)$. Independence and the given <moment-generating function> inequality for the <chi-squared distribution> give
+$$
+\mathbb E e^{aZ_j}\leq e^{2da^2}\qquad(|a|<1/4).
+$$
+The <Chernoff bound> with $a=t/4$ yields
+$$
+\mathbb P(Z_j\geq dt)\leq e^{-adt+2da^2}=e^{-dt^2/8}.
+$$
+Apply the same argument to $-Z_j$ and sum the two tails:
+$$
+\boxed{\mathbb P\left(\left|\frac{(A^TA)_{jj}}d-1\right|\geq t\right)\leq2e^{-dt^2/8}\qquad(0<t<1).}
+$$
+
+To obtain the off-diagonal bound, set $U=(V+W)/\sqrt2$ and $D=(V-W)/\sqrt2$. They are jointly normal with unit variances and covariance zero, so <independence of uncorrelated jointly normal variables> makes them independent standard normals. Since $VW=(U^2-D^2)/2$, the <moment-generating function> of the <product of two independent standard normal random variables> is
+$$
+\boxed{\mathbb E e^{aVW}=(1-a)^{-1/2}(1+a)^{-1/2}=(1-a^2)^{-1/2}\qquad(|a|<1).}
+$$
+For $j\ne k$, $(A^TA)_{jk}$ is a sum of $d$ independent such products. The given inequality implies $\mathbb E e^{a(A^TA)_{jk}}\leq e^{da^2}$ for $|a|\leq1/2$. Taking $a=t/2$, and repeating for the negative tail, gives
+$$
+\boxed{\mathbb P\left(\frac{|(A^TA)_{jk}|}d\geq t\right)\leq2e^{-dt^2/4}\qquad(0<t<1).}
+$$
+
+Now take $t=c\sqrt{\log p/d}\in(0,1)$ and $E=A^TA/d-I_p$. There are $p$ diagonal entries but only $p(p-1)/2$ distinct off-diagonal entries, since $E$ is symmetric. By the <union bound>, the event $\|E\|_{\max}\leq t$ has probability at least
+$$
+\begin{aligned}
+1-2p e^{-dt^2/8}-p(p-1)e^{-dt^2/4}
+&\geq1-2p^{1-c^2/8}-p^{2-c^2/4}.
+\end{aligned}
+$$
+This is the required <entrywise concentration of a Gaussian Gram matrix>.
+
+On that single event, any vector $z$ supported on at most $s$ coordinates satisfies
+$$
+|z^TEz|\leq t\sum_{j,k}|z_jz_k|=t\|z\|_1^2\leq st\|z\|_2^2,
+$$
+where the last step is the <Cauchy-Schwarz inequality> on the support. If $u,v$ each have at most $s/2$ nonzero coordinates, $z=u-v$ has at most $s$. The same entrywise event applies simultaneously to all of them, so no union over vectors is needed. The <sparse norm preservation from entrywise Gram control> gives
+$$
+\boxed{\left|\frac{\|A(u-v)\|_2^2}{d\|u-v\|_2^2}-1\right|\leq sc\sqrt{\frac{\log p}{d}}\qquad(u\ne v).}
+$$
+The printed ratio is undefined at $u=v$. Its equivalent quadratic statement, $|\|A(u-v)\|_2^2/d-\|u-v\|_2^2|\leq st\|u-v\|_2^2$, includes that case trivially. The nontrivial concentration argument assumes $p\geq2,c>0$; at $p=1$ the stated probability lower bound is nonpositive and hence vacuous.
+
 = 4
 {parent=Paper 205}
 {scope}
 
 = Solution
 {parent=4}
+
+For a <convex function> $f$, its <subdifferential> at $x$ is the set of supporting slopes
+$$
+\partial f(x)=\{g:f(y)\geq f(x)+g^T(y-x)\text{ for every }y\text{ in its domain}\}.
+$$
+The <subgradient optimality condition> is
+$$
+\boxed{x\in\arg\min f\quad\Longleftrightarrow\quad0\in\partial f(x).}
+$$
+Indeed, the defining inequality with $g=0$ is exactly the global minimum inequality. For the <subdifferential of the L1 norm>, the coordinates vary independently:
+$$
+\boxed{\partial\|b\|_1=\{z:z_j=\operatorname{sgn}(b_j)\ (b_j\ne0),\quad z_j\in[-1,1]\ (b_j=0)\}.}
+$$
+
+Let $r=Y-X\widehat\beta_\lambda$. The <Karush-Kuhn-Tucker conditions> for <Lasso> give a vector $z\in\partial\|\widehat\beta_\lambda\|_1$ such that $X^Tr/n=\lambda z$. If $\widehat\sigma_\lambda=\|r\|_2/\sqrt n>0$, the unsquared residual norm is differentiable at this fit, with gradient
+$$
+-\frac{X^Tr}{\sqrt n\|r\|_2}=-\frac{X^Tr}{n\widehat\sigma_\lambda}.
+$$
+Using the <subdifferential sum rule>, choose $\gamma(\lambda)=\lambda/\widehat\sigma_\lambda$ to obtain
+$$
+-\frac{X^Tr}{n\widehat\sigma_\lambda}+\gamma(\lambda)z=0.
+$$
+Convexity now proves the <tuning relation between Lasso and square-root Lasso>:
+$$
+\boxed{\widehat\beta_\lambda\in\arg\min_b Q_{\lambda/\widehat\sigma_\lambda}(b;Y).}
+$$
+The positive residual assumption is needed both for this gradient and for the quotient defining the tuning parameter.
+
+For the final score calculation, use the usual fixed-design interpretation of the <normal linear model>: regard $X,Z$ and the tuning parameter $\gamma$ in the regression of $Z$ as fixed, and choose that regression's minimizer using only those inputs. Its nonzero residual $R=R_\gamma$ then has the <square-root Lasso> optimality condition
+$$
+\frac{X^TR}{\sqrt n\|R\|_2}=\gamma\widetilde z,
+\qquad\widetilde z\in\partial\|\widetilde\beta_\gamma\|_1,
+\qquad\|X^TR\|_\infty\leq\sqrt n\,\gamma\|R\|_2.
+$$
+Expanding the response residual gives
+$$
+T=\frac{R^T\varepsilon}{\|R\|_2}+\frac{R^TX(\beta^0-\widehat\beta_\lambda)}{\|R\|_2}=W+\Delta.
+$$
+Since $R/\|R\|_2$ is a fixed unit vector and $\varepsilon\sim N_n(0,\sigma^2I_n)$, a <linear image of a multivariate normal vector> gives $W\sim N(0,\sigma^2)$. Finally, <Holder inequality> and the residual score bound yield
+$$
+\boxed{|\Delta|\leq\frac{\|X^TR\|_\infty}{\|R\|_2}\|\beta^0-\widehat\beta_\lambda\|_1\leq\sqrt n\,\gamma\|\beta^0-\widehat\beta_\lambda\|_1.}
+$$
+This is the <residual-score decomposition from square-root Lasso>. The normality statement also holds conditionally on a design independent of the noise. If $\gamma$ were chosen from the response noise, for example through the preceding $\gamma(\lambda)$ formula, the direction $R$ would require a separate independence argument; the final calculation treats $\gamma$ as fixed.
 
 = 5
 {parent=Paper 205}
@@ -39,9 +203,91 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2018/paper_205.pd
 = Solution
 {parent=5}
 
+The <moral graph> of a <directed acyclic graph> is formed by joining any two parents of a common child and then removing the directions from all edges. For <D-separation>, a path in the underlying undirected graph is active given $S$ when every noncollider on it is outside $S$, and every <collider> has itself or a descendant in $S$. Disjoint vertex sets $A$ and $B$ are <D-separated> by $S$ if no such active path connects them.
+
+The adjacency characterization is
+$$
+\boxed{u,v\text{ are adjacent in the DAG}\quad\Longleftrightarrow\quad\text{no }S\subseteq V\setminus\{u,v\}\text{ d-separates them}.}
+$$
+A one-edge path cannot be blocked by conditioning on other vertices. For a nonadjacent pair, choose the later vertex $v$ in a <topological ordering>. The earlier vertex $u$ is a nondescendant and is not a parent of $v$, so the parents of $v$ separate the pair by the <local Markov property of a directed acyclic graph>.
+
+Use <faithfulness of a directed acyclic graph> to mean that graphical and probabilistic independences agree, for all disjoint sets:
+$$
+Z_A\perp Z_B\mid Z_S\quad\Longleftrightarrow\quad A\text{ and }B\text{ are d-separated by }S.
+$$
+This includes the <global Markov property of a directed acyclic graph> as well as the absence of extra independences. The <conditional independence graph> of $P$ is the undirected graph in which $u-v$ is absent exactly when $Z_u\perp Z_v\mid Z_{V\setminus\{u,v\}}$.
+
+To identify this graph, condition on every vertex other than $u,v$. Any noncollider in the interior of a path is then conditioned on, so an active path must have only colliders internally. Two adjacent interior vertices cannot both be colliders: the arrow joining them has an arrowhead at only one of its ends. Thus an active path can have no interior vertex, giving a direct edge, or just one, giving $u\to w\leftarrow v$. In the latter case the conditioned common child $w$ activates the path. These possibilities are exactly the edges added or retained by moralization. Faithfulness therefore proves
+$$
+\boxed{\text{Moral graph of }\mathcal G=\text{conditional independence graph of }P.}
+$$
+This is why the <moral graph equals the conditional independence graph under faithfulness>.
+
+For Gaussian graph estimation, collect the data into an $n\times p$ matrix $D$ and let $S_n=n^{-1}\sum_i x_ix_i^T$. The <precision matrix> $\Theta=\Sigma^{-1}$ has $\Theta_{jk}=0$ precisely for absent graph edges, by <Gaussian conditional independence>. In <neighbourhood selection>, fit a <Lasso> regression of each column on the others:
+$$
+\widehat b^{(j)}\in\arg\min_b\left\{\frac1{2n}\|D_j-D_{-j}b\|_2^2+\rho_j\|b\|_1\right\}.
+$$
+Select the nonzero coefficients as neighbours of $j$, then make the graph undirected using either the OR rule, retaining an edge selected in at least one regression, or the AND rule, requiring both. These are instances of <nodewise Lasso>.
+
+The <graphical Lasso> estimates the whole precision matrix jointly, for example by
+$$
+\boxed{\widehat\Theta\in\arg\min_{\Theta\succ0}\left\{\operatorname{tr}(S_n\Theta)-\log\det\Theta+\rho\sum_{j\ne k}|\Theta_{jk}|\right\}.}
+$$
+Read off its nonzero off-diagonal entries as graph edges. This expression uses an off-diagonal penalty; an all-entry penalty is another convention.
+
+To reduce computation in the <PC algorithm>, start its skeleton search from an estimate of the <conditional independence graph> rather than the complete graph. The exact graph contains the true DAG skeleton, so oracle tests can remove its extra edges while retaining the true adjacencies. Fewer initial edges and smaller neighbourhoods reduce both candidate pairs and candidate conditioning sets.
+
+For correctness of the orientation stage, preserve valid separating-set records. With an exact conditional independence graph, an initially absent pair $u,v$ has the full complement $V\setminus\{u,v\}$ as a separating set. Record that set, and record the usual discovered sets for edges removed later. Leaving an initially absent pair with an empty default could falsely mark an unshielded noncollider as a collider. This describes <PC initialization from a conditional independence graph>; with an estimated initial graph, screening errors can propagate into the output.
+
 = 6
 {parent=Paper 205}
 {scope}
 
 = Solution
 {parent=6}
+
+Use the unscaled penalty convention consistent with the displayed bound:
+$$
+\boxed{\widehat f_\lambda=\arg\min_{f\in\mathcal H}\left\{\sum_{i=1}^n(Y_i-f(x_i))^2+\lambda\|f\|_{\mathcal H}^2\right\}.}
+$$
+For an objective with averaged squared loss, the corresponding penalty parameter would be $\lambda/n$. We retain the unscaled $\lambda$ throughout.
+
+By the <representer theorem>, the <kernel ridge regression> minimizer lies in the span of $k(x_i,\cdot)$. A valid coefficient vector is $\widehat a=(K+\lambda I_n)^{-1}Y$, giving
+$$
+\widehat f_\lambda(\cdot)=\sum_i\widehat a_i k(x_i,\cdot),\qquad\widehat m=HY,\qquad H=K(K+\lambda I_n)^{-1}.
+$$
+The <kernel matrix> is a <positive semidefinite matrix>, so the inverse exists even if $K$ is singular. In the coefficient objective $\|Y-Ka\|_2^2+\lambda a^TKa$, this choice satisfies $K\{(K+\lambda I_n)a-Y\}=0$; there is no need to cancel $K$. The function itself is unique because of the strictly convex squared Hilbert norm. The matrix $H$ is the <kernel-ridge hat matrix> in the present normalization.
+
+Let $m^0=(f^0(x_i))_{i=1}^n$. Since $Y=m^0+\varepsilon$, the zero mean and covariance assumption give the exact <bias-variance decomposition for linear prediction>
+$$
+\frac1n\mathbb E\|\widehat m-m^0\|_2^2=\frac1n\|(I_n-H)m^0\|_2^2+\frac{\sigma^2}{n}\operatorname{tr}(H^2).
+$$
+No normality of the noise is required for this identity.
+
+Choose an <orthonormal eigenbasis> $v_i$ of $K$, with eigenvalues $d_i\geq0$. Its shrinkage factors are $d_i/(d_i+\lambda)$, so
+$$
+\operatorname{tr}(H^2)=\sum_i\frac{d_i^2}{(d_i+\lambda)^2}\leq\sum_i\min\left\{\frac{d_i}{4\lambda},1\right\}=\frac1\lambda\sum_i\min(d_i/4,\lambda).
+$$
+The first bound follows from $(d_i+\lambda)^2\geq4d_i\lambda$ and from each shrinkage factor being at most one.
+
+To control the bias by the <reproducing-kernel Hilbert space> norm, for $d_i>0$ define
+$$
+g_i=\frac1{\sqrt{d_i}}\sum_j(v_i)_j k(x_j,\cdot)\in\mathcal H.
+$$
+The <reproducing property> gives $\langle g_i,g_\ell\rangle_{\mathcal H}=\delta_{i\ell}$ and
+$$
+v_i^Tm^0=\sqrt{d_i}\langle g_i,f^0\rangle_{\mathcal H}.
+$$
+If $d_i=0$, the corresponding unscaled kernel combination has Hilbert norm squared $v_i^TKv_i=0$, so $v_i^Tm^0=0$. There is therefore no bias component in a zero-eigenvalue direction. For the remaining directions,
+$$
+\begin{aligned}
+\|(I_n-H)m^0\|_2^2
+&=\sum_{d_i>0}\frac{\lambda^2d_i}{(d_i+\lambda)^2}|\langle g_i,f^0\rangle_{\mathcal H}|^2\\
+&\leq\frac\lambda4\sum_{d_i>0}|\langle g_i,f^0\rangle_{\mathcal H}|^2\\
+&\leq\frac\lambda4\|f^0\|_{\mathcal H}^2.
+\end{aligned}
+$$
+The scalar bound is again $(d_i+\lambda)^2\geq4d_i\lambda$, and the final step is <Bessel inequality>. Combining the variance and bias bounds proves the <prediction-risk bound for kernel ridge regression>:
+$$
+\boxed{\frac1n\mathbb E\sum_i\{f^0(x_i)-\widehat f_\lambda(x_i)\}^2\leq\frac{\sigma^2}{n\lambda}\sum_i\min(d_i/4,\lambda)+\frac\lambda{4n}\|f^0\|_{\mathcal H}^2.}
+$$
