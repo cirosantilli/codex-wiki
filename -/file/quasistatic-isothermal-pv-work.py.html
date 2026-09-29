@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>quasistatic-isothermal-pv-work.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="quasistatic-isothermal-pv-work.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/quasistatic-isothermal-pv-work.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">quasistatic-isothermal-pv-work.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/quasistatic-isothermal-pv-work.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/quasistatic-isothermal-pv-work.py">quasistatic-isothermal-pv-work.py</a></b></div></nav></div><div class="p"><b>quasistatic-isothermal-pv-work.py</b></div><div class="code"><div><pre><code>"""Plot reversible isothermal expansion and its pressure-volume work.
+
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+Writes an opaque white quasistatic-isothermal-pv-work.png to cwd.
+Stipulated nRT = 1 kJ and V0 = 1 L; MPa L = kJ.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    volume = np.linspace(1.0, 2.0, 1001)  # L
+    pressure = 1.0 / volume  # MPa
+    work = np.log(2.0)  # kJ
+    assert abs(np.trapezoid(pressure, volume) - work) &lt; 1e-7
+    assert np.allclose(pressure[[0, -1]], [1.0, 0.5])
+    plt.rcParams.update({"font.size": 12, "figure.facecolor": "white",
+                         "axes.facecolor": "white", "savefig.facecolor": "white"})
+    fig, ax = plt.subplots(figsize=(7.6, 5.2), dpi=120)
+    fig.subplots_adjust(left=0.12, right=0.97, bottom=0.19, top=0.83)
+    blue = "#216a99"
+    ax.fill_between(volume, 0, pressure, color="#d7eaf5")
+    ax.plot(volume, pressure, color=blue, lw=3)
+    ax.plot([1, 2], [1, 0.5], "o", color="#232a30", ms=7)
+    ax.vlines([1, 2], 0, [1, 0.5], color=blue, ls=":", lw=1)
+    ax.annotate("Initial: 1 L, 1 MPa", (1, 1), xytext=(1.12, 1.075),
+                fontsize=11, arrowprops={"arrowstyle": "-", "color": "#555555"})
+    ax.annotate("Final: 2 L, 0.5 MPa", (2, 0.5), xytext=(1.65, 0.78),
+                fontsize=11, ha="center",
+                arrowprops={"arrowstyle": "-", "color": "#555555"})
+    ax.annotate("", xy=(1.47, 1 / 1.47), xytext=(1.30, 1 / 1.30),
+                arrowprops={"arrowstyle": "-|&gt;", "lw": 2, "color": blue,
+                            "mutation_scale": 17})
+    ax.text(1.52, 0.36, r"$W_{\rm out}=\int p\,dV=nRT\ln 2$",
+            ha="center", fontsize=14, color=blue)
+    ax.text(1.52, 0.23, "Shaded area = 0.693147 kJ", ha="center", color=blue)
+    ax.set(xlim=(0.9, 2.12), ylim=(0, 1.2), xlabel="Gas volume V (L)",
+           ylabel="Equilibrium gas pressure p (MPa)")
+    ax.set_xticks([1, 1.25, 1.5, 1.75, 2])
+    ax.set_yticks([0, 0.25, 0.5, 0.75, 1])
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.set_title("Reversible isothermal expansion", fontsize=15, pad=28)
+    ax.text(0.5, 1.045, r"Fixed amount of ideal gas: $nRT=1$ kJ; $p=nRT/V$",
+            transform=ax.transAxes, ha="center", fontsize=11)
+    fig.text(0.55, 0.055, "ΔU = 0; heat entering = work leaving = 0.693147 kJ",
+             ha="center", fontsize=11)
+    fig.savefig(Path(__file__).with_suffix(".png").name, transparent=False)
+    plt.close(fig)
+    print(f"Reversible work = {work:.9f} kJ; p0 = 1 MPa; pf = 0.5 MPa")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

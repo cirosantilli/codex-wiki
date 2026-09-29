@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>maxwell-velocity-versus-speed.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="maxwell-velocity-versus-speed.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/maxwell-velocity-versus-speed.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">maxwell-velocity-versus-speed.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/maxwell-velocity-versus-speed.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/maxwell-velocity-versus-speed.py">maxwell-velocity-versus-speed.py</a></b></div></nav></div><div class="p"><b>maxwell-velocity-versus-speed.py</b></div><div class="code"><div><pre><code>"""Compare a signed Maxwell velocity component with the three-dimensional speed.
+
+Writes an opaque white PNG with this script's basename in the working directory.
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    # Quadrature checks the component and speed laws, including their moments.
+    w_check = np.linspace(-12.0, 12.0, 24001)
+    phi_check = np.exp(-w_check**2 / 2) / np.sqrt(2 * np.pi)
+    u_check = np.linspace(0.0, 12.0, 24001)
+    h_check = np.sqrt(2 / np.pi) * u_check**2 * np.exp(-u_check**2 / 2)
+    assert np.isclose(np.trapezoid(phi_check, w_check), 1.0, atol=1e-10, rtol=0)
+    assert np.isclose(np.trapezoid(w_check * phi_check, w_check), 0.0,
+                      atol=1e-10, rtol=0)
+    assert np.isclose(np.trapezoid(w_check**2 * phi_check, w_check), 1.0,
+                      atol=1e-10, rtol=0)
+    expected = [1.0, np.sqrt(8 / np.pi), 3.0]
+    for order, value in enumerate(expected):
+        assert np.isclose(np.trapezoid(u_check**order * h_check, u_check),
+                          value, atol=1e-10, rtol=0)
+    vector_density = np.exp(-u_check**2 / 2) / (2 * np.pi)**1.5
+    assert np.allclose(4 * np.pi * u_check**2 * vector_density, h_check)
+
+    plt.rcParams.update({"font.size": 11, "figure.facecolor": "white",
+                         "axes.facecolor": "white", "savefig.facecolor": "white",
+                         "axes.spines.top": False, "axes.spines.right": False})
+    fig, axes = plt.subplots(1, 2, figsize=(9.0, 4.8), dpi=130)
+    fig.subplots_adjust(left=0.08, right=0.97, bottom=0.25, top=0.72, wspace=0.27)
+    fig.suptitle("Velocity component and speed have different peaks", y=0.98,
+                 fontsize=15)
+    fig.text(0.5, 0.90, r"Gas rest frame; $s=\sqrt{k_B T/m}$; each density has area 1",
+             ha="center", fontsize=12)
+    blue, orange = "#236a9e", "#bd5b25"
+    w = np.linspace(-4.0, 4.0, 801)
+    phi = np.exp(-w**2 / 2) / np.sqrt(2 * np.pi)
+    left, right = axes
+    left.plot(w, phi, color=blue, lw=2.6)
+    left.fill_between(w, phi, color=blue, alpha=0.10)
+    left.axvline(0, color=blue, ls="--", lw=1.0)
+    left.scatter([0], [1 / np.sqrt(2 * np.pi)], color=blue, zorder=3)
+    left.set(title=r"Signed component: $\phi(w)=e^{-w^2/2}/\sqrt{2\pi}$",
+             xlabel=r"Component $w=v_x/s$", ylabel="Probability density",
+             xlim=(-4, 4), ylim=(0, 0.49))
+    left.text(0.5, 0.92, "Peak and mean: 0", ha="center", color=blue,
+              transform=left.transAxes)
+    u = np.linspace(0.0, 4.5, 901)
+    h = np.sqrt(2 / np.pi) * u**2 * np.exp(-u**2 / 2)
+    right.plot(u, h, color=orange, lw=2.6)
+    right.fill_between(u, h, color=orange, alpha=0.10)
+    peak = np.sqrt(2.0)
+    peak_density = np.sqrt(2 / np.pi) * peak**2 * np.exp(-peak**2 / 2)
+    right.axvline(peak, color=orange, ls="--", lw=1.0)
+    right.scatter([peak], [peak_density], color=orange, zorder=3)
+    right.set(title=r"Speed: $h(u)=\sqrt{2/\pi}\,u^2e^{-u^2/2}$",
+              xlabel=r"Speed $u=v/s$", xlim=(0, 4.5), ylim=(0, 0.70))
+    right.text(0.5, 0.92, r"Peak: $\sqrt{2}\approx1.414$", ha="center",
+               color=orange, transform=right.transAxes)
+    for ax in axes:
+        ax.grid(axis="y", alpha=0.18)
+    fig.text(0.5, 0.105, r"Speed groups all directions: shell volume $4\pi v^2\,dv$",
+             ha="center", fontsize=12)
+    fig.text(0.5, 0.045, "The vector density peaks at zero; multiplying by shell volume moves the speed peak.",
+             ha="center", fontsize=10.5)
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

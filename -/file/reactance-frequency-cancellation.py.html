@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>reactance-frequency-cancellation.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="reactance-frequency-cancellation.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/reactance-frequency-cancellation.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">reactance-frequency-cancellation.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/reactance-frequency-cancellation.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/reactance-frequency-cancellation.py">reactance-frequency-cancellation.py</a></b></div></nav></div><div class="p"><b>reactance-frequency-cancellation.py</b></div><div class="code"><div><pre><code>"""Toy series RLC predictions, never measured data.
+
+Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-matplotlib python ../reactance-frequency-cancellation.py
+Writes reactance-frequency-cancellation.png to CWD.
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+"""
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    L, C, R, Rs, Vrms = 10e-3, 1e-6, 100.0, 10.0, 1.0
+    f0 = 1 / (2 * np.pi * np.sqrt(L * C))
+    f = np.unique(np.r_[np.geomspace(200, 8000, 900), f0])
+    w = 2 * np.pi * f
+    xl, xc = w * L, -1 / (w * C)
+    x = xl + xc
+    current = Vrms / np.hypot(R + Rs, x)
+    phase = np.degrees(np.arctan2(x, R + Rs))
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                         "axes.spines.right": False, "figure.facecolor": "white",
+                         "axes.facecolor": "white"})
+    fig = plt.figure(figsize=(10.4, 7.2), layout="constrained")
+    gs = fig.add_gridspec(2, 2, height_ratios=[1.15, 1])
+    top, left, right = fig.add_subplot(gs[0, :]), fig.add_subplot(gs[1, 0]), fig.add_subplot(gs[1, 1])
+    fig.suptitle("Opposite reactances select a frequency\n"
+                 "Toy prediction: L = 10 mH, C = 1 μF, RΣ = 100 + 10 = 110 Ω, Vᵣₘₛ = 1.00 V\n"
+                 "Ideal calculated curves • no measured data", fontsize=13)
+    top.semilogx(f, xl, color="#b7560b", label=r"$X_L=2\pi fL$", linewidth=2)
+    top.semilogx(f, xc, color="#2855a5", label=r"$X_C=-1/(2\pi fC)$", linewidth=2)
+    top.semilogx(f, x, color="#177352", label=r"$X=X_L+X_C$", linewidth=2.5)
+    top.axhline(0, color="0.4", linewidth=0.8)
+    top.plot(f0, 0, "o", color="#177352")
+    top.annotate("Cancellation\nf₀ = 1.592 kHz", xy=(f0, 0), xytext=(2300, -470),
+                 arrowprops={"arrowstyle": "-&gt;", "color": "0.3"}, fontsize=11)
+    top.set(ylabel="Signed reactance (Ω)", ylim=(-820, 570))
+    top.legend(loc="upper left", ncols=3, fontsize=11)
+    left.semilogx(f, 1000 * current, color="#177352", linewidth=2.3)
+    left.plot(f0, 1000 * Vrms / (R + Rs), "o", color="#177352")
+    left.annotate("9.091 mA", xy=(f0, 1000 * Vrms / (R + Rs)), xytext=(2500, 9.6),
+                  arrowprops={"arrowstyle": "-&gt;", "color": "0.3"})
+    left.set(ylabel="RMS current (mA)", ylim=(0, 11), xlabel="Frequency f (Hz)")
+    right.semilogx(f, phase, color="#653c96", linewidth=2.3)
+    right.axhline(0, color="0.4", linewidth=0.8)
+    right.text(260, -43, "Current leads\nX &lt; 0", color="#2855a5")
+    right.text(2700, 21, "Current lags\nX &gt; 0", color="#b7560b")
+    right.set(ylabel="Voltage − current phase (degrees)", ylim=(-90, 90),
+              yticks=[-90, -45, 0, 45, 90], xlabel="Frequency f (Hz)")
+    for ax in (top, left, right):
+        ax.axvline(f0, color="0.45", linestyle=":", linewidth=1.2)
+        ax.set_xlim(200, 8000)
+        ax.set_xticks([200, 500, 1000, 2000, 5000, 8000])
+        ax.set_xticklabels(["200", "500", "1000", "2000", "5000", "8000"])
+        ax.grid(alpha=0.17)
+    fig.savefig(Path.cwd() / "reactance-frequency-cancellation.png", dpi=105,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

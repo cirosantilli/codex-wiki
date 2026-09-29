@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>entropy-rate-block-cost-and-flip-probability.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="entropy-rate-block-cost-and-flip-probability.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/entropy-rate-block-cost-and-flip-probability.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">entropy-rate-block-cost-and-flip-probability.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/entropy-rate-block-cost-and-flip-probability.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/entropy-rate-block-cost-and-flip-probability.py">entropy-rate-block-cost-and-flip-probability.py</a></b></div></nav></div><div class="p"><b>entropy-rate-block-cost-and-flip-probability.py</b></div><div class="code"><div><pre><code>"""Plot exact original binary-source entropy and expected code costs; output to cwd."""
+from fractions import Fraction
+import heapq
+from math import comb
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def binary_entropy(p):
+    p = np.asarray(p, dtype=float)
+    out = np.zeros_like(p)
+    interior = (p &gt; 0) &amp; (p &lt; 1)
+    out[interior] = -p[interior] * np.log2(p[interior]) - (1 - p[interior]) * np.log2(1 - p[interior])
+    return out
+
+
+def expected_huffman_length(n=16):
+    # Each word with k flips has weight 7^(n-1-k) / (2 * 8^(n-1)).
+    weights = [7 ** (n - 1 - k) for k in range(n)
+               for _ in range(2 * comb(n - 1, k))]
+    denominator = 2 * 8 ** (n - 1)
+    assert sum(weights) == denominator
+    heapq.heapify(weights)
+    weighted_length = 0
+    while len(weights) &gt; 1:
+        merged = heapq.heappop(weights) + heapq.heappop(weights)
+        weighted_length += merged
+        heapq.heappush(weights, merged)
+    return Fraction(weighted_length, denominator)
+
+
+def main():
+    q = np.linspace(0, 1, 801)
+    chosen = 1 / 8
+    rate = float(binary_entropy(chosen))
+    n = np.arange(1, 65)
+    block_rate = rate + (1 - rate) / n
+    code_rate = float(expected_huffman_length()) / 16
+    assert block_rate[15] &lt;= code_rate &lt; block_rate[15] + 1 / 16
+    plt.rcParams.update({"font.size": 13, "axes.titlesize": 14})
+    fig, (ax, block_ax) = plt.subplots(1, 2, figsize=(12, 6), dpi=100)
+    fig.patch.set_facecolor("white")
+    ax.axhline(1, color="#999999", linestyle="--", label="Marginal entropy: 1 bit")
+    ax.plot(q, binary_entropy(q), color="#287557", linewidth=2.8, label=r"Entropy rate $h_2(q)$")
+    ax.scatter([chosen], [rate], color="#a44a27", s=70, zorder=5)
+    ax.annotate("q = 1/8\nRate ≈ 0.543564", (chosen, rate), xytext=(0.24, 0.37),
+                fontsize=12, color="#8b3d21", arrowprops={"arrowstyle": "-&gt;", "color": "#a44a27"})
+    ax.set(xlim=(0, 1), ylim=(-0.02, 1.12), xlabel="Flip probability q", ylabel="Bits per symbol",
+           title="Unbiased symbols with predictable transitions")
+    ax.legend(loc="lower center", fontsize=11)
+    ax.grid(alpha=0.15)
+    block_ax.axhline(1, color="#999999", linestyle="--", label="Ignoring dependence")
+    block_ax.axhline(rate, color="#287557", linestyle=":", linewidth=2.5, label="Limiting entropy rate")
+    block_ax.plot(n, block_rate, color="#476c9b", linewidth=2.7, label=r"Block entropy $H_n/n$")
+    block_ax.scatter([16], [code_rate], color="#a44a27", s=70, zorder=5,
+                     label="Expected Huffman length / 16")
+    block_ax.annotate("16-symbol code\n≈ 0.574695 bits/symbol", (16, code_rate), xytext=(3.3, 0.74),
+                      fontsize=12, color="#8b3d21", arrowprops={"arrowstyle": "-&gt;", "color": "#a44a27"})
+    block_ax.set_xscale("log", base=2)
+    block_ax.set_xticks([1, 2, 4, 8, 16, 32, 64], labels=["1", "2", "4", "8", "16", "32", "64"])
+    block_ax.set(xlim=(1, 64), ylim=(0.49, 1.05), xlabel="Block length n", ylabel="Bits per symbol",
+                 title="q = 1/8: the initial fair bit adds overhead")
+    block_ax.legend(loc="upper right", fontsize=10, framealpha=0.96)
+    block_ax.grid(alpha=0.15)
+    fig.suptitle("Entropy rate measures new uncertainty, rather than marginal randomness", fontsize=17)
+    fig.subplots_adjust(left=0.07, right=0.98, bottom=0.13, top=0.83, wspace=0.23)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

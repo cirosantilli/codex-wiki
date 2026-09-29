@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>learning-fit-vs-generalization.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="learning-fit-vs-generalization.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/learning-fit-vs-generalization.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">learning-fit-vs-generalization.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/learning-fit-vs-generalization.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/learning-fit-vs-generalization.py">learning-fit-vs-generalization.py</a></b></div></nav></div><div class="p"><b>learning-fit-vs-generalization.py</b></div><div class="code"><div><pre><code>"""Construct noisy polynomial fits and a noiseless control; save basename.png to cwd.
+
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+Degree selection uses only three-fold CV on the twelve training observations.
+The deterministic held-out grid and known target are diagnostics, not selectors.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+from numpy.polynomial import Polynomial
+
+
+def target(x):
+    return 1 + 0.5 * x + 2 * x**2
+
+
+def experiment():
+    degrees = (1, 2, 7)
+    x = np.linspace(-1, 1, 12)
+    disturbance = np.array([.12, -.17, .10, .18, -.13, .08,
+                            -.16, .11, -.08, .15, -.12, .06])
+    y = target(x) + disturbance
+    # Interleaved folds: each observation is held out exactly once.
+    fold = np.arange(x.size) % 3
+    cv_errors = []
+    models = []
+    train_errors = []
+    for degree in degrees:
+        squared_errors = np.empty(x.size)
+        for k in range(3):
+            held = fold == k
+            assert (~held).sum() &gt; degree
+            model = Polynomial.fit(x[~held], y[~held], degree)
+            squared_errors[held] = (y[held] - model(x[held]))**2
+        cv_errors.append(squared_errors.mean())
+        model = Polynomial.fit(x, y, degree)
+        models.append(model)
+        train_errors.append(np.mean((y - model(x))**2))
+
+    # Lock the degree before constructing/evaluating the final diagnostic points.
+    selected_degree = degrees[int(np.argmin(cv_errors))]
+    test_x = -1 + 2 * (np.arange(400) + .5) / 400
+    assert np.min(np.abs(test_x[:, None] - x[None, :])) &gt; 1e-8
+    target_errors = [np.mean((target(test_x) - model(test_x))**2)
+                     for model in models]
+    controls = {}
+    for degree in (2, 7):
+        control = Polynomial.fit(x, target(x), degree)
+        controls[degree] = (np.mean((target(x) - control(x))**2),
+                            np.mean((target(test_x) - control(test_x))**2))
+        assert max(controls[degree]) &lt; 1e-27
+    assert selected_degree == 2
+    assert np.all(np.diff(train_errors) &lt; 0)
+    assert target_errors[2] &gt; 20 * target_errors[1]
+    return (degrees, x, y, test_x, models, np.array(train_errors),
+            np.array(cv_errors), np.array(target_errors), controls)
+
+
+def main():
+    (degrees, x, y, test_x, models, train_errors,
+     cv_errors, target_errors, controls) = experiment()
+    print("Degree | noisy training MSE | training-only CV MSE | held-out target MSE")
+    for degree, train, cv, test in zip(degrees, train_errors, cv_errors, target_errors):
+        print(f"{degree:6d} | {train:.12g} | {cv:.12g} | {test:.12g}")
+    for degree, (train, test) in controls.items():
+        print(f"Noiseless degree {degree}: training MSE {train:.5g}; target MSE {test:.5g}")
+    print("Selected degree: 2 (training-only CV)")
+
+    plt.rcParams.update({"font.size": 11, "axes.facecolor": "white"})
+    fig = plt.figure(figsize=(10.5, 6.5), layout="constrained", facecolor="white")
+    grid = fig.add_gridspec(2, 3, height_ratios=(2.3, 1.35))
+    colors = ("#b36a21", "#177b62", "#6c54aa")
+    curve_x = np.linspace(-1, 1, 700)
+    for column, (degree, model, color) in enumerate(zip(degrees, models, colors)):
+        ax = fig.add_subplot(grid[0, column])
+        ax.plot(curve_x, target(curve_x), "--", color="#343b42", lw=1.8,
+                label="Known target f(x)")
+        ax.plot(curve_x, model(curve_x), color=color, lw=2.2, label="Noisy-data fit")
+        ax.scatter(x, y, color="#4b5660", s=26, zorder=4, label="Noisy training data")
+        shown = np.arange(12, 400, 25)
+        ax.scatter(test_x[shown], target(test_x[shown]), marker="v", s=30,
+                   facecolors="white", edgecolors="#7a858f", zorder=3,
+                   label="Held-out target points")
+        ax.set(xlabel="Predictor x", ylabel="Response", xlim=(-1.05, 1.05),
+               ylim=(.55, 3.8), title=f"Degree {degree}" +
+               (" — selected by CV" if degree == 2 else ""))
+        ax.grid(alpha=.16)
+        if column == 0:
+            ax.legend(loc="upper center", fontsize=8.5)
+
+    table_ax = fig.add_subplot(grid[1, :])
+    table_ax.axis("off")
+    table = table_ax.table(
+        cellText=[[f"{value:.6f}" for value in values]
+                  for values in (train_errors, cv_errors, target_errors)],
+        rowLabels=["Noisy training MSE", "Training-only three-fold CV MSE",
+                   "Held-out noiseless-target MSE"],
+        colLabels=[f"Degree {degree}" for degree in degrees],
+        cellLoc="center", rowLoc="left", bbox=(.40, .29, .59, .66))
+    table.auto_set_font_size(False)
+    table.set_fontsize(10.5)
+    for (row, column), cell in table.get_celld().items():
+        cell.set_edgecolor("#d5dbe0")
+        if column == 1:
+            cell.set_facecolor("#e9f5ee")
+    table_ax.text(.5, .12, "Noiseless control: degrees 2 and 7 reproduce f(x); both MSEs &lt; 10⁻²⁷.",
+                  ha="center", va="center", transform=table_ax.transAxes, fontsize=11)
+    fig.suptitle("Better fit to noisy observations can mean worse recovery of the target", fontsize=14)
+    fig.supxlabel("Constructed demonstration • 12 training points • 400 separate target points • no test-based tuning",
+                  fontsize=10)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=120, facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

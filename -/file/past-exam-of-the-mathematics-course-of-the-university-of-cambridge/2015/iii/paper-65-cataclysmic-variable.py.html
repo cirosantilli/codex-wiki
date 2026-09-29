@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2015/iii/paper-65-cataclysmic-variable.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2015/iii/paper-65-cataclysmic-variable.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2015/iii/paper-65-cataclysmic-variable.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2015/iii/paper-65-cataclysmic-variable.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2015/iii/paper-65-cataclysmic-variable.py"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../../-/dir">(root)</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge">past-exam-of-the-mathematics-course-of-the-university-of-cambridge</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2015">2015</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2015/iii">iii</a> / <a href="../../../../../-/raw/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2015/iii/paper-65-cataclysmic-variable.py">paper-65-cataclysmic-variable.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2015/iii/paper-65-cataclysmic-variable.py</b></div><div class="code"><div><pre><code>"""Generate an original schematic; write the PNG basename in the current directory.
+Tested with Python 3.14, NumPy 2.3.5 and Matplotlib 3.10.7.
+MPLCONFIGDIR supplied by the caller is respected.
+"""
+import os
+from pathlib import Path
+os.environ.setdefault('MPLCONFIGDIR',str(Path.cwd()/'.paper-65-mplconfig'))
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle,Polygon,FancyArrowPatch
+Q=.4
+OM=np.sqrt(1+Q)
+XC=Q/(1+Q)
+def potential(x,y):
+ return -1/np.hypot(x,y)-Q/np.hypot(x-1,y)-.5*(1+Q)*((x-XC)**2+y*y)
+def gradient(x,y):
+ r=np.hypot(x,y);s=np.hypot(x-1,y)
+ return np.array([x/r**3+Q*(x-1)/s**3-(1+Q)*(x-XC),y/r**3+Q*y/s**3-(1+Q)*y])
+def l1():
+ lo,hi=.001,.999
+ for _ in range(80):
+  mid=(lo+hi)/2
+  if gradient(mid,0)[0]&gt;0:lo=mid
+  else:hi=mid
+ return (lo+hi)/2
+def donor_boundary():
+ point=l1();crit=potential(point,0);points=[]
+ for theta in np.linspace(-np.pi,np.pi,1001):
+  d=np.array([np.cos(theta),np.sin(theta)])
+  if abs(abs(theta)-np.pi)&lt;1e-8:r=1-point
+  else:
+   radii=np.linspace(.001,.7,1000);vals=potential(1+radii*d[0],radii*d[1])-crit
+   indices=np.flatnonzero(vals&gt;=0)
+   if not len(indices):raise RuntimeError('No first equipotential crossing')
+   hi=radii[indices[0]];lo=hi-.7/999
+   for _ in range(45):
+    mid=(lo+hi)/2
+    if potential(1+mid*d[0],mid*d[1])&lt;crit:lo=mid
+    else:hi=mid
+   r=(lo+hi)/2
+  points.append([1+r*d[0],r*d[1]])
+ return np.array(points)
+def rhs(s):
+ x,y,vx,vy=s;gx,gy=gradient(x,y)
+ return np.array([vx,vy,-gx+2*OM*vy,-gy-2*OM*vx])
+def stream():
+ s=np.array([l1()-.002,0.,-.006,0.]);points=[s.copy()];dt=.0008
+ for _ in range(20000):
+  k1=rhs(s);k2=rhs(s+dt*k1/2);k3=rhs(s+dt*k2/2);k4=rhs(s+dt*k3)
+  s=s+dt*(k1+2*k2+2*k3+k4)/6;points.append(s.copy())
+  if np.hypot(*s[:2])&lt;=.28:break
+ else:raise RuntimeError('Stream did not reach disk')
+ return np.array(points)
+def main():
+ fig,ax=plt.subplots(figsize=(12,7),dpi=100,facecolor='white')
+ ax.set_facecolor('white');ax.set_aspect('equal');ax.set_xlim(-.55,1.6);ax.set_ylim(-.58,.62);ax.axis('off')
+ ax.add_patch(Polygon(donor_boundary(),closed=True,fc='#efb979',ec='#985f2d',lw=2))
+ ax.add_patch(Circle((0,0),.28,fc='#b7def3',ec='#337ba5',lw=2))
+ for r in [.075,.12,.17,.22]:ax.add_patch(Circle((0,0),r,fill=False,ec='white',lw=1))
+ ax.add_patch(Circle((0,0),.037,fc='#f8af48',ec='#e07d00',lw=1.2))
+ ax.add_patch(Circle((0,0),.022,fc='white',ec='#2a465b',lw=1.5))
+ s=stream();ax.plot(s[:,0],s[:,1],c='#15694f',lw=3,zorder=5)
+ end=s[-1,:2];ax.plot(*end,'o',color='#df423b',ms=10,zorder=7)
+ pt=l1();ax.plot(pt,0,'ko',ms=4,zorder=7)
+ def label(text,xy,pos,color='#183747'):
+  ax.annotate(text,xy=xy,xytext=pos,ha='center',va='center',fontsize=11,color=color,arrowprops={'arrowstyle':'-','color':color,'lw':1.2},zorder=10)
+ label('Cool donor fills its Roche lobe',(1,.19),(1.03,.48))
+ ax.text(1,-.04,'Donor star',ha='center',va='center',fontsize=13,color='#5d3512')
+ label(r'Inner Lagrange point $L_1$',(pt,0),(.65,-.3))
+ label('Ballistic gas stream',s[len(s)//2,:2],(.53,.37))
+ label('Stream-impact hot spot',end,(-.03,.48))
+ label('White dwarf\n(radius enlarged)',(0,0),(-.34,-.34))
+ label('Boundary layer',(.033,0),(.06,-.48))
+ label('Accretion disk',(-.19,.13),(-.36,.26))
+ ax.add_patch(FancyArrowPatch((.05,.205),(.02,.11),arrowstyle='-&gt;',mutation_scale=15,color='#28617c',lw=2))
+ ax.text(-.10,.195,'Gas inward',fontsize=9,color='#28617c',ha='center')
+ ax.add_patch(FancyArrowPatch((-.08,-.1),(-.15,-.24),arrowstyle='-&gt;',mutation_scale=15,color='#28617c',lw=2))
+ ax.text(-.17,-.11,'Angular momentum\noutward',fontsize=9,color='#28617c',ha='center')
+ ax.text(.52,.61,'A nonmagnetic cataclysmic variable',ha='center',va='center',fontsize=17,weight='bold')
+ ax.text(.52,-.58,'Orbital-plane schematic: weak white-dwarf magnetic field; sizes of inner regions exaggerated.',ha='center',va='center',fontsize=10,color='#456')
+ fig.subplots_adjust(left=.03,right=.98,bottom=.04,top=.96)
+ fig.savefig(Path.cwd()/'paper-65-cataclysmic-variable.png',dpi=100,facecolor='white',transparent=False)
+ plt.close(fig)
+if __name__=='__main__':main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

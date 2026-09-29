@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>equipartition-phase-space-readout.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="equipartition-phase-space-readout.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/equipartition-phase-space-readout.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">equipartition-phase-space-readout.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/equipartition-phase-space-readout.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/equipartition-phase-space-readout.py">equipartition-phase-space-readout.py</a></b></div></nav></div><div class="p"><b>equipartition-phase-space-readout.py</b></div><div class="code"><div><pre><code>"""Original phase-space and exposure models, not measured data.
+
+Python 3.14 / NumPy / Matplotlib. Run from _media; output basename goes to CWD.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def blur_factor(alpha):
+    alpha = np.asarray(alpha)
+    # Series avoids cancellation at small positive exposure/relaxation ratios.
+    result = np.empty_like(alpha, dtype=float)
+    small = alpha &lt; 0.01
+    a = alpha[small]
+    result[small] = 1 - a / 3 + a**2 / 12 - a**3 / 60 + a**4 / 360
+    a = alpha[~small]
+    result[~small] = 2 * (a + np.expm1(-a)) / a**2
+    return result
+
+
+def main():
+    plt.rcParams.update({"font.size": 10, "axes.spines.top": False,
+                         "axes.spines.right": False, "figure.facecolor": "white",
+                         "axes.facecolor": "white", "savefig.facecolor": "white"})
+    fig, axes = plt.subplots(1, 2, figsize=(10.4, 4.2), layout="constrained")
+    fig.suptitle("Equal mean energy does not mean equal amplitude or an unbiased readout", fontsize=13)
+    theta = np.linspace(0, 2 * np.pi, 500)
+    ax = axes[0]
+    for kappa, color in [(1, "#126b9c"), (4, "#bc571d")]:
+        for energy, style in [(0.5, "-"), (2, "--")]:
+            q = np.sqrt(2 * energy / kappa) * np.cos(theta)
+            p = np.sqrt(2 * energy) * np.sin(theta)
+            ax.plot(q, p, color=color, ls=style, lw=2,
+                    label=rf"$\kappa={kappa}$" if energy == 0.5 else None)
+    ax.axhline(0, color="#bbbbbb", lw=0.7, zorder=0)
+    ax.axvline(0, color="#bbbbbb", lw=0.7, zorder=0)
+    ax.set(xlabel=r"Position $Q=x/\sqrt{k_BT/k_0}$", ylabel=r"Momentum $P=p/\sqrt{mk_BT}$",
+           xlim=(-2.3, 2.3), ylim=(-2.3, 2.3), aspect="equal", title="Classical oscillator energy contours")
+    ax.legend(loc="upper right", fontsize=8)
+    ax.text(-2.15, -2.16, r"Solid: $H/k_BT=1/2$; dashed: $H/k_BT=2$", fontsize=8)
+    ax = axes[1]
+    alpha = np.geomspace(0.01, 100, 600)
+    ax.semilogx(alpha, blur_factor(alpha), color="#126b9c", lw=2.6)
+    s1 = 2 / np.e
+    ax.plot([1], [s1], "o", color="#bc571d", ms=6)
+    ax.annotate(r"$W=\tau$: variance $=2/e$ of true value" + "\n" + r"Naive stiffness $=e/2\approx1.36$ times true",
+                xy=(1, s1), xytext=(0.045, 0.27), fontsize=9,
+                arrowprops={"arrowstyle": "-&gt;", "color": "#bc571d"})
+    ax.axhline(1, color="#777777", ls="--", lw=1)
+    ax.set(xlabel=r"Exposure / relaxation time $\alpha=W/\tau$",
+           ylabel=r"Recorded / true position variance $S(\alpha)$",
+           ylim=(0, 1.1), xlim=(0.01, 100), title="Uniform exposure averages away motion")
+    fig.supxlabel("Original analytic models • equilibrium oscillator and overdamped exposure averaging • no measured data", fontsize=9)
+    fig.savefig(Path("equipartition-phase-space-readout.png"), dpi=120, transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

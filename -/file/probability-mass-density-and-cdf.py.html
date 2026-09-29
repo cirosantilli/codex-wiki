@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>probability-mass-density-and-cdf.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="probability-mass-density-and-cdf.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/probability-mass-density-and-cdf.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">probability-mass-density-and-cdf.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/probability-mass-density-and-cdf.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/probability-mass-density-and-cdf.py">probability-mass-density-and-cdf.py</a></b></div></nav></div><div class="p"><b>probability-mass-density-and-cdf.py</b></div><div class="code"><div><pre><code>"""Render discrete masses, a continuous density, and their CDFs to cwd."""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def discrete_cdf(x):
+    values = np.array([0., 1., 3.])
+    masses = np.array([.2, .5, .3])
+    return ((np.asarray(x)[..., None] &gt;= values) * masses).sum(axis=-1)
+
+
+def main():
+    values = np.array([0., 1., 3.])
+    masses = np.array([.2, .5, .3])
+    assert np.isclose(masses.sum(), 1)
+    assert np.isclose(discrete_cdf(1) - discrete_cdf(0), .5)
+    assert np.isclose(discrete_cdf(1), .7)
+    assert np.isclose(discrete_cdf(np.nextafter(1, 0)), .2)
+    assert np.isclose(.75**2 - .25**2, .5)
+    assert np.isclose(.9**2 - .7**2, .32)
+    y = np.linspace(0, 1, 1001)
+    assert np.isclose(np.trapezoid(2*y, y), 1)
+    plt.rcParams.update({"font.size": 12, "axes.titlesize": 14})
+    fig, axes = plt.subplots(2, 2, figsize=(11.6, 8.2), dpi=120, facecolor="white")
+    mass, density, discrete, continuous = axes.ravel()
+    mass.vlines(values, 0, masses, color="#246ea0", lw=3)
+    mass.scatter(values, masses, color="#246ea0", s=65, zorder=4)
+    for value, probability in zip(values, masses):
+        mass.text(value, probability+.025, f"{probability:.1f}", ha="center", color="#246ea0")
+    mass.set(xlim=(-.4, 3.6), ylim=(-.025, .6), title="Discrete X: probability at a point",
+             xlabel="Outcome x", ylabel="Probability mass")
+    mass.set_xticks(values, ["0", "1", "3"])
+    density.plot(y, 2*y, color="#2c8467", lw=3, label=r"$f_Y(y)=2y$")
+    interval = np.linspace(.25, .75, 200)
+    density.fill_between(interval, 0, 2*interval, color="#2c8467", alpha=.22)
+    density.text(.12, 1.75, "Shaded probability = 0.5", color="#20614c", fontsize=12)
+    density.annotate("Height = 1.6", xy=(.8, 1.6), xytext=(.05, 1.1), color="#20614c",
+                     arrowprops={"arrowstyle": "-&gt;", "color": "#20614c"}, fontsize=11,
+                     bbox={"facecolor": "white", "edgecolor": "none", "alpha": .9})
+    density.scatter([.8], [1.6], color="#2c8467", s=45, zorder=4)
+    density.set(xlim=(0, 1.04), ylim=(0, 2.1), title="Continuous Y: probability is area",
+                xlabel="Outcome y", ylabel="Probability density")
+    levels = [0, .2, .7, 1]
+    edges = [-.4, 0, 1, 3, 3.6]
+    for left, right, height in zip(edges[:-1], edges[1:], levels):
+        discrete.plot([left, right], [height, height], color="#246ea0", lw=2.8)
+    for i, value in enumerate(values):
+        discrete.plot([value, value], [levels[i], levels[i+1]], color="#a7b5bf", linestyle=":", lw=1)
+        discrete.scatter([value], [levels[i]], facecolor="white", edgecolor="#246ea0", s=55, zorder=5)
+        discrete.scatter([value], [levels[i+1]], color="#246ea0", s=55, zorder=5)
+    discrete.text(1.2, .39, "Jump at 1 = 0.5", color="#246ea0", fontsize=12)
+    discrete.set(xlim=(-.4, 3.6), ylim=(-.045, 1.08), title="Discrete CDF: include each jump's upper value",
+                 xlabel="Threshold x", ylabel=r"$F_X(x)=P(X\leq x)$")
+    discrete.set_xticks(values, ["0", "1", "3"])
+    continuous.plot(y, y*y, color="#2c8467", lw=3)
+    continuous.scatter([.25, .75], [.25**2, .75**2], color="#2c8467", s=60, zorder=4)
+    for value in [.25, .75]:
+        continuous.plot([value, value], [0, value*value], color="#9aacb4", linestyle=":", lw=1)
+    continuous.annotate("CDF increase = 0.5", xy=(.75, .75**2), xytext=(.10, .83), color="#20614c",
+                        arrowprops={"arrowstyle": "-&gt;", "color": "#20614c"}, fontsize=12)
+    continuous.set(xlim=(0, 1.04), ylim=(-.03, 1.08), title="Continuous CDF: accumulated area",
+                   xlabel="Threshold y", ylabel=r"$F_Y(y)=y^2$ on $[0,1]$")
+    for ax in axes.ravel():
+        ax.grid(color="#e6eaed")
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.suptitle("Two probability laws, two ways to accumulate probability", fontsize=16, y=.985)
+    fig.text(.5, .025, "Point probabilities are jumps; density heights contribute through integration",
+             ha="center", fontsize=12)
+    fig.subplots_adjust(left=.075, right=.975, bottom=.115, top=.9, hspace=.42, wspace=.28)
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,22 @@
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+plt.rcParams.update({"font.size": 10, "axes.spines.top": False, "axes.spines.right": False})
+fig,ax=plt.subplots(1,2,figsize=(9,3.8),dpi=100)
+x=np.geomspace(.005,100,600)
+absorb=1/(1+x)
+scatter=x**3/(1+x**4)
+ax[0].loglog(x,absorb,label='Absorbing small-grain limit',lw=2)
+ax[0].loglog(x,scatter,label='Scattering small-grain limit',lw=2)
+ax[0].axhline(.5,color='gray',ls=':',label='Illustrative blowout threshold')
+ax[0].axvline(1,color='gray',alpha=.5)
+ax[0].set(xlabel=r'Grain diameter / characteristic wavelength',ylabel=r'$\beta$ (illustrative normalization)',ylim=(1e-6,2),title='Material-dependent radiation pressure')
+ax[0].text(.015,.07,'Rayleigh limit',fontsize=9)
+ax[0].text(4,.03,'Geometrical optics\n'+r'$\beta\propto D^{-1}$',fontsize=9)
+ax[0].legend(fontsize=8,loc='lower right')
+th=np.linspace(0,10*np.pi,1200)
+for b in [.01,.04]:ax[1].plot(th/(2*np.pi),2*b*(np.sin(th)-th)/np.pi,label=fr'$\beta={b}$',lw=2)
+ax[1].set(xlabel=r'Dust true anomaly / $2\pi$',ylabel=r'Signed lag $\Delta\theta/\pi$',xlim=(0,5),title='Five dust orbits, first-order lag')
+ax[1].legend();ax[1].grid(alpha=.2)
+fig.tight_layout();fig.savefig('paper-316-dust.png',facecolor='white',transparent=False)

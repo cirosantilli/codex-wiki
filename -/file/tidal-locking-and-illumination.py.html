@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>tidal-locking-and-illumination.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="tidal-locking-and-illumination.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/tidal-locking-and-illumination.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">tidal-locking-and-illumination.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/tidal-locking-and-illumination.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/tidal-locking-and-illumination.py">tidal-locking-and-illumination.py</a></b></div></nav></div><div class="p"><b>tidal-locking-and-illumination.py</b></div><div class="code"><div><pre><code>"""Generate tidal-locking-and-illumination.png in the current directory.
+
+Tested with Python 3.14.4, numpy 2.3.5 and matplotlib 3.10.7.
+Ideal circular orbit with perpendicular spin axis and parallel sunlight.
+Neglect Earth's motion around the Sun, libration, eclipses and terrain.
+No empirical lunar positions, shapes or surface features are represented.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, Wedge
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "figure.facecolor": "white",
+                         "axes.facecolor": "white"})
+    fig, axes = plt.subplots(2, 2, figsize=(9.0, 8.0), dpi=110)
+    fig.subplots_adjust(left=0.035, right=0.965, bottom=0.17, top=0.83,
+                        hspace=0.26, wspace=0.13)
+    orbit_radius, moon_radius = 1.55, 0.33
+    samples = np.linspace(0, 2 * np.pi, 400)
+    phases = np.arange(4) * np.pi / 2
+    labels = ["0: marked patch in daylight", "T/4: patch at sunset",
+              "T/2: marked patch in darkness", "3T/4: patch at sunrise"]
+    for ax, f, title in zip(axes.flat, phases, labels):
+        ax.set_aspect("equal")
+        ax.axis("off")
+        ax.set(xlim=(-2.20, 2.20), ylim=(-2.00, 2.00))
+        # Parallel arrows represent incident sunlight, from the distant left.
+        for y in [-0.52, 0, 0.52]:
+            ax.annotate("", xy=(2.10, y), xytext=(-2.10, y),
+                        arrowprops={"arrowstyle": "-&gt;", "color": "#e7c665",
+                                    "lw": 1.1}, zorder=0)
+        ax.plot(orbit_radius * np.cos(samples), orbit_radius * np.sin(samples),
+                color="#a5b2bb", linestyle="--", lw=1, zorder=1)
+        ax.add_patch(Circle((0, 0), 0.31, facecolor="#367bad",
+                            edgecolor="#205374", zorder=4))
+        ax.text(0, -0.05, "Earth", color="white", ha="center", fontsize=10, zorder=5)
+        centre = orbit_radius * np.array([np.cos(f), np.sin(f)])
+        # The left hemisphere is lit at every orbital phase; gray is unlit.
+        ax.add_patch(Circle(centre, moon_radius, facecolor="#656d78",
+                            edgecolor="none", zorder=4))
+        ax.add_patch(Wedge(centre, moon_radius, 90, 270, facecolor="white",
+                           edgecolor="none", zorder=5))
+        ax.add_patch(Circle(centre, moon_radius, fill=False, edgecolor="#48525e",
+                            lw=1.4, zorder=6))
+        theta = f + np.pi
+        patch = centre + moon_radius * np.array([np.cos(theta), np.sin(theta)])
+        ax.plot([centre[0], patch[0]], [centre[1], patch[1]],
+                color="#df6b21", lw=1.8, zorder=7)
+        ax.scatter(*patch, s=50, color="#df6b21", edgecolor="white", lw=0.7, zorder=8)
+        ax.annotate("", xy=0.47 * centre / orbit_radius,
+                    xytext=centre - 0.46 * centre / orbit_radius,
+                    arrowprops={"arrowstyle": "-&gt;", "color": "#b95012", "lw": 1.2},
+                    zorder=3)
+        a0, a1 = -np.pi / 4, -np.pi / 4 + 0.25
+        ax.annotate("", xy=orbit_radius * np.array([np.cos(a1), np.sin(a1)]),
+                    xytext=orbit_radius * np.array([np.cos(a0), np.sin(a0)]),
+                    arrowprops={"arrowstyle": "-&gt;", "color": "#65727d", "lw": 1.4},
+                    zorder=2)
+        ax.set_title(title, fontsize=12, pad=9)
+    fig.suptitle("Facing Earth does not mean facing the Sun", fontsize=16, y=0.975)
+    fig.text(0.5, 0.915, "Sun far to the left: parallel sunlight travels rightward in every snapshot",
+             ha="center", fontsize=11)
+    fig.text(0.5, 0.875, "Orange dot = one Earth-facing surface patch; white = directly lit, grey = unlit",
+             ha="center", fontsize=10)
+    fig.text(0.5, 0.10, "The patch always faces Earth. It turns once in space and alternates between day and night.",
+             ha="center", fontsize=10)
+    fig.text(0.5, 0.061, "Fixed Sun direction; Earth's motion around the Sun, eclipses, terrain and libration are omitted.",
+             ha="center", fontsize=9)
+    fig.text(0.5, 0.028, "Circular-orbit cartoon with arbitrary sizes, not photographs or actual lunar positions.",
+             ha="center", fontsize=9)
+    fig.savefig(Path(__file__).stem + ".png", facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>vector-graphics-path-transform.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="vector-graphics-path-transform.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/vector-graphics-path-transform.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">vector-graphics-path-transform.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/vector-graphics-path-transform.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/vector-graphics-path-transform.py">vector-graphics-path-transform.py</a></b></div></nav></div><div class="p"><b>vector-graphics-path-transform.py</b></div><div class="code"><div><pre><code>"""Original quadratic path and affine image; no SVG assets are written.
+
+Run from _media with MPLBACKEND=Agg. Tested with Python 3.14,
+NumPy 2.3 and Matplotlib 3.10; output goes to the current directory.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import PathPatch
+from matplotlib.path import Path as PlotPath
+import numpy as np
+
+
+CONTROL = np.array([[1.0, 4.0], [3.0, 0.0], [5.0, 4.0]])
+LINEAR = np.array([[1.5, 0.5], [0.0, 1.0]])
+OFFSET = np.array([1.0, 1.0])
+
+
+def bezier(t, points):
+    t = np.asarray(t)[..., None]
+    return (1 - t) ** 2 * points[0] + 2 * t * (1 - t) * points[1] + t**2 * points[2]
+
+
+def transform(points):
+    return np.asarray(points) @ LINEAR.T + OFFSET
+
+
+def main():
+    mapped = transform(CONTROL)
+    np.testing.assert_allclose(mapped, [[4.5, 5], [5.5, 1], [10.5, 5]])
+    np.testing.assert_allclose(bezier(0.5, CONTROL), [3, 2])
+    np.testing.assert_allclose(bezier(0.5, mapped), [6.5, 3])
+    samples = np.linspace(0, 1, 501)
+    np.testing.assert_allclose(bezier(samples, mapped), transform(bezier(samples, CONTROL)))
+
+    plt.rcParams.update({"font.size": 11, "figure.facecolor": "white", "axes.facecolor": "white"})
+    fig, axes = plt.subplots(1, 2, figsize=(10.8, 5.6), dpi=110)
+    fig.subplots_adjust(left=0.07, right=0.98, bottom=0.21, top=0.79, wspace=0.24)
+    fig.suptitle("Stored path geometry and an affine transformation", y=0.98, fontsize=16)
+    fig.text(0.5, 0.91, r"Analytical illustration • $T(x,y)=(1.5x+0.5y+1,\ y+1)$", ha="center", fontsize=12)
+
+    configurations = [
+        (CONTROL, "Original: M 1 4 Q 3 0 5 4 Z", (0, 6), (-0.8, 5.1), r"Filled area $16/3$"),
+        (mapped, "Image: M 4.5 5 Q 5.5 1 10.5 5 Z", (3.5, 11.5), (-0.1, 6.1), r"Filled area $8$; area factor $|\det A|=1.5$"),
+    ]
+    for ax, (points, title, xlim, ylim, note) in zip(axes, configurations):
+        path = PlotPath(np.vstack([points, points[0]]),
+                        [PlotPath.MOVETO, PlotPath.CURVE3, PlotPath.CURVE3, PlotPath.CLOSEPOLY])
+        ax.add_patch(PathPatch(path, facecolor="#cfe8f5", edgecolor="#136a9b", lw=2.3, zorder=2))
+        ax.plot(points[:, 0], points[:, 1], "--", color="#7a7a7a", lw=1.4, zorder=3)
+        ax.scatter(points[:, 0], points[:, 1], s=36, color="#333333", zorder=4)
+        middle = bezier(0.5, points)
+        ax.scatter(*middle, marker="D", s=46, color="#c35718", zorder=5)
+        for index, (x, y) in enumerate(points):
+            shift = (0, 13) if index == 1 else (0, -22)
+            ax.annotate(f"P{index} ({x:g}, {y:g})", (x, y), xytext=shift,
+                        textcoords="offset points", ha="center", fontsize=10)
+        ax.annotate(f"t = 1/2\n({middle[0]:g}, {middle[1]:g})", middle,
+                    xytext=(12, 12), textcoords="offset points", color="#994411", fontsize=10)
+        ax.set(xlim=xlim, ylim=ylim, xlabel="x", ylabel="y (increases downward)")
+        ax.invert_yaxis()
+        ax.set_aspect("equal", adjustable="box")
+        ax.set_title(title, fontsize=11, pad=14)
+        ax.grid(color="#eeeeee", lw=0.7)
+        ax.text(0.5, -0.24, note, transform=ax.transAxes, ha="center", fontsize=11)
+    fig.text(0.5, 0.035, "Blue: filled path and closing segment   •   Dashed: control polygon   •   Orange: curve midpoint",
+             ha="center", fontsize=10)
+    fig.savefig(Path(__file__).with_suffix('.png').name, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

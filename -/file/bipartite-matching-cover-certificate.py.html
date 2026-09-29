@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>bipartite-matching-cover-certificate.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="bipartite-matching-cover-certificate.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/bipartite-matching-cover-certificate.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">bipartite-matching-cover-certificate.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/bipartite-matching-cover-certificate.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/bipartite-matching-cover-certificate.py">bipartite-matching-cover-certificate.py</a></b></div></nav></div><div class="p"><b>bipartite-matching-cover-certificate.py</b></div><div class="code"><div><pre><code>"""Draw a matching/cover optimality certificate in K2,3; write PNG to CWD.
+
+Tested with Python 3.14.4 and Matplotlib 3.10.7, as in pyproject.toml.
+Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-matplotlib python3 ../bipartite-matching-cover-certificate.py
+"""
+from itertools import product
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from matplotlib.patches import Circle
+
+
+def main():
+    left, right = {"a", "b"}, {"x", "y", "z"}
+    edges = list(product(sorted(left), sorted(right)))
+    matching = {("a", "x"), ("b", "y")}
+    assert matching &lt;= set(edges)
+    assert len({v for e in matching for v in e}) == 2 * len(matching)
+    assert all(u in left or v in left for u, v in edges)
+    positions = {"a": (-1.2, 0.8), "b": (-1.2, -0.8),
+                 "x": (1.2, 1.15), "y": (1.2, 0), "z": (1.2, -1.15)}
+    orange, blue, gray = "#a95012", "#176db1", "#afb7c1"
+    fig, ax = plt.subplots(figsize=(8.6, 4.6), dpi=100, facecolor="white")
+    for u, v in edges:
+        ax.plot([positions[u][0], positions[v][0]],
+                [positions[u][1], positions[v][1]], color=gray, lw=1.7, zorder=1)
+    for u, v in sorted(matching):
+        ax.plot([positions[u][0], positions[v][0]],
+                [positions[u][1], positions[v][1]], color=blue, lw=4, zorder=2)
+    for v, pos in positions.items():
+        covered = v in left
+        ax.add_patch(Circle(pos, 0.16, facecolor=orange if covered else "white",
+                            edgecolor=orange if covered else "#536170", lw=2, zorder=3))
+        ax.text(*pos, v, ha="center", va="center", fontsize=15, weight="bold",
+                color="white" if covered else "#253342", zorder=4)
+    ax.text(-1.2, 1.55, r"$L=\{a,b\}$", ha="center", fontsize=14)
+    ax.text(1.2, 1.55, r"$R=\{x,y,z\}$", ha="center", fontsize=14)
+    ax.text(2.1, 1.15, "A certificate of optimality", fontsize=13, weight="bold")
+    ax.text(2.1, 0.67, r"$C=\{a,b\},\quad |C|=2$", fontsize=14)
+    ax.text(2.1, 0.17, r"$M=\{ax,by\},\quad |M|=2$", fontsize=14)
+    ax.text(2.1, -0.38, r"$2=|M|\leq\tau(G)\leq |C|=2$", fontsize=14)
+    ax.text(2.1, -0.97, r"$\nu(K_{2,3})=\tau(K_{2,3})=2$", fontsize=15, weight="bold")
+    ax.set(xlim=(-1.65, 5.7), ylim=(-1.5, 1.85), aspect="equal")
+    ax.axis("off")
+    ax.legend(handles=[Line2D([0], [0], marker="o", markersize=12, linestyle="none",
+                             color=orange, label="Selected cover vertices"),
+                       Line2D([0], [0], color=blue, lw=4, label="Disjoint matching edges")],
+              loc="lower center", bbox_to_anchor=(0.5, -0.17), ncol=2, frameon=False, fontsize=11)
+    fig.suptitle(r"$K_{2,3}$: a two-vertex cover meets the matching lower bound", fontsize=15, y=0.96)
+    fig.text(0.5, 0.03, "All six edges touch a selected left vertex. Edge crossings are not vertices.",
+             ha="center", fontsize=11)
+    fig.subplots_adjust(left=0.025, right=0.98, top=0.85, bottom=0.22)
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

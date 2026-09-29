@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>gravitational-clock-comparison.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="gravitational-clock-comparison.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/gravitational-clock-comparison.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">gravitational-clock-comparison.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/gravitational-clock-comparison.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/gravitational-clock-comparison.py">gravitational-clock-comparison.py</a></b></div></nav></div><div class="p"><b>gravitational-clock-comparison.py</b></div><div class="code"><div><pre><code>"""Generate gravitational-clock-comparison.png in cwd (Python 3.14).
+
+Dependencies: numpy and matplotlib. White, opaque output; no data downloads.
+The Earth example neglects rotation and treats local g as constant. The second
+panel is a dimensionless Schwarzschild vacuum exterior, never a body interior.
+"""
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+C = 299_792_458.0  # m/s, exact SI value
+G_LOCAL = 9.81  # m/s^2, illustrative surface acceleration
+HEIGHT = 1000.0  # m
+EARTH_RADIUS = 6.371e6  # m, spherical model
+DAY = 86400.0  # s
+
+
+def main():
+    delta = G_LOCAL * HEIGHT / C**2
+    hours = np.linspace(0.0, 24.0, 241)
+    gain_ns = delta * hours * 3600.0 * 1e9
+    compactness = np.linspace(0.0, 0.8, 401)
+    exact = np.sqrt(1.0 - compactness)
+    weak = 1.0 - compactness / 2.0
+
+    plt.rcParams.update({"font.size": 10, "axes.spines.top": False,
+                         "axes.spines.right": False})
+    fig, (left, right) = plt.subplots(1, 2, figsize=(10, 4.5), layout="constrained")
+    fig.patch.set_facecolor("white")
+    left.plot(hours, gain_ns, color="#1565a8", lw=2.5)
+    left.scatter([24], [gain_ns[-1]], color="#1565a8", zorder=3)
+    left.annotate(f"{gain_ns[-1]:.2f} ns after 24 h", (24, gain_ns[-1]),
+                  xytext=(11, 8.0), arrowprops={"arrowstyle": "-&gt;", "color": "#555"})
+    left.text(0.06, 0.92, "Upper clock: 1000 m higher\n" +
+              r"$\delta=gh/c^2=1.092\times10^{-13}$",
+              transform=left.transAxes, va="top")
+    left.set(xlabel="Elapsed time on lower clock (hours)",
+             ylabel="Upper clock's accumulated gain (ns)",
+             title="Earth: constant-g weak-field estimate", xlim=(0, 25), ylim=(0, 11))
+    left.set_xticks([0, 6, 12, 18, 24])
+    left.grid(alpha=0.2)
+
+    right.axvspan(0, 0.1, color="#e6f2e8", zorder=0)
+    right.plot(compactness, exact, color="#1565a8", lw=2.5,
+               label=r"Exact: $\sqrt{1-r_s/r}$")
+    right.plot(compactness, weak, color="#d26c16", lw=2, ls="--",
+               label=r"First order: $1-r_s/(2r)$")
+    right.text(0.05, 0.55, "Weak\nfield", ha="center", fontsize=9, color="#396b42")
+    right.text(0.48, 0.92, "Vacuum exterior only\n" + r"$r&gt;r_s$ and outside matter",
+               transform=right.transAxes, va="top", ha="center", fontsize=9)
+    right.set(xlabel=r"Compactness $r_s/r$", ylabel=r"Static-clock factor $d\tau/dt$",
+              title="Schwarzschild: comparison to infinity", xlim=(0, 0.8), ylim=(0.4, 1.03))
+    right.legend(loc="lower left", frameon=False, fontsize=9)
+    right.grid(alpha=0.2)
+    fig.savefig("gravitational-clock-comparison.png", dpi=120,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+    # Evaluate sqrt(1+epsilon)-1 without catastrophic cancellation at Earth scales.
+    schwarzschild_radius = 2 * G_LOCAL * EARTH_RADIUS**2 / C**2
+    epsilon = (schwarzschild_radius * HEIGHT /
+               ((EARTH_RADIUS + HEIGHT) * (EARTH_RADIUS - schwarzschild_radius)))
+    spherical_exact = epsilon / (np.sqrt(1 + epsilon) + 1)
+    print(f"1 km: fractional rate excess = {delta:.12e}")
+    print(f"Gain per 86400 s = {delta * DAY * 1e9:.9f} ns")
+    print(f"Spherical Schwarzschild rate excess = {spherical_exact:.12e}")
+    print(f"Constant-g excess relative to spherical exact = "
+          f"{(delta / spherical_exact - 1) * 100:.6f}%")
+    print(f"0.33 m at g=9.80: rate excess = {9.80 * 0.33 / C**2:.12e}")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

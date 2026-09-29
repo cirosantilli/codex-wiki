@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>limb-darkened-transit-chord-weighting.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="limb-darkened-transit-chord-weighting.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/limb-darkened-transit-chord-weighting.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">limb-darkened-transit-chord-weighting.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/limb-darkened-transit-chord-weighting.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/limb-darkened-transit-chord-weighting.py">limb-darkened-transit-chord-weighting.py</a></b></div></nav></div><div class="p"><b>limb-darkened-transit-chord-weighting.py</b></div><div class="code"><div><pre><code>"""Finite-disk synthetic transit comparison; Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7.
+
+Run from _media; writes this script's basename as an opaque PNG in the CWD.
+Stellar-ring quadrature includes partial overlap, rather than extending the
+small-planet approximation into ingress or egress. No measured curve is used.
+"""
+
+from pathlib import Path
+from functools import cache
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.patches import Circle
+from numpy.polynomial.legendre import leggauss
+
+
+@cache
+def quadrature(order):
+    return leggauss(order)
+
+
+def blocked_fraction(z, k=0.05, u=0.6, order=256):
+    """Integrate I(r) times the covered angle of stellar rings of radius r."""
+    z = abs(float(z))
+    if z &gt;= 1+k:
+        return 0.0
+    nodes, weights = quadrature(order)
+    lo, hi = max(0.0, z-k), min(1.0, z+k)
+    r = lo + (hi-lo)*(nodes+1)/2
+    if z == 0:
+        angle = np.full_like(r, 2*np.pi)
+    else:
+        cosine = (r*r+z*z-k*k)/(2*r*z)
+        angle = 2*np.arccos(np.clip(cosine, -1, 1))
+    intensity = 1-u+u*np.sqrt(np.maximum(0, 1-r*r))
+    integral = (hi-lo)*np.sum(weights*angle*intensity*r)/2
+    return integral/(np.pi*(1-u/3))
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                         "axes.spines.right": False, "figure.facecolor": "white"})
+    fig, (disk_ax, flux_ax) = plt.subplots(1, 2, figsize=(10.8, 4.8),
+                                         width_ratios=[1, 1.65], layout="constrained")
+    k, u = 0.05, 0.6
+    q = np.linspace(-1.04, 1.04, 501)
+    xx, yy = np.meshgrid(q, q)
+    r2 = xx*xx+yy*yy
+    disk = np.ma.masked_where(r2 &gt; 1, 1-u+u*np.sqrt(np.maximum(0, 1-r2)))
+    cmap = plt.colormaps["gray"].copy()
+    cmap.set_bad("white")
+    disk_ax.imshow(disk, origin="lower", extent=[q[0], q[-1], q[0], q[-1]],
+                   cmap=cmap, vmin=0, vmax=1, interpolation="nearest")
+    disk_ax.add_patch(Circle((0, 0), 1, fill=False, color="0.25"))
+    x = np.linspace(-1.1, 1.1, 501)
+    for b, color in [(0.0, "#0072b2"), (0.8, "#d55e00")]:
+        half_chord = np.sqrt(1-b*b)
+        disk_ax.plot([-half_chord, half_chord], [b, b], color=color, lw=2)
+        disk_ax.add_patch(Circle((0, b), k, facecolor=color, edgecolor="black", zorder=3))
+        disk_ax.text(-1.08, b+0.09, f"b = {b:g}", color=color, fontsize=11)
+        z = np.sqrt(x*x+b*b)
+        depth = np.array([blocked_fraction(value, k, u) for value in z])
+        flux_ax.plot(x, 100*depth, color=color, lw=2, label=f"Finite disk, b = {b:g}")
+        inside = z &lt; 1-k
+        small = np.where(inside, k*k*(1-u+u*np.sqrt(np.maximum(0, 1-z*z)))/(1-u/3), np.nan)
+        flux_ax.plot(x, 100*small, color=color, lw=1.1, ls="--",
+                     label=f"Small-planet interior, b = {b:g}")
+        full_half_chord = np.sqrt((1-k)**2-b*b)
+        flux_ax.plot([-full_half_chord, full_half_chord], [100*k*k]*2,
+                     color="0.5", lw=1, ls=":")
+    disk_ax.set(xlim=(-1.16, 1.16), ylim=(-1.16, 1.16), aspect="equal",
+                title="Chords and mid-transit planets", xlabel=r"$x/R_\star$", ylabel=r"$y/R_\star$")
+    flux_ax.set(xlim=(-1.1, 1.1), ylim=(0, 0.34), title="Blocked fraction along each crossing",
+                xlabel=r"Scaled time $x = v_\perp t/R_\star$", ylabel="Flux loss (%)")
+    flux_ax.text(0, 0.254, r"Uniform disk: $k^2 = 0.25\%$", ha="center", color="0.35", fontsize=10)
+    flux_ax.grid(alpha=0.2)
+    flux_ax.legend(loc="lower center", fontsize=9, frameon=False)
+    fig.suptitle("Same synthetic star and planet: u = 0.6, k = 0.05", fontsize=13)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=100,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>single-slit-aperture-phase-cancellation.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="single-slit-aperture-phase-cancellation.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/single-slit-aperture-phase-cancellation.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">single-slit-aperture-phase-cancellation.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/single-slit-aperture-phase-cancellation.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/single-slit-aperture-phase-cancellation.py">single-slit-aperture-phase-cancellation.py</a></b></div></nav></div><div class="p"><b>single-slit-aperture-phase-cancellation.py</b></div><div class="code"><div><pre><code>"""Generate single-slit-aperture-phase-cancellation.png in CWD, opaque white.
+
+Tested with Python 3.14.4, numpy 2.3.5 and matplotlib 3.10.7.
+Eight midpoint phasors demonstrate the broadside and first-minimum sums;
+the continuous aperture integral defines the diffraction envelope.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def arrow(ax, start, end, color, width=1.6):
+    ax.annotate("", xy=end, xytext=start,
+                arrowprops={"arrowstyle": "-&gt;", "color": color, "lw": width,
+                            "shrinkA": 0, "shrinkB": 0, "mutation_scale": 10})
+
+
+def main():
+    count = 8
+    midpoints = -.5 + (np.arange(count) + .5) / count
+    colors = plt.get_cmap("tab10")(np.arange(count))
+    plt.rcParams.update({"font.size": 10, "figure.facecolor": "white",
+                         "axes.facecolor": "white"})
+    fig, axes = plt.subplots(2, 3, figsize=(11.2, 6.4), dpi=110)
+    fig.subplots_adjust(left=.06, right=.98, top=.79, bottom=.16, wspace=.38, hspace=.80)
+    for row, total_phase in enumerate((0., 2 * np.pi)):
+        phasors = np.exp(1j * total_phase * midpoints)
+        resultant = phasors.mean()
+        assert abs(resultant - (1 if row == 0 else 0)) &lt; 1e-14
+        aperture, direction, polygon = axes[row]
+        aperture.plot([-.5, .5], [0, 0], color=".6", lw=5, alpha=.3)
+        for edge in np.linspace(-.5, .5, count + 1):
+            aperture.plot([edge, edge], [-.028, .028], color=".5", lw=.8)
+        for j, (position, phasor, color) in enumerate(zip(midpoints, phasors, colors)):
+            arrow(aperture, (position, 0),
+                  (position + .075 * phasor.real, .075 * phasor.imag), color)
+            aperture.text(position, -.105, str(j), ha="center", fontsize=9, color=color)
+        aperture.set(xlim=(-.6, .6), ylim=(-.15, .13), xticks=[-.5, 0, .5],
+                     yticks=[], xlabel=r"Aperture coordinate $x/a$")
+        aperture.set_title("8 equal strips; midpoint samples", fontsize=10)
+        aperture.spines[["left", "right", "top"]].set_visible(False)
+        # The grey circle is the continuous phase range at the first minimum.
+        if row == 1:
+            phases = np.linspace(-np.pi, np.pi, 401)
+            direction.plot(np.cos(phases), np.sin(phases), color=".72", lw=1.3)
+        for phasor, color in zip(phasors, colors):
+            arrow(direction, (0, 0), (phasor.real, phasor.imag), color)
+        direction.axhline(0, color=".85", lw=.7)
+        direction.axvline(0, color=".85", lw=.7)
+        direction.set(xlim=(-1.3, 1.3), ylim=(-1.3, 1.3), aspect="equal",
+                      xticks=[], yticks=[], xlabel="Real", ylabel="Imaginary")
+        direction.set_title("All 8 directions coincide" if row == 0 else "Phases span one full turn", fontsize=10)
+        direction.spines[:].set_visible(False)
+        vertices = np.r_[0j, np.cumsum(phasors / count)]
+        for j, color in enumerate(colors):
+            arrow(polygon, (vertices[j].real, vertices[j].imag),
+                  (vertices[j + 1].real, vertices[j + 1].imag), color, width=2)
+        polygon.scatter([0], [0], color=".2", s=20, zorder=5)
+        if row == 0:
+            polygon.set(xlim=(-.05, 1.05), ylim=(-.15, .15), aspect="equal")
+            polygon.text(.5, -.10, r"$A_8/A(0)=1$", ha="center")
+        else:
+            polygon.set(xlim=(-.23, .23), ylim=(-.43, .08), aspect="equal")
+            polygon.text(0, -.40, r"$A_8/A(0)=0$", ha="center")
+            polygon.annotate("Start = end", xy=(0, 0), xytext=(.12, .02),
+                             fontsize=9, arrowprops={"arrowstyle": "-&gt;", "color": ".35"})
+        polygon.set_title("Head-to-tail sum\nEach arrow has length 1/8", fontsize=10)
+        polygon.axis("off")
+    fig.suptitle("Aperture phase cancellation", fontsize=17, y=.975)
+    fig.text(.5, .89, r"Broadside: $\theta=0$, all phases align", ha="center", fontsize=12)
+    fig.text(.5, .47, r"First minimum: $a\sin\theta=\lambda$, paired strips differ by $\pi$", ha="center", fontsize=12)
+    fig.text(.5, .073, r"$x_j/a=-1/2+(j+1/2)/8$, $j=0,\ldots,7$; finite midpoint sum cancels exactly at the first minimum.",
+             ha="center", fontsize=10)
+    fig.text(.5, .032, "The continuous slit uses an integral. The circle is its phase range; coloured arrows are 8 samples.",
+             ha="center", fontsize=10)
+    fig.savefig(Path(__file__).stem + ".png", facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

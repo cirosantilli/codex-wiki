@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>chemical-equation-atom-balance.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="chemical-equation-atom-balance.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/chemical-equation-atom-balance.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">chemical-equation-atom-balance.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/chemical-equation-atom-balance.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/chemical-equation-atom-balance.py">chemical-equation-atom-balance.py</a></b></div></nav></div><div class="p"><b>chemical-equation-atom-balance.py</b></div><div class="code"><div><pre><code>"""Write chemical-equation-atom-balance.png to the current working directory.
+
+Invented atom-token schematic, not a geometry model or a reaction mechanism.
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+Run from _media: MPLCONFIGDIR=/tmp python3 ../chemical-equation-atom-balance.py
+"""
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle
+import numpy as np
+
+
+COLORS = {"H": "#246baa", "O": "#c64b39"}
+
+
+def tokens(ax, center, elements):
+    offsets = np.linspace(-0.40 * (len(elements) - 1),
+                          0.40 * (len(elements) - 1), len(elements))
+    points = np.column_stack((center[0] + offsets,
+                              np.full(len(elements), center[1])))
+    ax.plot(points[:, 0], points[:, 1], color="#555555", lw=3, zorder=1)
+    for (x, y), element in zip(points, elements):
+        ax.add_patch(Circle((x, y), 0.27, facecolor=COLORS[element],
+                            edgecolor="white", lw=1.2, zorder=2))
+        ax.text(x, y, element, color="white", fontsize=15, weight="bold",
+                ha="center", va="center", zorder=3)
+
+
+def main():
+    # H and O rows; H2, O2, H2O columns. Exact integer bookkeeping.
+    composition = np.array([[2, 0, 2], [0, 2, 1]], dtype=int)
+    left = composition @ np.array([2, 1, 0])
+    right = composition @ np.array([0, 0, 2])
+    np.testing.assert_array_equal(left, [4, 2])
+    np.testing.assert_array_equal(left, right)
+    plt.rcParams.update({"font.size": 13, "savefig.facecolor": "white"})
+    fig = plt.figure(figsize=(10, 6.2), facecolor="white")
+    fig.suptitle("A balanced equation keeps the atom inventory", fontsize=20, y=0.97)
+    fig.text(0.5, 0.855, "2 H₂  +  1 O₂  →  2 H₂O", ha="center", fontsize=23)
+    ax = fig.add_axes([0.035, 0.49, 0.93, 0.29])
+    ax.set(xlim=(0, 12), ylim=(-0.9, 1.1), aspect="equal")
+    ax.axis("off")
+    tokens(ax, (0.7, 0.2), "HH")
+    tokens(ax, (2.3, 0.2), "HH")
+    tokens(ax, (4.5, 0.2), "OO")
+    tokens(ax, (8.4, 0.2), "HOH")
+    tokens(ax, (10.6, 0.2), "HOH")
+    ax.text(3.25, 0.2, "+", fontsize=25, ha="center", va="center")
+    ax.annotate("", xy=(7, 0.2), xytext=(5.7, 0.2),
+                arrowprops={"arrowstyle": "-&gt;", "lw": 2.3})
+    ax.text(2.6, -0.7, "Reactants: three molecules", ha="center", fontsize=13)
+    ax.text(9.5, -0.7, "Products: two molecules", ha="center", fontsize=13)
+    bars = fig.add_axes([0.13, 0.16, 0.74, 0.27])
+    x = np.arange(2)
+    bars.bar(x - 0.18, left, 0.36, color="#246baa", label="Before")
+    bars.bar(x + 0.18, right, 0.36, color="#ed9c49", label="After")
+    bars.set(xticks=x, xticklabels=["H atoms", "O atoms"], ylim=(0, 5.5),
+             yticks=[0, 1, 2, 3, 4], ylabel="Atom count")
+    bars.spines[["top", "right"]].set_visible(False)
+    bars.legend(loc="upper right", frameon=False, ncol=2)
+    for offset, values in [(-0.18, left), (0.18, right)]:
+        for i, count in enumerate(values):
+            bars.text(i + offset, count + 0.08, str(count), ha="center", fontsize=13)
+    fig.text(0.5, 0.045, "Invented schematic: lines show connections, not real lengths or angles.",
+             ha="center", fontsize=12, color="#555555")
+    fig.savefig("chemical-equation-atom-balance.png", dpi=110,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+    print("Exact atom counts before/after: H = 4/4, O = 2/2.")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

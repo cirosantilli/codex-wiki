@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>conic-orthant-feasible-region-and-certificate.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="conic-orthant-feasible-region-and-certificate.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/conic-orthant-feasible-region-and-certificate.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">conic-orthant-feasible-region-and-certificate.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/conic-orthant-feasible-region-and-certificate.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/conic-orthant-feasible-region-and-certificate.py">conic-orthant-feasible-region-and-certificate.py</a></b></div></nav></div><div class="p"><b>conic-orthant-feasible-region-and-certificate.py</b></div><div class="code"><div><pre><code>"""Illustrate an original linear-program primal/dual certificate; output to cwd."""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 13, "axes.titlesize": 15})
+    fig, (ax, table_ax) = plt.subplots(1, 2, figsize=(12, 6), dpi=100)
+    fig.patch.set_facecolor("white")
+    u = np.linspace(0, 4.4, 500)
+    boundary = np.maximum(0, 3 - u)
+    ax.fill_between(u, boundary, 4.1, color="#e3f1eb", label="Feasible region (shown portion)")
+    ax.plot(u, boundary, color="#287557", linewidth=2.5, label=r"$u+v\geq3$ and $v\geq0$")
+    for cost in (3, 4, 5, 6):
+        v = (cost - u) / 2
+        ax.plot(u[v &gt;= 0], v[v &gt;= 0], "--", color="#4f78a0", alpha=0.8, linewidth=1.5)
+        ax.text(0.12, cost / 2 + 0.06, f"cost {cost}", color="#315c85", fontsize=11)
+    ax.scatter([3], [0], s=95, color="#a43a25", zorder=5)
+    ax.annotate("Optimal decision (3, 0)\nCost = lower bound = 3", (3, 0),
+                xytext=(2.0, 0.85), fontsize=12, color="#8f301f",
+                arrowprops={"arrowstyle": "-&gt;", "color": "#8f301f"})
+    ax.set(xlim=(-0.15, 4.4), ylim=(-0.15, 4.1), xlabel=r"$u$", ylabel=r"$v$",
+           title="Primal: minimize u + 2v")
+    ax.legend(loc="upper right", fontsize=10, framealpha=0.96)
+    ax.grid(alpha=0.15)
+    table_ax.axis("off")
+    table_ax.set_title("Dual: combine valid inequalities", pad=15)
+    rows = [[r"$u\geq0$", "0", "0", "0"],
+            [r"$v\geq0$", "1", r"$v$", "0"],
+            [r"$u+v\geq3$", "1", r"$u+v$", "3"],
+            ["Sum", "", r"$u+2v$", "3"]]
+    table = table_ax.table(cellText=rows,
+                          colLabels=["Constraint", "Weight", "Weighted\nleft side", "Weighted\nright side"],
+                          cellLoc="center", colWidths=[0.30, 0.14, 0.28, 0.28],
+                          bbox=[0.0, 0.33, 1.0, 0.55])
+    table.auto_set_font_size(False)
+    table.set_fontsize(12)
+    for (row, col), cell in table.get_celld().items():
+        cell.set_edgecolor("#d0d6d9")
+        if row == 0:
+            cell.set_facecolor("#e9eff5")
+        if row == 4:
+            cell.set_facecolor("#e3f1eb")
+    table_ax.text(0.5, 0.23, r"$y=(0,1,1)^T\geq0,\quad A^Ty=(1,2)^T$", ha="center", fontsize=14)
+    table_ax.text(0.5, 0.12, r"$u+2v\geq b^Ty=3$ for every feasible decision", ha="center", fontsize=13)
+    fig.suptitle("One decision plus one certificate proves optimality", fontsize=18)
+    fig.subplots_adjust(left=0.07, right=0.98, bottom=0.11, top=0.85, wspace=0.23)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

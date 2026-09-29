@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>laplace-transform-exponential-weight.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="laplace-transform-exponential-weight.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/laplace-transform-exponential-weight.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">laplace-transform-exponential-weight.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/laplace-transform-exponential-weight.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/laplace-transform-exponential-weight.py">laplace-transform-exponential-weight.py</a></b></div></nav></div><div class="p"><b>laplace-transform-exponential-weight.py</b></div><div class="code"><div><pre><code>"""Plot Laplace weighting and real convergence boundaries; write PNG to cwd.
+
+Tested with Python 3.14, matplotlib 3.10.7, and numpy 2.3.5.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "axes.titlesize": 13})
+    fig, (left, right) = plt.subplots(
+        1, 2, figsize=(10.4, 4.6), dpi=120, facecolor="white"
+    )
+    time = np.linspace(0, 4, 801)
+    profiles = [
+        (-2.25, "#b24741", "-", r"$\sigma=-2.25$: grows"),
+        (-2.0, "#747474", "--", r"$\sigma=-2$: constant"),
+        (-1.5, "#207699", "-", r"$\sigma=-1.5$: decays"),
+        (0.0, "#24845f", "-", r"$\sigma=0$: decays faster"),
+    ]
+    for sigma, color, style, label in profiles:
+        left.plot(time, np.exp(-(sigma + 2) * time), color=color,
+                  linestyle=style, linewidth=2.4, label=label)
+    left.set(title=r"Weighting the input $f(t)=e^{-2t}$",
+             xlabel="Time t", ylabel=r"Weighted input $e^{-(\sigma+2)t}$",
+             xlim=(0, 4), ylim=(0, 2.9))
+    left.legend(loc="upper left", frameon=False, fontsize=10)
+    s_exp = np.linspace(-1.89, 4.5, 1500)
+    s_one = np.linspace(0.11, 4.5, 1000)
+    right.plot(s_exp, 1 / (s_exp + 2), color="#24845f", linewidth=2.6,
+               label=r"$e^{-2t}\ \longmapsto\ 1/(s+2)$, $s&gt;-2$")
+    right.plot(s_one, 1 / s_one, color="#207699", linewidth=2.6,
+               label=r"$1\ \longmapsto\ 1/s$, $s&gt;0$")
+    right.axvspan(-2.5, -2, color="#ececec", zorder=0)
+    for boundary, color in [(-2, "#24845f"), (0, "#207699")]:
+        right.axvline(boundary, color=color, linestyle="--", linewidth=1.3)
+        right.annotate("", xy=(boundary + 0.13, 9.7),
+                       xytext=(boundary + 0.28, 7.3),
+                       arrowprops={"arrowstyle": "-&gt;", "color": color,
+                                   "linewidth": 1.8})
+    right.set(title="Approaching a convergence boundary",
+              xlabel="Real transform parameter s", ylabel="Value of the integral",
+              xlim=(-2.5, 4.5), ylim=(0, 10), xticks=[-2, -1, 0, 1, 2, 3, 4])
+    right.legend(loc="upper right", frameon=False, fontsize=10)
+    right.text(0.98, 0.55, "Each curve diverges at its\nboundary from the right.",
+               transform=right.transAxes, ha="right", fontsize=10)
+    for ax in (left, right):
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(axis="y", color="#e5e9eb", linewidth=0.7)
+        ax.set_axisbelow(True)
+    fig.subplots_adjust(left=0.075, right=0.975, bottom=0.15, top=0.89, wspace=0.29)
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>dijkstra-distance-frontier.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="dijkstra-distance-frontier.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/dijkstra-distance-frontier.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">dijkstra-distance-frontier.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/dijkstra-distance-frontier.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/dijkstra-distance-frontier.py">dijkstra-distance-frontier.py</a></b></div></nav></div><div class="p"><b>dijkstra-distance-frontier.py</b></div><div class="code"><div><pre><code>"""Compute and plot Dijkstra labels; write dijkstra-distance-frontier.png to cwd.
+
+Tested with Python 3.14 and the repository's matplotlib/numpy dependencies.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+
+def compute_labels():
+    vertices = "ABCD"
+    adjacency = {v: [] for v in vertices}
+    for u, v, weight in [("A", "B", 4), ("A", "C", 1), ("C", "B", 2),
+                         ("B", "D", 1), ("C", "D", 5), ("A", "D", 10)]:
+        adjacency[u].append((v, weight))
+        adjacency[v].append((u, weight))
+    distances = dict.fromkeys(vertices, float("inf"))
+    predecessors = dict.fromkeys(vertices)
+    distances["A"] = 0
+    settled, snapshots = [], []
+    while len(settled) &lt; len(vertices):
+        u = min((v for v in vertices if v not in settled), key=distances.get)
+        settled.append(u)
+        for v, weight in adjacency[u]:
+            if v not in settled and distances[u] + weight &lt; distances[v]:
+                distances[v] = distances[u] + weight
+                predecessors[v] = u
+        snapshots.append(distances.copy())
+    assert settled == ["A", "C", "B", "D"]
+    assert distances == {"A": 0, "B": 3, "C": 1, "D": 4}
+    assert predecessors == {"A": None, "B": "C", "C": "A", "D": "B"}
+    assert [row["B"] for row in snapshots] == [4, 3, 3, 3]
+    assert [row["D"] for row in snapshots] == [10, 6, 4, 4]
+    return settled, snapshots
+
+
+def main():
+    settled, snapshots = compute_labels()
+    fig, ax = plt.subplots(figsize=(8.0, 4.4), dpi=120, facecolor="white")
+    ax.set_facecolor("white")
+    colors = {"A": "#616b75", "C": "#087e83", "B": "#3562a6", "D": "#b95f22"}
+    for vertex in settled:
+        final_step = settled.index(vertex)
+        steps = list(range(final_step + 1))
+        values = [snapshots[i][vertex] for i in steps]
+        color = colors[vertex]
+        ax.plot(steps, values, color=color, linewidth=2.2, zorder=2)
+        ax.scatter(steps, values, facecolors="white", edgecolors=color,
+                   s=90, linewidths=2, zorder=3)
+        ax.scatter([final_step], [values[-1]], facecolors=color,
+                   edgecolors=color, s=90, zorder=4)
+        for step, value in zip(steps, values):
+            offset = (-22, -2) if vertex == "A" else (0, 10)
+            if vertex == "B" and step == final_step:
+                offset = (0, -20)
+            ax.annotate(f"{vertex}: {value}", (step, value), xytext=offset,
+                        textcoords="offset points",
+                        ha="right" if vertex == "A" else "center", fontsize=11,
+                        color=color)
+    ax.set_title("Tentative distances improve; permanent distances stay fixed",
+                 fontsize=13, pad=15)
+    ax.set_xticks(range(4), ["After A (0)", "After C (1)", "After B (3)", "After D (4)"])
+    ax.set_xlabel("Finalize this vertex, then relax its incident edges", labelpad=10)
+    ax.set_ylabel("Recorded cost from A")
+    ax.set(xlim=(-0.35, 3.35), ylim=(-0.7, 11.25), yticks=range(0, 11, 2))
+    ax.grid(axis="y", color="#e3e7eb", linewidth=0.7)
+    ax.spines[["top", "right"]].set_visible(False)
+    fig.text(0.5, 0.025, "Hollow marker: tentative     •     Filled marker: permanent",
+             ha="center", fontsize=10, color="#253746")
+    fig.tight_layout(rect=(0, 0.06, 1, 1))
+    fig.savefig(Path.cwd() / "dijkstra-distance-frontier.png", facecolor="white",
+                transparent=False)
+    plt.close(fig)
+    print("Finalization A0 C1 B3 D4; tentative B4→3, D10→6→4")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

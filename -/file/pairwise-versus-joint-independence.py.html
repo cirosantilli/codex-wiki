@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>pairwise-versus-joint-independence.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="pairwise-versus-joint-independence.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/pairwise-versus-joint-independence.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">pairwise-versus-joint-independence.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/pairwise-versus-joint-independence.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/pairwise-versus-joint-independence.py">pairwise-versus-joint-independence.py</a></b></div></nav></div><div class="p"><b>pairwise-versus-joint-independence.py</b></div><div class="code"><div><pre><code>"""All eight XOR patterns and all three pair marginals; Python 3.14.4.
+
+Uses the repository's matplotlib/numpy environment. Writes the PNG to CWD.
+"""
+
+from itertools import product
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    joint = np.zeros((2, 2, 2))
+    for x, y in product((0, 1), repeat=2):
+        joint[x, y, x ^ y] = 0.25
+    patterns = list(product((0, 1), repeat=3))
+    # Check every triple, including the four impossible patterns.
+    for x, y, z in patterns:
+        assert joint[x, y, z] == (0.25 if z == x ^ y else 0)
+    assert joint.sum() == 1
+    marginals = [joint.sum(axis=axis) for axis in range(3)]
+    assert all(np.array_equal(m, [0.5, 0.5]) for m in
+               [joint.sum(axis=(1, 2)), joint.sum(axis=(0, 2)), joint.sum(axis=(0, 1))])
+    # Each of the four cells of every pair is 1/4.
+    for marginal in marginals:
+        for i, j in product((0, 1), repeat=2):
+            assert marginal[i, j] == 0.25
+    assert joint[0, 0, 0] == 0.25 != 0.5 ** 3
+    plt.rcParams.update({"font.size": 12, "text.color": "#182332", "axes.labelcolor": "#182332"})
+    fig = plt.figure(figsize=(9.4, 6.5), layout="constrained", facecolor="white")
+    grid = fig.add_gridspec(2, 3, height_ratios=[1.25, 1])
+    ax = fig.add_subplot(grid[0, :])
+    positions = np.arange(8)
+    masses = [joint[state] for state in patterns]
+    ax.bar(positions, masses, width=0.64, color="#287eac", zorder=3,
+           label="Actual joint law: Z = X XOR Y")
+    ax.axhline(0.125, color="#bd5a37", linestyle="--", linewidth=2,
+               label="Product of marginals: 1/8 in every cell", zorder=4)
+    for position, mass in zip(positions, masses):
+        ax.text(position, mass + 0.008, "1/4" if mass else "0", ha="center", fontsize=12)
+    ax.set_xticks(positions, ["".join(map(str, pattern)) for pattern in patterns])
+    ax.set_yticks([0, 0.125, 0.25], ["0", "1/8", "1/4"])
+    ax.set_ylim(0, 0.37)
+    ax.set_xlabel("All eight (X, Y, Z) patterns")
+    ax.set_ylabel("Probability")
+    ax.set_title("Four allowed triples, four impossible triples", fontsize=13)
+    ax.grid(axis="y", color="#e1e7ed", zorder=0)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.legend(loc="upper right", fontsize=10, frameon=False)
+    pairs = [(joint.sum(axis=2), "X", "Y"),
+             (joint.sum(axis=1), "X", "Z"),
+             (joint.sum(axis=0), "Y", "Z")]
+    for i, (matrix, first, second) in enumerate(pairs):
+        panel = fig.add_subplot(grid[1, i])
+        panel.imshow(matrix, vmin=0, vmax=0.5, cmap="Blues")
+        for row, col in product((0, 1), repeat=2):
+            panel.text(col, row, "1/4", ha="center", va="center", fontsize=17, color="#182332")
+        panel.set_xticks([0, 1], [f"{second} = 0", f"{second} = 1"])
+        panel.set_yticks([0, 1], [f"{first} = 0", f"{first} = 1"])
+        panel.set_xticks([0.5], minor=True)
+        panel.set_yticks([0.5], minor=True)
+        panel.grid(which="minor", color="white", linewidth=2)
+        panel.tick_params(which="both", length=0)
+        panel.set_title(f"Pair ({first}, {second}) is independent", fontsize=11, pad=10)
+        panel.set_xlabel("Each row and column sums to 1/2", fontsize=9)
+    fig.suptitle("Pairwise independence does not imply joint independence", fontsize=16, weight="bold")
+    fig.savefig(Path.cwd() / "pairwise-versus-joint-independence.png",
+                dpi=100, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

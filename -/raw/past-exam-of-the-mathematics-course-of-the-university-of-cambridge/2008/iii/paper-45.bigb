@@ -1,0 +1,309 @@
+= Paper 45
+{scope}
+{title2=Introduction to Data Mining}
+
+https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2008/Paper45.pdf
+
+= 1
+{parent=Paper 45}
+{scope}
+
+= a
+{parent=1}
+{scope}
+
+= Solution
+{parent=a}
+
+Write $f_j=(f_j(x_{1j}),\ldots,f_j(x_{nj}))^T$ for the training values of each component in the <additive regression model>. Separate the <regression intercept> from the smooth components by imposing $\mathbf1^Tf_j=0$ for every $j$. Without these constraints, adding a constant to a component and subtracting it from the intercept gives exactly the same mean function. A population alternative is $\mathbb E f_j(X_j)=0$ when those expectations exist. Additional <identifiability of additive regression components> requirements exclude redundant component directions, as discussed below.
+
+The <backfitting algorithm> proceeds as follows:
+
+* Initialize $\widehat\beta_0=\overline y$ and $\widehat f_j=0$ for all $j$, or use another centered starting fit. Choose the smoother and its tuning parameters for each predictor.
+* Cycle through $j=1,\ldots,p$. Form the <partial residual> $r_j=y-\widehat\beta_0\mathbf1-\sum_{k\ne j}\widehat f_k$, using the newest available component estimates.
+* Apply the generic smoother in predictor $j$: $g_j=S(x_j)[r_j]$. Center its fitted values and replace the current component by $\widehat f_j=g_j-(\mathbf1^Tg_j/n)\mathbf1$. The same centering constant is subtracted from its function when predicting at a new predictor value.
+* Repeat complete cycles until the components and fitted sum change by less than the chosen numerical tolerance. Return $\widehat f(x)=\widehat\beta_0+\sum_j\widehat f_j(x_j)$.
+
+Because every component remains centered, the least-squares update of the intercept remains $\overline y$ throughout. The essential update is
+$$
+\boxed{\widehat f_j\leftarrow\operatorname{center}\!\left[S(x_j)\left\{y-\overline y\mathbf1-\sum_{k\ne j}\widehat f_k\right\}\right].}
+$$
+For penalized least-squares smoothers these updates are <coordinate descent> on the additive fitting objective. For a completely arbitrary smoother, convergence is an additional property to establish, not a consequence of merely specifying the iteration. Centering removes the constant ambiguity but does not by itself remove <concurvity>.
+
+= b
+{parent=1}
+{scope}
+
+= Solution
+{parent=b}
+
+There are two distinct identifiability issues. Without centering, constants can move between the <regression intercept> and the additive components. After centering, the decomposition still fails to be unique if there are nonzero allowed centered perturbations $h_j$ satisfying
+$$
+\sum_jh_j(x_{ij})=0\quad\text{for every }i.
+$$
+Then replacing $f_j$ by $f_j+h_j$ leaves every fitted response unchanged. This nonlinear analogue of <multicollinearity> is <concurvity>. For example, if two predictor columns are identical, a centered function $h$ can be added to the effect of the first and subtracted from the effect of the second. Conceptually, the data observe their combined effect but cannot tell which predictor deserves the credit. A unique fitted sum can therefore coexist with nonunique individual effects. Smoothness penalties can distinguish some such decompositions, so a representation ambiguity is not automatically an ambiguity of every penalized estimator.
+
+For a precise criterion for the <backfitting algorithm> with <linear smoothers>, put $C=I-\mathbf1\mathbf1^T/n$, $y_c=Cy$, and $T_j=CS_jC$. On the centered component space its fixed-point equations are the <linear backfitting equations>
+$$
+f_j+T_j\sum_{k\ne j}f_k=T_jy_c,\qquad j=1,\ldots,p.
+$$
+A consistent system has more than one solution exactly when there is a nonzero centered tuple satisfying $h_j+T_j\sum_{k\ne j}h_k=0$ for all $j$. In the two-component case, elimination gives
+$$
+(I-T_1T_2)f_1=T_1(I-T_2)y_c.
+$$
+Thus
+$$
+\boxed{\text{For a consistent two-component linear backfit, nonuniqueness occurs iff }1\text{ is an eigenvalue of }T_1T_2.}
+$$
+A common centered direction $h$ reproduced exactly by both smoothers, $T_1h=T_2h=h$, gives the homogeneous perturbation $(h,-h)$ and is a concrete instance. For example, two identical predictor columns with smoothers that reproduce the same centered linear trend have this property. Approximate <concurvity> yields an eigenvalue near one, causing poor conditioning and slow or unstable component estimation, but it does not constitute exact nonuniqueness. Failure of an iteration to converge is also distinct from the existence of multiple fixed points.
+
+= c
+{parent=1}
+{scope}
+
+= Solution
+{parent=c}
+
+To isolate the <bias-variance tradeoff> of the smoothing step, fix the three neighbor locations and write $Y_{(k)}=m_k+\epsilon_{(k)}$, with independent zero-mean errors of common <variance> $\sigma^2$. At a target $x$, the local estimate is
+$$
+\widehat m_w(x)=wY_{(1)}+\frac{1-w}{2}\{Y_{(2)}+Y_{(3)}\}.
+$$
+The <bias and variance of a three-neighbour weighted smoother> are
+$$
+\boxed{\begin{aligned}
+\operatorname{Bias}(\widehat m_w(x))&=w m_1+\frac{1-w}{2}(m_2+m_3)-m(x),\\
+\operatorname{Var}(\widehat m_w(x))&=\sigma^2\left[w^2+\frac{(1-w)^2}{2}\right]=\sigma^2\left[\frac13+\frac32\left(w-\frac13\right)^2\right].
+\end{aligned}}
+$$
+Consequently the variance is minimized by equal weights, $w=1/3$, when it equals $\sigma^2/3$. It decreases as $w$ increases from zero to $1/3$, and increases thereafter toward $\sigma^2$ as $w\to1$. In particular, variance is not increasing over the entire interval $0<w<1$.
+
+Giving more weight to the closest location reduces the influence of more distant responses and often reduces smoothing bias. If the closest location is the target itself, $m_1=m(x)$, put $\Delta=(m_2+m_3)/2-m(x)$. Then the squared bias is $(1-w)^2\Delta^2$, and
+$$
+\operatorname{MSE}(w)=(1-w)^2\Delta^2+\sigma^2\left[w^2+\frac{(1-w)^2}{2}\right],\qquad w_{\mathrm{opt}}=\frac{2\Delta^2+\sigma^2}{2\Delta^2+3\sigma^2}.
+$$
+Thus a locally flat signal favors equal averaging, while stronger local smoothing bias favors greater nearest-point weight. At a general target the bias is affine in $w$, and its absolute value need not decrease: farther neighbors can cancel one another's approximation errors. Even without that cancellation, a smoothness-based worst-case bias bound decreases with $w$ because the first neighbor is closest. The exact tradeoff is therefore lower variance near balanced weights versus potentially lower bias near the closest-point fit. These formulas describe the elementary smoother; fitted <partial residuals>, centering and repeated <backfitting> can introduce dependence, so the variance of the final additive fit requires its full fitting operator rather than this single-step calculation.
+
+= 2
+{parent=Paper 45}
+{scope}
+
+= a
+{parent=2}
+{scope}
+
+= Solution
+{parent=a}
+
+For an $n\times p$ <design matrix>, distinguish the coefficient vector from the fitted-response vector. The <ridge regression> objective and its solution are
+$$
+\boxed{Q_\lambda(\beta)=\|Y-X\beta\|_2^2+\lambda\|\beta\|_2^2,\qquad \widehat\beta_\lambda=(X^TX+\lambda I_p)^{-1}X^TY.}
+$$
+The <gradient> is $2(X^TX+\lambda I_p)\beta-2X^TY$. For $\lambda>0$, $X^TX+\lambda I_p$ is a <positive-definite matrix>, so this is the unique minimizer even if $X$ is rank deficient. The expression with an additional leading $X$ is instead the $n$-vector of <fitted values>,
+$$
+\widehat Y_\lambda=X\widehat\beta_\lambda=X(X^TX+\lambda I_p)^{-1}X^TY.
+$$
+This distinction corrects the dimensional mismatch in the printed coefficient-estimator notation.
+
+The quadratic penalty discourages large coefficients, exchanging some bias for lower variance. If $X=UDV^T$ is a reduced <singular value decomposition>, with positive singular values $d_k$, then
+$$
+\widehat\beta_\lambda=V\operatorname{diag}\left(\frac{d_k}{d_k^2+\lambda}\right)U^TY,\qquad \widehat Y_\lambda=U\operatorname{diag}\left(\frac{d_k^2}{d_k^2+\lambda}\right)U^TY.
+$$
+The <principal-component shrinkage by ridge regression> therefore shrinks directions with small $d_k^2$ most strongly. These are precisely the poorly determined directions created by <multicollinearity>, where ordinary least-squares coefficients can have large variance or fail to be uniquely determined. A positive penalty stabilizes their inversion and sets coefficients in the null space to zero. It does not make the predictors independent or provide a universal risk improvement for every signal. Because the penalty depends on coefficient units, predictors are ordinarily standardized before choosing $\lambda$ by <cross-validation>. An <unpenalized intercept in ridge regression> is handled separately by centering; the displayed objective either has no intercept or applies the penalty to every component included in $\beta$.
+
+= b
+{parent=2}
+{scope}
+
+= Solution
+{parent=b}
+
+Use the Gaussian sampling model $Y\mid\beta\sim N(X\beta,\sigma^2I_n)$ with known $\sigma^2>0$, and the independent prior $\beta\sim N(0,\tau^2I_p)$ with $\tau^2>0$. A Gaussian prior alone is not enough to imply the ridge result without this likelihood assumption. The <posterior distribution> is proportional to
+$$
+\exp\left[-\frac1{2\sigma^2}\|Y-X\beta\|_2^2-\frac1{2\tau^2}\|\beta\|_2^2\right].
+$$
+Maximizing it is equivalent to minimizing the ridge objective with $\lambda=\sigma^2/\tau^2$. More explicitly, complete the square. The posterior precision, <covariance matrix> and mean are
+$$
+V^{-1}=\frac{X^TX}{\sigma^2}+\frac{I_p}{\tau^2},\qquad V=\sigma^2(X^TX+\lambda I_p)^{-1},\qquad m=V\frac{X^TY}{\sigma^2}=(X^TX+\lambda I_p)^{-1}X^TY.
+$$
+Consequently the <Gaussian posterior representation of ridge regression> is
+$$
+\boxed{\beta\mid Y\sim N(m,V),\qquad \lambda=\frac{\sigma^2}{\tau^2},\qquad\operatorname{mode}(\beta\mid Y)=\mathbb E(\beta\mid Y)=\widehat\beta_\lambda.}
+$$
+A tighter prior, smaller $\tau^2$, implies stronger shrinkage; larger observation-noise variance at fixed prior scale also increases the penalty. The posterior covariance is $V$, not the frequentist sampling covariance of the ridge estimator, which is $\sigma^2(X^TX+\lambda I)^{-1}X^TX(X^TX+\lambda I)^{-1}$. If an intercept is to remain unpenalized, give only the slopes this proper Gaussian prior and center the design and responses.
+
+= c
+{parent=2}
+{scope}
+
+= Solution
+{parent=c}
+
+The <ridge regression> penalty is quadratic, whereas the <Lasso> uses an absolute-value penalty. To make the constants explicit, compare
+$$
+\|Y-X\beta\|_2^2+\lambda\|\beta\|_2^2\qquad\text{and}\qquad\|Y-X\beta\|_2^2+2t\|\beta\|_1.
+$$
+Both trade goodness of fit against coefficient size, and both require sensible predictor scaling and tuning. Ridge continuously shrinks coefficient directions and generally retains all variables. The Lasso's nonsmooth penalty can set coefficients exactly to zero, so it performs variable selection as well as shrinkage. When $X^TX=I$, let $z=X^TY$. The distinction is especially transparent:
+$$
+\boxed{\widehat\beta_j^{\mathrm{ridge}}=\frac{z_j}{1+\lambda},\qquad\widehat\beta_j^{\mathrm{Lasso}}=\operatorname{sign}(z_j)(|z_j|-t)_+.}
+$$
+The second formula is <soft thresholding>. For general designs, the <Karush-Kuhn-Tucker conditions for the Lasso> give $X_j^T(Y-X\widehat\beta)=t\operatorname{sign}(\widehat\beta_j)$ for a nonzero coefficient and $|X_j^T(Y-X\widehat\beta)|\le t$ for a zero coefficient. The latter interval permits exact zeros; the ridge equation instead is $X^T(Y-X\widehat\beta)=\lambda\widehat\beta$.
+
+Ridge is especially useful for stable prediction when many predictors carry small effects or are highly correlated. Its strictly convex penalty gives unique coefficients for $\lambda>0$ even in a rank-deficient design. It shares an effect among identical predictor columns: for a fixed coefficient sum the minimum quadratic penalty splits that sum equally. The Lasso can give a simpler sparse model when many effects are absent, but selection among strongly correlated predictors can be unstable. With identical columns, any same-sign split of a selected coefficient sum has the same absolute-value penalty and the same fitted values, so the coefficient vector need not be unique. This is a possible design degeneracy, not a claim that every Lasso fit is nonunique.
+
+The penalties also encode different prior shapes: the Gaussian prior yields ridge, while independent double-exponential priors yield a Lasso posterior mode under Gaussian noise. A Lasso mode is not generally its posterior mean. Practically, sparse interpretability favors the Lasso, while stable distributed effects can favor ridge; prediction performance should be checked with <cross-validation>, and neither method universally dominates the other.
+
+= 3
+{parent=Paper 45}
+{scope}
+
+= a
+{parent=3}
+{scope}
+
+= Solution
+{parent=a}
+
+Use labels $y_i\in\{-1,1\}$ and base predictions $G_m(x)\in\{-1,1\}$. The binary <AdaBoost> algorithm starts with observation weights $D_1(i)=1/n$ and score $F_0(x)=0$. For rounds $m=1,\ldots,M$:
+
+* Fit the <weak learner> to the training observations using weights $D_m(i)$, producing $G_m$.
+* Compute its weighted error $\epsilon_m=\sum_iD_m(i)\mathbf1_{\{G_m(x_i)\ne y_i\}}$.
+* For $0<\epsilon_m<1/2$, choose $\alpha_m=\tfrac12\log[(1-\epsilon_m)/\epsilon_m]$ and update $F_m=F_{m-1}+\alpha_mG_m$.
+* Reweight and normalize: $D_{m+1}(i)=D_m(i)e^{-\alpha_m y_iG_m(x_i)}/Z_m$, where $Z_m$ is the sum of the unnormalized weights.
+
+The final classifier is
+$$
+\boxed{\widehat G(x)=\operatorname{sign}\left\{\sum_{m=1}^M\alpha_mG_m(x)\right\}.}
+$$
+Resolve a zero-score tie by a fixed convention. A classifier with error above $1/2$ may be sign-reversed if the base class permits it; otherwise it fails the weak-learning requirement and should be replaced. Error $1/2$ gives zero weight and no improvement. Error zero gives the limiting perfect-classifier step with infinite coefficient, so terminate with that classifier rather than computing the undefined finite update. Misclassified observations are multiplied by $e^{\alpha_m}$ and correctly classified observations by $e^{-\alpha_m}$, increasing the relative weight of errors for the next round. The procedure is sequential, and its number of rounds is a tuning parameter.
+
+= b
+{parent=3}
+{scope}
+
+= Solution
+{parent=b}
+
+The <exponential classification risk> for the training sample is $\mathcal L(F)=\sum_i e^{-y_iF(x_i)}$. At the start of round $m$, define
+$$
+w_i=e^{-y_iF_{m-1}(x_i)},\qquad W=\sum_iw_i,\qquad D_m(i)=w_i/W.
+$$
+Thus the observation weights arise directly from each point's current exponential loss. For a candidate base classifier $G$ and coefficient $\alpha$,
+$$
+\mathcal L(F_{m-1}+\alpha G)=\sum_iw_ie^{-\alpha y_iG(x_i)}=W\{(1-\epsilon)e^{-\alpha}+\epsilon e^\alpha\},
+$$
+where $\epsilon$ is its error under $D_m$. For a fixed $\alpha>0$ the bracket is increasing in $\epsilon$, so the appropriate base fit minimizes weighted classification error. With $G$ fixed, differentiation gives
+$$
+-(1-\epsilon)e^{-\alpha}+\epsilon e^\alpha=0,\qquad e^{2\alpha}=\frac{1-\epsilon}{\epsilon}.
+$$
+The second derivative is positive, hence the <exponential-loss derivation of AdaBoost> yields
+$$
+\boxed{\alpha_m=\frac12\log\frac{1-\epsilon_m}{\epsilon_m},\qquad D_{m+1}(i)=\frac{D_m(i)e^{-\alpha_m y_iG_m(x_i)}}{2\sqrt{\epsilon_m(1-\epsilon_m)}}.}
+$$
+The normalizer is $Z_m=(1-\epsilon_m)e^{-\alpha_m}+\epsilon_m e^{\alpha_m}=2\sqrt{\epsilon_m(1-\epsilon_m)}$. Consequently the next normalized weights again satisfy $D_{m+1}(i)\propto e^{-y_iF_m(x_i)}$, proving the update by induction from uniform initial weights. The factor by which an error gains weight relative to a correct observation is $e^{2\alpha_m}=(1-\epsilon_m)/\epsilon_m$.
+
+This calculation also explains why repeated weak fits can improve training performance. Since the initial mean exponential loss is one, its value after $M$ rounds is $\prod_mZ_m$. A misclassified point has $y_iF_M(x_i)\le0$ and hence exponential loss at least one, giving the <AdaBoost training error bound>
+$$
+\frac1n\sum_i\mathbf1_{\{y_iF_M(x_i)\le0\}}\le\prod_{m=1}^M2\sqrt{\epsilon_m(1-\epsilon_m)}\le\exp\left(-2\sum_{m=1}^M\gamma_m^2\right),\qquad\gamma_m=\frac12-\epsilon_m.
+$$
+The last inequality uses $\sqrt{1-4\gamma_m^2}\le e^{-2\gamma_m^2}$. This is a training guarantee under positive edges, not a guarantee that further rounds always improve prediction on new observations.
+
+= c
+{parent=3}
+{scope}
+
+= Solution
+{parent=c}
+
+A <random forest> constructs an ensemble of <classification and regression trees>. For each tree, draw a <bootstrap> sample of the training observations. Grow the tree by <recursive partitioning>; at each node, draw a fresh random subset of predictor coordinates and choose the best split only among those coordinates, using a criterion such as <Gini impurity>. Trees are ordinarily grown deeply with a chosen minimum terminal-node size and without the pruning used to select a single small tree. Repeat for many independently randomized trees. For binary classification, predict by <majority vote>; for regression, average the tree predictions. The <out-of-bag error> predicts each observation using only trees whose bootstrap samples omitted it, furnishing an internal assessment of prediction error.
+
+The strategies differ in how they form a useful ensemble. The forest uses resampling and random predictor subsets to decorrelate trees; averaging then reduces the variability of individual tree predictions. For illustration, if equally weighted predictions have common variance $v$ and pairwise correlation $\rho$, the variance of their average is $v[\rho+(1-\rho)/M]$, showing why low inter-tree correlation matters. This identity describes a regression-prediction calculation; it is not an exact classification-error formula.
+
+<AdaBoost> instead fits sequentially, with each round responding to errors of the accumulated score. It uses nonuniform observation weights and nonuniform final classifier weights derived from exponential loss; a forest's bootstrap sampling is ordinarily uniform and its final votes are ordinarily equal. Forest trees can be built in parallel once the data and tuning parameters are fixed, whereas each boosting stage depends on previous stages. Random forests commonly use deep trees; AdaBoost often uses shallow trees or stumps as <weak learners>, although its base class is not restricted to them. Reweighting persistent errors can make boosting sensitive to mislabeled points and outliers, while randomization and averaging often make a forest less sensitive; neither statement is a universal robustness theorem. Both methods require attention to ensemble size and tree complexity, and neither guarantees a better classifier for every dataset.
+
+\b[Random forests diversify and average randomized trees; AdaBoost sequentially fits errors and combines classifiers with loss-derived weights.]
+
+= 4
+{parent=Paper 45}
+{scope}
+
+= a
+{parent=4}
+{scope}
+
+= Solution
+{parent=a}
+
+For a binary hypothesis class $\mathcal H=\{x\mapsto f(x,\alpha)\}$, a set of $m$ distinct points is shattered if every one of its $2^m$ binary labelings is realized by some member of $\mathcal H$. The <VC dimension> is
+$$
+\boxed{\operatorname{VC}(\mathcal H)=\sup\{m:\text{some }m\text{-point set is shattered by }\mathcal H\},}
+$$
+with value infinity if arbitrarily large finite sets are shattered. For real-valued scores, apply this definition to the associated binary decision functions, for example their signs. The word “some” matters: shattering every set of that size is not required.
+
+As an example, take the interval classifiers on the real line, $f_{a,b}(x)=\mathbf1_{\{a\le x\le b\}}$. Two ordered points $x_1<x_2$ can receive labels $00$, $10$, $01$ or $11$ by choosing an interval away from both, around the first, around the second, or containing both. Hence the class shatters two points. No three ordered points can be shattered, since any interval containing the first and third also contains the middle, making labeling $101$ impossible. Thus the <VC dimension of interval indicators> is
+$$
+\boxed{\operatorname{VC}(\mathcal H)=2.}
+$$
+This describes combinatorial classification capacity, rather than merely counting written parameters; the definition applies equally to nonlinear or infinite-parameter classes.
+
+= b
+{parent=4}
+{scope}
+
+= Solution
+{parent=b}
+
+Condition on the training covariates, and let $m_i=\mathbb E Y_i$. The fresh response $Y_i^N$ has the same marginal distribution as $Y_i$ and is independent of the complete training response vector, hence independent of $\widehat Y_i=\widehat f(x_i)$. Assume the relevant second moments are finite. Expanding the squared errors gives
+$$
+\begin{aligned}
+\mathbb E[(Y_i^N-\widehat Y_i)^2]&=\mathbb E Y_i^2-2m_i\mathbb E\widehat Y_i+\mathbb E\widehat Y_i^2,\\
+\mathbb E[(Y_i-\widehat Y_i)^2]&=\mathbb E Y_i^2-2\mathbb E[Y_i\widehat Y_i]+\mathbb E\widehat Y_i^2.
+\end{aligned}
+$$
+The first expectation averages over both training and new responses; the second averages over training responses only. Subtracting cancels both second-moment terms, leaving
+$$
+2\{\mathbb E[Y_i\widehat Y_i]-m_i\mathbb E\widehat Y_i\}=2\operatorname{Cov}(Y_i,\widehat Y_i).
+$$
+Averaging over the design points proves the <covariance formula for prediction optimism>:
+$$
+\boxed{\operatorname{Opt}=\operatorname{Err}_{\mathrm{in}}-\mathbb E\operatorname{err}=\frac2n\sum_{i=1}^n\operatorname{Cov}(Y_i,\widehat Y_i).}
+$$
+No linear fitting rule or Gaussian noise assumption is needed. The difference arises because a training response and its fitted value are dependent, whereas a fresh response and the fitted value are independent. Ordinary fitting often makes those covariances positive and the <training error> too favorable, explaining the name <prediction optimism>.
+
+For example, if $\widehat Y=HY$ is a fixed <linear smoother> and $\operatorname{Cov}(Y)=\sigma^2I$, then $\operatorname{Cov}(Y_i,\widehat Y_i)=\sigma^2H_{ii}$. Thus
+$$
+\boxed{\operatorname{Opt}=\frac{2\sigma^2}{n}\operatorname{tr}(H)=\frac{2\sigma^2}{n}\operatorname{df}_{\mathrm{eff}}.}
+$$
+This links the optimism correction to <effective degrees of freedom>. For a data-selected fitting operator, its realized trace alone does not generally give the covariance penalty, since selecting the model uses the responses too.
+
+= c
+{parent=4}
+{scope}
+
+= Solution
+{parent=c}
+
+An orthonormal <multiresolution analysis> is a sequence of closed subspaces $V_j\subset L^2(\mathbb R)$ satisfying $V_j\subset V_{j+1}$, $\overline{\bigcup_jV_j}=L^2(\mathbb R)$, $\bigcap_jV_j=\{0\}$, and $f\in V_j$ iff $f(2\,\cdot)\in V_{j+1}$. A <scaling function> $\phi$ has integer translates forming an <orthonormal basis> of $V_0$, and its scaled translates $\phi_{j,k}(x)=2^{j/2}\phi(2^jx-k)$ span $V_j$. Thus $V_j$ contains information at resolution about $2^{-j}$.
+
+The detail space $W_j=V_{j+1}\cap V_j^\perp$ is generated by the corresponding <wavelet> functions $\psi_{j,k}(x)=2^{j/2}\psi(2^jx-k)$. The orthogonal splitting $V_{j+1}=V_j\oplus W_j$ iterates to
+$$
+\boxed{V_J=V_{J_0}\oplus\bigoplus_{j=J_0}^{J-1}W_j.}
+$$
+Accordingly a square-integrable signal has a coarse-and-detail <wavelet series>,
+$$
+f=\sum_k a_{J_0,k}\phi_{J_0,k}+\sum_{j\ge J_0}\sum_k\theta_{j,k}\psi_{j,k},
+$$
+and its <wavelet projection> onto $V_J$ keeps the coarse coefficients and details below level $J$. Increasing $J$ adds finer-scale oscillations and localized features. On the real line there are infinitely many translates at each level; for a bounded observation interval, with an appropriate interval or periodic construction, the relevant approximation dimension satisfies $d_J\asymp2^J$. For the <Haar wavelet> on a unit interval this is exactly $2^J$, corresponding to a separate mean on each dyadic subinterval.
+
+This hierarchy gives a concrete meaning to <wavelet approximation complexity>. Coarse resolution uses few coefficients and can miss sharp features; fine resolution uses more coefficients and can fit noise. By <orthogonality>, projection bias is the energy of the omitted details,
+$$
+\|f-P_Jf\|_2^2=\sum_{j\ge J}\sum_k|\theta_{j,k}|^2.
+$$
+For an orthonormal sequence model with independent coefficient noise of variance $\sigma^2/n$, estimating the $d_J$ retained coefficients without shrinkage gives
+$$
+\boxed{\mathbb E\|\widehat f_J-f\|_2^2=\sum_{j\ge J,k}|\theta_{j,k}|^2+\frac{\sigma^2d_J}{n}.}
+$$
+The first term decreases with resolution while the second increases, making the <bias-variance tradeoff> explicit. Equivalently, a fixed orthogonal regression projection of rank $d_J$ has <effective degrees of freedom> $d_J$ and prediction optimism $2\sigma^2d_J/n$ under independent equal-variance errors.
+
+Wavelets also permit local rather than only global complexity control. Thresholding small estimated detail coefficients, for example by <soft thresholding>, retains strong local structure while suppressing fine-scale noise elsewhere. A sparse retained coefficient set can represent localized features much more economically than keeping every coefficient through a high level. Its locations and scales matter as well as its count. If that set is selected using the same noisy responses, however, selection adds adaptivity: its raw coefficient count is not automatically its covariance-based degrees of freedom. Resolution or threshold tuning should therefore account for prediction error, using an appropriate risk estimate or <cross-validation>, rather than only decreasing training error.
+
+\b[Wavelet complexity is controlled by retained resolutions and coefficients; more detail reduces approximation bias while increasing estimation variance and sensitivity to noise.]

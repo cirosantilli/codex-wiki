@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>cavendish-torsion-balance-schematic.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="cavendish-torsion-balance-schematic.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/cavendish-torsion-balance-schematic.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">cavendish-torsion-balance-schematic.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/cavendish-torsion-balance-schematic.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/cavendish-torsion-balance-schematic.py">cavendish-torsion-balance-schematic.py</a></b></div></nav></div><div class="p"><b>cavendish-torsion-balance-schematic.py</b></div><div class="code"><div><pre><code>"""Original toy geometry, not historical apparatus; output PNG basename to CWD.
+
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+"""
+
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, FancyArrowPatch
+import numpy as np
+
+
+def main():
+    blue, orange, green = "#245f9b", "#b95d16", "#187b58"
+    plt.rcParams.update({"font.size": 11, "figure.facecolor": "white"})
+    fig, (top, side) = plt.subplots(1, 2, figsize=(10.4, 5.6), dpi=120,
+                                   gridspec_kw={"width_ratios": [1.65, 1]})
+    fig.suptitle("Two near-pair forces turn the suspended rod", fontsize=16)
+    fig.subplots_adjust(left=.03, right=.98, bottom=.18, top=.82, wspace=.16)
+    top.set(xlim=(-1.8, 1.8), ylim=(-1.25, 1.25), aspect="equal")
+    top.axis("off")
+    top.set_title("Top view: zero twist", fontsize=12)
+    L, r = 1.0, .65  # Drawing coordinates only; sphere radii are illustrative.
+    test = np.array([[-L, 0.0], [L, 0.0]])
+    source = np.array([[-L, -r], [L, r]])
+    directions = (source - test) / r
+    torques = test[:, 0] * directions[:, 1] - test[:, 1] * directions[:, 0]
+    assert np.all(torques &gt; 0)
+    reversed_torques = test[:, 0] * (-directions[:, 1])
+    assert np.all(reversed_torques &lt; 0)
+    top.plot([-L, L], [0, 0], color="#555555", lw=5, zorder=1)
+    for (x, y), (sx, sy), direction in zip(test, source, directions):
+        top.plot([x, sx], [y, sy], color="#aaaaaa", ls=":", lw=1.5)
+        top.add_patch(Circle((sx, sy), .18, facecolor="#fff1e4",
+                             edgecolor=orange, lw=2, zorder=2))
+        top.text(sx, sy, "$M$", ha="center", va="center", color=orange)
+        top.add_patch(Circle((x, y), .09, facecolor="#e7f1ff",
+                             edgecolor=blue, lw=2, zorder=3))
+        top.text(x + (-.17 if x &lt; 0 else .17), .08, "$m$",
+                 color=blue, ha="right" if x &lt; 0 else "left")
+        start = (x, direction[1] * .12)
+        end = (x, direction[1] * .43)
+        top.add_patch(FancyArrowPatch(start, end, arrowstyle="-|&gt;",
+                                     mutation_scale=17, color=blue, lw=2))
+        top.text(x + .17, direction[1] * .32, "$F$", color=blue,
+                 ha="left", va="center")
+    top.text(-L, -1.00, "$(-L,-r)$", ha="center", color=orange)
+    top.text(L, 1.00, "$(L,r)$", ha="center", color=orange)
+    top.annotate("", (-1.42, -r), (-1.42, 0),
+                 arrowprops={"arrowstyle": "&lt;-&gt;", "color": "#666666"})
+    top.text(-1.56, -r / 2, "$r$", ha="center", va="center")
+    top.annotate("", (0, -.99), (L, -.99),
+                 arrowprops={"arrowstyle": "&lt;-&gt;", "color": "#666666"})
+    top.text(.5 * L, -1.14, "$L$ = half the rod length", ha="center", fontsize=10)
+    top.plot(0, 0, "o", color="#222222", ms=6)
+    top.text(0, -.16, "fiber axis", ha="center", fontsize=10)
+    # Positive polar angle: counterclockwise, viewed along the vertical axis.
+    angles = np.linspace(.05, 1.6 * np.pi, 100)
+    radius = .34
+    x, y = radius * np.cos(angles), radius * np.sin(angles)
+    top.plot(x, y, color=green, lw=2)
+    top.add_patch(FancyArrowPatch((x[-3], y[-3]), (x[-1], y[-1]),
+                                 arrowstyle="-|&gt;", mutation_scale=14,
+                                 color=green, lw=2))
+    top.text(0, .53, r"$\tau_g=+2LF$", ha="center", color=green, fontsize=13)
+    side.set(xlim=(-1.3, 1.3), ylim=(-.45, 2.0))
+    side.axis("off")
+    side.set_title("Side view: elastic suspension", fontsize=12)
+    side.plot([-.4, .4], [1.68, 1.68], color="#555555", lw=7)
+    side.plot([0, 0], [.35, 1.68], color="#333333", lw=2)
+    side.text(.12, 1.05, "thin vertical\nfiber", va="center")
+    side.plot([-1, 1], [.35, .35], color="#555555", lw=4)
+    side.plot([-1, 1], [.35, .35], "o", ms=12, color=blue)
+    side.text(0, .08, "rod + two test masses", ha="center", fontsize=10)
+    side.text(0, -.20, r"$\tau_{\rm fiber}=-\kappa\theta$", ha="center",
+              fontsize=13, color=green)
+    fig.text(.5, .085, "Left force down + right force up: both torques counterclockwise.",
+             ha="center", fontsize=12)
+    fig.text(.5, .035, "Toy model: opposite-source forces and rod mass omitted; not to scale.",
+             ha="center", fontsize=10, color="#555555")
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"),
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

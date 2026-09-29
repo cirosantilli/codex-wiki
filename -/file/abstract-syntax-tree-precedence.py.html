@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>abstract-syntax-tree-precedence.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="abstract-syntax-tree-precedence.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/abstract-syntax-tree-precedence.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">abstract-syntax-tree-precedence.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/abstract-syntax-tree-precedence.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/abstract-syntax-tree-precedence.py">abstract-syntax-tree-precedence.py</a></b></div></nav></div><div class="p"><b>abstract-syntax-tree-precedence.py</b></div><div class="code"><div><pre><code>"""Draw two assignment trees parsed by Python's standard-library ast module.
+
+Run from _media; tested with Python 3.14.4 and matplotlib 3.10.7.
+Operator and context marker nodes are displayed inside their owning node.
+"""
+
+import ast
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+
+
+def children(node):
+    if isinstance(node, ast.Assign):
+        return [("target", node.targets[0]), ("value", node.value)]
+    if isinstance(node, ast.BinOp):
+        return [("left", node.left), ("right", node.right)]
+    return []
+
+
+def label(node):
+    if isinstance(node, ast.Assign):
+        return "Assign"
+    if isinstance(node, ast.BinOp):
+        return f"BinOp\n{type(node.op).__name__}"
+    if isinstance(node, ast.Name):
+        return f"Name: {node.id}\n{type(node.ctx).__name__}"
+    if isinstance(node, ast.Constant):
+        return f"Constant\n{node.value}"
+    raise TypeError(node)
+
+
+def draw_tree(ax, node):
+    positions = {}
+    edges = []
+    cursor = 0
+
+    def place(item, depth):
+        nonlocal cursor
+        branches = children(item)
+        if not branches:
+            x = cursor
+            cursor += 1
+        else:
+            xs = [place(child, depth + 1) for _, child in branches]
+            x = sum(xs) / len(xs)
+            edges.extend((item, child, field) for field, child in branches)
+        positions[item] = (x, -depth)
+        return x
+
+    place(node, 0)
+    for parent, child, field in edges:
+        x, y = positions[parent]
+        u, v = positions[child]
+        ax.plot([x, u], [y, v], color="#566779", linewidth=1.7, zorder=1)
+        ax.text((x + u) / 2, (y + v) / 2, field, fontsize=9,
+                ha="center", va="center", color="#34465a", backgroundcolor="white")
+    for item, (x, y) in positions.items():
+        color = "#e6f1fb" if children(item) else "#fff1d7"
+        ax.text(x, y, label(item), ha="center", va="center", fontsize=11,
+                bbox={"boxstyle": "round,pad=0.45", "fc": color,
+                      "ec": "#48627b", "lw": 1.2}, zorder=2)
+    ax.set_xlim(-0.75, cursor - 0.25)
+    ax.set_ylim(-3.7, 0.8)
+    ax.axis("off")
+
+
+def main():
+    fig, axes = plt.subplots(1, 2, figsize=(10.5, 5.0), facecolor="white")
+    for ax, source, expected in zip(axes, ("x=2+3*4", "x=(2+3)*4"), (14, 20)):
+        tree = ast.parse(source, optimize=0)
+        scope = {}
+        exec(compile(tree, "&lt;precedence example&gt;", "exec"), scope)
+        assert scope["x"] == expected
+        draw_tree(ax, tree.body[0])
+        ax.set_title(source, fontsize=15, fontfamily="monospace", pad=12)
+        ax.text(0.5, -0.04, f"After execution: x = {expected}",
+                transform=ax.transAxes, ha="center", fontsize=13)
+    fig.suptitle("Parentheses change the operator nesting", fontsize=17)
+    fig.text(0.5, 0.035,
+             "Module wrapper omitted; operator and context markers shown inside nodes.",
+             ha="center", fontsize=10, color="#34465a")
+    fig.subplots_adjust(top=0.82, bottom=0.16, left=0.035, right=0.965, wspace=0.15)
+    fig.savefig(Path(__file__).stem + ".png", dpi=120, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

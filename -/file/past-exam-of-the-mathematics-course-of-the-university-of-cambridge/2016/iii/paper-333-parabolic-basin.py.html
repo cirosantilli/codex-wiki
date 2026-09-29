@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2016/iii/paper-333-parabolic-basin.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2016/iii/paper-333-parabolic-basin.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2016/iii/paper-333-parabolic-basin.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2016/iii/paper-333-parabolic-basin.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2016/iii/paper-333-parabolic-basin.py"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../../-/dir">(root)</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge">past-exam-of-the-mathematics-course-of-the-university-of-cambridge</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2016">2016</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2016/iii">iii</a> / <a href="../../../../../-/raw/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2016/iii/paper-333-parabolic-basin.py">paper-333-parabolic-basin.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2016/iii/paper-333-parabolic-basin.py</b></div><div class="code"><div><pre><code>"""Illustrative topographic circulation with parabolic basin depth.
+Python 3.14; numpy 2.3.5; matplotlib 3.10.7. Writes basename PNG to cwd.
+Solves a conservative diffusion / upwind advection discretization with zero
+boundary transport streamfunction. The vanishing depth is an idealized limit.
+"""
+from pathlib import Path
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+def solve(n=100,r=.025,beta=.25,f0=1,F0=1e-3):
+ dx=1/(n+1);x=np.arange(1,n+1)*dx;y=x.copy();X,Y=np.meshgrid(x,y)
+ H=4*X*(1-X);Hp=4*(1-2*X);f=f0+beta*Y
+ vx=-beta/H;vy=-f*Hp/H**2
+ west=r/(4*(X-dx/2)*(1-X+dx/2))/dx**2+np.maximum(vx,0)/dx
+ east=r/(4*(X+dx/2)*(1-X-dx/2))/dx**2+np.maximum(-vx,0)/dx
+ south=r/H/dx**2+np.maximum(vy,0)/dx
+ north=r/H/dx**2+np.maximum(-vy,0)/dx
+ diag=west+east+south+north
+ rhs=-F0*np.sin(2*np.pi*Y);a=np.zeros((n+2,n+2));mask=(np.indices((n,n)).sum(axis=0)%2)==0
+ residual=1.
+ for it in range(30000):
+  for color in (mask,~mask):
+   candidate=(rhs+west*a[1:-1,:-2]+east*a[1:-1,2:]+south*a[:-2,1:-1]+north*a[2:,1:-1])/diag
+   inner=a[1:-1,1:-1];inner[color]=candidate[color]
+  if it%100==0:
+   res=diag*a[1:-1,1:-1]-west*a[1:-1,:-2]-east*a[1:-1,2:]-south*a[:-2,1:-1]-north*a[2:,1:-1]-rhs
+   residual=float(np.max(np.abs(res)))
+   if residual&lt;1e-11:break
+ assert residual&lt;1e-10,(it,residual)
+ return np.linspace(0,1,n+2),a,it,residual
+
+if __name__=='__main__':
+ x,psi,it,res=solve();X,Y=np.meshgrid(x,x)
+ fig,(ax,bx)=plt.subplots(1,2,figsize=(9,3.5),dpi=120,facecolor='white')
+ pos=np.max(psi);neg=-np.min(psi)
+ levels=np.r_[-neg*np.array([.85,.6,.35,.1]),pos*np.array([.1,.35,.6,.85])]
+ cs=ax.contour(X,Y,psi,levels=levels,colors=['#b4443b']*4+['#1765a1']*4,linestyles=['dashed']*4+['solid']*4,linewidths=1.25)
+ ax.axhline(.5,color='#888',ls=':',lw=1);ax.text(.05,.51,'wind-curl zero',fontsize=8,color='#555')
+ ax.set(xlabel='x / Lₓ',ylabel='y / Lᵧ',title='Transport streamfunction ψ\nred dashed: negative; blue solid: positive')
+ xq=np.linspace(.07,.93,12);yq=np.linspace(.07,.93,11);QX,QY=np.meshgrid(xq,yq)
+ H=4*QX*(1-QX);f=1+.25*QY;vx=-.25/H;vy=-f*4*(1-2*QX)/H**2;norm=np.hypot(vx,vy)
+ bx.quiver(QX,QY,vx/norm,vy/norm,color='#444',scale=17,width=.004)
+ xf=np.linspace(.025,.975,250)
+ for Q in np.linspace(1.08,3.5,13):
+  yf=(Q*4*xf*(1-xf)-1)/.25;yf[(yf&lt;0)|(yf&gt;1)]=np.nan;bx.plot(xf,yf,color='#81ad8a',lw=1)
+ bx.set(xlim=(0,1),ylim=(0,1),xlabel='x / Lₓ',ylabel='y / Lᵧ',title='Pseudovelocity direction\nand background f/H contours')
+ for panel in (ax,bx):panel.set_aspect('equal')
+ fig.suptitle('Parabolic depth; illustrative r = 0.025, β = 0.25, f₀ = 1',fontsize=12)
+ fig.tight_layout();fig.savefig(Path(__file__).with_suffix('.png').name,facecolor='white',transparent=False)
+ print({'iterations':it,'discrete_residual':res,'psi_min':float(psi.min()),'psi_max':float(psi.max())})
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

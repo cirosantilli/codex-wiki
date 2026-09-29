@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>lewis-water-ammonia.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="lewis-water-ammonia.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/lewis-water-ammonia.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">lewis-water-ammonia.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/lewis-water-ammonia.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/lewis-water-ammonia.py">lewis-water-ammonia.py</a></b></div></nav></div><div class="p"><b>lewis-water-ammonia.py</b></div><div class="code"><div><pre><code>"""Draw original Lewis electron counts; write the matching PNG to cwd.
+
+Build: make _media/lewis-water-ammonia.png
+Tested with Python 3.14.4, Matplotlib 3.10.7, NumPy 2.3.5.
+Layouts show allocations, not molecular geometries or electron trajectories.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import numpy as np
+
+
+BOND = "#216b97"
+LONE = "#a44f25"
+
+
+def draw_bond(axis, start, end):
+    start, end = np.asarray(start, dtype=float), np.asarray(end, dtype=float)
+    direction = (end - start) / np.linalg.norm(end - start)
+    endpoints = np.array([start + 0.25 * direction, end - 0.25 * direction])
+    axis.plot(*endpoints.T, color=BOND, lw=3.2, solid_capstyle="round")
+
+
+def draw_pair(axis, position):
+    x, y = position
+    axis.scatter([x - 0.07, x + 0.07], [y, y], s=36, color=LONE, zorder=3)
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "figure.facecolor": "white",
+                         "axes.facecolor": "white", "savefig.facecolor": "white"})
+    fig, axes = plt.subplots(1, 2, figsize=(8.5, 5.4), dpi=120)
+    fig.subplots_adjust(left=0.055, right=0.945, bottom=0.32, top=0.75, wspace=0.3)
+    fig.suptitle("Same electron budget, different pair allocations", fontsize=17, y=0.96)
+    examples = [
+        ("Water", r"$\mathrm{H_2O}$", "O", 6,
+         [(-1.05, 0), (1.05, 0)], [(0, 0.48), (0, -0.48)]),
+        ("Ammonia", r"$\mathrm{NH_3}$", "N", 5,
+         [(-1.05, 0), (1.05, 0), (0, -0.95)], [(0, 0.48)]),
+    ]
+    for axis, (name, formula, centre, valence, hydrogens, pairs) in zip(axes, examples):
+        shared = len(hydrogens)
+        nonbonding = len(pairs)
+        total = valence + shared  # Each neutral hydrogen supplies one electron.
+        assert total == 8 == 2 * shared + 2 * nonbonding
+        assert 2 * (shared + nonbonding) == 8  # Central atom's local octet.
+        assert valence - 2 * nonbonding - shared == 0  # Central formal charge.
+        assert 1 - 0 - 2 / 2 == 0  # Each hydrogen's formal charge.
+        axis.set(xlim=(-1.5, 1.5), ylim=(-1.25, 0.85), aspect="equal")
+        axis.axis("off")
+        axis.set_title(f"{name}: {formula}", fontsize=15, pad=29)
+        axis.text(0.5, 1.05, f"{valence} + {shared} × 1 = {total} valence electrons",
+                  ha="center", transform=axis.transAxes)
+        axis.text(0, 0, centre, ha="center", va="center", fontsize=30)
+        for position in hydrogens:
+            axis.text(*position, "H", ha="center", va="center", fontsize=28)
+            draw_bond(axis, (0, 0), position)
+        for position in pairs:
+            draw_pair(axis, position)
+        pair_word = "pairs" if nonbonding &gt; 1 else "pair"
+        axis.text(0.5, -0.02, f"{shared} bond pairs + {nonbonding} lone {pair_word}\n"
+                  f"{2 * shared} shared + {2 * nonbonding} nonbonding = 8 electrons",
+                  transform=axis.transAxes, ha="center", va="top", linespacing=1.6)
+        print(f"{formula}: total={total}; bond pairs={shared}; lone pairs={nonbonding}; "
+              "central local count=8; each H local count=2; all formal charges=0")
+
+    fig.text(0.5, 0.195, "Local counts: O and N each count 8 electrons; each H counts 2.",
+             ha="center", fontsize=11)
+    fig.text(0.5, 0.145, "Count each shared pair once in the molecule's budget.",
+             ha="center", fontsize=11)
+    fig.legend(handles=[Line2D([0], [0], color=BOND, lw=3, label="Line = 2 shared electrons"),
+                        Line2D([0], [0], marker="o", color=LONE, ls="",
+                               label="Dot = 1 nonbonding electron")],
+               loc="lower center", bbox_to_anchor=(0.5, 0.072), ncol=2,
+               frameon=False, fontsize=10)
+    fig.text(0.5, 0.035, "Schematic Lewis layouts: no shape, angle, or electron path is implied.",
+             ha="center", fontsize=10, color="#555555")
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name, transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

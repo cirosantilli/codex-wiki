@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>buffer-ratio-ph.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="buffer-ratio-ph.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/buffer-ratio-ph.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">buffer-ratio-ph.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/buffer-ratio-ph.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/buffer-ratio-ph.py">buffer-ratio-ph.py</a></b></div></nav></div><div class="p"><b>buffer-ratio-ph.py</b></div><div class="code"><div><pre><code>"""Draw buffer-ratio-ph.png in the current working directory.
+
+Henderson-Hasselbalch concentration approximation with stipulated pKa = 4.76.
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+Build from the repository root: make _media/buffer-ratio-ph.png
+"""
+
+import math
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    pka = 4.76
+    ratio = np.geomspace(0.1, 10, 401)
+    ph = pka + np.log10(ratio)
+    marked_ratios = np.array([0.1, 1, 2, 10])
+    marked_ph = pka + np.log10(marked_ratios)
+    np.testing.assert_allclose(marked_ph, [3.76, 4.76, 5.061029995663981, 5.76],
+                               rtol=0, atol=1e-14)
+    np.testing.assert_allclose(pka + np.log10(10 * ratio) - ph, 1,
+                               rtol=0, atol=1e-14)
+    # Verify the activity-equilibrium identity used to obtain the approximation.
+    ka = 10.0 ** -pka
+    np.testing.assert_allclose(np.power(10.0, -ph) * ratio, ka, rtol=1e-14)
+    # At fixed ratio, scaling both concentrations leaves the approximation unchanged.
+    assert math.isclose(pka + math.log10(0.020 / 0.010),
+                        pka + math.log10(0.0020 / 0.0010), abs_tol=1e-14)
+
+    plt.rcParams.update({"font.size": 14, "savefig.facecolor": "white"})
+    fig, ax = plt.subplots(figsize=(8.8, 5.6), facecolor="white")
+    fig.subplots_adjust(left=0.11, right=0.96, top=0.79, bottom=0.24)
+    fig.suptitle("A buffer's pH depends on the partner ratio", fontsize=21, y=0.96)
+    fig.text(0.5, 0.86, r"$\mathrm{pH}\approx4.76+\log_{10}([\mathrm{A}^-]/[\mathrm{HA}])$",
+             ha="center", fontsize=16)
+    ax.semilogx(ratio, ph, color="#3d7f51", lw=3)
+    ax.axhline(pka, color="#888888", lw=1.2, ls="--")
+    ax.scatter(marked_ratios, marked_ph, color="#3d7f51", s=55, zorder=4)
+    labels = ["Ratio 0.1\npH 3.76", "Equal partners\npH 4.76",
+              "Ratio 2\npH 5.06103", "Ratio 10\npH 5.76"]
+    for r, p, label, offset, alignment in zip(
+            marked_ratios, marked_ph, labels,
+            [(12, 8), (-12, 18), (20, -48), (-12, -42)],
+            ["left", "right", "left", "right"]):
+        ax.annotate(label, xy=(r, p), xytext=offset, textcoords="offset points",
+                    ha=alignment, fontsize=13,
+                    arrowprops={"arrowstyle": "-", "color": "#777777"})
+    ax.set(xlim=(0.085, 11.8), ylim=(3.55, 5.97), xticks=[0.1, 1, 2, 10],
+           yticks=[3.76, 4.76, 5.76], ylabel="pH",
+           xlabel=r"Conjugate-base / weak-acid concentration ratio $[\mathrm{A}^-]/[\mathrm{HA}]$")
+    ax.set_xticklabels(["0.1", "1", "2", "10"])
+    ax.minorticks_off()
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.grid(color="#dddddd", lw=0.7)
+    fig.text(0.5, 0.10, "Stipulated pKa = 4.76; ideal dilute partners at equilibrium.",
+             ha="center", fontsize=12, color="#444444")
+    fig.text(0.5, 0.045, "Water ionization neglected; curve is a calculation, not measured data.",
+             ha="center", fontsize=12, color="#444444")
+    fig.savefig(Path(__file__).stem + ".png", dpi=100, facecolor="white", transparent=False)
+    plt.close(fig)
+    print(f"Verified ratio 2 → pH {marked_ph[2]:.12f}; ratio 1 → pH {pka:.2f}.")
+    print("Verified decade change → +1 pH, Ka activity identity, and common-scale invariance.")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

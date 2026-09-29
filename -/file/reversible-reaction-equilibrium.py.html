@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>reversible-reaction-equilibrium.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="reversible-reaction-equilibrium.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/reversible-reaction-equilibrium.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">reversible-reaction-equilibrium.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/reversible-reaction-equilibrium.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/reversible-reaction-equilibrium.py">reversible-reaction-equilibrium.py</a></b></div></nav></div><div class="p"><b>reversible-reaction-equilibrium.py</b></div><div class="code"><div><pre><code>"""Plot the specified reversible first-order reaction and its continuing exchange.
+
+Run from _media: MPLBACKEND=Agg MPLCONFIGDIR=/tmp python ../reversible-reaction-equilibrium.py
+Writes an opaque white PNG to the current working directory.
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    kf, kr, total = 0.3, 0.1, 1.0
+    time = np.linspace(0.0, 16.0, 641)
+    a_eq = kr * total / (kf + kr)
+    b_eq = total - a_eq
+    a = a_eq + (total - a_eq) * np.exp(-(kf + kr) * time)
+    b = total - a
+    forward, reverse = kf * a, kr * b
+    assert np.allclose(a + b, total)
+    assert np.isclose(kf * a_eq, kr * b_eq)
+    assert np.isclose(kf * a_eq, 0.075)
+    assert np.allclose(-(kf + kr) * (a - a_eq), -forward + reverse)
+
+    plt.rcParams.update({"font.size": 11, "figure.facecolor": "white",
+                         "axes.facecolor": "white", "savefig.facecolor": "white",
+                         "axes.spines.top": False, "axes.spines.right": False})
+    fig, (composition, rates) = plt.subplots(2, 1, figsize=(8.5, 6.4),
+                                            dpi=120, sharex=True)
+    fig.subplots_adjust(left=0.12, right=0.96, bottom=0.12, top=0.85, hspace=0.30)
+    fig.suptitle("Chemical equilibrium: steady composition, continuing exchange", fontsize=14)
+    fig.text(0.5, 0.91, r"A $\rightleftharpoons$ B   |   $k_f=0.3$ s$^{-1}$, $k_r=0.1$ s$^{-1}$   |   [A] + [B] = 1 M",
+             ha="center", fontsize=11)
+    blue, orange, green = "#236a9e", "#bc542c", "#257653"
+    composition.plot(time, a, color=blue, lw=2.5, label="[A]")
+    composition.plot(time, b, color=orange, lw=2.5, label="[B]")
+    for value, color, label in [(a_eq, blue, "[A]eq = 0.25 M"),
+                                (b_eq, orange, "[B]eq = 0.75 M")]:
+        composition.axhline(value, color=color, lw=1.2, ls=":")
+        composition.text(9.0, value + 0.045, label, color=color)
+    composition.set_ylabel("Concentration (M)")
+    composition.set_ylim(-0.04, 1.04)
+    composition.legend(loc="upper right", frameon=False)
+    rates.plot(time, forward, color=blue, lw=2.5, label=r"Forward: $k_f$[A]")
+    rates.plot(time, reverse, color=orange, lw=2.5, ls="--", label=r"Reverse: $k_r$[B]")
+    rates.plot(time, forward - reverse, color=green, lw=2, ls="-.", label="Net: forward − reverse")
+    rates.axhline(0.075, color="#626262", lw=1, ls=":")
+    rates.axhline(0.0, color="#888888", lw=0.8)
+    rates.text(8.3, 0.089, "Both approach 0.075 M/s", color="#424242")
+    rates.set_ylabel("Reaction rate (M/s)")
+    rates.set_xlabel("Time (s)")
+    rates.set_ylim(-0.015, 0.32)
+    rates.legend(loc="upper right", frameon=False)
+    for axis in (composition, rates):
+        axis.set_xlim(0, 16)
+        axis.grid(alpha=0.16)
+    fig.savefig(Path.cwd() / "reversible-reaction-equilibrium.png", transparent=False)
+    plt.close(fig)
+    print(f"Equilibrium: A={a_eq:g} M, B={b_eq:g} M; directional rate={kf * a_eq:g} M/s")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>rlc-free-damping.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="rlc-free-damping.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/rlc-free-damping.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">rlc-free-damping.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/rlc-free-damping.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/rlc-free-damping.py">rlc-free-damping.py</a></b></div></nav></div><div class="p"><b>rlc-free-damping.py</b></div><div class="code"><div><pre><code>"""Free series-RLC charge and energy; Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7.
+
+Run from the desired output directory; writes rlc-free-damping.png there.
+The dimensionless variables are tau=omega0*t, x=q/q0, a=alpha/omega0.
+"""
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def response(tau, a):
+    """Return x, dx/dtau, d²x/dtau² for x(0)=1, x'(0)=0."""
+    tau = np.asarray(tau)
+    if a &lt; 1:
+        b = np.sqrt(1 - a*a)
+        x = np.exp(-a*tau) * (np.cos(b*tau) + a/b*np.sin(b*tau))
+        v = -np.exp(-a*tau) * np.sin(b*tau)/b
+        acc = np.exp(-a*tau) * (a/b*np.sin(b*tau) - np.cos(b*tau))
+    elif a == 1:
+        x = (1 + tau)*np.exp(-tau)
+        v = -tau*np.exp(-tau)
+        acc = (tau - 1)*np.exp(-tau)
+    else:
+        b = np.sqrt(a*a - 1)
+        slow, fast = -a+b, -a-b
+        # Two decaying exponentials avoid growing cosh/sinh intermediates.
+        x = ((a+b)*np.exp(slow*tau) - (a-b)*np.exp(fast*tau))/(2*b)
+        v = (np.exp(fast*tau) - np.exp(slow*tau))/(2*b)
+        acc = (fast*np.exp(fast*tau) - slow*np.exp(slow*tau))/(2*b)
+    return x, v, acc
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                         "axes.spines.right": False, "figure.facecolor": "white"})
+    tau = np.linspace(0, 12, 1801)
+    fig, axes = plt.subplots(1, 2, figsize=(10.4, 4.2), layout="constrained")
+    curves = [(0.5, "#2369ad", "Underdamped"),
+              (1.0, "#c46b17", "Critical"), (2.0, "#39804a", "Overdamped")]
+    for a, color, label in curves:
+        x, v, _ = response(tau, a)
+        legend = rf"{label}: $\alpha/\omega_0={a:g}$"
+        axes[0].plot(tau, x, color=color, lw=2.3, label=legend)
+        axes[1].plot(tau, x*x + v*v, color=color, lw=2.3)
+    axes[0].axhline(0, color="#777777", lw=0.8)
+    axes[0].set(title="Charge: oscillation or direct return", ylabel=r"$q/q_0$",
+                ylim=(-0.23, 1.05))
+    axes[0].legend(fontsize=9, frameon=False)
+    axes[1].set(title="Stored energy always decreases", ylabel=r"$E/E(0)$",
+                ylim=(-0.02, 1.05))
+    axes[1].text(0.97, 0.91, r"$E/E(0)=x^2+(dx/d\tau)^2$" + "\n" +
+                 r"$d[E/E(0)]/d\tau=-4(\alpha/\omega_0)(dx/d\tau)^2$",
+                 transform=axes[1].transAxes, ha="right", va="top", fontsize=10)
+    for ax in axes:
+        ax.set(xlim=(0, 12), xlabel=r"Dimensionless time $\tau=\omega_0t$")
+        ax.grid(alpha=0.18)
+    fig.suptitle(r"Free series RLC response: $q(0)=q_0$, $i(0)=0$", fontsize=14)
+    fig.savefig("rlc-free-damping.png", dpi=120, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

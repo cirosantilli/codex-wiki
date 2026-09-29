@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>borel-cantelli-series-and-tail-probabilities.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="borel-cantelli-series-and-tail-probabilities.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/borel-cantelli-series-and-tail-probabilities.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">borel-cantelli-series-and-tail-probabilities.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/borel-cantelli-series-and-tail-probabilities.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/borel-cantelli-series-and-tail-probabilities.py">borel-cantelli-series-and-tail-probabilities.py</a></b></div></nav></div><div class="p"><b>borel-cantelli-series-and-tail-probabilities.py</b></div><div class="code"><div><pre><code>"""Generate original Borel–Cantelli series and tail curves in the current directory.
+
+Tested with Python 3.14, matplotlib 3.10.7 and numpy 2.3.5.
+Run from _media with MPLBACKEND=Agg and a writable MPLCONFIGDIR.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    n = np.arange(1, 10001, dtype=float)
+    harmonic = np.cumsum(1 / (n + 1))
+    squared = np.cumsum(1 / (n + 1) ** 2)
+    m = np.unique(np.geomspace(1, 10000, 360).astype(int))
+    # R_m = sum_{k=m+1}^infinity k^{-2}, evaluated from the Basel sum.
+    inverse_square_prefix = np.cumsum(1 / np.arange(1, 10001, dtype=float) ** 2)
+    tail = np.pi**2 / 6 - inverse_square_prefix[m - 1]
+    assert np.all(tail &gt; 0)
+    assert np.all(tail &lt;= 1 / m)
+    assert np.all(np.diff(tail) &lt; 0)
+
+    plt.rcParams.update({"font.size": 11, "axes.titlesize": 12, "figure.facecolor": "white"})
+    fig, axes = plt.subplots(1, 2, figsize=(10.8, 4.7), layout="constrained")
+    blue, orange, green = "#2463a0", "#b55318", "#237f59"
+    axes[0].plot(n, harmonic, color=orange, lw=2.3, label=r"$p_n=1/(n+1)$")
+    axes[0].plot(n, squared, color=blue, lw=2.3, label=r"$p_n=1/(n+1)^2$")
+    axes[0].axhline(np.pi**2 / 6 - 1, color=blue, lw=1, ls=":")
+    axes[0].annotate(r"Limit: $\pi^2/6-1\approx0.645$", xy=(650, 0.645),
+                     xytext=(22, 2.5), arrowprops={"arrowstyle": "-&gt;", "color": blue}, color=blue)
+    axes[0].set(title="Finite partial sums", ylabel=r"$S_N=\sum_{n=1}^N p_n$", xlabel="Last index N")
+    axes[0].legend(loc="upper left", frameon=False)
+    axes[0].set_ylim(0, 9.1)
+
+    axes[1].plot(m, np.ones_like(m), color=green, lw=2.3, label="Independent harmonic: exact")
+    axes[1].plot(m, 1 / m, color="#777777", lw=1.4, ls="--", label=r"Squared: upper bound $1/m$")
+    axes[1].plot(m, tail, color=blue, lw=2.3, label=r"Squared: union bound $R_m$")
+    axes[1].plot(m, 1 / (m + 1), color=orange, lw=2.3, ls=":", label="Shared harmonic: exact")
+    axes[1].set(title="An event somewhere at or after m", ylabel="Tail probability or upper bound", xlabel="Starting index m")
+    axes[1].set_yscale("log")
+    axes[1].set_ylim(0.000065, 2)
+    axes[1].legend(loc="lower left", frameon=False, fontsize=9.5)
+    for ax in axes:
+        ax.set_xscale("log")
+        ax.set_xlim(1, 10000)
+        ax.grid(alpha=0.2)
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.suptitle("Individual probabilities shrink in both models; dependence changes the tail", fontsize=13)
+    fig.savefig(Path(__file__).stem + ".png", dpi=110, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

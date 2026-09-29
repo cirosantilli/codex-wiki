@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>morphogen-gradient-and-thresholds.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="morphogen-gradient-and-thresholds.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/morphogen-gradient-and-thresholds.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">morphogen-gradient-and-thresholds.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/morphogen-gradient-and-thresholds.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/morphogen-gradient-and-thresholds.py">morphogen-gradient-and-thresholds.py</a></b></div></nav></div><div class="p"><b>morphogen-gradient-and-thresholds.py</b></div><div class="code"><div><pre><code>"""Plot a toy exponential morphogen gradient and idealized fate bands.
+
+Writes morphogen-gradient-and-thresholds.png to the current directory.
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+All concentrations and parameters are illustrative, not measured Bicoid data.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    c0, ell = 100.0, 100.0  # arbitrary concentration units; micrometres
+    x = np.linspace(0.0, 350.0, 1000)
+    boundaries = ell * np.log(c0 / np.array([50.0, 20.0]))
+    colors = ["#d8e9f4", "#f8e5b9", "#e0eee4"]
+    fig, (ax, bands) = plt.subplots(
+        2, 1, figsize=(8.4, 5.8), sharex=True,
+        gridspec_kw={"height_ratios": [3.5, 1.0]},
+    )
+    fig.subplots_adjust(left=0.12, right=0.97, top=0.85, bottom=0.19, hspace=0.18)
+    fig.patch.set_facecolor("white")
+    edges = [0.0, *boundaries, x[-1]]
+    for i, (left, right) in enumerate(zip(edges[:-1], edges[1:])):
+        ax.axvspan(left, right, color=colors[i])
+        bands.axvspan(left, right, color=colors[i])
+        bands.text((left + right) / 2, 0.68, f"Fate {'ABC'[i]}", ha="center", fontsize=11)
+        bands.text((left + right) / 2, 0.29,
+                   [r"$c\geq50$", r"$20\leq c&lt;50$", r"$c&lt;20$"][i],
+                   ha="center", fontsize=11)
+    ax.plot(x, c0 * np.exp(-x / ell), lw=2.6, color="#1f587e")
+    for threshold, boundary in zip([50, 20], boundaries):
+        ax.axhline(threshold, color="#555555", ls="--", lw=1)
+        ax.axvline(boundary, color="#555555", ls=":", lw=1)
+        ax.plot(boundary, threshold, "o", color="#1f587e", ms=6)
+        ax.annotate(f"{boundary:.2f} µm", (boundary, threshold),
+                    xytext=(12, 12), textcoords="offset points", fontsize=11,
+                    bbox={"facecolor": "white", "edgecolor": "none", "pad": 2})
+        bands.axvline(boundary, color="#777777", lw=1)
+    ax.set(xlim=(0, 350), ylim=(0, 108), ylabel="Concentration (arbitrary units)")
+    ax.set_yticks([0, 20, 50, 100])
+    ax.set_title(r"$c(x)=100e^{-x/\ell},\quad\ell=100\ \mathrm{µm}$", fontsize=13)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.tick_params(labelsize=10)
+    bands.set(ylim=(0, 1), yticks=[], xlabel="Distance from fixed-concentration source x (µm)")
+    bands.spines[["left", "top", "right"]].set_visible(False)
+    bands.set_xticks([0, 50, 100, 150, 200, 250, 300, 350])
+    fig.suptitle("One smooth gradient, three idealized responses", fontsize=15, y=0.97)
+    fig.text(0.5, 0.055, "Toy threshold rule; not measured Bicoid data. Domain continues beyond the plotted range.",
+             ha="center", fontsize=10)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=130, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

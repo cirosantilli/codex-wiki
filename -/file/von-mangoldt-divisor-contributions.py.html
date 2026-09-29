@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>von-mangoldt-divisor-contributions.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="von-mangoldt-divisor-contributions.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/von-mangoldt-divisor-contributions.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">von-mangoldt-divisor-contributions.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/von-mangoldt-divisor-contributions.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/von-mangoldt-divisor-contributions.py">von-mangoldt-divisor-contributions.py</a></b></div></nav></div><div class="p"><b>von-mangoldt-divisor-contributions.py</b></div><div class="code"><div><pre><code>"""Plot the von Mangoldt divisor weights of 12; Python 3.14, Matplotlib 3.10.7.
+
+Run from _media; the opaque white PNG is written to the current directory.
+"""
+from math import isclose, log
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def prime_power_base(n):
+    """Return the prime base of a positive-exponent prime power, or None."""
+    if n &lt; 2:
+        return None
+    base = 2
+    while n % base:
+        base += 1
+    while n % base == 0:
+        n //= base
+    return base if n == 1 else None
+
+
+def divisor_data(n):
+    divisors = [d for d in range(1, n + 1) if n % d == 0]
+    bases = [prime_power_base(d) for d in divisors]
+    weights = np.array([log(p) if p else 0.0 for p in bases])
+    return divisors, bases, weights
+
+
+def main():
+    divisors, bases, weights = divisor_data(12)
+    assert divisors == [1, 2, 3, 4, 6, 12]
+    assert bases == [None, 2, 3, 2, None, None]
+    assert isclose(float(weights.sum()), log(12), abs_tol=1e-14)
+    colors = {2: "#256aa5", 3: "#ce731e", None: "#79818a"}
+    labels = ["0", r"$\log 2$", r"$\log 3$", r"$\log 2$", "0", "0"]
+    plt.rcParams.update({"font.size": 12, "axes.spines.top": False,
+                         "axes.spines.right": False})
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4.9), dpi=120,
+                             gridspec_kw={"width_ratios": [3, 1]}, layout="constrained")
+    fig.patch.set_facecolor("white")
+    fig.suptitle(r"Divisor weights recover $\log 12$", fontsize=19)
+    ax, total_ax = axes
+    ax.set_facecolor("white")
+    total_ax.set_facecolor("white")
+    positions = np.arange(len(divisors))
+    ax.bar(positions, weights, color=[colors[p] for p in bases], width=0.64, zorder=3)
+    for pos, weight, label in zip(positions, weights, labels):
+        ax.text(pos, weight + 0.045, label, ha="center", va="bottom", fontsize=13)
+        if weight == 0:
+            ax.plot(pos, 0, "o", color=colors[None], markersize=5, clip_on=False, zorder=4)
+    ax.set_xticks(positions, divisors)
+    ax.set(xlabel=r"Positive divisor $d$ of 12", ylabel=r"Weight $\Lambda(d)$",
+           ylim=(0, 1.45), title=r"Only $2$, $3$, and $4$ contribute")
+    ax.grid(axis="y", color="#e0e4e8", zorder=0)
+    bottom = 0.0
+    for p in (2, 2, 3):
+        weight = log(p)
+        total_ax.bar(0, weight, bottom=bottom, color=colors[p], width=0.7,
+                     edgecolor="white", linewidth=1.5, zorder=3)
+        total_ax.text(0, bottom + weight / 2, rf"$\log {p}$", ha="center",
+                      va="center", color="white", fontsize=14)
+        bottom += weight
+    total_ax.set_xticks([0], [r"$2\log 2+\log 3$"])
+    total_ax.set(xlim=(-0.65, 0.65), ylim=(0, 2.9), ylabel="Total weight",
+                 title=r"$12=2^2\cdot3$")
+    total_ax.text(0, bottom + 0.07, r"$\log 12$", ha="center", fontsize=15)
+    total_ax.grid(axis="y", color="#e0e4e8", zorder=0)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), facecolor="white",
+                transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>linear-ode-superposition.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="linear-ode-superposition.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/linear-ode-superposition.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">linear-ode-superposition.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/linear-ode-superposition.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/linear-ode-superposition.py">linear-ode-superposition.py</a></b></div></nav></div><div class="p"><b>linear-ode-superposition.py</b></div><div class="code"><div><pre><code>"""Compare homogeneous superposition with a fixed forced solution family.
+
+Tested with Python 3.14.4, NumPy 2.3.5 and Matplotlib 3.10.7.
+Run from the desired output directory; writes linear-ode-superposition.png.
+All curves use exact formulas; t and y are dimensionless.
+"""
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    t = np.linspace(0.0, 2.5, 501)
+    decay = np.exp(-2.0 * t)
+    blue, green, orange, red = "#2166ac", "#258568", "#c36b13", "#b2182b"
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                         "axes.spines.right": False})
+    fig, axes = plt.subplots(1, 2, figsize=(11.2, 4.9), dpi=120,
+                             facecolor="white", constrained_layout=True)
+    ax = axes[0]
+    for curve, color, label in (
+        (decay, blue, r"$y_1=e^{-2t}$"),
+        (2 * decay, orange, r"$y_2=2e^{-2t}$"),
+        (3 * decay, green, r"$y_1+y_2=3e^{-2t}$"),
+    ):
+        ax.plot(t, curve, color=color, lw=2.6, label=label)
+        ax.scatter([0], [curve[0]], color=color, s=24, zorder=4)
+    ax.set(title=r"Homogeneous: $y'+2y=0$", ylim=(-0.08, 3.15))
+    ax.legend(loc="upper right", framealpha=1)
+    ax.text(0.97, 0.58, "All three curves solve\nthe same equation.",
+            transform=ax.transAxes, ha="right", va="center", fontsize=10)
+    ax = axes[1]
+    u0, u1, u2 = 0.5 - 0.5 * decay, 0.5 + 0.5 * decay, 0.5 + 1.5 * decay
+    ax.fill_between(t, 0.5, u2, color=orange, alpha=0.12)
+    for curve, color, label in (
+        (u0, blue, r"$u_0$: $y(0)=0$"),
+        (u1, green, r"$u_1=(u_0+u_2)/2$: $y(0)=1$"),
+        (u2, orange, r"$u_2$: $y(0)=2$"),
+    ):
+        ax.plot(t, curve, lw=2.6, color=color, label=label)
+        ax.scatter([0], [curve[0]], color=color, s=24, zorder=4)
+    ax.axhline(0.5, color="#555555", lw=1.6, ls=":",
+               label=r"particular solution $y_p=1/2$")
+    ax.plot(t, u0 + u2, color=red, lw=2.5, ls="--",
+            label=r"$u_0+u_2$: forcing $2$, not $1$")
+    ax.set(title=r"Fixed forcing: $y'+2y=1$", ylim=(-0.08, 2.45))
+    ax.legend(loc="upper right", fontsize=9.2, framealpha=1)
+    sample = 0.75
+    top = 0.5 + 1.5 * np.exp(-2 * sample)
+    ax.annotate("", xy=(sample, top), xytext=(sample, 0.5),
+                arrowprops={"arrowstyle": "&lt;-&gt;", "color": orange, "lw": 1.4})
+    ax.text(1.06, 0.76, r"shaded deviation: $\frac{3}{2}e^{-2t}$",
+            fontsize=9.5, color="#92500e")
+    for ax in axes:
+        ax.set(xlabel="t (dimensionless)", ylabel="y (dimensionless)",
+               xlim=(-0.04, 2.5))
+        ax.set_facecolor("white")
+        ax.grid(alpha=0.16)
+    fig.savefig(Path.cwd() / "linear-ode-superposition.png",
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

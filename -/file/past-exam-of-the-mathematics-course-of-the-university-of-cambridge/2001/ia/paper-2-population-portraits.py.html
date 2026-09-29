@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2001/ia/paper-2-population-portraits.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2001/ia/paper-2-population-portraits.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2001/ia/paper-2-population-portraits.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2001/ia/paper-2-population-portraits.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2001/ia/paper-2-population-portraits.py"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../../-/dir">(root)</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge">past-exam-of-the-mathematics-course-of-the-university-of-cambridge</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2001">2001</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2001/ia">ia</a> / <a href="../../../../../-/raw/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2001/ia/paper-2-population-portraits.py">paper-2-population-portraits.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2001/ia/paper-2-population-portraits.py</b></div><div class="code"><div><pre><code>"""Representative logistic predator-prey portraits, Python3.14/root numpy+matplotlib.
+
+Each trajectory uses RK4. Output basename to caller CWD; respects MPLCONFIGDIR.
+"""
+from pathlib import Path
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+def field(z,b):
+    p,h=z
+    return np.array([p*(1-p-h),h*(p/b-1)/8])
+
+def trajectory(z,b,dt=.025,steps=7200):
+    vals=[np.array(z,dtype=float)]
+    for _ in range(steps):
+        v=vals[-1];k1=field(v,b);k2=field(v+.5*dt*k1,b);k3=field(v+.5*dt*k2,b);k4=field(v+dt*k3,b)
+        nxt=v+dt*(k1+2*k2+2*k3+k4)/6
+        if not np.all(np.isfinite(nxt)) or np.min(nxt)&lt;0:raise RuntimeError('invalid population integration')
+        vals.append(nxt)
+    return np.array(vals)
+
+fig,axes=plt.subplots(1,2,figsize=(10,4.25),facecolor='white')
+starts=[(.07,.15),(.12,1.5),(.85,.15),(1.7,.12),(1.55,1.05)]
+for ax,b,title in zip(axes,[.25,1.5],['b = 0.25: stable coexistence','b = 1.5: hunters die out']):
+    pp,hh=np.meshgrid(np.linspace(.045,1.92,17),np.linspace(.035,1.77,16))
+    dp=pp*(1-pp-hh);dh=hh*(pp/b-1)/8;norm=np.hypot(dp,dh)
+    ax.quiver(pp,hh,dp/norm,dh/norm,color='#aaaaaa',alpha=.7,angles='xy',scale_units='xy',scale=18,width=.0026)
+    for start in starts:
+        vals=trajectory(start,b)
+        ax.plot(vals[:,0],vals[:,1],lw=1.3,alpha=.88)
+        # An early arrow gives trajectory direction without hiding the equilibrium.
+        j=100;k=125
+        ax.annotate('',xy=vals[k],xytext=vals[j],arrowprops={'arrowstyle':'-&gt;','color':'#224466','lw':1.1})
+    u=np.linspace(0,1,150);ax.plot(u,1-u,color='#333333',ls='--',lw=1,label='prey nullcline')
+    ax.axvline(b,color='#855c1b',ls=':',lw=1,label='hunter nullcline')
+    saddles=[(0,0)]+([(1,0)] if b&lt;1 else [])
+    for p,h in saddles:ax.scatter([p],[h],s=32,facecolors='white',edgecolors='black',zorder=6,clip_on=False)
+    eq=(b,1-b) if b&lt;1 else (1,0)
+    ax.scatter([eq[0]],[eq[1]],s=45,color='black',zorder=7,clip_on=False)
+    ax.annotate('attractor',xy=eq,xytext=(.52,1.18) if b&lt;1 else (1.15,.35),arrowprops={'arrowstyle':'-&gt;'},fontsize=9)
+    ax.set(xlim=(0,2),ylim=(0,1.85),xlabel='prey p',ylabel='hunters h',title=title)
+    ax.spines[['top','right']].set_visible(False)
+axes[1].legend(loc='upper right',frameon=False,fontsize=8)
+fig.tight_layout(w_pad=2);fig.savefig(Path.cwd()/'paper-2-population-portraits.png',dpi=150,facecolor='white',transparent=False);plt.close(fig)
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

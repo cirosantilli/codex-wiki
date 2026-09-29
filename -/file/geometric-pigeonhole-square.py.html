@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>geometric-pigeonhole-square.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="geometric-pigeonhole-square.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/geometric-pigeonhole-square.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">geometric-pigeonhole-square.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/geometric-pigeonhole-square.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/geometric-pigeonhole-square.py">geometric-pigeonhole-square.py</a></b></div></nav></div><div class="p"><b>geometric-pigeonhole-square.py</b></div><div class="code"><div><pre><code>"""Five points in four cells; tested with Python 3.14 and matplotlib 3.10.7.
+
+Write geometric-pigeonhole-square.png in the current working directory.
+"""
+
+from collections import Counter
+from math import dist, isclose, sqrt
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+
+
+def cell(point):
+    """Equality at either half-coordinate goes to the right/upper cell."""
+    x, y = point
+    return int(x &gt;= 0.5), int(y &gt;= 0.5)
+
+
+def main():
+    points = [(0.1, 0.1), (0.4, 0.4), (0.8, 0.2), (0.2, 0.8), (0.8, 0.8)]
+    assert Counter(map(cell, points)) == {(0, 0): 2, (1, 0): 1,
+                                        (0, 1): 1, (1, 1): 1}
+    assert cell((0.5, 0.5)) == (1, 1)
+    assert cell((0.5, 0.0)) == (1, 0)
+    assert cell((0.0, 0.5)) == (0, 1)
+    assert cell((1.0, 1.0)) == (1, 1)
+    pair_distance = dist(points[0], points[1])
+    assert isclose(pair_distance, sqrt(0.18), abs_tol=1e-14)
+    assert pair_distance &lt;= 1 / sqrt(2)
+    fig = plt.figure(figsize=(9, 6.1), dpi=120, facecolor="white")
+    ax = fig.add_axes((0.08, 0.19, 0.52, 0.68))
+    orange, blue, ink = "#b34e16", "#196a96", "#283644"
+    ax.add_patch(Rectangle((0, 0), 0.5, 0.5, facecolor="#fff0e3"))
+    ax.add_patch(Rectangle((0, 0), 1, 1, facecolor="none",
+                           edgecolor=ink, linewidth=1.8))
+    ax.axvline(0.5, color="#758594", linestyle="--", linewidth=1.4)
+    ax.axhline(0.5, color="#758594", linestyle="--", linewidth=1.4)
+    ax.plot([0.1, 0.4], [0.1, 0.4], color=orange, linewidth=2.5, zorder=3)
+    for i, (x, y) in enumerate(points):
+        ax.scatter([x], [y], s=90, color=orange if i &lt; 2 else blue,
+                   edgecolor="white", linewidth=1, zorder=4)
+        offsets = [(6, -21), (-75, 12), (-8, 9), (8, 9), (-8, 9)]
+        ax.annotate(f"({x:.1f}, {y:.1f})", (x, y),
+                    xytext=offsets[i], textcoords="offset points",
+                    ha="right" if i in (2, 4) else "left",
+                    fontsize=11, color=ink)
+    ax.set_aspect("equal")
+    ax.set_xlim(-0.03, 1.03)
+    ax.set_ylim(-0.03, 1.03)
+    ax.set_xticks([0, 0.5, 1], ["0", "1/2", "1"])
+    ax.set_yticks([0, 0.5, 1], ["0", "1/2", "1"])
+    ax.set_xlabel("x", fontsize=12)
+    ax.set_ylabel("y", fontsize=12, rotation=0, labelpad=12)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    fig.suptitle("Five points, four cells: a nearby pair must exist",
+                 fontsize=16, y=0.96, color=ink)
+    fig.text(0.65, 0.79, "Every placement guarantees", fontsize=12, color=ink)
+    fig.text(0.65, 0.70, r"$d\leq\sqrt{(1/2)^2+(1/2)^2}$", fontsize=14, color=ink)
+    fig.text(0.65, 0.62, r"$=1/\sqrt{2}\approx0.707107$", fontsize=14, color=ink)
+    fig.text(0.65, 0.47, "The orange pair here", fontsize=12, color=orange)
+    fig.text(0.65, 0.38, r"$d=\sqrt{0.18}\approx0.424264$", fontsize=14, color=orange)
+    fig.text(0.5, 0.065,
+             "Boundary rule: x = 1/2 goes right; y = 1/2 goes up. Each point has exactly one cell.",
+             ha="center", fontsize=11, color=ink)
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+    print(f"Cell counts: (2, 1, 1, 1); pair distance {pair_distance:.12f}; "
+          f"guaranteed bound {1 / sqrt(2):.12f}.")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

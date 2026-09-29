@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>gram-schmidt-qr-factorization.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="gram-schmidt-qr-factorization.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/gram-schmidt-qr-factorization.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">gram-schmidt-qr-factorization.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/gram-schmidt-qr-factorization.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/gram-schmidt-qr-factorization.py">gram-schmidt-qr-factorization.py</a></b></div></nav></div><div class="p"><b>gram-schmidt-qr-factorization.py</b></div><div class="code"><div><pre><code>"""Show a computed Gram-Schmidt QR factorization; write a PNG to CWD.
+
+Tested with Python 3.14.4, Matplotlib 3.10.7 and NumPy 2.3.5.
+Run from _media to create gram-schmidt-qr-factorization.png there.
+"""
+
+from fractions import Fraction
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.colors import TwoSlopeNorm
+from matplotlib.patches import Rectangle
+import numpy as np
+
+
+def exact_residuals():
+    """Check the residuals with rational arithmetic before drawing decimals."""
+    inputs = [list(map(Fraction, v)) for v in [[1, 1, 0], [1, 0, 1], [0, 1, 1]]]
+    residuals = []
+    dot = lambda a, b: sum(x * y for x, y in zip(a, b))
+    for v in inputs:
+        remainder = v.copy()
+        for u in residuals:
+            coefficient = dot(v, u) / dot(u, u)
+            remainder = [x - coefficient * y for x, y in zip(remainder, u)]
+        residuals.append(remainder)
+    assert residuals[1] == [Fraction(1, 2), Fraction(-1, 2), Fraction(1)]
+    assert residuals[2] == [Fraction(-2, 3), Fraction(2, 3), Fraction(2, 3)]
+    squared_lengths = [dot(u, u) for u in residuals]
+    assert squared_lengths == [Fraction(2), Fraction(3, 2), Fraction(4, 3)]
+    for i in range(3):
+        for j in range(i):
+            assert dot(residuals[i], residuals[j]) == 0
+    print("Exact residuals:", residuals)
+    print("Exact squared lengths:", squared_lengths)
+
+
+def main():
+    exact_residuals()
+    a = np.array([[1., 1., 0.], [1., 0., 1.], [0., 1., 1.]])
+    q = np.array([[1., 1., -1.], [1., -1., 1.], [0., 2., 1.]]) / np.sqrt([2., 6., 3.])
+    r = np.array([[np.sqrt(2), 1 / np.sqrt(2), 1 / np.sqrt(2)],
+                  [0, np.sqrt(3 / 2), 1 / np.sqrt(6)], [0, 0, 2 / np.sqrt(3)]])
+    assert np.allclose(q.T @ q, np.eye(3), atol=1e-14, rtol=0)
+    assert np.allclose(q @ r, a, atol=1e-14, rtol=0)
+    assert np.allclose(q.T @ a, r, atol=1e-14, rtol=0)
+    assert np.allclose(r.T @ r, a.T @ a, atol=1e-14, rtol=0)
+    b = np.array([0., 0., 1.])
+    q_two, a_two = q[:, :2], a[:, :2]
+    projection = q_two @ (q_two.T @ b)
+    x = np.linalg.solve(r[:2, :2], q_two.T @ b)
+    assert np.allclose(x, [-1 / 3, 2 / 3], atol=1e-14)
+    assert np.allclose(projection, [1 / 3, -1 / 3, 2 / 3], atol=1e-14)
+    assert np.allclose(a_two @ x, projection, atol=1e-14)
+    assert np.allclose(q_two.T @ (b - projection), 0, atol=1e-14)
+    assert np.isclose(np.linalg.norm(b - projection), 1 / np.sqrt(3), atol=1e-14)
+
+    plt.rcParams.update({"font.size": 12, "figure.facecolor": "white"})
+    fig = plt.figure(figsize=(11, 5.2))
+    positions = [0.07, 0.38, 0.69]
+    axes = [fig.add_axes([left, 0.30, 0.24, 0.45]) for left in positions]
+    norm = TwoSlopeNorm(vmin=-1.5, vcenter=0, vmax=1.5)
+    titles = ["A: original columns", "Q: unit directions", "R: recorded coefficients"]
+    column_labels = [[r"$v_1$", r"$v_2$", r"$v_3$"],
+                     [r"$q_1$", r"$q_2$", r"$q_3$"],
+                     [r"$v_1$", r"$v_2$", r"$v_3$"]]
+    for index, (ax, matrix, title, labels) in enumerate(zip(axes, [a, q, r], titles, column_labels)):
+        im = ax.imshow(matrix, cmap="RdBu_r", norm=norm, interpolation="nearest")
+        ax.set_title(title, fontsize=13, pad=14)
+        ax.set_xticks(range(3), labels=labels)
+        ax.tick_params(length=0)
+        ax.set_yticks(range(3), labels=([r"$q_1$", r"$q_2$", r"$q_3$"]
+                                      if index == 2 else ["1", "2", "3"]))
+        ax.set_xticks(np.arange(-0.5, 3, 1), minor=True)
+        ax.set_yticks(np.arange(-0.5, 3, 1), minor=True)
+        ax.grid(which="minor", color="white", linewidth=2)
+        ax.tick_params(which="minor", length=0)
+        for row in range(3):
+            for col in range(3):
+                value = matrix[row, col]
+                label = str(int(value)) if index == 0 or value == 0 else f"{value:.3f}"
+                ax.text(col, row, label, ha="center", va="center", fontsize=16,
+                        color="white" if abs(value) &gt; 1.05 else "#182b3b")
+                if index == 2 and row == col:
+                    ax.add_patch(Rectangle((col - 0.46, row - 0.46), 0.92, 0.92,
+                                           fill=False, edgecolor="#f3bd49", linewidth=2.3))
+    fig.text(0.345, 0.53, "=", fontsize=27, ha="center", va="center")
+    fig.text(0.655, 0.53, "×", fontsize=27, ha="center", va="center")
+    fig.suptitle("Gram–Schmidt records the factorization A = QR", fontsize=17, y=0.97)
+    fig.text(0.5, 0.86, "Color shows signed entries on one common scale; decimals are rounded to 3 places.",
+             ha="center", fontsize=11)
+    fig.text(0.5, 0.23, r"$Q^TQ=I$    ·    $QR=A$    ·    $R^TR=A^TA$", ha="center", fontsize=14)
+    fig.text(0.5, 0.15, r"Highlighted diagonal: $\|u_1\|=\sqrt{2}$,  "
+             r"$\|u_2\|=\sqrt{3/2}$,  $\|u_3\|=2/\sqrt{3}$", ha="center", fontsize=12)
+    color_ax = fig.add_axes([0.31, 0.055, 0.38, 0.023])
+    fig.colorbar(im, cax=color_ax, orientation="horizontal", ticks=[-1.5, 0, 1.5])
+    color_ax.tick_params(labelsize=10, length=2)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=120,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+    print("max|Q.T Q-I| =", np.max(np.abs(q.T @ q - np.eye(3))))
+    print("max|QR-A| =", np.max(np.abs(q @ r - a)))
+    print("Checked: Q.T A=R; R.T R=A.T A; projection and least squares x=(-1/3,2/3), distance=1/sqrt(3).")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->
