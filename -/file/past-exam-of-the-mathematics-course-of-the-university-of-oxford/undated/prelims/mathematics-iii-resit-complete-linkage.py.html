@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematics-course-of-the-university-of-oxford/undated/prelims/mathematics-iii-resit-complete-linkage.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematics-course-of-the-university-of-oxford/undated/prelims/mathematics-iii-resit-complete-linkage.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematics-course-of-the-university-of-oxford/undated/prelims/mathematics-iii-resit-complete-linkage.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematics-course-of-the-university-of-oxford/undated/prelims/mathematics-iii-resit-complete-linkage.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematics-course-of-the-university-of-oxford/undated/prelims/mathematics-iii-resit-complete-linkage.py"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../../-/dir">(root)</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-oxford">past-exam-of-the-mathematics-course-of-the-university-of-oxford</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-oxford/undated">undated</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-oxford/undated/prelims">prelims</a> / <a href="../../../../../-/raw/past-exam-of-the-mathematics-course-of-the-university-of-oxford/undated/prelims/mathematics-iii-resit-complete-linkage.py">mathematics-iii-resit-complete-linkage.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematics-course-of-the-university-of-oxford/undated/prelims/mathematics-iii-resit-complete-linkage.py</b></div><div class="code"><div><pre><code>#!/usr/bin/env python3
+"""Draw the solution dendrogram; run from the mirrored _media directory.
+
+Tested with Python 3.14.4, Matplotlib 3.10.7 and NumPy 2.3.5, as declared
+in the repository's root pyproject.toml. Writes only a PNG in the cwd.
+"""
+from pathlib import Path
+
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def complete_linkage(distances):
+    """Return (left, right, height, members) merges with deterministic ties."""
+    active = {i: (i,) for i in range(len(distances))}
+    merges = []
+    while len(active) &gt; 1:
+        ids = sorted(active)
+        height, left, right = min(
+            (max(distances[i, j] for i in active[a] for j in active[b]), a, b)
+            for pos, a in enumerate(ids) for b in ids[pos + 1:]
+        )
+        members = active.pop(left) + active.pop(right)
+        active[len(distances) + len(merges)] = members
+        merges.append((left, right, float(height), members))
+    return merges
+
+
+def main():
+    distances = np.array([
+        [0, 1.41, 2.68, .67, 3.01],
+        [1.41, 0, 2.95, 1.19, 2.37],
+        [2.68, 2.95, 0, 2.19, 2.82],
+        [.67, 1.19, 2.19, 0, 3.32],
+        [3.01, 2.37, 2.82, 3.32, 0],
+    ])
+    merges = complete_linkage(distances)
+    assert [m[2] for m in merges] == [.67, 1.41, 2.82, 3.32]
+    order = [0, 3, 1, 2, 4]
+    positions = {leaf: (float(pos), 0.) for pos, leaf in enumerate(order)}
+    blue, orange = '#2476a3', '#c06c22'
+    fig, ax = plt.subplots(figsize=(6.8, 3.9), facecolor='white')
+    ax.set_facecolor('white')
+    for node, (left, right, height, members) in enumerate(merges, 5):
+        xl, yl = positions[left]
+        xr, yr = positions[right]
+        color = blue if set(members) &lt;= {0, 1, 3} else orange
+        if len(members) == 5:
+            color = '#444444'
+        ax.plot([xl, xl, xr, xr], [yl, height, height, yr], color=color, lw=2.3)
+        center = (xl + xr) / 2
+        positions[node] = (center, height)
+        ax.annotate(f'{height:.2f}', (center, height), xytext=(0, 7),
+                    textcoords='offset points', ha='center', fontsize=10)
+    ax.axhline(3.05, color='#777777', lw=1, ls='--')
+    ax.text(4.28, 3.05, 'two-cluster cut', ha='right', va='bottom', fontsize=9,
+            color='#555555', bbox={'facecolor': 'white', 'edgecolor': 'none', 'pad': 1})
+    ax.set_xticks(range(5), [str(i + 1) for i in order])
+    ax.set_xlim(-.4, 4.4)
+    ax.set_ylim(0, 3.7)
+    ax.set_xlabel('Observation')
+    ax.set_ylabel('Complete-linkage distance')
+    ax.set_title('Complete linkage after removing observation 6', pad=14)
+    ax.spines[['top', 'right']].set_visible(False)
+    ax.grid(axis='y', alpha=.15)
+    ax.set_axisbelow(True)
+    fig.tight_layout()
+    output = Path(Path(__file__).stem + '.png')
+    fig.savefig(output, dpi=150, facecolor='white', transparent=False)
+    plt.close(fig)
+    print(output)
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>plane-graph-face-counts-and-edge-obstructions.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="plane-graph-face-counts-and-edge-obstructions.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/plane-graph-face-counts-and-edge-obstructions.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">plane-graph-face-counts-and-edge-obstructions.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/plane-graph-face-counts-and-edge-obstructions.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/plane-graph-face-counts-and-edge-obstructions.py">plane-graph-face-counts-and-edge-obstructions.py</a></b></div></nav></div><div class="p"><b>plane-graph-face-counts-and-edge-obstructions.py</b></div><div class="code"><div><pre><code>"""Compare actual plane faces with hypothetical obstruction counts.
+
+Tested with Python 3.14, matplotlib 3.10.7, numpy 2.3.5.
+Run from _media; write a matching PNG basename to the current directory.
+"""
+
+from itertools import combinations
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
+import numpy as np
+
+
+def draw(ax, pos, edges, colors=None):
+    for u, v in edges:
+        points = np.array([pos[u], pos[v]])
+        ax.plot(points[:, 0], points[:, 1], color="#42586a", lw=1.8, zorder=1)
+    for v, (x, y) in pos.items():
+        ax.plot(x, y, "o", ms=8, color=(colors or {}).get(v, "#17354d"), zorder=2)
+    ax.set(xlim=(-1.35, 1.35), ylim=(-1.35, 1.35), aspect="equal")
+    ax.axis("off")
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "font.family": "DejaVu Sans"})
+    fig, axes = plt.subplots(1, 4, figsize=(11.6, 5.8), dpi=100, facecolor="white")
+    path = {0: (-1, 0), 1: (0, 0), 2: (1, 0)}
+    draw(axes[0], path, [(0, 1), (1, 2)])
+    axes[0].text(0, 0.55, "One outer face", ha="center", fontsize=11)
+    axes[0].text(0, -0.55, "Boundary length 4\n(each bridge twice)", ha="center", fontsize=11)
+    square = {0: (-0.8, -0.8), 1: (0.8, -0.8), 2: (0.8, 0.8), 3: (-0.8, 0.8)}
+    axes[1].add_patch(Polygon(list(square.values()), color="#e3f4e5", zorder=0))
+    draw(axes[1], square, [(0, 1), (1, 2), (2, 3), (3, 0)])
+    axes[1].text(0, 0, "Inner", ha="center", fontsize=11)
+    axes[1].text(0, 1.08, "Outer", ha="center", fontsize=11)
+    pentagon = {i: (np.cos(t), np.sin(t)) for i, t in enumerate(np.pi / 2 + np.arange(5) * 2 * np.pi / 5)}
+    draw(axes[2], pentagon, list(combinations(range(5), 2)))
+    bipartite = {i: (-0.9 if i &lt; 3 else 0.9, 0.9 - 0.9 * (i % 3)) for i in range(6)}
+    draw(axes[3], bipartite, [(u, v) for u in range(3) for v in range(3, 6)],
+         {i: "#2477a8" if i &lt; 3 else "#a05092" for i in range(6)})
+    titles = ["Three-vertex path", "Square cycle", "$K_5$", "$K_{3,3}$"]
+    for ax, title in zip(axes, titles):
+        ax.set_title(title, weight="bold", pad=12)
+    xs = [0.14, 0.38, 0.62, 0.86]
+    rows = [
+        ["n = 3, m = 2", "n = 4, m = 4", "n = 5, m = 10", "n = 6, m = 9"],
+        ["f = 1 (actual)", "f = 2 (actual)", "f = 7 would be needed", "f = 5 would be needed"],
+        ["3 − 2 + 1 = 2", "4 − 4 + 2 = 2", "3f = 21 &gt; 2m = 20", "4f = 20 &gt; 2m = 18"],
+        ["One plane embedding", "One plane embedding", "Impossible plane embedding", "Impossible plane embedding"],
+    ]
+    for row_index, row in enumerate(rows):
+        for col, value in enumerate(row):
+            fig.text(xs[col], 0.34 - row_index * 0.067, value, ha="center", va="center",
+                     fontsize=10.5, color="#9b3b21" if col &gt; 1 and row_index &gt; 0 else "#263c4b")
+    fig.suptitle("Euler face counts: actual examples and contradictions", fontsize=15, y=0.97)
+    fig.text(0.74, 0.86, "These two drawings have crossings; their visible regions are not the claimed f.",
+             ha="center", fontsize=10, color="#9b3b21")
+    fig.text(0.5, 0.055, "Always include the outer face. Right-hand f values assume a plane embedding and lead to contradictions.",
+             ha="center", fontsize=10.5)
+    fig.subplots_adjust(left=0.025, right=0.985, bottom=0.43, top=0.79, wspace=0.12)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

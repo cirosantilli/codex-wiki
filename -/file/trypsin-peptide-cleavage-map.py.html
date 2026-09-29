@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>trypsin-peptide-cleavage-map.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="trypsin-peptide-cleavage-map.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/trypsin-peptide-cleavage-map.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">trypsin-peptide-cleavage-map.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/trypsin-peptide-cleavage-map.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/trypsin-peptide-cleavage-map.py">trypsin-peptide-cleavage-map.py</a></b></div></nav></div><div class="p"><b>trypsin-peptide-cleavage-map.py</b></div><div class="code"><div><pre><code>"""Draw an original sequence example under a simplified trypsin cleavage rule."""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyBboxPatch
+
+
+def main():
+    sequence = "AGKARPKAGRAK"
+    cuts = [i + 1 for i, aa in enumerate(sequence[:-1])
+            if aa in "KR" and sequence[i + 1] != "P"]
+    edges = [0, *cuts, len(sequence)]
+    fragments = [sequence[a:b] for a, b in zip(edges, edges[1:])]
+    assert cuts == [3, 7, 10]
+    assert fragments == ["AGK", "ARPK", "AGR", "AK"]
+
+    fig, ax = plt.subplots(figsize=(10, 5), dpi=120, facecolor="white")
+    fig.subplots_adjust(left=0.04, right=0.98, bottom=0.06, top=0.90)
+    ax.set(xlim=(-0.7, 11.9), ylim=(-2.6, 2.1))
+    ax.axis("off")
+    fig.suptitle("Trypsin: selected bonds, conserved residue order", fontsize=17)
+    ax.text(-0.5, 1.65, "N → C direction  •  constructed sequence", fontsize=12)
+
+    for i, aa in enumerate(sequence):
+        basic = aa in "KR"
+        color = "#e6f1fa" if basic else "#fff1dc" if aa == "P" else "#f0f2f4"
+        ax.add_patch(FancyBboxPatch((i - 0.32, 0.62), 0.64, 0.64,
+                                   boxstyle="round,pad=0.03", facecolor=color,
+                                   edgecolor="#496173", linewidth=1.2))
+        ax.text(i, 0.94, aa, fontsize=19, ha="center", va="center", weight="bold")
+        ax.text(i, 0.40, str(i + 1), fontsize=10, ha="center", color="#495664")
+        if basic:
+            ax.text(i + 0.28, 1.29, "+", fontsize=16, color="#236c9a", weight="bold")
+        if i &lt; len(sequence) - 1:
+            ax.plot([i + 0.35, i + 0.65], [0.94, 0.94], color="#66717b", lw=1.8)
+
+    for cut in cuts:
+        x = cut - 0.5
+        ax.annotate("", xy=(x, 0.92), xytext=(x, 1.62),
+                    arrowprops={"arrowstyle": "-&gt;", "color": "#b22936", "lw": 2})
+    ax.annotate("R–P: retained\nin this rule", xy=(4.5, 0.85), xytext=(4.45, -0.10),
+                ha="center", va="top", fontsize=11, color="#936011",
+                arrowprops={"arrowstyle": "-&gt;", "color": "#936011"})
+    ax.annotate("Terminal K:\nno following bond", xy=(11.25, 0.79), xytext=(10.6, -0.10),
+                ha="center", va="top", fontsize=11, color="#495664",
+                arrowprops={"arrowstyle": "-&gt;", "color": "#495664"})
+
+    colors = ["#dcebf8", "#e2f0e3", "#fff0cf", "#eadff4"]
+    for a, b, fragment, color in zip(edges, edges[1:], fragments, colors):
+        ax.add_patch(FancyBboxPatch((a - 0.32, -1.46), b - a - 0.36, 0.50,
+                                   boxstyle="round,pad=0.03", facecolor=color,
+                                   edgecolor="#52626e"))
+        ax.text((a + b - 1) / 2, -1.21, fragment, fontsize=17, ha="center", va="center")
+        ax.text((a + b - 1) / 2, -1.78, f"{len(fragment)} residues", fontsize=11, ha="center")
+
+    ax.text(-0.5, -2.15, "3 cuts → 4 fragments    •    3 + 4 + 3 + 2 = 12 residues", fontsize=13)
+    ax.text(-0.5, -2.48, "+ marks a predominantly positive side chain near neutral pH, not total fragment charge.",
+            fontsize=10, color="#495664")
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

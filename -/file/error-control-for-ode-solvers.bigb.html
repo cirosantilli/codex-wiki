@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>error-control-for-ode-solvers.bigb - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="error-control-for-ode-solvers.bigb - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/error-control-for-ode-solvers.bigb"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">error-control-for-ode-solvers.bigb</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/error-control-for-ode-solvers.bigb"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/error-control-for-ode-solvers.bigb">error-control-for-ode-solvers.bigb</a></b></div></nav></div><div class="p"><b>error-control-for-ode-solvers.bigb</b></div><div class="code"><div><pre><code>= Error control for ODE solvers
+
+Error control selects discretization parameters and checks approximations against requested accuracy. &lt;Local error estimators&gt;, &lt;absolute and relative error tolerances&gt; and an &lt;adaptive step-size controller&gt; provide practical local control. Propagation of defects determines the &lt;global error&gt;, while stiffness, &lt;roundoff error&gt; and algebraic-solve accuracy impose additional limits.
+
+For an &lt;ordinary differential equation&gt;, the practical loop is to propose a step, form a &lt;local error estimator&gt;, scale it by &lt;absolute and relative error tolerances&gt;, and accept or retry before choosing the next step. An &lt;embedded Runge-Kutta pair&gt; supplies two endpoints from shared &lt;Runge-Kutta stages&gt;, making this extra accuracy check inexpensive. The &lt;Euler-Heun embedded pair&gt; below exposes the distinction between the accepted formula's &lt;order of a numerical method&gt; and the estimator's step exponent; its &lt;adaptive Euler-Heun integration of exponential growth&gt; shows accepted local tests alongside accumulated &lt;global error&gt;.
+
+= Adaptive step-size controller
+{parent=Error control for ODE solvers}
+{title2=$h_{\rm new}=h\,\eta E^{-1/r}$}
+
+If a scaled &lt;local error estimator&gt; behaves as $E\propto h^r$ with approximately unchanged error scale, the displayed update targets a fixed local level. A safety factor $0&lt;\eta&lt;1$ aims below the acceptance boundary. For an &lt;embedded Runge-Kutta pair&gt; with &lt;order of a numerical method&gt; $p$ for the accepted output and $p-1$ for the companion formula, the difference generally has $r=p$; for the actual unscaled &lt;local truncation error&gt; of an order-$p$ formula, $r=p+1$. The exponent belongs to the quantity being controlled. Dividing the defect by $h$ changes that exponent. This follows by solving $E(h_{\rm new})\approx E(h)(h_{\rm new}/h)^r$ for the next step.&lt;Fundamentals of Numerical Computation by Tobin A. Driscoll and others&gt;[§6.5.1, equations (6.5.1)–(6.5.4): estimator order and step prediction]{ref}
+
+Rejecting a trial means retrying from the same accepted time and state, with a smaller step. Advancing time or retaining the rejected output would change the &lt;initial value problem&gt; being approximated. Minimum and maximum change factors prevent extreme updates; a zero estimate requires finite capped growth. After acceptance, cap the next step at the remaining interval length. Detect a step that cannot advance time in &lt;floating-point arithmetic&gt;, and report failure rather than an endless retry. An &lt;adaptive step-size controller&gt; can use earlier estimates to smooth step sequences, but the memoryless rule here is sufficient to explain acceptance and rejection.&lt;Fundamentals of Numerical Computation by Tobin A. Driscoll and others&gt;[§6.5.1, Algorithm 6.5.1; §6.5.3, rk23 implementation and About the code: retain state on rejection, safety factor, growth cap, final-step cap, nonadvancing-time check]{ref}
+
+= Absolute and relative error tolerances
+{parent=Error control for ODE solvers}
+{title2=$s_i={\rm atol}_i+{\rm rtol}_i\max(|y_i|,|Y_i|)$}
+
+Absolute tolerances provide a nonzero error scale near zero, while relative tolerances follow component magnitude. A max-norm test $\max_i|\widehat e_i|/s_i\leq1$ controls every scaled estimated component locally. A root-mean-square test has a different componentwise implication. Neither test automatically certifies the complete trajectory's &lt;global error&gt;.
+
+Write $Y_i$ for the candidate accepted component and require $s_i&gt;0$. The &lt;absolute and relative error tolerances&gt; scale in the title produces the dimensionless &lt;maximum norm&gt; test
+$$
+E=\max_{1\leq i\leq m}\frac{|\widehat e_i|}{{\rm atol}_i+{\rm rtol}_i\max(|y_i|,|Y_i|)}\leq1.
+$$
+Absolute tolerances have the same units as the corresponding solution components; relative tolerances are dimensionless. Choose separate absolute scales for components measured in different units or with different significant magnitudes. Near zero, a purely relative test can demand a zero allowable error; a positive absolute scale avoids that difficulty. The crossover is $\max(|y_i|,|Y_i|)\approx{\rm atol}_i/{\rm rtol}_i$ when ${\rm rtol}_i&gt;0$. Official solver documentation specifies the analogous blend ${\rm atol}+{\rm rtol}|y|$ and allows component-specific absolute tolerances; the old/new maximum above is the convention used in this example.&lt;SciPy 1.16.2 documentation/scipy.integrate.solve_ivp&gt;[solve_ivp, rtol and atol parameters: local error estimates, additive scaling and component-specific atol]{ref}
+
+A &lt;root mean square&gt; version replaces the &lt;maximum norm&gt; by $E_{\rm rms}=\sqrt{m^{-1}\sum_i(|\widehat e_i|/s_i)^2}$. It permits one scaled component as large as $\sqrt m$ when all others vanish, so passing that test does not mean every component is at most one. State the aggregation rule along with the &lt;absolute and relative error tolerances&gt;. Neither rule is a bound on actual &lt;global error&gt;.
+
+= Local error estimator
+{parent=Error control for ODE solvers}
+{title2=$\widehat e_{n+1}$}
+
+A local error estimator approximates a numerical step's defect from the exact solution starting at the same input. Differences between formulas estimate error only after their asymptotic orders and constants are accounted for. &lt;Step-doubling error estimation&gt;, an &lt;embedded Runge-Kutta pair&gt; and &lt;predictor-corrector error estimation&gt; are common constructions. They do not by themselves bound accumulated &lt;global error&gt;.
+
+Let $\Phi_h(t_n,y_n)$ be the exact endpoint of the &lt;ordinary differential equation&gt; started at the numerical value $y_n$, and let $Y_{n+1}$ be the candidate numerical endpoint. The signed local defect being estimated is $\ell_{n+1}=\Phi_h(t_n,y_n)-Y_{n+1}$. In contrast, actual &lt;global error&gt; compares $Y_{n+1}$ with the solution of the original &lt;initial value problem&gt;, including all previous steps. The &lt;local truncation error&gt; convention inserts original exact data instead. These starting-value distinctions matter even when the same formula is used for every step. A practical &lt;local error estimator&gt; also relies on a smooth &lt;Taylor expansion&gt;; a small difference can reflect accidental cancellation rather than a rigorous upper bound.
+
+= Predictor-corrector error estimation
+{parent=Local error estimator}
+
+A predictor and corrector give distinct approximations from the same local history. Their difference, scaled by their leading error constants and orders, can estimate a local defect. Raw differences without that calibration need not estimate the corrected solution's error. Variable-step &lt;multistep methods&gt; also require updated coefficients and controlled history handling.
+
+= Embedded Runge-Kutta pair
+{parent=Local error estimator}
+
+Two &lt;Runge-Kutta methods&gt; share a stage matrix and nodes but use different output weights. An order-$p$ and order-$q$ pair with $q&lt;p$ gives an output difference generally of order $h^{q+1}$, estimating the lower-order defect. Shared stage evaluations reduce the cost. The &lt;adaptive step-size controller&gt; exponent must reflect this estimator order, rather than blindly the higher reported solution order.
+
+Using the slope convention for &lt;Runge-Kutta stages&gt;, an &lt;embedded Runge-Kutta pair&gt; computes
+$$
+Y^{[p]}=y_n+h\sum_{i=1}^sb_i k_i,\qquad Y^{[q]}=y_n+h\sum_{i=1}^s\widehat b_i k_i,\qquad d=Y^{[p]}-Y^{[q]}=h\sum_{i=1}^s(b_i-\widehat b_i)k_i.
+$$
+Its &lt;Butcher tableau&gt; has two output rows, $b^T$ and $\widehat b^T$. Evaluating $f$ is often the expensive part of solving an &lt;ordinary differential equation&gt;; after the shared slopes have been computed, the extra row needs only another linear combination.&lt;Fundamentals of Numerical Computation by Tobin A. Driscoll and others/6.5 Adaptive Runge-Kutta&gt;[§6.5.2, embedded formulas and equation 6.5.5: common stages and two output rows]{ref}
+
+Write $\Phi$ for the exact endpoint from the current numerical state, and define signed local defects $\ell_q=\Phi-Y^{[q]}$ and $\ell_p=\Phi-Y^{[p]}$. Then $d=\ell_q-\ell_p$. If $\ell_q=C_qh^{q+1}+O(h^{q+2})$ and $\ell_p=O(h^{p+1})$, with $C_q\ne0$, the difference reproduces the leading lower-order defect. It does not reproduce the leading higher-order defect. Here the powers use &lt;big O notation&gt; and a smooth &lt;Taylor expansion&gt;; a vanishing leading coefficient or accidental cancellation can make the estimate misleading.
+
+A common choice accepts $Y^{[p]}$ after testing $d$ with &lt;absolute and relative error tolerances&gt;. With the scale approximately unchanged on a retry, the &lt;adaptive step-size controller&gt; uses exponent $1/(q+1)$. Accepting a better endpoint does not change the power in the quantity being tested. The &lt;Euler-Heun embedded pair&gt; makes this visible without a large coefficient table.&lt;Fundamentals of Numerical Computation by Tobin A. Driscoll and others/6.5 Adaptive Runge-Kutta&gt;[§6.5.1, equations 6.5.1–6.5.3 and Algorithm 6.5.1: lower-order local estimate and higher-order accepted output]{ref}
+
+= Euler-Heun embedded pair
+{c}
+{parent=Embedded Runge-Kutta pair}
+{title2=$d=h(k_2-k_1)/2$}
+
+The Euler-Heun 1(2) pair combines the &lt;explicit Euler method&gt; and &lt;Heun's method&gt;. Here 1(2) names their respective &lt;order of a numerical method&gt;; the accepted endpoint in this article is the second-order one. Its shared &lt;Runge-Kutta stages&gt; and endpoints are
+$$
+\begin{aligned}
+k_1&amp;=f(t_n,y_n),&amp;k_2&amp;=f(t_n+h,y_n+hk_1),\\
+Y^{[1]}&amp;=y_n+hk_1,&amp;Y^{[2]}&amp;=y_n+\frac h2(k_1+k_2),\\
+d&amp;=Y^{[2]}-Y^{[1]}=\frac h2(k_2-k_1).
+\end{aligned}
+\qquad
+\begin{array}{c|cc}
+0&amp;0&amp;0\\
+1&amp;1&amp;0\\\hline
+&amp;\tfrac12&amp;\tfrac12\\
+&amp;1&amp;0
+\end{array}
+$$
+The first output row in this &lt;Butcher tableau&gt; is &lt;Heun's method&gt;; the second is the &lt;explicit Euler method&gt;. Both outputs cost two evaluations of $f$ together, rather than one for &lt;Euler method&gt; plus two for a separately computed &lt;Heun's method&gt;.
+
+For the &lt;initial value problem&gt; $y'=y$, $y(0)=1$, take $h=0.2$. The first slope is $k_1=1$; the stage state is $1+0.2k_1=1.2$, giving $k_2=1.2$. Therefore
+$$
+Y^{[1]}=1.2,\qquad Y^{[2]}=1.22,\qquad d=0.02,\qquad y(0.2)=e^{0.2}\approx1.22140275816.
+$$
+The exact &lt;exponential function&gt; gives signed local defects approximately $0.02140275816$ for the &lt;explicit Euler method&gt; and $0.00140275816$ for &lt;Heun's method&gt;. Their difference is exactly $0.02$. Thus the pair difference estimates the larger Euler defect; calling it the actual Heun defect would miss by a factor about fourteen here.
+
+More generally, a step from $y_n$ on $y'=y$ has
+$$
+\begin{aligned}
+\ell_1&amp;=y_n(e^h-1-h)=y_n\left(\frac{h^2}{2}+\frac{h^3}{6}+O(h^4)\right),\\
+\ell_2&amp;=y_n(e^h-1-h-h^2/2)=y_n\left(\frac{h^3}{6}+O(h^4)\right),\\
+d&amp;=y_n\frac{h^2}{2}.
+\end{aligned}
+$$
+These original &lt;Taylor expansions&gt; separate three quantities: the accepted &lt;Heun's method&gt; has &lt;local truncation error&gt; $O(h^3)$ and &lt;global error&gt; $O(h^2)$ under suitable &lt;numerical stability&gt;, while the tested &lt;local error estimator&gt; is $O(h^2)$. For $E=|d|/s$ with $s$ held approximately fixed, use $h_{\rm new}=\eta h E^{-1/2}$. A cube-root update would model a different quantity, the actual higher-order local defect.
+
+= Adaptive Euler-Heun integration of exponential growth
+{c}
+{parent=Euler-Heun embedded pair}
+
+Continue the &lt;initial value problem&gt; $y'=y$, $y(0)=1$, to $t=4$ using the &lt;Euler-Heun embedded pair&gt;. Choose &lt;absolute and relative error tolerances&gt; ${\rm atol}=10^{-3}$ and ${\rm rtol}=0$, so the scalar scale is $s=10^{-3}$ throughout. This intentionally absolute-only test makes the local and accumulated errors directly comparable. Start with $h=0.2$, accept the &lt;Heun's method&gt; endpoint precisely when $E=|d|/s\leq1$, and after every trial use the capped &lt;adaptive step-size controller&gt;
+$$
+h_{\rm next}=h\min\left(2,\max\left(0.2,0.9E^{-1/2}\right)\right).
+$$
+For $E=0$ use the growth factor two. Cap every trial at $4-t_n$; on rejection retain the old time and state. These choices specify an original computation, rather than a claim about the defaults of a particular software solver.
+
+The initial trial has $E=20$ and is rejected. Retrying from $(0,1)$ with $h=0.9(0.2)/\sqrt{20}\approx0.0402492236$ gives $E=0.81$ and is accepted. The run takes 315 accepted steps and one rejected trial. Increasing &lt;exponential growth&gt; makes the &lt;local error estimator&gt; $|d|=|y_n|h^2/2$ grow at a fixed $h$, so subsequent steps shrink roughly like $|y_n|^{-1/2}$. The final step is additionally shortened to land at $t=4$.
+
+\Image[euler-heun-adaptive-steps-and-errors.png]
+{title=Computed Euler-Heun step sizes and errors: every accepted local estimate passes, but accumulated global error exceeds the absolute tolerance}
+
+The right panel plots errors against the accepted-step number, all divided by the same $s$. The actual Heun local defect uses the restarted exact endpoint $y_ne^{h_n}$, while actual &lt;global error&gt; uses $e^{t_{n+1}}$. All accepted $E$ are at most one, and the actual Heun local defects here are even smaller, at most about $0.01143s$. Nevertheless the endpoint is $y_N\approx54.5833912205$, versus $e^4\approx54.5981500331$, with &lt;absolute error&gt; about $0.0147588=14.7588s$. Passing local tests therefore does not certify the original trajectory's &lt;global error&gt;.
+
+This failure of a global guarantee has an exact explanation for this example. Put $R(h)=1+h+h^2/2$ and $g_n=e^{t_n}-y_n$. Then
+$$
+g_{n+1}=e^{h_n}g_n+y_n\left(e^{h_n}-R(h_n)\right).
+$$
+Each new local defect is added to the previous error amplified by $e^{h_n}$. Iterating this identity, rather than merely inspecting $E$, accounts for accumulation. The &lt;variable-step global ODE error bound&gt; describes the corresponding mechanism for more general &lt;ordinary differential equations&gt;.
+
+Repeating with ${\rm atol}=10^{-2}$ gives 98 accepted steps, one rejection and endpoint &lt;absolute error&gt; about $0.153252$; with ${\rm atol}=10^{-4}$ it gives 1001 accepted steps, two rejections and endpoint &lt;absolute error&gt; about $0.00145642$. Accuracy improves on this smooth problem, but the endpoint error remains about fifteen times the requested local scale. A different &lt;initial value problem&gt; can amplify or damp defects differently.
+
+= Step-doubling error estimation
+{parent=Local error estimator}
+{title2=$\widehat e_{\rm fine}=(Y_{h/2,h/2}-Y_h)/(2^p-1)$}
+
+For an order-$p$ one-step method with leading numerical error $Ch^{p+1}$, two half steps have leading error $Ch^{p+1}/2^p$. The displayed difference estimates exact minus the finer approximation. Adding it implements &lt;Richardson extrapolation&gt;. It requires a common starting value, the smooth local expansion, and accuracy of all algebraic solves; it can fail across a nonsmooth event.
+
+= Adaptive Euler step doubling for exponential decay
+{c}
+{parent=Error control for ODE solvers}
+{title2=$y'=-y,\quad y(0)=1$}
+
+Consider the nonstiff scalar &lt;initial value problem&gt; $y'=-y$, $y(0)=1$, on $0\leq t\leq8$. Its exact solution is the &lt;exponential decay&gt; $y(t)=e^{-t}$. Use &lt;step-doubling error estimation&gt; with the &lt;explicit Euler method&gt;: from the same numerical starting value $y_n$, form one coarse step $C_n$ and two half steps giving $F_n$:
+$$
+C_n=(1-h_n)y_n,\qquad F_n=(1-h_n/2)^2y_n,\qquad \widehat e_n=F_n-C_n=\frac{h_n^2y_n}{4}.
+$$
+Accept $y_{n+1}=F_n$ when the &lt;absolute and relative error tolerances&gt; test $E_n=|\widehat e_n|/s_n\leq1$ passes, with $s_n=10^{-5}+10^{-3}\max(|y_n|,|F_n|)$. There is no &lt;Richardson extrapolation&gt; in the accepted value. Both approximations have &lt;order of a numerical method&gt; one, while this &lt;local error estimator&gt; has step exponent $r=2$. Consequently the &lt;adaptive step-size controller&gt; uses a &lt;square root&gt;, not a cube root:
+$$
+q_n=\min\!\left(5,\max\!\left(0.2,0.9E_n^{-1/2}\right)\right),\qquad h_{\rm next}=q_nh_n.
+$$
+Start with $h_0=1$. A rejected trial retains both $t_n$ and $y_n$, caps $q_n$ at one, and retries. A zero estimate uses $q_n=5$. Before every trial, cap $h_n$ at $8-t_n$. Stop with a failure if &lt;floating-point arithmetic&gt; gives $t_n+h_n=t_n$, or after 100000 trials. These rules specify the example completely; they are not a prescription for every &lt;ordinary differential equation&gt; solver.
+
+\Image[adaptive-euler-decay-trajectory-and-steps.png]
+{title=Adaptive two-half-step Euler decay: exact and numerical trajectories, accepted step sizes and rejected trials}
+
+The first two trials, $h=1$ and $h=0.2$, have $E\approx247.525$ and $E\approx9.90099$ and are rejected. The next trial has $h\approx0.0572049$ and $E\approx0.81$ and is accepted. For positive decreasing numerical values, $s_n=10^{-5}+10^{-3}y_n$, so the &lt;local error estimator&gt; gives
+$$
+E_n=\frac{h_n^2}{4(10^{-3}+10^{-5}/y_n)}.
+$$
+When the relative term dominates, this suggests nearly constant accepted steps, approximately $2(0.9)\sqrt{10^{-3}}$. When $y_n$ falls below the crossover size $10^{-5}/10^{-3}=0.01$, the absolute term increasingly permits longer steps. The sharp final decrease in $h$ only lands on $t=8$; it does not indicate a sudden loss of smoothness.
+
+The actual signed local defect from the same numerical input is
+$$
+\ell_n=y_ne^{-h_n}-F_n=y_n\left(\frac{h_n^2}{4}-\frac{h_n^3}{6}+O(h_n^4)\right).
+$$
+Here $O$ is &lt;Big O notation&gt;, obtained from &lt;Taylor's theorem&gt; for the &lt;exponential function&gt;. Thus $\widehat e_n$ agrees with the leading term as $h_n\to0$, but is not identical to $\ell_n$. At $h=1$, $y_n=1$, the estimate is $0.25$ while the actual local defect is $e^{-1}-1/4\approx0.117879$. Their closeness improves for the smaller accepted steps. Had we added $\widehat e_n$ using &lt;Richardson extrapolation&gt;, the accepted formula would instead be $y_n(1-h_n+h_n^2/2)$, of &lt;order of a numerical method&gt; two; the same raw difference would still scale as $h_n^2$ and would not estimate that improved value's leading $h_n^3$ defect.
+
+\Image[adaptive-euler-local-estimates-and-global-errors.png]
+{title=Estimated versus actual local Euler defects, rejected trials, and actual accumulated global error scaled by the local tolerance}
+
+The &lt;global error&gt; $g_n=y_n-e^{-t_n}$ obeys an exact &lt;recurrence relation&gt; involving the actual local defects:
+$$
+g_{n+1}=e^{-h_n}g_n-\ell_n,\qquad g_0=0.
+$$
+Each previous &lt;global error&gt; contracts, yet the local defects keep adding. In the plotted run, 101 steps are accepted and two trials are rejected. Every accepted $E_n$ is at most approximately $0.81$, while the largest $|g_{n+1}|/s_n$ is approximately $38.6927$. At $t=8$, the numerical value is approximately $0.00027184218$, compared with the exact $e^{-8}\approx0.00033546263$, giving &lt;absolute error&gt; approximately $6.36204\times10^{-5}$. The right-hand plot deliberately scales actual &lt;global error&gt; by the same $s_n$ used for local acceptance; it is not a new &lt;global error&gt; tolerance test.
+
+Tightening both &lt;absolute and relative error tolerances&gt; by a factor ten gives 315 accepted steps and endpoint &lt;absolute error&gt; approximately $2.14922\times10^{-5}$; tightening both by a factor one hundred gives 991 accepted steps and endpoint &lt;absolute error&gt; approximately $6.94171\times10^{-6}$. This is a convergence comparison for this particular &lt;initial value problem&gt;. The endpoint error decreases by about a factor three per tenfold tightening, rather than by ten: a first-order &lt;Euler method&gt; accumulates defects across many steps, while its &lt;local error estimator&gt; varies quadratically with $h$. A &lt;variable-step global ODE error bound&gt; needs propagation information as well as accepted local tests.
+
+The &lt;absolute stability&gt; boundary remains a separate constraint. On the &lt;Dahlquist test equation&gt; $y'=-\lambda y$ with $\lambda&gt;0$, the accepted two-half-step formula has &lt;stability function&gt; $R(-\lambda h)=(1-\lambda h/2)^2$. It strictly damps perturbations only for $0&lt;\lambda h&lt;4$. Its &lt;local error estimator&gt; is $\lambda^2h^2y_n/4$, which can pass an absolute-tolerance test at tiny $y_n$ even outside this damping interval. In a &lt;stiff two-mode linear system&gt;, a fast mode can therefore constrain the step long after its visible amplitude has become small. An &lt;adaptive step-size controller&gt; does not turn an &lt;explicit Euler method&gt; into an &lt;A-stable&gt; method. Official solver documentation likewise distinguishes explicit &lt;Runge-Kutta methods&gt; for nonstiff problems from implicit &lt;Runge-Kutta methods&gt; and &lt;backward differentiation formulas&gt; for &lt;stiff equations&gt;.&lt;SciPy 1.16.2 documentation/scipy.integrate.solve_ivp&gt;[solve_ivp, method parameter: explicit versus implicit methods and stiffness]{ref}
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

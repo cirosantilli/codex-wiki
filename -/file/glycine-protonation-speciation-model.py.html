@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>glycine-protonation-speciation-model.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="glycine-protonation-speciation-model.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/glycine-protonation-speciation-model.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">glycine-protonation-speciation-model.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/glycine-protonation-speciation-model.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/glycine-protonation-speciation-model.py">glycine-protonation-speciation-model.py</a></b></div></nav></div><div class="p"><b>glycine-protonation-speciation-model.py</b></div><div class="code"><div><pre><code>"""Draw the stipulated ideal three-state glycine model (Python 3.14).
+
+Run from _media; dependencies are recorded in the root pyproject.toml.
+The fractions are calculated, not experimental measurements. Activity
+coefficients are one; the minor uncharged amino/carboxyl form is omitted.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+PKA1, PKA2 = 2.35, 9.78
+PI = (PKA1 + PKA2) / 2
+COLORS = ("#1764a1", "#21835b", "#c25823")
+
+
+def fractions(ph):
+    h = 10.0 ** (-np.asarray(ph))
+    k1, k2 = 10.0**-PKA1, 10.0**-PKA2
+    denominator = h * h + k1 * h + k1 * k2
+    return np.array([h * h, k1 * h, np.full_like(h, k1 * k2)]) / denominator
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "axes.spines.top": False,
+                         "axes.spines.right": False, "savefig.facecolor": "white"})
+    fig = plt.figure(figsize=(11, 7.6), dpi=100, facecolor="white")
+    fig.suptitle("Glycine protonation and speciation — ideal model", fontsize=19, y=0.97)
+    fig.text(0.5, 0.919, "Stipulated pKa₁ = 2.35, pKa₂ = 9.78; calculated pI = 6.065",
+             ha="center", color="#333333")
+    scheme = fig.add_axes((0.035, 0.67, 0.93, 0.21))
+    scheme.axis("off")
+    structures = (r"$\mathrm{H_3N^{+}{-}CH_2{-}COOH}$",
+                  r"$\mathrm{H_3N^{+}{-}CH_2{-}COO^{-}}$",
+                  r"$\mathrm{H_2N{-}CH_2{-}COO^{-}}$")
+    for x, formula, name, color in zip((0.16, 0.5, 0.84), structures,
+                                      ("G⁺: cation", "G⁰: zwitterion", "G⁻: anion"), COLORS):
+        scheme.text(x, 0.76, formula, ha="center", fontsize=17, color=color)
+        scheme.text(x, 0.51, name, ha="center", fontsize=14, color=color)
+    scheme.text(0.16, 0.29, "net charge +1", ha="center")
+    scheme.text(0.5, 0.29, "net charge 0", ha="center")
+    scheme.text(0.84, 0.29, "net charge −1", ha="center")
+    for a, b, label in ((0.25, 0.41, "lose H⁺; pKa₁"), (0.59, 0.75, "lose H⁺; pKa₂")):
+        scheme.annotate("", (b, 0.03), (a, 0.03), arrowprops={"arrowstyle": "&lt;-&gt;", "color": "#555555"})
+        scheme.text((a + b) / 2, 0.13, label, ha="center", fontsize=11)
+    ax = fig.add_axes((0.09, 0.14, 0.87, 0.45))
+    ph = np.linspace(0, 14, 1401)
+    for fraction, label, color in zip(fractions(ph), ("G⁺", "G⁰ (zwitterion)", "G⁻"), COLORS):
+        ax.plot(ph, fraction, color=color, lw=2.8, label=label)
+    for x, label in ((PKA1, "pKa₁"), (PI, "pI"), (PKA2, "pKa₂")):
+        ax.axvline(x, color="#777777", lw=1.1, ls=":")
+        ax.text(x, 0.88, label, ha="center", bbox={"facecolor": "white", "edgecolor": "none", "pad": 3})
+    ax.set(xlim=(0, 14), ylim=(0, 1.04), xlabel="pH", ylabel="Calculated fraction of total glycine")
+    ax.set_xticks(np.arange(0, 15, 2))
+    ax.grid(alpha=0.17)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.16), ncols=3, frameon=False)
+    fig.text(0.5, 0.04, "Charge units: elementary charge e. At pI: 99.9615% G⁰; 0.0193% each G⁺ and G⁻.",
+             ha="center", fontsize=11)
+    fig.savefig(Path(__file__).with_suffix(".png").name, facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

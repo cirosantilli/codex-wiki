@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-quantum-matter-course-of-the-university-of-oxford/original2025-interacting-correlations.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-quantum-matter-course-of-the-university-of-oxford/original2025-interacting-correlations.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../-/raw/main.css">
+<link rel="icon" href="../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../" class="brand"><img class="openai-logo" src="../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-quantum-matter-course-of-the-university-of-oxford/original2025-interacting-correlations.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-quantum-matter-course-of-the-university-of-oxford/original2025-interacting-correlations.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-quantum-matter-course-of-the-university-of-oxford/original2025-interacting-correlations.py"><img src="../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../-/dir">(root)</a> / <a href="../../../-/dir/past-exam-of-the-quantum-matter-course-of-the-university-of-oxford">past-exam-of-the-quantum-matter-course-of-the-university-of-oxford</a> / <a href="../../../-/raw/past-exam-of-the-quantum-matter-course-of-the-university-of-oxford/original2025-interacting-correlations.py">original2025-interacting-correlations.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-quantum-matter-course-of-the-university-of-oxford/original2025-interacting-correlations.py</b></div><div class="code"><div><pre><code>"""Python 3.14, NumPy and Matplotlib; write same-basename PNG to Path.cwd()."""
+from pathlib import Path
+import os
+os.environ.setdefault('MPLCONFIGDIR', '/tmp/oxford-2025-quantum-matter-mpl')
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+
+def radial_gp(coupling=100 * np.pi, dr=.0125, rmax=9.):
+    """Cell-centred radial finite volumes; hbar=m=omega=1, integral |phi|^2=1."""
+    r = (np.arange(round(rmax / dr)) + .5) * dr
+    weights = 2 * np.pi * r * dr
+    lower = -.5 * (r - dr / 2) / (r * dr ** 2)
+    upper = -.5 * (r + dr / 2) / (r * dr ** 2)
+    diag = -lower - upper
+    potential = r ** 2 / 2
+    phi = np.sqrt(np.maximum(np.sqrt(coupling / np.pi) - potential, 1e-8) / coupling)
+    phi /= np.sqrt(np.dot(weights, phi ** 2))
+    dt = .025
+    for iteration in range(8000):
+        b = 1 + dt * (diag + potential + coupling * phi ** 2)
+        rhs = phi.copy()
+        for i in range(1, len(r)):
+            factor = dt * lower[i] / b[i - 1]
+            b[i] -= factor * dt * upper[i - 1]
+            rhs[i] -= factor * rhs[i - 1]
+        new = np.empty_like(phi)
+        new[-1] = rhs[-1] / b[-1]
+        for i in range(len(r) - 2, -1, -1):
+            new[i] = (rhs[i] - dt * upper[i] * new[i + 1]) / b[i]
+        new /= np.sqrt(np.dot(weights, new ** 2))
+        change = np.sqrt(np.dot(weights, (new - phi) ** 2))
+        phi = new
+        if change &lt; 2e-12:
+            break
+    hphi = (diag + potential + coupling * phi ** 2) * phi
+    hphi[1:] += lower[1:] * phi[:-1]
+    hphi[:-1] += upper[:-1] * phi[1:]
+    mu = np.dot(weights, phi * hphi)
+    residual = np.sqrt(np.dot(weights, (hphi - mu * phi) ** 2))
+    assert residual &lt; 1e-7, (iteration, change, residual)
+    return r, phi, {'mu': float(mu), 'residual': float(residual), 'iterations': iteration + 1,
+                    'normalization': float(np.dot(weights, phi ** 2)), 'dr': dr}
+
+
+def main():
+    out = Path.cwd()
+    coupling = 100 * np.pi
+    r, phi, info = radial_gp(coupling)
+    # Quadratic extrapolation in r at the regular origin.
+    phi0 = (9 * phi[0] - phi[1]) / 8
+    mu_tf = np.sqrt(coupling / np.pi)
+    radius = np.sqrt(2 * mu_tf)
+    s = np.concatenate(([0.], r / radius))
+    gp = coupling / mu_tf * phi0 * np.concatenate(([phi0], phi))
+    tf = np.sqrt(np.maximum(1 - s ** 2, 0))
+    fig, axes = plt.subplots(1, 2, figsize=(9.3, 3.7), layout='constrained')
+    axes[0].plot(s, tf, color='#e07a24', ls='--', lw=2, label='Thomas–Fermi')
+    axes[0].plot(s, gp, color='#126782', lw=2, label='Full radial GP')
+    axes[0].axvline(1, color='.7', ls=':', lw=1)
+    axes[0].set(xlim=(0, 1.4), ylim=(0, 1.1), xlabel=r'$r/R_{\rm TF}$',
+                ylabel=r'$G(r)/(\mu_{\rm TF}/g)$', title='Kinetic energy smooths the edge')
+    axes[0].legend(frameon=False, fontsize=9)
+    broad = gp / gp[0]
+    # These illustrative weights are not a Bogoliubov calculation.
+    depletion_weight = .12
+    short = depletion_weight * np.exp(-.5 * (s / .065) ** 2)
+    sketch = (1 - depletion_weight) * broad + short
+    axes[1].plot(s, broad, color='#126782', lw=2, label='GP, normalized at centre')
+    axes[1].plot(s, sketch, color='#a62f5b', lw=2, label='With depletion (schematic)')
+    axes[1].plot(s, short, color='.45', ls=':', lw=1.5, label='Short-range contribution')
+    axes[1].set(xlim=(0, 1.4), ylim=(0, 1.1), xlabel=r'$r/R_{\rm TF}$',
+                ylabel=r'$G(r)/G(0)$', title='Depletion changes mode occupations')
+    axes[1].legend(frameon=False, fontsize=8, loc='upper right')
+    for ax in axes:
+        ax.spines[['top', 'right']].set_visible(False)
+    fig.savefig(out / (Path(__file__).stem + '.png'), dpi=150, facecolor='white', transparent=False)
+    plt.close(fig)
+    print(info)
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

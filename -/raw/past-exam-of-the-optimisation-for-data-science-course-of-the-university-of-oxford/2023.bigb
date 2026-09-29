@@ -1,0 +1,482 @@
+= 2023
+{scope}
+{title2=B6.2}
+{title2=A17941W1}
+
+Solutions to all three questions of the <optimisation for data science course of the University of Oxford> Part B examination, sat on 7 June 2023. Source: https://www.whatdotheyknow.com/request/request_for_mathematics_examinat/response/3129786/attach/3/FOI%20202507%20740%20Data.pdf#page=300[original released PDF, bundle pages 300–303; paper pages 1–4]. The original question numbering is retained without reproducing the question statements. Two printing errors on paper page 3 are addressed explicitly in parts 2(c) and 2(f).
+
+Unless a subscript indicates the <L1 norm>, $\|\cdot\|$ denotes the <Euclidean norm>. In Question 1, the <regularization> weight is $\lambda\geq0$ and the <step size> is positive. The <big O notation> in part 1(d) is interpreted for fixed $x$ as the <step size> tends to zero, with the necessary <subdifferential> qualification explained there.
+
+= 1
+{parent=2023}
+{scope}
+
+= a
+{parent=1}
+{scope}
+
+= Solution
+{parent=a}
+{c}
+
+Put $z=x-\alpha\nabla f(x)$ and $\tau=\alpha\lambda$. The <proximal operator> for the <L1 norm> separates into independent scalar <minimization problems>:
+$$
+p_i=\mathop{\arg\min}_{u\in\mathbb R}\left\{\tau|u|+\frac12(u-z_i)^2\right\}.
+$$
+The <subgradient optimality condition> is $0\in p_i-z_i+\tau\partial|p_i|$. By the <subgradient of the absolute value>, a positive solution must satisfy $p_i=z_i-\tau>0$, and a negative solution must satisfy $p_i=z_i+\tau<0$. At zero, the <subgradient optimality condition> holds exactly when $|z_i|\leq\tau$. The squared term makes the <objective function> a <strictly convex function>, so these cases give its unique <minimiser>.
+
+Thus the <proximal operator> is the <soft-thresholding operator>
+$$
+S_\tau(t)=
+\begin{cases}
+t-\tau,&t>\tau,\\
+0,&|t|\leq\tau,\\
+t+\tau,&t<-\tau,
+\end{cases}
+\qquad p_i=S_\tau(z_i).
+$$
+Consequently the requested <proximal gradient mapping>, rather than just the <proximal operator>, is
+$$
+\boxed{[G_\alpha(x)]_i=\frac{x_i-S_{\alpha\lambda}(x_i-\alpha\partial_i f(x))}{\alpha},\qquad i=1,\ldots,n.}
+$$
+The corresponding <proximal gradient method> update is $x_i^+=S_{\alpha\lambda}(x_i-\alpha\partial_i f(x))$. **Small <coordinates> are set exactly to zero.** When $\lambda=0$, the <soft-thresholding operator> is the identity and the <proximal gradient mapping> reduces to $\nabla f(x)$.
+
+= b
+{parent=1}
+{scope}
+
+= Solution
+{parent=b}
+{c}
+
+Again write $z=x-\alpha\nabla f(x)$ and $\tau=\alpha\lambda$, and let $z_\ell$ denote its $\ell$th block of $k$ coordinates. The <block mixed norm> in this part makes the <proximal operator> separate over blocks. For a single block, its <minimiser> solves
+$$
+\min_{u\in\mathbb R^k}\left\{\tau\|u\|+\frac12\|u-z_\ell\|^2\right\}.
+$$
+At a nonzero $u$, the <gradient> of the <Euclidean norm> is $u/\|u\|$. The <subgradient optimality condition> therefore becomes
+$$
+z_\ell=u+\tau\frac{u}{\|u\|}.
+$$
+Thus $u$ points in the direction of $z_\ell$ and $\|z_\ell\|=\|u\|+\tau$. This yields $u=(1-\tau/\|z_\ell\|)z_\ell$ when $\|z_\ell\|>\tau$.
+
+At zero, the <subdifferential> of the <Euclidean norm> is the closed <Euclidean unit ball>: the <subgradient inequality> is $q^Tw\leq\|w\|$ for every $w$, which is equivalent to $\|q\|\leq1$ by the <Cauchy-Schwarz inequality> and the choice $w=q$. Hence zero solves the <subgradient optimality condition> exactly when $\|z_\ell\|\leq\tau$. This also covers $z_\ell=0$ and avoids division by zero.
+
+The resulting <radial soft thresholding> is
+$$
+T_\tau(z_\ell)=
+\begin{cases}
+0,&\|z_\ell\|\leq\tau,\\
+\left(1-\dfrac{\tau}{\|z_\ell\|}\right)z_\ell,&\|z_\ell\|>\tau.
+\end{cases}
+$$
+If $y_\ell$ is the corresponding block of $x$, the required <proximal gradient mapping> is
+$$
+\boxed{[G_\alpha(x)]_\ell=\frac{y_\ell-T_{\alpha\lambda}(z_\ell)}{\alpha},\qquad z_\ell=y_\ell-\alpha[\nabla f(x)]_\ell.}
+$$
+**Whole blocks can become zero**, while nonzero blocks retain their direction after the <gradient> step. For a block of size one, <radial soft thresholding> agrees with the <soft-thresholding operator> in part (a).
+
+= c
+{parent=1}
+{scope}
+
+= Solution
+{parent=c}
+{c}
+
+Set $g_j=G_{1/L}(x^j)$, $r_j=\|x^j-x^*\|^2$ and $\delta_j=\phi(x^j)-\phi(x^*)$. Here $g_j$ is the <proximal gradient mapping>, $r_j$ is a squared <Euclidean distance>, and $\delta_j\geq0$ because $x^*$ is a <global minimizer>. The update gives $x^{j+1}=x^j-g_j/L$.
+
+First use the supplied inequality (1) with $z=x^j$:
+$$
+\phi(x^{j+1})\leq\phi(x^j)-\frac1{2L}\|g_j\|^2\leq\phi(x^j).
+$$
+Thus the <objective function> values, and hence the errors $\delta_j$, are nonincreasing. Next use (1) with $z=x^*$:
+$$
+\delta_{j+1}\leq g_j^T(x^j-x^*)-\frac1{2L}\|g_j\|^2.
+$$
+Expansion of the squared <Euclidean norm> gives
+$$
+r_{j+1}=r_j-\frac2L g_j^T(x^j-x^*)+\frac1{L^2}\|g_j\|^2,
+$$
+so the last bound is exactly $\delta_{j+1}\leq L(r_j-r_{j+1})/2$.
+
+The <telescoping sum> over $j=0,\ldots,k-1$ therefore gives
+$$
+\sum_{j=0}^{k-1}\delta_{j+1}\leq\frac L2(r_0-r_k)\leq\frac L2r_0.
+$$
+Since each summand is at least $\delta_k$, we obtain the <proximal gradient objective error bound>
+$$
+\boxed{\phi(x^k)-\phi(x^*)\leq\frac L{2k}\|x^0-x^*\|^2,\qquad k\geq1.}
+$$
+**The bound holds for the last iterate.** The monotonicity of the <objective function> values is what converts an averaged estimate into this last-iterate estimate.
+
+= d
+{parent=1}
+{scope}
+
+= Solution
+{parent=d}
+{c}
+
+Fix $x$, and write $p=x-\alpha G_\alpha(x)$ and $g=G_\alpha(x)$. The supplied <subgradient> relation gives $v=v_\alpha\in\lambda\partial\psi(p)$ with $g=\nabla f(x)+v$. The evaluation point in $\nabla f$ is $x$, whereas $v$ is a <subgradient> at the new point $p$.
+
+Apply the <subgradient inequality> at $p$, with comparison point $x$:
+$$
+\lambda\psi(p)-\lambda\psi(x)\leq v^T(p-x)=-\alpha v^Tg.
+$$
+The <descent lemma> for the $L$-<Lipschitz gradient> of $f$ gives
+$$
+f(p)-f(x)\leq-\alpha\nabla f(x)^Tg+\frac{L\alpha^2}{2}\|g\|^2.
+$$
+Adding these estimates proves the stronger, explicit inequality
+$$
+\boxed{\phi(p)-\phi(x)\leq-\alpha\left(1-\frac{L\alpha}{2}\right)\|G_\alpha(x)\|^2.}
+$$
+In particular, the <objective function> decreases for $0<\alpha<2/L$ whenever the <proximal gradient mapping> is nonzero.
+
+To justify the requested <big O notation>, we must check that $g$, which depends on $\alpha$, stays bounded. Suppose $\partial(\lambda\psi)(x)$ is nonempty, and choose a fixed $w$ in this <subdifferential>. This holds for a finite-valued <convex function> on $\mathbb R^n$, including both <norms> in parts (a) and (b). By <monotonicity of a convex subdifferential>,
+$$
+(v-w)^T(p-x)\geq0.
+$$
+Substituting $p-x=-\alpha g$ and $v=g-\nabla f(x)$, and then using the <Cauchy-Schwarz inequality>, yields
+$$
+\|g\|^2\leq(\nabla f(x)+w)^Tg\leq\|\nabla f(x)+w\|\,\|g\|.
+$$
+Thus $\|g\|\leq C_x:=\|\nabla f(x)+w\|$, uniformly in $\alpha>0$. This <local boundedness of the proximal gradient mapping> makes the remainder at most $LC_x^2\alpha^2/2$, so
+$$
+\boxed{\phi(x-\alpha G_\alpha(x))-\phi(x)\leq-\alpha\|\nabla f(x)+v_\alpha\|^2+O(\alpha^2).}
+$$
+**No differentiability of $\psi$ is needed.** If an <proper extended-real function> is allowed as the <regularization> term, the <subdifferential> condition at $x$ is a qualification for this uniform remainder; the preceding explicit descent inequality remains the useful statement whenever its quantities are finite.
+
+= 2
+{parent=2023}
+{scope}
+
+= a
+{parent=2}
+{scope}
+
+= Solution
+{parent=a}
+{c}
+
+Let $d=y-x$ and take $0<t\leq1$. Rearrange the defining inequality for a <strongly convex function>, applied to $x+td$:
+$$
+f(y)\geq f(x)+\frac{f(x+td)-f(x)}{t}+\frac\gamma2(1-t)\|d\|^2.
+$$
+Because $f$ is <differentiable> at $x$, its <directional derivative> in direction $d$ is
+$$
+\lim_{t\downarrow0}\frac{f(x+td)-f(x)}{t}=\nabla f(x)^Td.
+$$
+Taking the limit in the rearranged inequality gives
+$$
+\boxed{f(y)\geq f(x)+\nabla f(x)^T(y-x)+\frac\gamma2\|y-x\|^2.}
+$$
+This is the supporting <affine function> inequality strengthened by a positive squared <Euclidean distance>. **Differentiability at $x$ alone suffices**; no <derivative> at $y$ is used.
+
+= b
+{parent=2}
+{scope}
+
+= Solution
+{parent=b}
+{c}
+
+For the <linear least-squares problem> <objective function>, direct expansion with $d=y-x$ gives
+$$
+f(y)=\frac12\|Ax-b+Ad\|^2
+=f(x)+(Ax-b)^TAd+\frac12\|Ad\|^2.
+$$
+Its <gradient> is $\nabla f(x)=A^T(Ax-b)$, so the middle term equals $\nabla f(x)^Td$.
+
+Use the supplied thin <singular value decomposition> $A=USV^T$. Since $U^TU=I_n$, the <linear map> $w\mapsto Uw$ preserves the <Euclidean norm>. The square <matrix> $V$ is an <orthogonal matrix>, so $\|V^Td\|=\|d\|$. Consequently
+$$
+\|Ad\|^2=\|SV^Td\|^2
+=\sum_{i=1}^n s_{i,i}^2(V^Td)_i^2
+\geq s_{\min}^2\sum_{i=1}^n(V^Td)_i^2
+=s_{\min}^2\|d\|^2.
+$$
+Substitution into the expansion proves
+$$
+\boxed{f(y)\geq f(x)+\nabla f(x)^T(y-x)+\frac{s_{\min}^2}{2}\|y-x\|^2.}
+$$
+Thus $f$ is a <strongly convex function> with modulus $\gamma=s_{\min}^2>0$. This modulus is sharp: choose $d=Ve_i$ for an index attaining the smallest <singular value>. The <Hessian matrix> is $A^TA=VS^2V^T$, so the same conclusion says that its smallest <eigenvalue> is $s_{\min}^2$.
+
+= c
+{parent=2}
+{scope}
+
+= Solution
+{parent=c}
+{c}
+
+**There is a summation-index misprint.** On the native PDF, paper page 3, equation (4) has $X^k$ inside a sum indexed by $j$. The intended telescoping estimate has $X^j$ inside that sum; this is the estimate proved below and used in part (d). The index mismatch is present in the original PDF, rather than being introduced by the transcription.
+
+Take the <expectation> of the supplied <conditional expectation> bound (3), using the <tower property>:
+$$
+\mathbb E f(X^{j+1})\leq\mathbb E f(X^j)-\frac1{2L}\mathbb E\|\nabla f(X^j)\|^2+\frac M{2L}.
+$$
+Rearranging and forming a <telescoping sum> gives
+$$
+\frac1{2L}\sum_{j=0}^{k-1}\mathbb E\|\nabla f(X^j)\|^2
+\leq f(x^0)-\mathbb E f(X^k)+\frac{kM}{2L}.
+$$
+Because $x^*$ is a <global minimizer>, $f(X^k)\geq f(x^*)$ for every realisation. Hence the corrected equation (4) is
+$$
+\boxed{\sum_{j=0}^{k-1}\frac1{2L}\mathbb E\|\nabla f(X^j)\|^2\leq f(x^0)-f(x^*)+\frac{kM}{2L}.}
+$$
+All <expectations> at a finite iteration are finite here: a deterministic starting point and finitely many choices of the sampled index produce only finitely many possible iterates. **The bound controls accumulated squared gradients**, with an additive contribution from the <stochastic gradient noise floor>.
+
+= d
+{parent=2}
+{scope}
+
+= Solution
+{parent=d}
+{c}
+
+Write $\Delta_0=f(x^0)-f(x^*)$. Dividing the corrected estimate from part (c) by $k/(2L)$ gives the <averaged stationarity bound for stochastic gradient descent>
+$$
+\frac1k\sum_{j=0}^{k-1}\mathbb E\|\nabla f(X^j)\|^2\leq M+\frac{2L\Delta_0}{k}.
+$$
+The <Cauchy-Schwarz inequality>, first within each <expectation> and then over the $k$ indices, gives
+$$
+\frac1k\sum_{j=0}^{k-1}\mathbb E\|\nabla f(X^j)\|
+\leq\left(\frac1k\sum_{j=0}^{k-1}\mathbb E\|\nabla f(X^j)\|^2\right)^{1/2}.
+$$
+Thus
+$$
+\boxed{\min_{0\leq j<k}\mathbb E\|\nabla f(X^j)\|\leq\sqrt{M+\frac{2L\Delta_0}{k}}\leq\sqrt M+\sqrt{\frac{2L\Delta_0}{k}}.}
+$$
+Equivalently, if $J$ is chosen independently of the run with the <discrete uniform distribution> on $\{0,\ldots,k-1\}$, then $\mathbb E\|\nabla f(X^J)\|^2\leq M+2L\Delta_0/k$. The same bound for the expected <Euclidean norm> follows by the <Cauchy-Schwarz inequality>.
+
+**The guarantee is averaged or best-iterate stationarity.** It does not assert that every last iterate converges, or that the limiting <Euclidean norm> equals $\sqrt M$. The squared <gradient> bound has excess $O(k^{-1})$ above $M$; the displayed expected <Euclidean norm> bound is within $O(k^{-1/2})$ of $\sqrt M$, including the zero-noise case. For fixed $M>0$, it is sharper:
+$$
+\sqrt{M+\frac{2L\Delta_0}{k}}-\sqrt M
+=\frac{2L\Delta_0/k}{\sqrt{M+2L\Delta_0/k}+\sqrt M}
+\leq\frac{L\Delta_0}{k\sqrt M}.
+$$
+For example, to ensure $\min_{j<k}\mathbb E\|\nabla f(X^j)\|\leq\sqrt M+\varepsilon$ with $\varepsilon>0$, it suffices that $k\geq2L\Delta_0/(2\sqrt M\,\varepsilon+\varepsilon^2)$. The <big O notation> here concerns these upper bounds, rather than an asserted asymptotic equality for the <stochastic gradient noise floor>.
+
+= e
+{parent=2}
+{scope}
+
+= Solution
+{parent=e}
+{c}
+
+Condition on $X^k=x$, and set $r=x-x^*$, $g=\nabla f(x)$ and $h=\nabla f_{S_k}(x)$. Since the sampled index is independent of $X^k$ and has the <discrete uniform distribution>, $h$ is an <unbiased stochastic gradient>:
+$$
+\mathbb E[h\mid X^k=x]=\frac1m\sum_{i=1}^m\nabla f_i(x)=g.
+$$
+Write $\sigma_k^2=\mathbb E[\|h-g\|^2\mid X^k=x]\leq M$. Expanding $h=g+(h-g)$ and using the zero conditional mean of $h-g$ proves the <stochastic gradient second-moment identity>
+$$
+\mathbb E[\|h\|^2\mid X^k=x]=\|g\|^2+\sigma_k^2.
+$$
+The <stochastic gradient descent> update is $X^{k+1}=x-h/L$. Expanding the squared <Euclidean distance> and using the preceding identities gives
+$$
+D_k:=\frac L2\mathbb E\left[\|X^k-x^*\|^2-\|X^{k+1}-x^*\|^2\,\middle|\,X^k=x\right]
+=g^Tr-\frac1{2L}(\|g\|^2+\sigma_k^2).
+$$
+The <subgradient inequality> for the <differentiable> <convex function> $f$ gives $f(x)-f(x^*)\leq g^Tr$. Combining this with (3),
+$$
+\begin{aligned}
+\mathbb E[f(X^{k+1})\mid X^k=x]
+&\leq f(x)-\frac1{2L}\|g\|^2+\frac M{2L}\\
+&\leq f(x^*)+g^Tr-\frac1{2L}\|g\|^2+\frac M{2L}\\
+&=f(x^*)+D_k+\frac{\sigma_k^2+M}{2L}\\
+&\leq f(x^*)+D_k+\frac ML.
+\end{aligned}
+$$
+Removing the temporary notation for the conditioning point yields
+$$
+\boxed{\mathbb E[f(X^{k+1})\mid X^k]\leq f(x^*)+\frac L2\mathbb E\left[\|X^k-x^*\|^2-\|X^{k+1}-x^*\|^2\,\middle|\,X^k\right]+\frac ML.}
+$$
+**The noise contributes twice** in this argument: once in the supplied bound (3), and once in converting the expected squared step into the squared <gradient>. Each contribution is at most $M/(2L)$.
+
+= f
+{parent=2}
+{scope}
+
+= Solution
+{parent=f}
+{c}
+
+**The printed distance needs a square.** The native PDF, paper page 3, prints $\|x^0-x^*\|$ in the final bound, but the general conclusion from (5) contains $\|x^0-x^*\|^2$. We first prove the corrected statement and then show that the printed version can fail.
+
+Take the <expectation> in (5), use the <tower property>, and sum over $j=0,\ldots,k-1$. The squared <Euclidean distances> form a <telescoping sum>:
+$$
+\sum_{j=0}^{k-1}\big(\mathbb E f(X^{j+1})-f(x^*)\big)
+\leq\frac L2\left(\|x^0-x^*\|^2-\mathbb E\|X^k-x^*\|^2\right)+\frac{kM}{L}.
+$$
+Discard the final nonnegative squared <Euclidean distance>. The smallest of $k$ numbers is at most their <arithmetic mean>, so
+$$
+\boxed{\min_{0\leq j<k}\mathbb E f(X^{j+1})-f(x^*)\leq\frac L{2k}\|x^0-x^*\|^2+\frac ML.}
+$$
+This is an $O(k^{-1})$ bound above the <stochastic gradient noise floor> $M/L$ for the best expected <objective function> value. By <Jensen's inequality>, it also bounds $\mathbb E f(\bar X^k)-f(x^*)$ for the averaged iterate $\bar X^k=k^{-1}\sum_{j=0}^{k-1}X^{j+1}$, because $f$ is a <convex function>.
+
+To test the printed version, take one component function, $f_1(x)=f(x)=x^2/4$, with $L=1$, $x^*=0$ and $x^0=10$. This <convex quadratic function> has $\nabla f(x)=x/2$, hence it has a $1$-<Lipschitz gradient>. The <stochastic gradient descent> update is deterministic, its conditional <variance> is zero, and the assumed positive bound $M=1/10$ is valid. At $k=1$, the new iterate is $X^1=5$, so
+$$
+f(X^1)-f(x^*)=\frac{25}{4}>5+\frac1{10}
+=\frac L2\|x^0-x^*\|+\frac ML.
+$$
+Thus the printed inequality is false under its stated assumptions. The squared <Euclidean distance> in the corrected bound resolves the defect.
+
+= 3
+{parent=2023}
+{scope}
+
+= a
+{parent=3}
+{scope}
+
+= Solution
+{parent=a}
+{c}
+
+Fix $x$ and put $g=\nabla_{\mathcal B}f(x)$, the <block coordinate gradient>. For $t\geq0$, define the one-variable <function> $q(t)=f(x-tg)$. By the <chain rule>,
+$$
+q'(t)=-\nabla f(x-tg)^Tg=-\nabla_{\mathcal B}f(x-tg)^Tg.
+$$
+The last equality holds because the coordinates of $g$ outside $\mathcal B$ are zero. The <fundamental theorem of calculus> and the <Cauchy-Schwarz inequality> therefore give
+$$
+\begin{aligned}
+f(x-\alpha g)-f(x)
+&=-\alpha\|g\|^2-\int_0^\alpha\big(\nabla_{\mathcal B}f(x-tg)-g\big)^Tg\,dt\\
+&\leq-\alpha\|g\|^2+\int_0^\alpha\|\nabla_{\mathcal B}f(x-tg)-g\|\,\|g\|\,dt.
+\end{aligned}
+$$
+For $\alpha\geq0$, the supplied condition (6), applied at the fixed starting point $x$ with parameter $t$, bounds the <integrand> by $L_{\mathcal B}t\|g\|^2$. Integration yields
+$$
+\boxed{f(x-\alpha\nabla_{\mathcal B}f(x))\leq f(x)-\alpha\left(1-\frac{L_{\mathcal B}\alpha}{2}\right)\|\nabla_{\mathcal B}f(x)\|^2.}
+$$
+This argument needs only the given directional <Lipschitz continuity> and continuous <differentiability>; <convexity> is not needed for this part. If the <block coordinate gradient> is zero, the inequality is equality.
+
+= b
+{parent=3}
+{scope}
+
+= Solution
+{parent=b}
+{c}
+
+The <subgradient inequality> for the <differentiable> <convex function> $f$ gives
+$$
+\phi(u)=f(u)-f(y)-\nabla f(y)^T(u-y)\geq0\qquad\text{for every }u.
+$$
+Thus $y$ is a <global minimizer> of $\phi$ with value zero. Subtracting an <affine function> preserves <convexity>.
+
+We must also justify using part (a) for $\phi$, since its <partial derivative> can differ from that of $f$. First show that condition (6) for a singleton block implies the full coordinate <Lipschitz continuity> estimate
+$$
+|\partial_i f(z+te_i)-\partial_i f(z)|\leq L_i|t|,\qquad z\in\mathbb R^n,\ t\in\mathbb R.
+$$
+If $\partial_i f(z)\ne0$, choose $\alpha=-t/\partial_i f(z)$ in (6). If it is zero but $\partial_i f(z+te_i)\ne0$, apply the same argument starting at $z+te_i$ and reverse the displacement. If both <partial derivatives> are zero, the estimate is immediate. The availability of all real $\alpha$ in (6) justifies these choices.
+
+Now $\partial_i\phi(z)=\partial_i f(z)-\partial_i f(y)$, so differences of this <partial derivative> along coordinate lines are unchanged. Hence $\phi$ has the same <coordinate Lipschitz continuity> constant $L_i$ and satisfies the singleton version of (6). Apply part (a) to $\phi$ with <step size> $1/L_i$:
+$$
+\phi\left(x-\frac{\partial_i\phi(x)}{L_i}e_i\right)
+\leq\phi(x)-\frac{[\partial_i\phi(x)]^2}{2L_i}.
+$$
+Combining with its already established nonnegativity proves
+$$
+\boxed{0\leq\phi\left(x-\frac{\partial_i\phi(x)}{L_i}e_i\right)\leq\phi(x)-\frac{[\partial_i\phi(x)]^2}{2L_i}.}
+$$
+**The coordinate estimate survives subtraction of the supporting <affine function>.** This is the step that allows the arbitrary comparison point $y$ to be exploited in part (c).
+
+= c
+{parent=3}
+{scope}
+
+= Solution
+{parent=c}
+{c}
+
+For arbitrary $x,y$, write the <Bregman divergence>
+$$
+D_f(x,y)=f(x)-f(y)-\nabla f(y)^T(x-y)\geq0,
+\qquad \delta_i=\partial_i f(x)-\partial_i f(y).
+$$
+Part (b), with its supporting <affine function> constructed at this $y$, implies the <coordinate derivative bound by Bregman divergence>
+$$
+\delta_i^2\leq2L_iD_f(x,y).
+$$
+For a nonempty block $\mathcal B$, set $S_{\mathcal B}=\sum_{i\in\mathcal B}L_i$ and $\delta_{\mathcal B}=\nabla_{\mathcal B}f(x)-\nabla_{\mathcal B}f(y)$. Sum the coordinate inequalities:
+$$
+\|\delta_{\mathcal B}\|^2\leq2S_{\mathcal B}D_f(x,y).
+$$
+Since $y$ in part (b) was arbitrary, interchange $x$ and $y$ to obtain the same left side bounded by $2S_{\mathcal B}D_f(y,x)$. Adding the two inequalities and dividing by two gives
+$$
+\|\delta_{\mathcal B}\|^2\leq S_{\mathcal B}\big(D_f(x,y)+D_f(y,x)\big)
+=S_{\mathcal B}(\nabla f(x)-\nabla f(y))^T(x-y).
+$$
+Now require that $x-y$ have zero coordinates outside $\mathcal B$. The last <dot product> is then $\delta_{\mathcal B}^T(x-y)$. By the <Cauchy-Schwarz inequality>,
+$$
+\|\delta_{\mathcal B}\|^2\leq S_{\mathcal B}\|\delta_{\mathcal B}\|\,\|x-y\|.
+$$
+If $\delta_{\mathcal B}=0$, the desired estimate is immediate; otherwise divide by its <Euclidean norm>. We have proved the stronger <block Lipschitz constant from coordinate smoothness> estimate
+$$
+\boxed{\|\nabla_{\mathcal B}f(x)-\nabla_{\mathcal B}f(y)\|\leq\left(\sum_{i\in\mathcal B}L_i\right)\|x-y\|\quad\text{when }x-y\text{ is supported in }\mathcal B.}
+$$
+In particular, take $y=x-\alpha\nabla_{\mathcal B}f(x)$ for any real $\alpha$. This proves (6), with a valid choice
+$$
+\boxed{L_{\mathcal B}=\sum_{i\in\mathcal B}L_i\leq|\mathcal B|\max_{i\in\mathcal B}L_i.}
+$$
+The least admissible <Lipschitz constant> is therefore no larger than this choice. For the empty block, the <block coordinate gradient> vanishes identically and its least nonnegative <Lipschitz constant> is zero. The proof uses only $C^1$ <differentiability>, <convexity> and <coordinate Lipschitz continuity>, with no assumed <Hessian matrix>.
+
+= d
+{parent=3}
+{scope}
+
+= Solution
+{parent=d}
+{c}
+
+The supporting inequality in part 2(a) bounds $f$ below by an <affine function> plus a positive squared <Euclidean norm>, making it a <coercive function>. Its <continuity> gives a <global minimizer> $x^*$, which is unique by <strict convexity>. Let $L_{\max}=\max_iL_i$, $\ell=n/m$ and $\Delta_0=f(x^0)-f(x^*)$. Here $m$ is the block size, so its role differs from the number of component <functions> in Question 2. Use <randomized block coordinate descent> with uniformly sampled blocks of size $m$, independently at each update. Sampling uniformly from a fixed partition into $\ell$ equal-sized blocks gives the same calculation, since each coordinate has inclusion <probability> $1/\ell=m/n$.
+
+Let $\beta$ be a common upper bound on the block <Lipschitz constants>. Part (c) permits $\beta=mL_{\max}$. With <step size> $1/\beta$, part (a) gives
+$$
+f\left(x-\frac1\beta\nabla_{\mathcal B}f(x)\right)\leq f(x)-\frac1{2\beta}\|\nabla_{\mathcal B}f(x)\|^2.
+$$
+Summing squared <partial derivatives> according to their inclusion <probabilities>,
+$$
+\mathbb E_{\mathcal B}\|\nabla_{\mathcal B}f(x)\|^2=\frac1\ell\|\nabla f(x)\|^2.
+$$
+For a <strongly convex function>, part 2(a) also yields the <strong convexity gradient inequality>
+$$
+\|\nabla f(x)\|^2\geq2\gamma\big(f(x)-f(x^*)\big).
+$$
+Indeed, substitute $y=x^*$ into the supporting inequality and complete the square in $x^*-x$: the expression $\nabla f(x)^Td+\gamma\|d\|^2/2$ is at least $-\|\nabla f(x)\|^2/(2\gamma)$ for every $d$.
+
+Combining the last three estimates gives a contraction in <conditional expectation>:
+$$
+\mathbb E[f(X^{t+1})-f(x^*)\mid X^t]
+\leq\left(1-\frac\gamma{\ell\beta}\right)\big(f(X^t)-f(x^*)\big).
+$$
+By the <tower property> and repeated application,
+$$
+\mathbb E[f(X^t)-f(x^*)]\leq\left(1-\frac\gamma{\ell\beta}\right)^t\Delta_0
+\leq\exp\left(-\frac{\gamma t}{\ell\beta}\right)\Delta_0.
+$$
+An <optimization epoch> counts $n$ coordinate <partial derivative> evaluations: it comprises $\ell$ block updates or one full <gradient> update. With sampling with replacement, an <optimization epoch> is this work measure; it need not visit every coordinate. Consequently the block method needs
+$$
+\boxed{\begin{gathered}
+O\left(\frac\beta\gamma\log\frac{\Delta_0}{\varepsilon}\right)\text{ epochs},\\
+O\left(\frac{mL_{\max}}\gamma\log\frac{\Delta_0}{\varepsilon}\right)\text{ using }\beta=mL_{\max}.
+\end{gathered}}
+$$
+to bring the expected <objective function> gap below $\varepsilon$, for $0<\varepsilon<\Delta_0$, up to integer rounding.
+
+For the <steepest descent method>, use a global <Lipschitz gradient> constant $L_f$. Part (c) with the full block permits $L_f=\sum_iL_i\leq nL_{\max}$. The <descent lemma> with <step size> $1/L_f$, together with the <strong convexity gradient inequality>, gives
+$$
+f(x^{t+1})-f(x^*)\leq\left(1-\frac\gamma{L_f}\right)\big(f(x^t)-f(x^*)\big).
+$$
+An <exact line search> along the negative <gradient> does at least as well in <objective function> decrease per update. Ignoring its additional work, the resulting <epoch complexity> is
+$$
+\boxed{\begin{gathered}
+O\left(\frac{L_f}\gamma\log\frac{\Delta_0}{\varepsilon}\right)\text{ epochs},\\
+O\left(\frac{nL_{\max}}\gamma\log\frac{\Delta_0}{\varepsilon}\right)\text{ using }L_f=nL_{\max}.
+\end{gathered}}
+$$
+**The common coordinate-based guarantees favour blocks by a factor $n/m=\ell$ in epochs.** In fact, with the conservative constants $\beta=mL_{\max}$ and $L_f=nL_{\max}$, both methods have the same guaranteed contraction per update, while a block update uses only $m$ coordinate <partial derivatives>.
+
+This compares the bounds justified by the given constants. For a particular <objective function>, sharper constants give the comparison $\beta/\gamma$ against $L_f/\gamma$; an actual speedup of $\ell$ is not universal. Computing a <block coordinate gradient> also need not cost exactly $m/n$ of a full <gradient> evaluation. The <epoch complexity> comparison assumes that coordinate <partial derivative> counts are a useful measure of work, and does not itself establish a wall-clock comparison.

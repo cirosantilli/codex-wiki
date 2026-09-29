@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>magnetic-flux-orientation.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="magnetic-flux-orientation.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/magnetic-flux-orientation.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">magnetic-flux-orientation.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/magnetic-flux-orientation.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/magnetic-flux-orientation.py">magnetic-flux-orientation.py</a></b></div></nav></div><div class="p"><b>magnetic-flux-orientation.py</b></div><div class="code"><div><pre><code>"""Signed magnetic flux versus surface orientation.
+
+Python 3.14, matplotlib 3.10.7, numpy 2.3.5. Write PNG to cwd for Make.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Arc
+import numpy as np
+
+
+def main():
+    magnetic_field, area = 2.0, 3.0
+    angles = np.array([0, np.pi/3, np.pi/2, np.pi])
+    fluxes = magnetic_field * area * np.cos(angles)
+    np.testing.assert_allclose(fluxes, [6, 3, 0, -6], atol=1e-14)
+    normals = np.column_stack((np.cos(angles), np.sin(angles)))
+    np.testing.assert_allclose(normals @ np.array([magnetic_field, 0]) * area, fluxes)
+    np.testing.assert_allclose((-normals) @ np.array([magnetic_field, 0]) * area, -fluxes)
+
+    blue, orange, grey = "#176997", "#b55d20", "#637783"
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False, "axes.spines.right": False})
+    fig = plt.figure(figsize=(10.5, 6.1), dpi=120, facecolor="white")
+    grid = fig.add_gridspec(3, 2, width_ratios=(1.05, 1.5), hspace=0.35, wspace=0.32)
+    for row, (theta, label, result) in enumerate(zip(angles[:3], ["0", "π/3", "π/2"], ["6", "3", "0"])):
+        ax = fig.add_subplot(grid[row, 0])
+        normal = np.array([np.cos(theta), np.sin(theta)])
+        edge = np.array([-np.sin(theta), np.cos(theta)])
+        ax.plot([-edge[0], edge[0]], [-edge[1], edge[1]], color=blue, lw=5, solid_capstyle="round")
+        ax.plot([0, 1.2], [0, 0], ls=":", color="#c1cbd1", lw=1)
+        ax.annotate("", normal * 1.2, (0, 0), arrowprops={"arrowstyle": "-&gt;", "lw": 2, "color": orange})
+        label_position = normal * 0.95 + np.array([0.4, 0.05])
+        ax.text(*label_position, r"$\widehat{\mathbf{n}}$", ha="center", va="center", fontsize=13, color=orange)
+        if theta &gt; 0:
+            ax.add_patch(Arc((0, 0), 0.85, 0.85, theta1=0, theta2=np.degrees(theta), color=orange, lw=1.2))
+        ax.annotate("", (1.55, -1.25), (-1.55, -1.25), arrowprops={"arrowstyle": "-&gt;", "color": grey, "lw": 1.5})
+        ax.text(1.63, -1.25, r"$\mathbf{B}$", va="center", color=grey, fontsize=12)
+        ax.text(-2.00, 1.30, f"θ = {label}    →    Φ = {result} Wb", va="bottom", fontsize=11)
+        ax.set(xlim=(-2.1, 2.15), ylim=(-1.5, 1.65), aspect="equal")
+        ax.axis("off")
+
+    ax = fig.add_subplot(grid[:, 1])
+    theta = np.linspace(0, np.pi, 501)
+    ax.plot(theta, magnetic_field * area * np.cos(theta), color=blue, lw=2.8)
+    ax.axhline(0, color="#9aaab4", lw=1)
+    ax.scatter(angles, fluxes, color=orange, s=38, zorder=5)
+    for angle, flux, label, offset in zip(angles, fluxes, ["6 Wb", "3 Wb", "0 Wb", "−6 Wb"],
+                                           [(10, -21), (12, 8), (13, 10), (-56, 14)]):
+        ax.annotate(label, (angle, flux), xytext=offset, textcoords="offset points", color=orange, fontsize=11)
+    ax.text(0.55, -4.4, "Reverse the normal:\nreverse the flux sign", fontsize=11, color=grey)
+    ax.set(xlim=(-0.12, np.pi + 0.12), ylim=(-7.1, 7.1), xlabel="Angle θ between field and normal", ylabel="Signed magnetic flux Φ (Wb)")
+    ax.set_xticks(angles, ["0", "π/3", "π/2", "π"])
+    ax.set_yticks([-6, -3, 0, 3, 6])
+    ax.grid(alpha=0.15)
+    ax.set_title(r"$\Phi_B=BA\cos\theta=6\cos\theta\;\mathrm{Wb}$", fontsize=13, pad=15)
+
+    fig.suptitle("Magnetic flux depends on the surface normal", fontsize=15, y=0.97)
+    fig.text(0.5, 0.905, "Stipulated uniform field B = 2 T; flat surface area A = 3 m²", ha="center", fontsize=11)
+    fig.text(0.24, 0.825, "Surface shown edge-on (blue)", ha="center", fontsize=11, color=blue)
+    fig.text(0.5, 0.03, "Orange: chosen unit normal. Grey: fixed field direction. Rotating the surface changes flux, even at constant B.",
+             ha="center", fontsize=10)
+    fig.subplots_adjust(left=0.065, right=0.97, bottom=0.15, top=0.77)
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

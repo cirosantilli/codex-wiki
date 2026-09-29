@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>cherenkov-dispersive-threshold-angle-yield.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="cherenkov-dispersive-threshold-angle-yield.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/cherenkov-dispersive-threshold-angle-yield.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">cherenkov-dispersive-threshold-angle-yield.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/cherenkov-dispersive-threshold-angle-yield.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/cherenkov-dispersive-threshold-angle-yield.py">cherenkov-dispersive-threshold-angle-yield.py</a></b></div></nav></div><div class="p"><b>cherenkov-dispersive-threshold-angle-yield.py</b></div><div class="code"><div><pre><code>"""Original hypothetical finite-band model; no measured optical constants.
+Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7. Run from _media.
+"""
+from pathlib import Path
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+def main():
+    wavelength_nm = np.linspace(400, 700, 1601)
+    wavelength_m = wavelength_nm * 1e-9
+    index = 1.28 + .04*(500/wavelength_nm)**2
+    alpha = 1/137.036  # explicitly chosen rounded fine-structure constant
+    colors = ['#bf571c', '#007c83', '#6359a5']
+    fig, axes = plt.subplots(1, 3, figsize=(11.6, 4.5), dpi=130, facecolor='white')
+    axes[0].plot(wavelength_nm, index, color='#183e66', lw=2.5, label=r'$n(\lambda)$')
+    axes[0].axhline(1/.75, color=colors[0], ls='--', label=r'$1/\beta$ for $\beta=0.75$')
+    cutoff = 500*np.sqrt(.04/(1/.75-1.28))
+    axes[0].axvline(cutoff, color=colors[0], ls=':', lw=1.4)
+    axes[0].text(447, 1.337, f'{cutoff:.2f} nm\nthreshold', fontsize=10, color=colors[0])
+    for beta, color in zip([.75, .78, .90], colors):
+        active = beta*index &gt; 1
+        angle = np.full_like(index, np.nan)
+        angle[active] = np.degrees(np.arccos(1/(beta*index[active])))
+        yield_m2 = 2*np.pi*alpha/wavelength_m**2*np.maximum(0, 1-1/(beta*index)**2)
+        # dN/(dx_cm d lambda_nm) = SI density * 1e-2 * 1e-9
+        axes[1].plot(wavelength_nm, angle, color=color, lw=2.3, label=rf'$\beta={beta:.2f}$')
+        axes[2].plot(wavelength_nm, yield_m2*1e-11, color=color, lw=2.3, label=rf'$\beta={beta:.2f}$')
+    axes[0].set_ylabel('Refractive index (dimensionless)')
+    axes[1].set_ylabel('Emission angle to track (degrees)')
+    axes[2].set_ylabel(r'Produced photons / (cm $\cdot$ nm)')
+    for ax, title in zip(axes, ['Index and onset', 'Allowed directions', 'Frank–Tamm spectrum, z = 1']):
+        ax.set_title(title, fontsize=12)
+        ax.set_xlabel('Vacuum wavelength (nm)')
+        ax.set_xlim(400, 700)
+        ax.grid(alpha=.23)
+        ax.legend(fontsize=9, frameon=False, loc='best')
+    axes[1].set_ylim(0, 40)
+    axes[2].set_ylim(bottom=0)
+    fig.suptitle(r'Chosen model: $n(\lambda)=1.28+0.04(500\,\mathrm{nm}/\lambda)^2$', fontsize=15)
+    fig.text(.5, .02,
+             '400–700 nm only; constant particle speed; no absorption or collection losses; calculated emission, not observed glow',
+             ha='center', fontsize=10)
+    fig.tight_layout(rect=(0, .06, 1, .91), w_pad=2)
+    fig.savefig(Path(__file__).stem+'.png', facecolor='white')
+    plt.close(fig)
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

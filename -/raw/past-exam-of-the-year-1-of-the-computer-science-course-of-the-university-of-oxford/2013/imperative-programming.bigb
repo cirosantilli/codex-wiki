@@ -1,0 +1,884 @@
+= Imperative programming
+{scope}
+{title2=4216}
+
+Solutions to all eight questions of the 12 June 2013 paper. The <Scala> code uses the paper's Scala 2 conventions. Arithmetic is exact unless a machine type is explicitly discussed; in particular, Question 1 permits ignoring <integer overflow>. Each code block extends the implementation introduced in its question, unless it supplies a complete replacement.<Imperative Programming examination paper by the University of Oxford (2013)>[Cover and printed pp. 2–11, Questions 1–8]{ref}
+
+== 1
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Evaluate the <mixed radix> representation from its most significant end, using <Horner's method>. There is no need to compute the positional weights separately.
+```
+def digsToInt(xs: Array[Int], bs: Array[Int]): Int = {
+  require(xs.length == bs.length)
+  val N = xs.length
+  var i = N
+  var acc = 0
+  while (i > 0) {
+    i -= 1
+    acc = xs(i) + bs(i) * acc
+  }
+  acc
+}
+```
+The digit conditions $0\leq xs(i)<bs(i)$ are additional <preconditions>. The <loop invariant> at the loop test is
+$$
+0\leq i\leq N,\qquad
+acc=\sum_{k=i}^{N-1}xs(k)\prod_{j=i}^{k-1}bs(j).
+$$
+An empty <sum> is zero and an empty <product> is one, so initialization at $i=N$ is correct. For the next digit, writing $i'=i-1$ gives
+$$
+xs(i')+bs(i')acc
+=\sum_{k=i'}^{N-1}xs(k)\prod_{j=i'}^{k-1}bs(j),
+$$
+which preserves the <loop invariant>. The <loop variant> is $i$. At termination $i=0$, giving
+$$
+\boxed{acc=xs\otimes bs.}
+$$
+The code executes exactly $N$ multiplications, meeting the bound, and uses $O(1)$ <auxiliary space>. When $N=0$ it returns zero. For the time representation in the source, it computes $s+60(m+60h)$.
+
+=== b
+{scope}
+
+==== Solution
+
+A suitable <precondition>, including the empty <array> case, is
+$$
+\boxed{bs(i)\geq1\ (0\leq i<N),\qquad 0\leq n<\prod_{i=0}^{N-1}bs(i).}
+$$
+A base of one is allowed: its only valid digit is zero. The empty <product> is one, so $N=0$ permits exactly $n=0$. Each <Euclidean division> extracts the next least significant digit.
+```
+def intToDigs(n: Int, bs: Array[Int]): Array[Int] = {
+  // Pre: every base is positive, and 0 <= n < product(bs).
+  val N = bs.length
+  val xs = new Array[Int](N)
+  var i = 0
+  var q = n
+  while (i < N) {
+    xs(i) = q % bs(i)
+    q = q / bs(i)
+    i += 1
+  }
+  xs
+}
+```
+The expensive <precondition> is a caller obligation, rather than a separately computed <product> inside the conversion. Define $P_i=\prod_{j=0}^{i-1}bs(j)$. The <loop invariant> is
+$$
+0\leq i\leq N,\qquad
+n=\sum_{k=0}^{i-1}xs(k)P_k+qP_i,\qquad
+0\leq q<\prod_{j=i}^{N-1}bs(j),
+$$
+together with $0\leq xs(k)<bs(k)$ for each processed digit. The <Euclidean division> identity $q=(q\bmod bs(i))+bs(i)\lfloor q/bs(i)\rfloor$ proves preservation of the reconstruction equality. Positivity of the bases gives the digit bounds and the next bound on the quotient. The <loop variant> is $N-i$. At exit, $0\leq q<1$ forces $q=0$, hence
+$$
+\boxed{xs\otimes bs=n,\qquad 0\leq xs(i)<bs(i).}
+$$
+There are exactly $N$ remainder operations and $N$ divisions, hence $2N$ counted operations. The returned <array> occupies $O(N)$ space and the remaining <auxiliary space> is constant. A represented value can never exceed $\prod_i bs(i)-1$, as follows either by the same nested expansion or by telescoping $\sum_i(bs(i)-1)P_i=P_N-1$; thus the stated range is also necessary for positive bases.
+
+== 2
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Use an abstract finite <sequence> $s$ of <integers>, initially empty. In the following <trait>, comments are the mathematical specification; $s_0$ means the abstract state on entry, and `result` means the returned value.
+```
+trait ReversableBuffer {
+  // Abstract state s: finite sequence of Int, initially [].
+
+  // Pre: true. Post: s = s0 ++ [x].
+  def append(x: Int): Unit
+
+  // Pre: true. Post: s = [x] ++ s0.
+  def prepend(x: Int): Unit
+
+  // Pre: 0 <= i < length(s0).
+  // Post: result = s0 !! i,
+  //       s = take i s0 ++ drop (i+1) s0.
+  def get(i: Int): Int
+
+  // Pre: true. Post: s = reverse(s0).
+  def rev: Unit
+}
+```
+The <postcondition> of `get` includes removal: it is not merely indexed reading. In particular,
+$$
+\boxed{\operatorname{get}(i)\text{ returns }s_{0,i}\text{ and deletes exactly that occurrence}.}
+$$
+Repeated equal values elsewhere in the <sequence> remain present. <List concatenation>, indexing and <list reversal> in the specification describe abstract behavior without committing to a physical representation.
+
+=== b
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+Use a <doubly linked list>, store both physical endpoints and its length, and maintain a flag for <lazy reversal of a doubly linked list>. This makes endpoint insertion and reversal constant time. Finding an arbitrary indexed element takes a traversal from whichever physical endpoint is nearer.
+```
+class LLBuffer extends ReversableBuffer {
+  private class Node(val value: Int) {
+    var prev: Node = null
+    var next: Node = null
+  }
+  private var first: Node = null
+  private var last: Node = null
+  private var size = 0
+  private var backwards = false
+
+  // Methods from (ii) go here.
+}
+```
+Define $F$ to be the <sequence> of values obtained by starting at `first` and repeatedly following `next` until null. The <representation invariant> says that `size` is nonnegative; `size == 0` holds exactly when both endpoints are null; otherwise there are exactly `size` distinct reachable <linked list nodes>, the final one is `last`, `first.prev == null`, `last.next == null`, and all neighboring links are reciprocal. These conditions make $F$ finite and the physical <linked list> acyclic. The <abstraction function> is
+$$
+\boxed{s=\begin{cases}F&\text{if }\neg backwards,\\\operatorname{reverse}(F)&\text{if }backwards.\end{cases}}
+$$
+The flag does not change the <representation invariant>. An empty physical <linked list> represents the empty <sequence> for either flag value. No client receives a <linked list node> reference, so clients cannot invalidate its links.
+
+\Image[imperative-programming-2013-buffer-reversal.png]
+{title=Physical <doubly linked list> order and logical <sequence> order under <lazy reversal of a doubly linked list>}
+
+==== ii
+{scope}
+
+===== Solution
+
+Place these methods inside the `LLBuffer` class. The two private insertion methods operate on physical endpoints; the public methods interpret logical endpoints using the reversal flag.
+```
+private def addFirst(x: Int): Unit = {
+  val q = new Node(x)
+  q.next = first
+  if (first == null) last = q else first.prev = q
+  first = q
+  size += 1
+}
+
+private def addLast(x: Int): Unit = {
+  val q = new Node(x)
+  q.prev = last
+  if (last == null) first = q else last.next = q
+  last = q
+  size += 1
+}
+
+def append(x: Int): Unit = {
+  if (backwards) addFirst(x) else addLast(x)
+}
+
+def prepend(x: Int): Unit = {
+  if (backwards) addLast(x) else addFirst(x)
+}
+
+def get(i: Int): Int = {
+  require(0 <= i && i < size)
+  val j = if (backwards) size - 1 - i else i
+  var q: Node = null
+  if (j <= size - 1 - j) {
+    q = first
+    var k = 0
+    while (k < j) { q = q.next; k += 1 }
+  } else {
+    q = last
+    var k = size - 1
+    while (k > j) { q = q.prev; k -= 1 }
+  }
+  val x = q.value
+  if (q.prev == null) first = q.next else q.prev.next = q.next
+  if (q.next == null) last = q.prev else q.next.prev = q.prev
+  q.prev = null
+  q.next = null
+  size -= 1
+  x
+}
+
+def rev: Unit = { backwards = !backwards }
+```
+In the forward traversal, the <loop invariant> is that `q` is physical node $k$, with $0\leq k\leq j$; its <loop variant> is $j-k$. In the backward traversal, `q` is physical node $k$, with $j\leq k<size$; its <loop variant> is $k-j$. Thus both locate physical index $j$, which is exactly logical index $i$ under the <abstraction function>.
+
+Deletion bypasses the chosen <linked list node> in both directions. Deleting the first or last <linked list node> updates the corresponding endpoint; deleting the only <linked list node> sets both endpoints to null. The surviving values keep their physical relative order, so the <abstraction function> gives precisely the required logical deletion. Each insertion preserves reciprocal links and adds its value at the physical end corresponding to the required logical end. Toggling the flag changes $s$ to its <list reversal> without moving any <linked list nodes>. Consequently
+$$
+\boxed{append,prepend,rev:O(1),\qquad get(i):O(1+\min(i,size_0-1-i)).}
+$$
+These are worst-case <time complexity> bounds in the constant-cost pointer model; total storage is $O(size)$ and each operation uses constant <auxiliary space>.
+
+== 3
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Let $a_0$ be a saved mathematical copy of the original <array>. A precise <postcondition> for <sorting> is
+$$
+\boxed{\begin{aligned}
+&\forall i,j\in[0,N):\ i<j\Longrightarrow a(i)\leq a(j),\\
+&\forall v\in\mathbb Z:\ \#\{i:a(i)=v\}=\#\{i:a_0(i)=v\}.
+\end{aligned}}
+$$
+The <precondition> is that `a` is a non-null <array> of length $N\geq0$. Its length and every unrelated object remain unchanged. The second clause preserves the <array multiset>, including all multiplicities; ordering alone would also permit overwriting the entire <array> with zeros. The saved $a_0$ is a specification device and need not be allocated by the implementation.
+
+=== b
+{scope}
+
+==== Solution
+
+Use <three-way quicksort>. Fix the pivot value before moving any entries, and group equal entries together so that none needs a recursive call. These helpers and the sorter belong inside an enclosing scope containing `a`.
+```
+def swap(i: Int, j: Int): Unit = {
+  val t = a(i); a(i) = a(j); a(j) = t
+}
+
+def split(l: Int, r: Int): (Int, Int) = {
+  // Pre: 0 <= l < r <= a.length.
+  val p = a(l)
+  var lt = l
+  var i = l
+  var gt = r
+  while (i < gt) {
+    if (a(i) < p) {
+      swap(lt, i)
+      lt += 1
+      i += 1
+    } else if (a(i) > p) {
+      gt -= 1
+      swap(i, gt)
+    } else {
+      i += 1
+    }
+  }
+  (lt, gt)
+}
+
+def quicksort(l: Int, r: Int): Unit = {
+  require(0 <= l && l <= r && r <= a.length)
+  if (r - l > 1) {
+    val (lt, gt) = split(l, r)
+    quicksort(l, lt)
+    quicksort(gt, r)
+  }
+}
+
+// Sort the whole array with quicksort(0, a.length).
+```
+The <array partitioning> <loop invariant> is
+$$
+l\leq lt\leq i\leq gt\leq r,\qquad
+a[l..lt)<p,\quad a[lt..i)=p,\quad a[gt..r)>p,
+$$
+with $a[i..gt)$ unclassified. Swaps preserve the segment's <array multiset> and leave all entries outside it unchanged. The <loop variant> $gt-i$ decreases in every branch. When swapping an entry from the right into `i`, do not increment `i`, since the incoming entry still needs classification. At termination,
+$$
+\boxed{a[l..lt)<p=a[lt..gt)<a[gt..r).}
+$$
+Here the middle segment is nonempty because the original pivot occurs somewhere in the preserved <array multiset>. Both recursive segments therefore have length strictly smaller than $r-l$. <Mathematical induction> on segment length proves that the two recursive calls sort their segments, and their ordering relative to the middle segment proves the complete <sorting> <postcondition>.
+
+There is no additional <array>. The call stack and returned boundary pairs still use <auxiliary space>. An all-equal input takes one linear scan and no nontrivial recursive calls, so its <time complexity> is $\Theta(N)$ for $N\geq1$. Balanced partitions give $O(N\log N)$ <time complexity>; a fixed first pivot can still give $O(N^2)$ on adversarial distinct inputs. The worst-case call stack has $O(N)$ entries.
+
+=== c
+{scope}
+
+==== Solution
+
+Reuse `split` and `swap`, but replace recursive calls with a <FIFO queue> of unresolved segments. Enqueue only segments of length at least two.
+```
+def quicksortLoop(): Unit = {
+  val work = scala.collection.mutable.Queue[(Int, Int)]()
+  if (a.length > 1) work.enqueue((0, a.length))
+  while (!work.isEmpty) {
+    val (l, r) = work.dequeue()
+    val (lt, gt) = split(l, r)
+    if (lt - l > 1) work.enqueue((l, lt))
+    if (r - gt > 1) work.enqueue((gt, r))
+  }
+}
+```
+A useful <loop invariant> is that the pending segments are pairwise disjoint valid <array> segments of length at least two; the whole <array multiset> equals its original value; and every inverted pair of positions lies in a single pending segment. Explicitly, if $i<j$ and $a(i)>a(j)$, some queued $[l,r)$ contains both $i$ and $j$. Thus all ordering obligations are localized to queued segments.
+
+Initially the only possible pending segment is the whole <array>. One <array partitioning> confines all its remaining inversions to its two child segments. Its equal middle segment is ordered, the left/middle/right boundaries have the correct ordering, and segments of length at most one cannot contain an inversion. Because <array partitioning> only permutes the selected segment's entries, it cannot create an inversion across a boundary that previously had no inversions. This proves preservation of the <loop invariant>.
+
+The <loop variant> is the total pending length
+$$
+V=\sum_{(l,r)\text{ in work}}(r-l).
+$$
+Processing one segment removes $r-l$ from $V$ and adds at most $(lt-l)+(r-gt)=(r-l)-(gt-lt)$, strictly less because $gt-lt\geq1$. Thus $V$ is a nonnegative <integer> and decreases. At exit no pending segment exists, so no inversion exists:
+$$
+\boxed{\text{The original array is sorted in place and preserves every multiplicity}.}
+$$
+The <FIFO queue> itself can grow to $O(N)$ pairs. The <time complexity> is that of the corresponding recursive <quicksort>, including linear behavior on equal input. Removing <recursion> does not make the worst-case <time complexity> linear or eliminate the work storage.
+
+== 4
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Traverse the <trie> along the input <string>, stopping as soon as the required child is absent. All words and letter collections in this question are assumed to use only lowercase letters `a` through `z`; this is the alphabet represented by the given child <array>. Put the following methods inside the supplied `Trie` class.
+```
+def contains(w: String): Boolean = {
+  var t: Trie = this
+  var i = 0
+  while (i < w.length && t != null) {
+    t = t.children(toIndex(w.charAt(i)))
+    i += 1
+  }
+  t != null && t.complete
+}
+```
+The <loop invariant> is that `t` is the <trie> node reached by the prefix `w.take(i)`, or null if that prefix has no path, with $0\leq i\leq w.length$. If `t` is null, no extension can be a stored word. Otherwise, following the next character preserves the <loop invariant>. The <loop variant> is $w.length-i$. At exit,
+$$
+\boxed{contains(w)\iff\text{the full path exists and its terminal flag is true}.}
+$$
+A prefix that exists but is not complete must return false. The empty <string> is present exactly when the root's `complete` flag is true. The <time complexity> is $O(1+|w|)$, with constant <auxiliary space>.
+
+=== b
+{scope}
+
+==== Solution
+
+Create only the missing nodes along the required <trie> path, and mark its last node complete.
+```
+def add(w: String): Unit = {
+  var t: Trie = this
+  var i = 0
+  while (i < w.length) {
+    val k = toIndex(w.charAt(i))
+    if (t.children(k) == null) t.children(k) = new Trie
+    t = t.children(k)
+    i += 1
+  }
+  t.complete = true
+}
+```
+The <loop invariant> is that the path for `w.take(i)` exists and ends at `t`, while the <set> of complete words remains unchanged from entry. A fresh node has all children null and `complete == false`, so creating an unfinished path introduces no stored word. The <loop variant> is $w.length-i$. At termination the full path exists; setting its final flag gives
+$$
+\boxed{D_{\mathrm{after}}=D_{\mathrm{before}}\cup\{w\}.}
+$$
+Existing paths and terminal flags are untouched, so adding an existing word is idempotent. Adding the empty <string> marks the root. The <time complexity> is $O(1+|w|)$ because the alphabet size is fixed; at most $|w|$ new <trie> nodes are allocated.
+
+=== c
+{scope}
+
+==== Solution
+
+Use <trie search with a letter multiset>. Counts avoid generating the same result repeatedly when the input contains equal letters. The <backtracking> explores a letter value once, irrespective of how many indistinguishable copies remain.
+```
+def allWords(ls: String): List[String] = {
+  val left = new Array[Int](26)
+  var i = 0
+  while (i < ls.length) {
+    left(toIndex(ls.charAt(i))) += 1
+    i += 1
+  }
+  var out = List.empty[String]
+
+  def visit(t: Trie, prefix: String): Unit = {
+    if (t.complete) out = prefix :: out
+    var k = 0
+    while (k < 26) {
+      val child = t.children(k)
+      if (left(k) > 0 && child != null) {
+        left(k) -= 1
+        visit(child, prefix + toChar(k))
+        left(k) += 1
+      }
+      k += 1
+    }
+  }
+
+  visit(this, "")
+  out.reverse
+}
+```
+At entry to `visit`, `t` is reached by `prefix`, and `left(k)` is the input multiplicity of letter $k$ minus its multiplicity in `prefix`. All these counts are nonnegative. Each recursive call consumes one available letter, and restoration makes sibling calls see the same counts as before that child. The <recursion> therefore terminates at depth at most $|ls|$, even when the dictionary contains longer words.
+
+A completed prefix is emitted once, and the traversal continues so that longer words with the same prefix are also found. Every emitted word is in the dictionary and uses at most the available multiplicities. Conversely, every dictionary word meeting those bounds has an existing <trie> path whose next letter has positive remaining count at every step; the traversal reaches its terminal node. A <trie> has a unique root path for each word, and each child is visited at most once per reached node. Therefore
+$$
+\boxed{out=\{w\in D:\forall c,\ \operatorname{count}_w(c)\leq\operatorname{count}_{ls}(c)\},\quad\text{without repetitions}.}
+$$
+The boxed expression specifies the <set> of entries in the returned <list>, rather than its ordering. If the dictionary includes the empty <string>, the method includes it once. Counting costs $O(|ls|+26)$; visiting $R$ reachable nodes costs $O(26R)$ apart from <string> copying and output construction. The presented immutable-prefix construction additionally costs the sum of the prefix lengths it constructs. The recursion depth is at most $|ls|$, and the letter-count <array> has fixed size.
+
+== 5
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Use a <minimum stack>: each <linked list node> caches the <minimum> of all values from that node down to the bottom. This handles duplicate minima without searching when one is removed.
+```
+class Stack {
+  private class Node(val value: Int, val least: Int, val next: Node)
+  private var top: Node = null
+
+  def push(x: Int): Unit = {
+    val m = if (top == null) x else math.min(x, top.least)
+    top = new Node(x, m, top)
+  }
+
+  def pop(): Int = {
+    require(!isEmpty)
+    val x = top.value
+    top = top.next
+    x
+  }
+
+  def isEmpty: Boolean = top == null
+
+  def min: Int = {
+    require(!isEmpty)
+    top.least
+  }
+}
+```
+The <representation invariant> is that the chain from `top` is finite and acyclic, and every reachable node `q` satisfies
+$$
+q.least=\begin{cases}q.value&q.next=null,\\\min(q.value,q.next.least)&q.next\ne null.\end{cases}
+$$
+The <abstraction function> takes the values along this chain in top-to-bottom order. Thus pushing $x$ changes $s$ to $x:s$, and popping a nonempty $s$ returns its head and leaves its tail. The cached-minimum equation follows for a new node from the previously valid chain; removing a head leaves every surviving equation unchanged. Consequently
+$$
+\boxed{push,pop,isEmpty,min\text{ each take }O(1)\text{ worst-case time}.}
+$$
+The bounds use the usual constant-cost allocation and <integer arithmetic> model. Storage is linear in the number of entries. `min` and `pop` require a nonempty <stack>; `min` leaves it unchanged.
+
+=== b
+{scope}
+
+==== Solution
+
+Keep a running total in the <mixin>, and use only the inherited public operations. Updating after a successful superclass operation leaves the total unchanged if an empty `pop` fails its <precondition>.
+```
+trait SumPlugin extends Stack {
+  private var total = 0
+
+  override def push(x: Int): Unit = {
+    super.push(x)
+    total += x
+  }
+
+  override def pop(): Int = {
+    val x = super.pop()
+    total -= x
+    x
+  }
+
+  def sum: Int = total
+}
+```
+For this <trait> mixed directly into `Stack`, its <representation invariant> is $total=\sum s$, where $s$ is the abstract <stack> <sequence>. A successful push adds exactly its argument and a successful pop removes exactly its returned value. Thus
+$$
+\boxed{sum=\text{the sum of the current stack entries},\qquad sum(\text{empty stack})=0.}
+$$
+The <mixin> reads no private `Stack` fields. Its operations add constant <time complexity>. As in the paper's `Int` interface, an unbounded mathematical total requires excluding <integer overflow>, or replacing the accumulator with `BigInt` if the interface is allowed to change. A later <mixin> can transform a pushed value at a different point in the <Scala trait linearization>; the effect is analyzed in the next part.
+
+=== c
+{scope}
+
+==== Solution
+
+The doubling <mixin> delegates with a transformed argument.
+```
+trait DoublePlugin extends Stack {
+  override def push(x: Int): Unit = super.push(2 * x)
+}
+```
+For `A`, the relevant <Scala trait linearization> is `A, DoublePlugin, SumPlugin, Stack`. A push first doubles the argument, then `SumPlugin` sees and sums that doubled value. The physical values are $2,4,6$ and the total is $12$.
+
+For `B`, the <Scala trait linearization> is `B, SumPlugin, DoublePlugin, Stack`. `SumPlugin` sums the original argument, while its `super.push` doubles the stored value. The physical values are still $2,4,6$, but the counter is $1+2+3=6$. Hence the two lines printed are
+```
+12
+6
+```
+Equivalently,
+$$
+\boxed{a.sum=12,\qquad b.sum=6.}
+$$
+This is <stackable trait modification>: the order determines which arguments an outer <mixin> observes. In particular, the running-total specification from part (b) holds for `A` but does not survive the transforming inner <mixin> in `B`. With the given implementation, popping from `B` would subtract the doubled stored value, demonstrating why mixing individually sensible <traits> can break a combined <representation invariant>.
+
+== 6
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+A <prefix-dropping iterator> must preserve the first satisfying element. Reading it to test the <predicate> physically consumes it from the source, so keep it in a one-element buffer. Once a match is found, return the entire suffix without testing subsequent elements again.
+```
+trait Iter[T] {
+  def hasNext: Boolean
+  def next(): T
+  def copy(): Iter[T]
+}
+
+class DropUntil[T](p: T => Boolean, iter: Iter[T]) extends Iter[T] {
+  private var seeking = true
+  private var saved: Option[T] = None
+
+  private def prepare(): Unit = {
+    if (seeking) {
+      while (saved.isEmpty && iter.hasNext) {
+        val x = iter.next()
+        if (p(x)) saved = Some(x)
+      }
+      seeking = false
+    }
+  }
+
+  def hasNext: Boolean = {
+    prepare()
+    saved.nonEmpty || iter.hasNext
+  }
+
+  def next(): T = {
+    prepare()
+    saved match {
+      case Some(x) => saved = None; x
+      case None =>
+        if (!iter.hasNext) throw new NoSuchElementException("next")
+        iter.next()
+    }
+  }
+
+  def copy(): Iter[T] = {
+    val result = new DropUntil[T](p, iter.copy())
+    result.seeking = seeking
+    result.saved = saved
+    result
+  }
+}
+```
+Assume the source <iterator> is owned by the wrapper, its `copy` meets the stated independent-cursor contract, and $p$ is a <pure function>. Before preparation, the logical remainder is the source remainder with its maximal initial failing prefix removed. After preparation, it is the buffered match followed by the source remainder, or simply the source remainder when the buffer is empty. This describes the <abstraction function> and proves that repeated `hasNext` calls neither lose the match nor skip more values.
+
+Copying preserves the phase flag and optional buffered value and independently copies the source <iterator>. It does not rerun the <predicate> on an already accepted match. A shallow copy of the wrapper alone would give <shared iterator consumption>, violating the specification. Therefore
+$$
+\boxed{\text{DropUntil returns the suffix starting at the first match, with independent copies}.}
+$$
+When no element satisfies $p$, a finite source yields an empty <iterator>. Seeking can diverge on an infinite source with no match; this is inherent in determining whether its required suffix begins anywhere. An element object is not deep-copied by this cursor operation.
+
+=== b
+{scope}
+
+==== Solution
+
+These operations consume the receiver, as expected for this destructive <iterator> interface. `exists` stops immediately after the first successful test.
+```
+trait RichIter[T] extends Iter[T] {
+  def foreach(f: T => Unit): Unit = {
+    while (hasNext) f(next())
+  }
+
+  def exists(p: T => Boolean): Boolean = {
+    while (hasNext) {
+      if (p(next())) return true
+    }
+    false
+  }
+
+  def foldLeft[U](x: U)(f: (U, T) => U): U = {
+    var acc = x
+    while (hasNext) acc = f(acc, next())
+    acc
+  }
+}
+```
+For `foreach`, after $k$ iterations the supplied <function> has been applied in order to exactly the first $k$ entries. For `exists`, every consumed entry has failed the <predicate> unless the method is returning true. For the <left fold>, the <loop invariant> after consuming $k$ entries is
+$$
+acc=f(\cdots f(f(x,a_1),a_2)\cdots,a_k).
+$$
+Each iteration extends the expression by the next entry on the right. For a finite remaining <sequence>, its unconsumed length is a common <loop variant>. Thus
+$$
+\boxed{foreach\text{ visits in order};\quad exists\text{ short-circuits};\quad foldLeft\text{ associates to the left}.}
+$$
+An empty <iterator> invokes no callback, gives false for `exists`, and returns $x$ from the <left fold>. On an infinite <iterator>, `exists` can terminate when it finds a match; the other two operations ordinarily do not terminate. With constant-cost callbacks, finite input of length $n$ takes $O(n)$ <time complexity> and constant <auxiliary space>.
+
+=== c
+{scope}
+
+==== Solution
+
+A simple current-value implementation works when $f$ is a <pure function>, but sharing a mutable <closure> between copies would violate the independence requirement used in part (d). Use a <memoized successor chain for stateful iterator copies>: the generated <sequence> has shared cells, and each <iterator> has its own current-cell pointer.
+```
+object FunIter {
+  final class Cell[T](val head: T, f: T => T) {
+    lazy val tail: Cell[T] = new Cell[T](f(head), f)
+  }
+}
+
+class FunIter[T](v: T, f: T => T) extends Iter[T] {
+  private var cursor = new FunIter.Cell[T](v, f)
+
+  def hasNext: Boolean = true
+
+  def next(): T = {
+    val x = cursor.head
+    cursor = cursor.tail
+    x
+  }
+
+  def copy(): Iter[T] = {
+    val result = new FunIter[T](cursor.head, f)
+    result.cursor = cursor
+    result
+  }
+}
+```
+The <representation invariant> is that `cursor` points to the next cell to be returned, and each cell's lazy tail is computed at most once. The <abstraction function> is the infinite <sequence> of heads starting at that cell. Advancing changes only this <iterator>'s pointer. A copy starts at the same cell, so both observe the same remaining heads even when their calls are interleaved:
+$$
+\boxed{next\text{ returns }v,f(v),f(f(v)),\ldots;\qquad copy\text{ preserves an independent position}.}
+$$
+For a stateful $f$, the generator state must be privately owned by this shared chain; unrelated external calls to $f$ must not change it. As usual, the values and transition must allow successive results to be observed without externally mutating old results. No interface can independently clone the hidden state of an arbitrary externally mutated <closure> from its <function type> alone. The chain avoids needing such cloning: a lagging copy reuses the already generated future instead of invoking $f$ again.
+
+Each new cell needs one transition and constant bookkeeping, but retained slower copies can keep a long generated prefix alive. This is an intentional space tradeoff that permits the stateful generator in part (d). No output is possible if computing a demanded transition itself fails or diverges.
+
+=== d
+{scope}
+
+==== Solution
+
+Keep the neighboring <Fibonacci number> in a private <closure>. Before calling the transition with $x=F_n$, let its captured `following` equal $F_{n+1}$.
+```
+def fibonacci(): Iter[BigInt] = {
+  var following = BigInt(1)
+  val step: BigInt => BigInt = (x: BigInt) => {
+    val result = following
+    following = x + following
+    result
+  }
+  new FunIter[BigInt](BigInt(0), step)
+}
+```
+The transition returns $F_{n+1}$ and stores $F_n+F_{n+1}=F_{n+2}$, preserving the <paired Fibonacci recurrence>. Initialization gives $F_0=0$ and $F_1=1$, so
+$$
+\boxed{0,1,1,2,3,5,8,13,21,\ldots.}
+$$
+Using `BigInt` allows all <Fibonacci numbers> rather than a finite prefix before <integer overflow>. Replacing `BigInt` by `Int` gives the source's suggested machine-<integer> interface with that limitation. With the `FunIter` implementation from part (c), each transition runs once per generated cell, and copied <iterators> can advance independently while sharing the privately owned generator. A simpler alternative uses a <pure function> on pairs, $(a,b)\mapsto(b,a+b)$, and projects the first component; the <closure> above follows the source's suggested single-value approach directly.
+
+== 7
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+An ordinary call such as the unqualified `f` inside `A.g` uses <dynamic dispatch> on the receiver. Thus `c.g` enters `A.g`, but its call to `f` reaches `C.f`. In contrast, `B.h` explicitly invokes `super.f`, which continues after `B` and therefore reaches `A.f`. Finally `A.k` dynamically dispatches its call to `h`, reaching `B.h` again. The output is
+```
+g in A, f in C
+h in B, f in A
+k in A, h in B, f in A
+```
+Hence
+$$
+\boxed{g:\ A\to C,\qquad h:\ B\to A,\qquad k:\ A\to B\to A.}
+$$
+These arrows describe the method bodies entered in order, not the <class inheritance> relation. An inherited method continues to use the dynamic receiver for ordinary calls; it does not acquire the defining <software class> as a new receiver.
+
+=== b
+{scope}
+
+==== Solution
+
+Ignoring predefined ancestors as permitted, the <Scala trait linearizations> are
+$$
+\boxed{D1,B2,B1,A\qquad\text{and}\qquad D2,B1,B2,A.}
+$$
+A `super` call in a <trait> continues to the next applicable implementation in the receiver's <Scala trait linearization>. It is not permanently bound to the parent named when that <trait> was declared.
+
+For `d1.h`, enter `B2.h`. Its `super.g` reaches `B1.g`, and that method's `super.f` reaches `A.f`. For `d2.h`, enter `B1.h`; its `super.g` reaches `B2.g`, whose `super.f` again reaches `A.f`. Therefore the two output lines are
+```
+h in B2, g in B1, f in A
+h in B1, g in B2, f in A
+```
+The shared ancestor `A` occurs once in each <Scala trait linearization>, after the two specialized <traits>. This accounts for the final `f in A` in both lines.
+
+=== c
+{scope}
+
+==== Solution
+
+<Method overloading> chooses a signature using the <static types> available at the call site. The receiver `m` has <static type> `M`, whose visible overloads accept `X` and `Y`; the `Z` overload introduced only in `N` is not a candidate.
+
+For `m.f(x)`, the argument's <static type> is `X`, so the chosen signature is `f(X)`. `N` does not override it, and the inherited `M` body runs. For `m.f(y)`, the chosen signature is `f(Y)`, and <dynamic dispatch> on the receiver chooses `N`'s override. For `m.f(z)`, both visible signatures apply, but `f(Y)` is more specific than `f(X)`. <Dynamic dispatch> again chooses `N.f(Y)`. Thus
+```
+f with X at M
+f with Y at N
+f with Y at N
+```
+Equivalently,
+$$
+\boxed{X@M,\qquad Y@N,\qquad Y@N.}
+$$
+The <runtime type> of every argument is `Z`, but ordinary single-receiver <dynamic dispatch> does not redo <method overloading> using that <runtime type>. This is <overload selection followed by dynamic dispatch>.
+
+=== d
+{scope}
+
+==== Solution
+
+Use <double dispatch>. Each original overload first sends a dynamically dispatched message to its argument. The argument's selected body then calls an overloaded receiver method with `this`, whose <static type> inside that body is the desired argument <software class>.
+```
+class X {
+  def sendTo(m: M): String = m.receive(this)
+}
+class Y extends X {
+  override def sendTo(m: M): String = m.receive(this)
+}
+class Z extends Y {
+  override def sendTo(m: M): String = m.receive(this)
+}
+
+class M {
+  def f(x: X): String = x.sendTo(this)
+  def f(x: Y): String = x.sendTo(this)
+
+  def receive(x: X): String = "f with X at M"
+  def receive(x: Y): String = "f with Y at M"
+  def receive(x: Z): String = "f with Z at M"
+}
+
+class N extends M {
+  override def f(x: Y): String = x.sendTo(this)
+  def f(x: Z): String = x.sendTo(this)
+
+  override def receive(x: X): String = "f with X at N"
+  override def receive(x: Y): String = "f with Y at N"
+  override def receive(x: Z): String = "f with Z at N"
+}
+```
+All three `receive` overloads must be declared in `M`, because `sendTo` receives a parameter with <static type> `M`. Declaring the `Z` version only in `N` would repeat the original problem.
+
+Whatever original `f` signature is selected, it invokes `sendTo` on the actual argument. For a `Z` object, <dynamic dispatch> enters `Z.sendTo`; inside that body, `this` has <static type> `Z`, so <method overloading> selects `receive(Z)`. The final call dynamically dispatches on the actual `m`, giving `N.receive(Z)` when `m` refers to `N`. Hence
+```
+f with Z at N
+f with Z at N
+f with Z at N
+```
+The result depends on both <runtime types>:
+$$
+\boxed{\text{argument }Z\text{ selects }receive(Z),\qquad\text{receiver }N\text{ selects its override}.}
+$$
+For the stated `X`, `Y`, `Z` hierarchy, the same construction reports each argument <software class> correctly for either receiver <software class>. Further subclasses would need their own dispatch protocol to distinguish additional <runtime types>.
+
+== 8
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Represent the <set> by a private <list> containing each value once. Normalize the constructor input as well as checking future insertions; otherwise duplicate initial entries would violate the intended <set> behavior.
+```
+class Set[T](contents: List[T]) {
+  protected var elems: List[T] = contents.distinct
+
+  def add(x: T): Unit = {
+    if (!elems.contains(x)) elems = x :: elems
+  }
+
+  def delete(): T = {
+    require(elems.nonEmpty)
+    val x = elems.head
+    elems = elems.tail
+    x
+  }
+}
+```
+The <representation invariant> is that `elems` contains no duplicates under the chosen stable value equality; the <abstraction function> forgets its ordering and returns its <set> of elements. The protected field allows the subclass in part (d) to inspect its contents; that subclass is responsible for preserving the <representation invariant> if it mutates them.
+
+Insertion makes the represented <set> $S\cup\{x\}$. Deletion requires $S\ne\varnothing$, returns some $x\in S$, and leaves $S\setminus\{x\}$. Thus
+$$
+\boxed{add(x):S'=S\cup\{x\};\qquad delete():x\in S,\ S'=S\setminus\{x\}.}
+$$
+Deletion does not promise to choose a <minimum>. With this <linked list> representation, insertion takes $O(|S|)$ <time complexity> because of its membership check, while deletion takes $O(1)$. Values should not mutate in a way that changes their equality while stored.
+
+=== b
+{scope}
+
+==== Solution
+
+If the mutable <set> were allowed a <covariant type parameter>, both variables below could refer to the same mutable object:
+```
+val s1: Set[Int] = new Set[Int](List())
+val s2: Set[Any] = s1             // hypothetically permitted
+s2.add("not an integer")
+val n: Int = s1.delete()         // cannot return an Int
+```
+The broad view accepts any value, including a <string>. The narrow view still promises that deletion returns an `Int`, yet the sole stored value is that <string>. This violates <type safety>:
+$$
+\boxed{\text{A mutable collection that both accepts and returns }T\text{ cannot be covariant in }T.}
+$$
+This is <covariance failure for a mutable collection>. The input occurrence in `add(x: T)` conflicts with the positive occurrence in the result of `delete`. Keeping a <generic type invariance> restriction prevents the unsafe aliasing. The example uses an initially empty <set> so that the problematic deletion result is forced.
+
+=== c
+{scope}
+
+==== Solution
+
+An <immutable object> can widen its element type when adding a value by returning a new object. Introduce a <lower type bound> $U>:T$ on the method's fresh <type parameter>.
+```
+class ISet[+T](contents: List[T]) {
+  private val elems: List[T] = contents.distinct
+
+  def add[U >: T](x: U): ISet[U] = {
+    val widened: List[U] = elems
+    if (widened.contains(x)) new ISet[U](widened)
+    else new ISet[U](x :: widened)
+  }
+
+  def delete(): (T, ISet[T]) = {
+    require(elems.nonEmpty)
+    (elems.head, new ISet[T](elems.tail))
+  }
+}
+```
+As before, the <representation invariant> excludes duplicates, and the <abstraction function> returns the unordered <set> of entries. The constructor normalization makes the <representation invariant> hold even for repeated initial entries. Both operations construct a fresh <set> object and leave the original object unchanged, including when addition finds an existing member.
+
+For a receiver representing $S$, the new object returned by `add` represents $S\cup\{x\}$. Deletion returns a pair $(x,R)$ with $x\in S$ and $R$ representing $S\setminus\{x\}$. Crucially,
+$$
+\boxed{add[U>:T](x:U):ISet[U],\qquad delete():(T,ISet[T]).}
+$$
+The widened <list> is valid because immutable `List` itself has a <covariant type parameter>. A client can view an `ISet[Int]` as `ISet[Any]`, but adding a <string> creates a separate widened result; it cannot put a <string> into the old <integer> <set>. This explains how using <immutable objects> makes the desired <type variance> sound. A direct `add(x: T)` on a covariant <software class> would still violate the <variance-position rule>; immutability alone does not repair an incorrectly typed method signature.
+
+=== d
+{scope}
+
+==== Solution
+
+Use an <upper type bound> requiring each element type to implement the supplied comparison interface for its own type. This is <F-bounded polymorphism>.
+```
+trait Ordered[T] {
+  def <(that: T): Boolean
+}
+
+class MinSet[T <: Ordered[T]](contents: List[T])
+    extends Set[T](contents) {
+  def min: T = {
+    require(elems.nonEmpty)
+    var best = elems.head
+    var rest = elems.tail
+    while (rest.nonEmpty) {
+      if (rest.head < best) best = rest.head
+      rest = rest.tail
+    }
+    best
+  }
+}
+```
+Use this locally defined `Ordered`, rather than silently substituting the standard library's different comparison interface. The type bound makes `rest.head < best` well typed. To interpret the result as a <minimum>, require the comparison to be a consistent strict <total order>; merely providing a method named `<` cannot establish its mathematical laws.
+
+The <loop invariant> is that `best` is a <minimum> among the entries already inspected, and `rest` is exactly the uninspected suffix. Comparing its next head with `best` preserves that property. The <loop variant> is the length of `rest`. On termination,
+$$
+\boxed{min\in S,\qquad\forall x\in S,\ \neg(x<min).}
+$$
+The method leaves the <set> unchanged, takes $O(|S|)$ <time complexity> under constant-cost comparisons, and uses constant <auxiliary space>. It requires a nonempty <set>; inherited insertion and deletion continue to preserve the duplicate-free <representation invariant>.

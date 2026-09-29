@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>catenoid-soap-film-between-rings.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="catenoid-soap-film-between-rings.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/catenoid-soap-film-between-rings.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">catenoid-soap-film-between-rings.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/catenoid-soap-film-between-rings.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/catenoid-soap-film-between-rings.py">catenoid-soap-film-between-rings.py</a></b></div></nav></div><div class="p"><b>catenoid-soap-film-between-rings.py</b></div><div class="code"><div><pre><code>"""Generate an ideal catenoid and two profiles at L/R=0.60.
+
+Python 3.14, matplotlib 3.10.7, numpy 2.3.5. Run from _media.
+Geometry is dimensionless and represents no measured film.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def bisect_root(left, right):
+    def residual(u):
+        return u / np.cosh(u) - 0.60
+
+    for _ in range(80):
+        midpoint = (left + right) / 2
+        if residual(left) * residual(midpoint) &lt;= 0:
+            right = midpoint
+        else:
+            left = midpoint
+    return (left + right) / 2
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "figure.facecolor": "white"})
+    half_gap = 0.60
+    wide_u, thin_u = bisect_root(0.01, 1.199), bisect_root(1.201, 6)
+    wide_a, thin_a = half_gap / wide_u, half_gap / thin_u
+    fig = plt.figure(figsize=(10.5, 5.3))
+    surface = fig.add_subplot(121, projection="3d")
+    z, phi = np.meshgrid(np.linspace(-half_gap, half_gap, 49), np.linspace(0, 2 * np.pi, 81))
+    r = wide_a * np.cosh(z / wide_a)
+    surface.plot_surface(r * np.cos(phi), r * np.sin(phi), z, color="#80c8d5", alpha=0.48, linewidth=0)
+    angle = np.linspace(0, 2 * np.pi, 241)
+    for height in [-half_gap, half_gap]:
+        surface.plot(np.cos(angle), np.sin(angle), np.full_like(angle, height), color="#333333", lw=2.8)
+    surface.plot(wide_a * np.cos(angle), wide_a * np.sin(angle), np.zeros_like(angle), color="#a35425", lw=2.2)
+    surface.quiver(wide_a, 0, 0, 0.36, 0, 0, color="#a35425", arrow_length_ratio=0.22)
+    surface.text(wide_a + 0.25, 0, 0.10, "$N$", color="#a35425")
+    surface.set(xlabel="$x/R$", ylabel="$y/R$", zlabel="$z/R$", title="Wide-waist catenoid")
+    surface.set_box_aspect((2, 2, 1.2))
+    surface.set_zticks([-0.6, 0, 0.6])
+    surface.view_init(elev=18, azim=-57)
+    profile = fig.add_subplot(122)
+    zz = np.linspace(-half_gap, half_gap, 301)
+    for a, style, label, color in [(wide_a, "-", "Wide waist", "#227b94"), (thin_a, "--", "Thin waist", "#b65a27")]:
+        profile.plot(zz, a * np.cosh(zz / a), style, color=color, lw=2.6, label=f"{label}: a/R={a:.3f}")
+    profile.scatter([-half_gap, half_gap], [1, 1], c="#333333", s=55, zorder=5)
+    profile.text(-0.57, 1.045, "Ring", ha="center")
+    profile.text(0.57, 1.045, "Ring", ha="center")
+    profile.axvline(0, lw=0.8, color="#aaaaaa")
+    profile.set(xlabel="Axial position $z/R$", ylabel="Profile radius $r/R$", xlim=(-0.67, 0.67), ylim=(0, 1.13), title="Same boundary, two stationary profiles")
+    profile.legend(loc="lower center", fontsize=11, frameon=False)
+    profile.grid(alpha=0.2)
+    profile.spines[["top", "right"]].set_visible(False)
+    fig.suptitle(r"$r(z)=a\cosh(z/a)$    •    $L/R=0.60$    •    $H=0$ on both profiles", fontsize=15, y=0.98)
+    fig.text(0.5, 0.035, "Ideal mid-surface geometry; equal rings of radius R at z = ±L", ha="center", fontsize=12)
+    fig.subplots_adjust(left=0.02, right=0.97, top=0.84, bottom=0.18, wspace=0.28)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=120, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>albedo-planet-energy-balance.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="albedo-planet-energy-balance.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/albedo-planet-energy-balance.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">albedo-planet-energy-balance.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/albedo-planet-energy-balance.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/albedo-planet-energy-balance.py">albedo-planet-energy-balance.py</a></b></div></nav></div><div class="p"><b>albedo-planet-energy-balance.py</b></div><div class="code"><div><pre><code>"""Write albedo-planet-energy-balance.png in CWD.
+
+Tested with Python 3.14.4, NumPy 2.3.5 and Matplotlib 3.10.7.
+An illustrative atmosphere-free planet has uniform temperature, prescribed
+solar-band reflection, and thermal emissivity one; this is not an Earth forecast.
+"""
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, Ellipse
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "figure.facecolor": "white"})
+    solar, sigma = 1360.0, 5.670374419e-8
+    albedos = np.array([0.3, 0.6])
+    incoming = solar / 4
+    reflected = incoming * albedos
+    absorbed = incoming * (1 - albedos)
+    temperatures = (absorbed / sigma) ** 0.25
+    assert np.allclose(reflected + absorbed, incoming)
+    assert np.allclose(temperatures, [254.531364159, 221.300193129], atol=1e-8)
+
+    fig = plt.figure(figsize=(11.2, 5.2), dpi=100)
+    grid = fig.add_gridspec(1, 3, width_ratios=[1.0, 1.0, 1.5],
+                           left=0.03, right=0.98, bottom=0.27,
+                           top=0.77, wspace=0.25)
+    sun_color, thermal_color = "#d58a00", "#a32638"
+    disk = fig.add_subplot(grid[0, 0])
+    disk.add_patch(Circle((0, 0), 1, facecolor="#fff1c7",
+                          edgecolor=sun_color, lw=2, hatch="///"))
+    for y in [-0.65, 0, 0.65]:
+        end = -np.sqrt(1 - y*y)
+        disk.annotate("", xy=(end - 0.04, y), xytext=(-2.4, y),
+                      arrowprops={"arrowstyle": "-&gt;", "color": sun_color, "lw": 2})
+    disk.plot([0, 0.70], [0, 0.70], color="0.3", lw=1.4)
+    disk.text(0.20, 0.55, "R", color="0.25")
+    disk.text(-1.65, 1.10, "sunlight S", ha="center", color=sun_color)
+    disk.text(0, -1.35, r"Intercepting area: $\pi R^2$", ha="center")
+    disk.set_title("Seen from the Sun", pad=20, fontsize=13)
+    disk.set(xlim=(-2.6, 1.55), ylim=(-1.65, 1.45), aspect="equal")
+    disk.axis("off")
+
+    sphere = fig.add_subplot(grid[0, 1])
+    sphere.add_patch(Circle((0, 0), 1, facecolor="#edf3f8",
+                            edgecolor="#346a94", lw=2))
+    for width in [0.55, 1.45]:
+        sphere.add_patch(Ellipse((0, 0), width, 2, fill=False,
+                                 edgecolor="#8ba9bf", lw=1))
+    sphere.add_patch(Ellipse((0, 0), 2, 0.5, fill=False,
+                             edgecolor="#8ba9bf", lw=1))
+    for theta in np.linspace(0, 2*np.pi, 8, endpoint=False):
+        v = np.array([np.cos(theta), np.sin(theta)])
+        sphere.annotate("", xy=1.50*v, xytext=1.04*v,
+                        arrowprops={"arrowstyle": "-&gt;", "color": thermal_color, "lw": 1.6})
+    sphere.text(0, 0.17, "uniform T", ha="center", color="#254a66")
+    sphere.text(0, -0.20, r"$\sigma T^4$ per area", ha="center", color=thermal_color)
+    sphere.text(0, -1.85, r"Emitting area: $4\pi R^2$", ha="center")
+    sphere.set_title("Whole emitting sphere", pad=20, fontsize=13)
+    sphere.set(xlim=(-1.85, 1.85), ylim=(-2.10, 1.60), aspect="equal")
+    sphere.axis("off")
+
+    ax = fig.add_subplot(grid[0, 2])
+    yy = np.array([1.0, 0.0])
+    ax.barh(yy, reflected, color="#f4c767", label="reflected", height=0.52)
+    ax.barh(yy, absorbed, left=reflected, color="#3a7ba4", label="absorbed", height=0.52)
+    for y, a, r, q, t in zip(yy, albedos, reflected, absorbed, temperatures):
+        ax.text(r/2, y, f"{r:.0f}", ha="center", va="center", color="#332511")
+        ax.text(r+q/2, y, f"{q:.0f}", ha="center", va="center", color="white")
+        ax.text(340, y-0.36, f"equilibrium T = {t:.3f} K", ha="right", fontsize=11)
+    ax.set(yticks=yy, yticklabels=[r"$\alpha=0.30$", r"$\alpha=0.60$"],
+           xlim=(0, 355), ylim=(-0.65, 1.50), xticks=[0, 102, 204, 340],
+           xlabel=r"Global average power per area (W m$^{-2}$)")
+    ax.set_title("Same illumination, different albedo", pad=20, fontsize=13)
+    ax.spines[["top", "right", "left"]].set_visible(False)
+    ax.tick_params(axis="y", length=0)
+    ax.legend(loc="lower center", bbox_to_anchor=(0.52, -0.44),
+              ncol=2, frameon=False, fontsize=11)
+    fig.suptitle("Albedo controls absorbed sunlight; geometry supplies the factor four",
+                 y=0.96, fontsize=15)
+    fig.text(0.31, 0.18,
+             r"$S\pi R^2\, /\,(4\pi R^2)=S/4=340\ \mathrm{W\,m^{-2}}$",
+             ha="center", fontsize=14)
+    fig.text(0.5, 0.035,
+             "Illustrative model: S = 1360 W m⁻² • no atmosphere • uniform T • thermal emissivity = 1",
+             ha="center", fontsize=11, color="0.3")
+    fig.savefig("albedo-planet-energy-balance.png", facecolor="white", transparent=False)
+    plt.close(fig)
+    print("Fixed albedos:", list(zip(albedos.tolist(), temperatures.tolist())))
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

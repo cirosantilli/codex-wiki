@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>min-entropy-guessing-inequality-family.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="min-entropy-guessing-inequality-family.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/min-entropy-guessing-inequality-family.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">min-entropy-guessing-inequality-family.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/min-entropy-guessing-inequality-family.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/min-entropy-guessing-inequality-family.py">min-entropy-guessing-inequality-family.py</a></b></div></nav></div><div class="p"><b>min-entropy-guessing-inequality-family.py</b></div><div class="code"><div><pre><code>"""Exact five-outcome model showing Shannon entropy &gt;= min-entropy.
+
+Run from _media with Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7.
+The curves evaluate an analytical probability law; they are not measured data.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def entropies(q):
+    p = np.column_stack([q, *[(1 - q) / 4] * 4])
+    surprise = np.zeros_like(p)
+    np.log2(p, out=surprise, where=p &gt; 0)
+    return -np.sum(p * surprise, axis=1), -np.log2(np.max(p, axis=1))
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "axes.spines.top": False,
+                         "axes.spines.right": False, "figure.facecolor": "white",
+                         "axes.facecolor": "white", "savefig.facecolor": "white"})
+    q = np.linspace(.2, 1, 801)
+    shannon, minimum = entropies(q)
+    assert np.all(shannon &gt;= minimum - 1e-12)
+    assert np.allclose(entropies(np.array([.2, .5, 1.])),
+                       [[np.log2(5), 2, 0], [np.log2(5), 1, 0]])
+    fig, ax = plt.subplots(figsize=(10.4, 6.6), dpi=100)
+    fig.subplots_adjust(left=.10, right=.97, top=.77, bottom=.23)
+    fig.suptitle("Shannon entropy dominates min-entropy", fontsize=19, y=.96)
+    fig.text(.5, .89, "Analytical model: P(A) = q; each of B, C, D, E has probability (1 − q)/4",
+             ha="center", fontsize=12)
+    fig.text(.5, .84, "A is a most likely outcome for 1/5 ≤ q ≤ 1 • no measured data",
+             ha="center", fontsize=11, color="#52606d")
+    ax.fill_between(q, minimum, shannon, color="#d8e9ef", alpha=.9, label="Nonnegative entropy gap")
+    ax.plot(q, shannon, color="#287aa0", lw=2.6, label="Shannon entropy: weighted average surprise")
+    ax.plot(q, minimum, color="#cc6e22", lw=2.6, label="Min-entropy: surprise of A")
+    ax.plot([.5, .5], [1, 2], color="#53616d", ls="--", lw=1.2)
+    ax.scatter([.2, .5, 1], [np.log2(5), 2, 0], color="#287aa0", zorder=5)
+    ax.scatter([.5], [1], color="#cc6e22", zorder=5)
+    ax.annotate("Uniform on five\nBoth = log₂ 5 bits", (.2, np.log2(5)), xytext=(.24, 1.97),
+                arrowprops={"arrowstyle": "-", "color": "#53616d"}, fontsize=11)
+    ax.annotate("q = 1/2\n2 bits versus 1 bit", (.5, 1.5), xytext=(.59, 1.25),
+                arrowprops={"arrowstyle": "-", "color": "#53616d"}, fontsize=11)
+    ax.annotate("Certain A\nBoth = 0", (1, 0), xytext=(.78, .58),
+                arrowprops={"arrowstyle": "-", "color": "#53616d"}, fontsize=11)
+    ax.set_xlim(.19, 1.02)
+    ax.set_ylim(-.04, 2.55)
+    ax.set_xticks([.2, .3, .4, .5, .6, .7, .8, .9, 1])
+    ax.set_xlabel("Best single-guess success probability q", labelpad=10)
+    ax.set_ylabel("Entropy (bits)")
+    ax.grid(alpha=.2)
+    ax.set_axisbelow(True)
+    ax.legend(loc="upper right", fontsize=10, frameon=True, facecolor="white")
+    fig.text(.5, .105, r"$H(q)=h_2(q)+2(1-q)$      $H_\infty(q)=-\log_2q$", ha="center", fontsize=14)
+    fig.text(.5, .047, "Equality at q = 1/5 and q = 1; a strictly positive gap everywhere between them.",
+             ha="center", fontsize=11, color="#52606d")
+    fig.savefig(Path(__file__).with_suffix('.png').name, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

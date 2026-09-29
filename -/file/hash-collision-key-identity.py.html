@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>hash-collision-key-identity.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="hash-collision-key-identity.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/hash-collision-key-identity.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">hash-collision-key-identity.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/hash-collision-key-identity.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/hash-collision-key-identity.py">hash-collision-key-identity.py</a></b></div></nav></div><div class="p"><b>hash-collision-key-identity.py</b></div><div class="code"><div><pre><code>"""Illustrate hash-value equality versus table-bucket equality on toy keys.
+
+Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-matplotlib python ../hash-collision-key-identity.py
+Writes this script's basename as an opaque white PNG to the current directory.
+Tested with Python 3.14.4, Matplotlib 3.10.7; uses no measured data.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+
+
+def main():
+    keys = (2, 6, 18)
+    hashes = tuple(k % 16 for k in keys)
+    buckets = tuple(h % 4 for h in hashes)
+    assert hashes == (2, 6, 2) and buckets == (2, 2, 2)
+    assert 34 % 16 == 2 and 34 not in keys
+
+    orange, blue, gray = "#b85419", "#23678c", "#586470"
+    plt.rcParams.update({"font.size": 12, "figure.facecolor": "white",
+                         "axes.facecolor": "white", "savefig.facecolor": "white"})
+    fig, ax = plt.subplots(figsize=(9, 5), dpi=120)
+    fig.subplots_adjust(left=0.025, right=0.98, bottom=0.1, top=0.81)
+    ax.set(xlim=(0, 10), ylim=(-0.55, 4.1))
+    ax.axis("off")
+    fig.suptitle("A shared bucket can hide different hash values", fontsize=16, y=0.96)
+    fig.text(0.5, 0.885, r"Toy functions: $h(k)=k\;\mathrm{mod}\;16$,   $b(k)=h(k)\;\mathrm{mod}\;4$",
+             ha="center", fontsize=13)
+
+    def box(x, y, text, color, width=1.1):
+        ax.add_patch(FancyBboxPatch((x-width/2, y-0.25), width, 0.5,
+                                   boxstyle="round,pad=0.035", linewidth=1.6,
+                                   edgecolor=color, facecolor="white", zorder=3))
+        ax.text(x, y, text, ha="center", va="center", color=color, weight="bold", zorder=4)
+
+    def arrow(start, end, color, rad=0):
+        ax.add_patch(FancyArrowPatch(start, end, arrowstyle="-|&gt;", mutation_scale=15,
+                                    linewidth=1.7, color=color,
+                                    connectionstyle=f"arc3,rad={rad}", zorder=2))
+
+    for x, title in [(0.9, "Distinct keys"), (4.0, "Hash value"), (7.8, "Table bucket")]:
+        ax.text(x, 3.9, title, ha="center", weight="bold")
+    for key, y, color in [(2, 3.2, orange), (6, 2.1, blue), (18, 1.0, orange)]:
+        box(0.9, y, str(key), color)
+        target_y = 2.85 if key != 6 else 1.65
+        arrow((1.5, y), (3.4, target_y), color, 0.07 if key == 18 else 0)
+    box(4.0, 2.85, "2", orange)
+    box(4.0, 1.65, "6", blue)
+    box(7.8, 2.2, "2", gray, 1.4)
+    arrow((4.6, 2.85), (7.0, 2.28), orange)
+    arrow((4.6, 1.65), (7.0, 2.12), blue)
+    ax.text(4.0, 0.92, "2 and 18 share h\n6 has a different h", ha="center", color=gray)
+    ax.text(7.8, 2.85, "All three share b", ha="center", color=gray)
+    arrow((7.8, 1.9), (6.0, 0.63), gray)
+    for x, key, color in [(6.0, 2, orange), (7.55, 6, blue), (9.1, 18, orange)]:
+        box(x, 0.32, f"key {key}", color, 1.15)
+    arrow((6.6, 0.32), (6.93, 0.32), gray)
+    arrow((8.15, 0.32), (8.48, 0.32), gray)
+    ax.text(7.55, -0.24, "Chaining keeps the original keys", ha="center", fontsize=11, color=gray)
+    fig.text(0.5, 0.035, "Same hash or bucket does not prove equal keys. Compare the stored keys.",
+             ha="center", fontsize=12)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

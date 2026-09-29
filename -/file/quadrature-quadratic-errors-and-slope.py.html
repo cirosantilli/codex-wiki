@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>quadrature-quadratic-errors-and-slope.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="quadrature-quadratic-errors-and-slope.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/quadrature-quadratic-errors-and-slope.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">quadrature-quadratic-errors-and-slope.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/quadrature-quadratic-errors-and-slope.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/quadrature-quadratic-errors-and-slope.py">quadrature-quadratic-errors-and-slope.py</a></b></div></nav></div><div class="p"><b>quadrature-quadratic-errors-and-slope.py</b></div><div class="code"><div><pre><code>"""Plot exact quadratic quadrature errors with a log-log slope triangle.
+
+Run from _media; outputs quadrature-quadratic-errors-and-slope.png to CWD.
+Tested with Python 3.14, matplotlib 3.10.7 and numpy 2.3.5.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    counts = 2 ** np.arange(7)
+    midpoint, trapezoidal = [], []
+    for n in counts:
+        edges = np.linspace(0, 1, n + 1)
+        midpoints = (edges[:-1] + edges[1:]) / 2
+        midpoint.append(abs(np.sum(midpoints**2) / n - 1 / 3))
+        trapezoidal.append(abs((np.sum(edges[1:-1]**2) + 0.5) / n - 1 / 3))
+    np.testing.assert_allclose(midpoint, 1 / (12 * counts**2), rtol=1e-11)
+    np.testing.assert_allclose(trapezoidal, 1 / (6 * counts**2), rtol=1e-11)
+    np.testing.assert_allclose(np.array(midpoint[:-1]) / midpoint[1:], 4, rtol=1e-11)
+    fig, ax = plt.subplots(figsize=(8.2, 5.2), layout="constrained")
+    fig.set_facecolor("white")
+    ax.set_facecolor("white")
+    ax.set_xscale("log", base=2)
+    ax.set_yscale("log", base=2)
+    ax.plot(counts, trapezoidal, "o-", color="#b65716", label=r"$|T_n-I|=1/(6n^2)$", lw=2)
+    ax.plot(counts, midpoint, "s-", color="#2166a3", label=r"$|M_n-I|=1/(12n^2)$", lw=2)
+    ax.set_xticks(counts, [str(n) for n in counts])
+    ticks = 2.0 ** np.arange(-16, -1, 2)
+    ax.set_yticks(ticks, [f"$2^{{{int(np.log2(t))}}}$" for t in ticks])
+    ax.grid(which="major", color="#e3e6e9")
+    ax.spines[["top", "right"]].set_visible(False)
+    # The triangle has log2 horizontal displacement 1 and vertical displacement -2.
+    x0, y0 = 8, 1 / 16
+    ax.plot([x0, 2 * x0, 2 * x0, x0], [y0, y0, y0 / 4, y0], color="#434a53", lw=1.5)
+    ax.text(11.3, y0 * 1.3, r"$n\times2$", ha="center", fontsize=12)
+    ax.text(17.5, y0 / 2, "error ÷ 4", va="center", fontsize=12)
+    ax.text(11, y0 / 6, r"slope $=-2/1=-2$", ha="center", fontsize=12)
+    ax.set(xlim=(0.85, 80), ylim=(2**-16, 0.3), xlabel="Number of equal panels $n$", ylabel=r"Absolute error against $I=\int_0^1 x^2\,dx=1/3$")
+    ax.legend(loc="lower left", fontsize=12, framealpha=1)
+    ax.set_title("Exact samples of $x^2$ on $[0,1]$: order two", fontsize=15)
+    fig.supxlabel("These are exact error laws for this polynomial; they do not certify an unknown integrand.", fontsize=10)
+    fig.savefig(Path(__file__).stem + ".png", dpi=100, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

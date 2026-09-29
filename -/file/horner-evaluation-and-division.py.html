@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>horner-evaluation-and-division.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="horner-evaluation-and-division.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/horner-evaluation-and-division.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">horner-evaluation-and-division.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/horner-evaluation-and-division.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/horner-evaluation-and-division.py">horner-evaluation-and-division.py</a></b></div></nav></div><div class="p"><b>horner-evaluation-and-division.py</b></div><div class="code"><div><pre><code>"""Exact Horner accumulators double as synthetic-division coefficients."""
+
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+
+def accumulate(x, coefficients):
+    values = [coefficients[0]]
+    for a in coefficients[1:]:
+        values.append(x * values[-1] + a)
+    return values
+
+
+def main():
+    coefficients = [1, -3, 0, 4]
+    assert accumulate(2, coefficients) == [1, -1, -2, 0]
+    assert accumulate(3, coefficients) == [1, 0, 0, 4]
+    for x in [-3, -1, 0, 1, 2, 3, 4]:
+        assert accumulate(x, coefficients)[-1] == x**3 - 3*x**2 + 4
+    for x in [-2, 0, 1, 3, 5]:
+        assert (x - 2)*(x**2 - x - 2) == x**3 - 3*x**2 + 4
+        assert (x - 3)*x**2 + 4 == x**3 - 3*x**2 + 4
+    fig, axes = plt.subplots(2, 1, figsize=(10.8, 5.5), dpi=120)
+    blue, orange = "#176997", "#b55d20"
+    for ax, x, equation in zip(axes, [2, 3],
+                               [r"$p(X)=(X-2)(X^2-X-2)+0$",
+                                r"$p(X)=(X-3)X^2+4$"]):
+        values = accumulate(x, coefficients)
+        for i, (a, value) in enumerate(zip(coefficients, values)):
+            ax.text(i, 1, str(a), ha="center", fontsize=13, color="#536371")
+            ax.text(i, 0.4, str(value), ha="center", va="center", fontsize=18,
+                    color=blue if i &lt; 3 else orange,
+                    bbox={"boxstyle": "round,pad=0.35", "fc": "#edf4f8" if i &lt; 3 else "#fff0e5",
+                          "ec": blue if i &lt; 3 else orange})
+            if i:
+                ax.annotate("", xy=(i - 0.12, 0.4), xytext=(i - 0.88, 0.4),
+                            arrowprops={"arrowstyle": "-|&gt;", "color": "#738492",
+                                        "lw": 1.5, "mutation_scale": 16})
+                sign = "+" if a &gt;= 0 else "−"
+                ax.text(i - 0.5, 0.68, f"× {x}, then {sign} {abs(a)}",
+                        ha="center", fontsize=10)
+        ax.plot([-0.10, 2.10], [-0.05, -0.05], color=blue, lw=2)
+        ax.text(1, -0.27, "quotient coefficients", ha="center", fontsize=11, color=blue)
+        ax.text(3, -0.27, "remainder = p(x)", ha="center", fontsize=11, color=orange)
+        ax.text(1.5, -0.70, equation, ha="center", fontsize=14)
+        ax.set_title(f"Input x = {x}    (coefficients above, accumulated values below)",
+                     fontsize=12, pad=12)
+        ax.set_xlim(-0.35, 3.55)
+        ax.set_ylim(-0.85, 1.15)
+        ax.axis("off")
+    fig.suptitle(r"One recurrence evaluates $p(X)=X^3-3X^2+4$ and divides by $X-x$",
+                 fontsize=15, y=0.97)
+    fig.subplots_adjust(top=0.80, bottom=0.07, left=0.04, right=0.97, hspace=0.70)
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name,
+                facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,105 @@
+"""Original diagrams; Python 3.14, NumPy and Matplotlib. Output: CWD/basename.png."""
+from pathlib import Path
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import numpy as np
+
+plt.rcParams.update({'font.family': 'DejaVu Sans', 'font.size': 12})
+fig = plt.figure(figsize=(12.6, 10), dpi=100, facecolor='white')
+grid = fig.add_gridspec(3, 12, hspace=.35, wspace=.65)
+ink, blue, orange = '#203549', '#196da5', '#a84c20'
+
+
+def panel(row, start, width, title):
+    ax = fig.add_subplot(grid[row, start:start+width])
+    ax.set(xlim=(-.07, 1.07), ylim=(-.10, 1.04), aspect='equal')
+    ax.axis('off')
+    ax.set_title(title, fontsize=12, pad=12)
+    return ax
+
+
+def line(ax, a, b, kind='fermion'):
+    a, b = np.array(a, float), np.array(b, float)
+    t = np.linspace(0, 1, 400)
+    delta = b-a
+    length = np.linalg.norm(delta)
+    normal = np.array([-delta[1], delta[0]])/length
+    xy = a[None, :] + t[:, None]*delta
+    if kind != 'fermion':
+        cycles = max(4, int(length*13))
+        amplitude = .018 if kind == 'photon' else .027
+        xy += (amplitude*np.sin(2*np.pi*cycles*t))[:, None]*normal
+        if kind == 'gluon':
+            xy += (.025*np.sin(np.pi*t)*np.cos(2*np.pi*cycles*t))[:, None]*delta/length
+    color = ink if kind == 'fermion' else blue if kind == 'photon' else orange
+    ax.plot(xy[:, 0], xy[:, 1], color=color, lw=1.8)
+    if kind == 'fermion':
+        ax.annotate('', xy=a+.58*delta, xytext=a+.43*delta,
+                    arrowprops={'arrowstyle': '-|>', 'lw': 1.5, 'color': color})
+
+
+def dot(ax, x, y):
+    ax.plot(x, y, 'o', ms=4, color=ink)
+
+
+for col, (kind, title) in enumerate([('photon', '1(iii): QED vertex'),
+                                    ('gluon', '1(viii): Abelian-shaped QCD vertex')]):
+    ax = panel(0, 4*col, 4, title)
+    for x0, x1 in [(0, .2), (.2, .5), (.5, .8), (.8, 1)]:
+        line(ax, (x0, .35), (x1, .35))
+    t = np.linspace(0, np.pi, 700)
+    x = .5-.3*np.cos(t)+.014*np.sin(20*t)*np.cos(t)
+    y = .35+.31*np.sin(t)+.014*np.sin(20*t)*np.sin(t)
+    if kind == 'gluon':
+        x += .012*np.sin(t)*np.cos(20*t)
+    ax.plot(x, y, lw=1.8, color=blue if kind == 'photon' else orange)
+    line(ax, (.5, .35), (.5, .04), kind)
+    for x in [.2, .5, .8]:
+        dot(ax, x, .35)
+    for x, y, text in [(.04, .23, '$p$'), (.96, .23, "$p'$"), (.5, .73, '$k$'), (.62, .03, '$\\mu$')]:
+        ax.text(x, y, text, ha='center')
+
+ax = panel(0, 8, 4, '1(viii): non-Abelian QCD vertex')
+for x0, x1 in [(0, .25), (.25, .75), (.75, 1)]:
+    line(ax, (x0, .2), (x1, .2))
+for a, b in [((.25, .2), (.5, .65)), ((.75, .2), (.5, .65)), ((.5, .65), (.5, .98))]:
+    line(ax, a, b, 'gluon')
+for x, y in [(.25, .2), (.75, .2), (.5, .65)]:
+    dot(ax, x, y)
+for x, y, text in [(.3, .47, '$b$'), (.7, .47, '$c$'), (.6, .94, '$a$')]:
+    ax.text(x, y, text, ha='center')
+
+for col, crossed in enumerate([False, True]):
+    ax = panel(1, 6*col, 6, '2(b)(i): '+('u' if crossed else 's')+'-channel quark exchange')
+    for x0, x1 in [(.02, .35), (.35, .65), (.65, .98)]:
+        line(ax, (x0, .25), (x1, .25))
+    line(ax, (.1, .83), (.65 if crossed else .35, .25), 'photon')
+    line(ax, (.35 if crossed else .65, .25), (.9, .83), 'photon')
+    for x in [.35, .65]:
+        dot(ax, x, .25)
+    for x, y, text in [(.03, .11, '$p_1$'), (.97, .11, '$p_3$'), (.1, .93, '$p_2$'), (.9, .93, '$p_4$')]:
+        ax.text(x, y, text, ha='center')
+    ax.text(.5, .13, '$p_1-p_4$' if crossed else '$p_1+p_2$', ha='center')
+
+for col, labels in enumerate([(1, 2, 3, 4), (1, 3, 2, 4), (1, 4, 2, 3), (1, 2, 3, 4)]):
+    title = '3(b)(v): contact' if col == 3 else f'3(b)(v): {labels[0]}{labels[1]} | {labels[2]}{labels[3]}'
+    ax = panel(2, 3*col, 3, title)
+    ends = [(.03, .88), (.03, .12), (.97, .88), (.97, .12)]
+    vertices = [(.5, .5)]*4 if col == 3 else [(.32, .5)]*2+[(.68, .5)]*2
+    for end, vertex, label in zip(ends, vertices, labels):
+        line(ax, end, vertex, 'photon')
+        ax.text(end[0], end[1]+(.08 if end[1]>.5 else -.09), str(label), ha='center')
+    if col == 3:
+        dot(ax, .5, .5)
+    else:
+        line(ax, (.32, .5), (.68, .5), 'photon')
+        dot(ax, .32, .5)
+        dot(ax, .68, .5)
+fig.suptitle('Oxford AQFT 2020: contributing diagrams', fontsize=17, y=.98)
+fig.text(.5, .025, 'Solid arrows: fermion flow     Wavy blue: photon     Curly orange: gluon     Dots: interaction vertices',
+         ha='center', fontsize=11, color=ink)
+fig.subplots_adjust(left=.035, right=.975, top=.91, bottom=.08)
+fig.savefig(Path.cwd()/Path(__file__).with_suffix('.png').name,
+            facecolor='white', transparent=False, metadata={'Software': 'Matplotlib'})
+plt.close(fig)

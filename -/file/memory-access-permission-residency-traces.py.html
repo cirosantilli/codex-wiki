@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>memory-access-permission-residency-traces.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="memory-access-permission-residency-traces.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/memory-access-permission-residency-traces.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">memory-access-permission-residency-traces.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/memory-access-permission-residency-traces.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/memory-access-permission-residency-traces.py">memory-access-permission-residency-traces.py</a></b></div></nav></div><div class="p"><b>memory-access-permission-residency-traces.py</b></div><div class="code"><div><pre><code>"""Four independent toy traces; Python 3.14, matplotlib 3.10.7.
+
+Run from _media; output is this script's basename with a .png extension.
+All starting states and outcomes are illustrative, not measured hardware data.
+"""
+from pathlib import Path
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyBboxPatch
+
+
+def main():
+    plt.rcParams.update({'font.family': 'DejaVu Sans', 'font.size': 11})
+    fig, ax = plt.subplots(figsize=(11, 6.7), dpi=100, facecolor='white')
+    ax.set(xlim=(0, 11), ylim=(0, 6.7)); ax.axis('off')
+    ax.text(5.5, 6.35, 'Residency and permission produce different access traces',
+            ha='center', fontsize=16, weight='bold')
+    ax.text(5.5, 5.98, 'Process A • 12-bit virtual addresses • 64-byte pages • offset 45 in every row',
+            ha='center', fontsize=11, color='#43586d')
+    for x, label in [(1.55, 'REQUEST AND INITIAL STATE'), (5.25, 'LOOKUP AND CONTROL'), (9.05, 'RESULT')]:
+        ax.text(x, 5.45, label, ha='center', fontsize=10, weight='bold')
+
+    rows = [
+        ('Read 0x12D • page 4\nresident, frame 13\nread-only • TLB empty',
+         'TLB miss → entry lookup\nresident and permitted\nrefill; continue read',
+         'Read PA 0x36D\nno nonresident fault', '#e7f4ec'),
+        ('Write 0x12D • page 4\nresident, frame 13\nread-only • TLB populated',
+         'TLB hit → permission check\nwrite denied\nno target-byte write',
+         'Protection failure\nresident byte unchanged', '#fbe9e8'),
+        ('Read 0x16D • page 5\nread permitted\nnonresident • TLB empty',
+         'TLB miss → nonresident fault\nOS loads into free frame 2\nupdate mapping; retry read',
+         'Then read PA 0x0AD\ncontents supplied first', '#fff1d9'),
+        ('Read 0x1AD • page 6\nno authorized mapping\nTLB empty',
+         'TLB miss → invalid mapping\nOS rejects in this model\nno data read',
+         'Access rejected\nfree space is insufficient', '#fbe9e8'),
+    ]
+    for i, (start, path, result, color) in enumerate(rows):
+        y = 4.22 - i * 1.13
+        for x, w, text, fill in [(.22, 2.7, start, '#f0f4fa'), (3.65, 3.2, path, color), (7.5, 3.15, result, color)]:
+            ax.add_patch(FancyBboxPatch((x, y), w, .9, boxstyle='round,pad=0.025',
+                                       facecolor=fill, edgecolor='#526579', linewidth=1.1))
+            ax.text(x+w/2, y+.45, text, ha='center', va='center', linespacing=1.4)
+        for a, b in [(2.95, 3.62), (6.88, 7.47)]:
+            ax.annotate('', xy=(b, y+.45), xytext=(a, y+.45),
+                        arrowprops={'arrowstyle': '-|&gt;', 'color': '#34485b', 'lw': 1.5})
+    ax.text(5.5, .37, 'Independent starting states • no copy-on-write • stale translations invalidated',
+            ha='center', fontsize=11)
+    ax.text(5.5, .10, 'Logical outcomes; fault names and check order depend on architecture.',
+            ha='center', fontsize=10, color='#43586d')
+    fig.subplots_adjust(left=.01, right=.99, bottom=.01, top=.99)
+    fig.savefig(Path(__file__).stem + '.png', facecolor='white', transparent=False)
+    plt.close(fig)
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

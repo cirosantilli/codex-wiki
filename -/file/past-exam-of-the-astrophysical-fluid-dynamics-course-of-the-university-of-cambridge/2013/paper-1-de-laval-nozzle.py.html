@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-astrophysical-fluid-dynamics-course-of-the-university-of-cambridge/2013/paper-1-de-laval-nozzle.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-astrophysical-fluid-dynamics-course-of-the-university-of-cambridge/2013/paper-1-de-laval-nozzle.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../-/raw/main.css">
+<link rel="icon" href="../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../" class="brand"><img class="openai-logo" src="../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-astrophysical-fluid-dynamics-course-of-the-university-of-cambridge/2013/paper-1-de-laval-nozzle.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-astrophysical-fluid-dynamics-course-of-the-university-of-cambridge/2013/paper-1-de-laval-nozzle.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-astrophysical-fluid-dynamics-course-of-the-university-of-cambridge/2013/paper-1-de-laval-nozzle.py"><img src="../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../-/dir">(root)</a> / <a href="../../../../-/dir/past-exam-of-the-astrophysical-fluid-dynamics-course-of-the-university-of-cambridge">past-exam-of-the-astrophysical-fluid-dynamics-course-of-the-university-of-cambridge</a> / <a href="../../../../-/dir/past-exam-of-the-astrophysical-fluid-dynamics-course-of-the-university-of-cambridge/2013">2013</a> / <a href="../../../../-/raw/past-exam-of-the-astrophysical-fluid-dynamics-course-of-the-university-of-cambridge/2013/paper-1-de-laval-nozzle.py">paper-1-de-laval-nozzle.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-astrophysical-fluid-dynamics-course-of-the-university-of-cambridge/2013/paper-1-de-laval-nozzle.py</b></div><div class="code"><div><pre><code>"""Invert the isentropic area-Mach law on its selected transonic branch."""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def area_ratio(mach, gamma):
+    return (2/(gamma+1)*(1+(gamma-1)*mach**2/2))**((gamma+1)/(2*(gamma-1)))/mach
+
+
+def invert_area(area, supersonic, gamma):
+    lo, hi = (1., 15.) if supersonic else (1e-6, 1.)
+    for _ in range(70):
+        mid = (lo+hi)/2
+        if (area_ratio(mid, gamma) &lt; area) == supersonic:
+            lo = mid
+        else:
+            hi = mid
+    return (lo+hi)/2
+
+
+def main():
+    gamma = 5/3
+    z = np.linspace(-2.5, 3.5, 501)
+    area = 1+.45*z*z
+    mach = np.array([invert_area(a, zz &gt;= 0, gamma) for zz, a in zip(z, area)])
+    q = (gamma+1)/(2+(gamma-1)*mach**2)
+    speed = mach*np.sqrt(q)
+    density = q**(1/(gamma-1))
+    assert np.max(np.abs(area_ratio(mach, gamma)-area)) &lt; 1e-10
+    assert np.max(np.abs(density*speed*area-1)) &lt; 1e-10
+    fig, axes = plt.subplots(3, 1, figsize=(8, 7), sharex=True, layout="constrained")
+    radius = np.sqrt(area)
+    axes[0].fill_between(z, -radius, radius, color="tab:blue", alpha=.12)
+    axes[0].plot(z, radius, color="0.3"); axes[0].plot(z, -radius, color="0.3")
+    axes[0].set(ylabel=r"Radius / throat radius", title=r"Selected choked branch, $\gamma=5/3$")
+    axes[1].plot(z, mach, color="tab:purple", label=r"Mach number $u/c_s$")
+    axes[1].axhline(1, color="0.4", ls="--", lw=1)
+    axes[1].legend(loc="upper left"); axes[1].set(ylabel="Mach number")
+    axes[2].plot(z, speed, label=r"$u/c_*$", color="tab:orange")
+    axes[2].plot(z, density, label=r"$\rho/\rho_*$", color="tab:blue")
+    axes[2].axhline(2, color="0.5", ls=":", label=r"Asymptotic $u/c_*=2$")
+    axes[2].set(xlabel="Axial coordinate (arbitrary units)", ylabel="Normalized state")
+    axes[2].legend(ncol=3, loc="upper right")
+    for ax in axes:
+        ax.axvline(0, color="0.6", ls="--", lw=1); ax.grid(alpha=.18)
+    fig.savefig(Path(__file__).with_suffix(".png").name, dpi=130, facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

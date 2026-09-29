@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>phase-conjugate-wavefront-ray-retracing.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="phase-conjugate-wavefront-ray-retracing.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/phase-conjugate-wavefront-ray-retracing.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">phase-conjugate-wavefront-ray-retracing.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/phase-conjugate-wavefront-ray-retracing.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/phase-conjugate-wavefront-ray-retracing.py">phase-conjugate-wavefront-ray-retracing.py</a></b></div></nav></div><div class="p"><b>phase-conjugate-wavefront-ray-retracing.py</b></div><div class="code"><div><pre><code>"""Compare specular reflection with phase-conjugate return in a uniform medium.
+
+Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7. Run from the output directory.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "figure.facecolor": "white"})
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5.3), sharex=True, sharey=True)
+    blue, orange, green = "#2463a8", "#bb4d12", "#168064"
+    L = 3.0
+    z = np.linspace(0, L, 180)
+    x = np.linspace(-1.65, 1.65, 400)
+    for ax, conjugate in zip(axes, (False, True)):
+        return_color = green if conjugate else orange
+        ax.axvline(L, color="#343434", lw=4)
+        for radius in (1.8, 2.3, 2.8):
+            valid = np.abs(x) &lt; radius
+            zx = np.sqrt(radius**2 - x[valid] ** 2)
+            ax.plot(zx, x[valid], color=blue, lw=1.2, alpha=0.5)
+            if conjugate:
+                ax.plot(zx, x[valid], color=green, ls="--", lw=1.2)
+        if not conjugate:
+            for radius in (3.4, 4.1, 4.8, 5.5):
+                zx = 2 * L - np.sqrt(radius**2 - x**2)
+                ax.plot(zx, x, color=orange, ls="--", lw=1.2, alpha=0.75)
+        for slope in (-0.25, 0, 0.25):
+            outward = slope * z
+            returning = outward if conjugate else slope * (2 * L - z)
+            ax.plot(z, outward, color=blue, lw=2)
+            ax.plot(z, returning, color=return_color, lw=2, ls="--")
+            ax.annotate("", (1.25, slope * 1.25), (0.85, slope * 0.85),
+                        arrowprops={"arrowstyle": "-&gt;", "color": blue, "lw": 2})
+            rz = (2.2, 1.8)
+            rx = tuple(slope * q if conjugate else slope * (2 * L - q) for q in rz)
+            ax.annotate("", (rz[1], rx[1]), (rz[0], rx[0]),
+                        arrowprops={"arrowstyle": "-&gt;", "color": return_color, "lw": 2})
+        ax.plot(0, 0, "o", color=blue, ms=7, zorder=5)
+        if not conjugate:
+            ax.scatter([0, 0], [-1.5, 1.5], color=orange, s=35, zorder=5)
+        ax.text(L, 1.83, "return surface", ha="center", fontsize=10)
+        ax.set(xlim=(-0.22, 3.32), ylim=(-1.8, 1.8), xlabel="z (geometric units)")
+        ax.set_aspect("equal", adjustable="box")
+        ax.set_title("Phase-conjugate mirror" if conjugate else "Ordinary flat mirror", pad=29)
+        ax.grid(alpha=0.15)
+        ax.spines[["top", "right"]].set_visible(False)
+    axes[0].set_ylabel("x (geometric units)")
+    fig.text(0.285, 0.12, "Return at z = 0: x = −1.5, 0, 1.5", ha="center")
+    fig.text(0.775, 0.12, "Every ideal return ray reaches the source", ha="center")
+    fig.suptitle("Reversing the entire wavevector retraces the ray", y=0.98, fontsize=15)
+    fig.text(0.5, 0.035, "Blue solid: outward rays and wavefronts    •    Colored dashed: return rays and wavefronts",
+             ha="center", fontsize=10)
+    fig.subplots_adjust(left=0.07, right=0.97, bottom=0.23, top=0.77, wspace=0.23)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=120, facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-systems-biology-course-of-the-university-of-cambridge/2024/paper-3-feed-forward.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-systems-biology-course-of-the-university-of-cambridge/2024/paper-3-feed-forward.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../-/raw/main.css">
+<link rel="icon" href="../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../" class="brand"><img class="openai-logo" src="../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-systems-biology-course-of-the-university-of-cambridge/2024/paper-3-feed-forward.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-systems-biology-course-of-the-university-of-cambridge/2024/paper-3-feed-forward.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-systems-biology-course-of-the-university-of-cambridge/2024/paper-3-feed-forward.py"><img src="../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../-/dir">(root)</a> / <a href="../../../../-/dir/past-exam-of-the-systems-biology-course-of-the-university-of-cambridge">past-exam-of-the-systems-biology-course-of-the-university-of-cambridge</a> / <a href="../../../../-/dir/past-exam-of-the-systems-biology-course-of-the-university-of-cambridge/2024">2024</a> / <a href="../../../../-/raw/past-exam-of-the-systems-biology-course-of-the-university-of-cambridge/2024/paper-3-feed-forward.py">paper-3-feed-forward.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-systems-biology-course-of-the-university-of-cambridge/2024/paper-3-feed-forward.py</b></div><div class="code"><div><pre><code>"""AND feed-forward dynamics and equilibria; Python 3.14/matplotlib 3.10.7.
+
+Write paper-3-feed-forward.png to the current working directory.
+"""
+from pathlib import Path
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+
+def hill(u, K, n):
+    u = np.asarray(u)
+    return u**n/(K**n+u**n)
+
+
+def rhs(s, X):
+    Y,Z = s
+    return np.array([2*hill(X,1,2)-Y, 3*hill(X,2,4)*hill(Y,1,4)-Z])
+
+
+def integrate(X, times):
+    out=np.zeros((len(times),2))
+    for j,dt in enumerate(np.diff(times)):
+        s=out[j]
+        k1=rhs(s,X);k2=rhs(s+dt*k1/2,X)
+        k3=rhs(s+dt*k2/2,X);k4=rhs(s+dt*k3,X)
+        out[j+1]=s+dt*(k1+2*k2+2*k3+k4)/6
+    return out
+
+
+def equilibrium(X, Kxy=1, Kxz=2, Kyz=1):
+    Y=2*hill(X,Kxy,2)
+    return 3*hill(X,Kxz,4)*hill(Y,Kyz,4)
+
+
+def main():
+    plt.rcParams.update({'font.size':10,'figure.facecolor':'white'})
+    fig,axes=plt.subplots(1,2,figsize=(10,3.8),constrained_layout=True)
+    t=np.linspace(0,10,1001)
+    for X,color in [(1,'#176b9c'),(3,'#c05526')]:
+        out=integrate(X,t)
+        axes[0].plot(t,out[:,0],'--',color=color,label=f'Y, X={X}')
+        axes[0].plot(t,out[:,1],color=color,label=f'Z, X={X}')
+    axes[0].set(xlabel='Time',ylabel='Concentration',title='AND regulation, initial Y=Z=0')
+    axes[0].legend(fontsize=8)
+    X=np.linspace(0,5,501)
+    axes[1].plot(X,3*hill(X,2,4),':',color='black',label='Direct activation only')
+    for pars,label,color in [((1,2,1),'Baseline','#176b9c'),((2,2,1),'Raise Kxy to 2','#c05526'),((1,3,1),'Raise Kxz to 3','#57883a'),((1,2,2),'Raise Kyz to 2','#8c5197')]:
+        axes[1].plot(X,equilibrium(X,*pars),color=color,label=label)
+    axes[1].set(xlabel='Input concentration X',ylabel='Equilibrium Z',title='An additional gate lowers the response')
+    axes[1].legend(fontsize=8)
+    for ax in axes:
+        ax.grid(alpha=.18);ax.set_ylim(bottom=0)
+    fig.savefig(Path('paper-3-feed-forward.png'),dpi=125,facecolor='white')
+    plt.close(fig)
+
+
+if __name__=='__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>matrix-preconditioning-steepest-descent-energy-errors.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="matrix-preconditioning-steepest-descent-energy-errors.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/matrix-preconditioning-steepest-descent-energy-errors.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">matrix-preconditioning-steepest-descent-energy-errors.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/matrix-preconditioning-steepest-descent-energy-errors.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/matrix-preconditioning-steepest-descent-energy-errors.py">matrix-preconditioning-steepest-descent-energy-errors.py</a></b></div></nav></div><div class="p"><b>matrix-preconditioning-steepest-descent-energy-errors.py</b></div><div class="code"><div><pre><code>"""Original exact rational steepest-descent histories for a constructed system.
+
+Tested with Python 3.14, NumPy 2.3.5 and Matplotlib 3.10.7.
+Run from _media; the output basename matches this script's basename.
+"""
+from fractions import Fraction as F
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+A = ((F(1), F(1, 5)), (F(1, 5), F(100)))
+solution = [F(2495, 2499), F(20, 2499)]
+
+
+def dot(u, v):
+    return sum(a * b for a, b in zip(u, v, strict=True))
+
+
+def matvec(v):
+    return [dot(row, v) for row in A]
+
+
+def history(diagonal, steps):
+    x, r = [F(0), F(0)], [F(1), F(1)]
+    initial = dot(solution, matvec(solution)) / 2
+    errors = [F(1)]
+    for _ in range(steps):
+        if all(value == 0 for value in r):
+            break
+        z = [a / d for a, d in zip(r, diagonal, strict=True)]
+        az = matvec(z)
+        alpha = dot(r, z) / dot(z, az)
+        x = [a + alpha * b for a, b in zip(x, z, strict=True)]
+        r = [a - alpha * b for a, b in zip(r, az, strict=True)]
+        assert r == [F(1) - v for v in matvec(x)]
+        error = [a - b for a, b in zip(x, solution, strict=True)]
+        errors.append(dot(error, matvec(error)) / (2 * initial))
+    return errors
+
+
+plain = history([F(1), F(1)], 16)
+scaled = history([F(1), F(100)], 8)
+assert plain == [F(81675, 85007)**k for k in range(17)]
+assert scaled == [F(3267, 8500700)**k for k in range(9)]
+plt.rcParams.update({'font.size': 11, 'axes.titlesize': 12, 'figure.facecolor': 'white'})
+fig, axes = plt.subplots(1, 2, figsize=(9.4, 4.7), layout='constrained')
+fig.suptitle('Steepest descent: exact energy-error histories', fontsize=14)
+for ax, cost in zip(axes, [False, True], strict=True):
+    for values, charge, label, color, marker in [
+        (plain, 1, r'Unpreconditioned ($M=I$)', '#b45a35', 'o'),
+        (scaled, 2 if cost else 1, r'Jacobi scaling ($M=\mathrm{diag}(1,100)$)', '#245b85', 's'),
+    ]:
+        indices = np.arange(len(values))
+        if not cost:
+            indices = indices[:9]
+            values = values[:9]
+        ax.semilogy(charge * indices, [float(v) for v in values], marker=marker,
+                    markersize=4, color=color, linewidth=2, label=label)
+    ax.set(xlabel='Declared work units' if cost else 'Iterations',
+           ylabel=r'Relative energy error $E_k/E_0$', ylim=(1e-28, 2),
+           title='One vs two work units per step' if cost else 'Identical starting point: x = 0')
+    ax.set_xticks(np.arange(0, 17 if cost else 9, 4 if cost else 2))
+    ax.set_yticks([10.0**(-i) for i in range(0, 29, 4)])
+    ax.grid(alpha=0.2, which='major')
+axes[0].legend(loc='lower left', fontsize=9, framealpha=1)
+fig.supxlabel('One unit for A times a vector; one for a diagonal solve. Setup and vector operations excluded.\nConstructed example and declared cost model; no runtime measurements.', fontsize=10)
+fig.savefig(Path(__file__).stem + '.png', dpi=120, facecolor='white', transparent=False)
+plt.close(fig)
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

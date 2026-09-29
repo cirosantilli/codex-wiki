@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>chemostat-washout-equilibria.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="chemostat-washout-equilibria.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/chemostat-washout-equilibria.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">chemostat-washout-equilibria.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/chemostat-washout-equilibria.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/chemostat-washout-equilibria.py">chemostat-washout-equilibria.py</a></b></div></nav></div><div class="p"><b>chemostat-washout-equilibria.py</b></div><div class="code"><div><pre><code>"""Plot physical chemostat equilibria; save basename PNG to the CWD.
+
+Tested with Python 3.14.4, Matplotlib 3.10.7, NumPy 2.3.5.
+Run from _media: MPLCONFIGDIR=/tmp/chemostat-mpl python3 ../chemostat-washout-equilibria.py
+The algebraic positive branch is plotted only where biomass is nonnegative.
+At D=0 the positive-branch limit is shown open: the flow-free model is different.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    mu_max, k_s, feed, yield_coefficient = 1.0, 1.0, 9.0, 0.5
+    critical = mu_max * feed / (k_s + feed)
+    dilution = np.linspace(0.0, critical, 451)
+    nutrient = dilution * k_s / (mu_max - dilution)
+    biomass = yield_coefficient * (feed - nutrient)
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                         "axes.spines.right": False})
+    fig, axes = plt.subplots(1, 2, figsize=(10.4, 4.8), dpi=100,
+                             layout="constrained")
+    fig.patch.set_facecolor("white")
+    for ax, branch, washout, title, ylabel in zip(
+            axes, (nutrient, biomass), (feed, 0.0),
+            ("Residual nutrient", "Biomass in the vessel"),
+            (r"$s_*$ (g nutrient/L)", r"$x_*$ (g dry biomass/L)")):
+        ax.set_facecolor("white")
+        ax.plot(dilution[1:], branch[1:], color="#17679b", lw=2.5,
+                label="Stable positive culture")
+        ax.scatter([0], [branch[0]], s=38, facecolors="white",
+                   edgecolors="#17679b", zorder=6)
+        ax.plot([0, critical], [washout, washout], color="#c56a16", ls="--",
+                lw=2, label="Unstable washout")
+        ax.plot([critical, 1.15], [washout, washout], color="#c56a16", lw=2.5,
+                label="Stable washout")
+        ax.axvline(critical, color="#777777", ls=":", lw=1.5)
+        ax.scatter([critical], [washout], color="#444444", s=42, zorder=7)
+        example = k_s * 0.5 / (mu_max - 0.5)
+        if ax is axes[1]:
+            example = yield_coefficient * (feed - example)
+        ax.scatter([0.5], [example], color="#17679b", s=42, zorder=7)
+        ax.annotate(f"D = 0.5: {example:g} g/L", (0.5, example),
+                    xytext=(0.12, 2.7 if ax is axes[0] else 2.2),
+                    arrowprops={"arrowstyle": "-&gt;", "color": "#17679b"})
+        ax.set(xlim=(-0.025, 1.15), xlabel=r"Dilution $D$ (h$^{-1}$)",
+               ylabel=ylabel, title=title)
+        ax.set_xticks([0, 0.3, 0.5, 0.7, 0.9, 1.1])
+        ax.grid(alpha=0.18)
+    axes[0].set_ylim(-0.25, 10.0)
+    axes[1].set_ylim(-0.15, 5.0)
+    axes[0].legend(loc="upper left", fontsize=9, framealpha=1,
+                   facecolor="white")
+    fig.suptitle("Chemostat washout at D = 0.9 h⁻¹\n"
+                 "μmax = 1 h⁻¹, Ks = 1 g/L, feed = 9 g/L, yield = 0.5 g/g")
+    destination = Path.cwd() / (Path(__file__).stem + ".png")
+    fig.savefig(destination, facecolor="white", transparent=False)
+    plt.close(fig)
+    print(destination)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

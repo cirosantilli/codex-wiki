@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>harmonic-markov-absorption-network.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="harmonic-markov-absorption-network.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/harmonic-markov-absorption-network.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">harmonic-markov-absorption-network.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/harmonic-markov-absorption-network.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/harmonic-markov-absorption-network.py">harmonic-markov-absorption-network.py</a></b></div></nav></div><div class="p"><b>harmonic-markov-absorption-network.py</b></div><div class="code"><div><pre><code>"""Draw the five-state chain; run from _media to write the matching PNG.
+
+Tested with Python 3.14.4, Matplotlib 3.10.7 and NumPy 2.3.5.
+"""
+
+import os
+import tempfile
+from pathlib import Path
+
+os.environ.setdefault("MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "codex-wiki-matplotlib"))
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, FancyArrowPatch
+from matplotlib.path import Path as MplPath
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "font.family": "DejaVu Sans"})
+    fig, ax = plt.subplots(figsize=(9.6, 4.4), dpi=120, facecolor="white")
+    ax.set_facecolor("white")
+    blue, orange, ink = "#1769aa", "#b54b14", "#172b3a"
+    radius = 0.21
+    for i in range(1, 4):
+        for direction, color, y in ((1, blue, 0.12), (-1, orange, -0.12)):
+            j = i + direction
+            start = (i + direction * radius, y)
+            end = (j - direction * radius, y)
+            ax.add_patch(FancyArrowPatch(start, end, arrowstyle="-|&gt;",
+                                        mutation_scale=15, linewidth=2, color=color))
+            ax.text((i + j) / 2, 0.39 if direction == 1 else -0.39,
+                    r"$p=\frac{1}{2}$" if direction == 1 else r"$q=\frac{1}{2}$",
+                    ha="center", va="center", color=color, fontsize=14)
+    for i in range(5):
+        absorbing = i in (0, 4)
+        ax.add_patch(Circle((i, 0), radius, facecolor="#edf4fa" if absorbing else "white",
+                            edgecolor=ink, linewidth=2, zorder=3))
+        if absorbing:
+            ax.add_patch(Circle((i, 0), radius - 0.045, fill=False, edgecolor=ink,
+                                linewidth=1, zorder=4))
+            loop = MplPath([(i - 0.15, 0.17), (i - 0.75, 0.98),
+                            (i + 0.75, 0.98), (i + 0.15, 0.17)],
+                           [MplPath.MOVETO, MplPath.CURVE4, MplPath.CURVE4, MplPath.CURVE4])
+            ax.add_patch(FancyArrowPatch(path=loop, arrowstyle="-|&gt;", mutation_scale=15,
+                                        linewidth=1.8, color=ink))
+            ax.text(i, 0.82, "stay: 1", ha="center", color=ink)
+            ax.text(i, -0.66, "absorbing", ha="center", color=ink)
+        else:
+            ax.text(i, -0.66, "interior", ha="center", color=ink)
+        ax.text(i, 0, str(i), ha="center", va="center", color=ink, fontsize=16, zorder=5)
+        value = ("0", r"\frac{1}{4}", r"\frac{1}{2}", r"\frac{3}{4}", "1")[i]
+        ax.text(i, -1.07, rf"$h_{i}={value}$", ha="center", va="center", color=blue, fontsize=16)
+    ax.set(xlim=(-0.65, 4.65), ylim=(-1.35, 1.10), aspect="equal")
+    ax.axis("off")
+    fig.suptitle("A five-state absorbing Markov chain", fontsize=17, y=0.96, color=ink)
+    fig.text(0.5, 0.86, "Up and down refer to the state number; only interior states move.",
+             ha="center", fontsize=11, color=ink)
+    fig.text(0.5, 0.05, r"$h_i = \Pr_i(\mathrm{hit}\ 4\ \mathrm{before}\ 0)$: success probability",
+             ha="center", fontsize=12, color=ink)
+    fig.subplots_adjust(left=0.03, right=0.97, top=0.80, bottom=0.13)
+    fig.savefig(Path(__file__).with_suffix(".png").name, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

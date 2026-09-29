@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>mycielski-single-edge-five-cycle-colouring.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="mycielski-single-edge-five-cycle-colouring.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/mycielski-single-edge-five-cycle-colouring.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">mycielski-single-edge-five-cycle-colouring.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/mycielski-single-edge-five-cycle-colouring.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/mycielski-single-edge-five-cycle-colouring.py">mycielski-single-edge-five-cycle-colouring.py</a></b></div></nav></div><div class="p"><b>mycielski-single-edge-five-cycle-colouring.py</b></div><div class="code"><div><pre><code>"""Draw K2 -&gt; mu(K2)=C5; Python 3.14, matplotlib 3.10.7, numpy 2.3.5.
+
+Run from _media; saves the matching PNG to the current working directory.
+"""
+
+from itertools import combinations, product
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.lines import Line2D
+
+
+PALETTE = ["#79b7e8", "#f2ae60", "#87cf9d"]
+VERTICES = ["v1", "v2", "u1", "w", "u2"]
+EDGES = [("v1", "v2"), ("v2", "u1"), ("u1", "w"), ("w", "u2"), ("u2", "v1")]
+COLOURS = {"v1": 1, "v2": 2, "u1": 1, "u2": 2, "w": 3}
+
+
+def verify():
+    """Enumerate all labelled two- and three-colour assignments."""
+    counts = {}
+    for k in (2, 3):
+        counts[k] = sum(
+            all(c[VERTICES.index(a)] != c[VERTICES.index(b)] for a, b in EDGES)
+            for c in product(range(k), repeat=5)
+        )
+    edge_set = {frozenset(e) for e in EDGES}
+    triangles = sum(
+        all(frozenset(e) in edge_set for e in combinations(t, 2))
+        for t in combinations(VERTICES, 3)
+    )
+    assert counts == {2: 0, 3: 30}
+    assert triangles == 0 and len(edge_set) == 5
+    assert all(COLOURS[a] != COLOURS[b] for a, b in EDGES)
+    return {"vertices": 5, "edges": 5, "triangles": triangles, "colouring_counts": counts}
+
+
+def edge_style(a, b):
+    if "w" in (a, b):
+        return "#3c7b51", ":", 2.5
+    if a.startswith("u") or b.startswith("u"):
+        return "#68717d", "--", 2.2
+    return "#283544", "-", 2.8
+
+
+def draw(ax, positions, edges, colours):
+    for a, b in edges:
+        colour, style, width = edge_style(a, b)
+        ax.plot(*zip(positions[a], positions[b]), color=colour, ls=style, lw=width, zorder=1)
+    for name, p in positions.items():
+        ax.scatter(*p, s=1050, color=PALETTE[colours[name] - 1], edgecolor="#283544", lw=1.5, zorder=3)
+        ax.text(*p, str(colours[name]), ha="center", va="center", fontsize=14, weight="bold", zorder=4)
+        offset = np.asarray(p) / (np.linalg.norm(p) or 1) * 0.44
+        label = "$w$" if name == "w" else "$" + name[0] + "_" + name[1] + "$"
+        ax.text(*(np.asarray(p) + offset), label, ha="center", va="center", fontsize=15)
+    ax.set(xlim=(-1.55, 1.55), ylim=(-1.6, 1.6), aspect="equal")
+    ax.axis("off")
+
+
+def main():
+    print(verify())
+    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 12})
+    fig, axes = plt.subplots(1, 2, figsize=(8.4, 4.5), facecolor="white")
+    draw(axes[0], {"v1": (-0.7, 0), "v2": (0.7, 0)}, [("v1", "v2")], COLOURS)
+    axes[0].set_title(r"$K_2$: two colours", fontsize=15, pad=12)
+    angles = np.pi / 2 - np.arange(5) * 2 * np.pi / 5
+    positions = {v: (np.cos(t), np.sin(t)) for v, t in zip(VERTICES, angles)}
+    draw(axes[1], positions, EDGES, COLOURS)
+    axes[1].set_title(r"$\mu(K_2)=C_5$: three colours", fontsize=15, pad=12)
+    fig.text(0.50, 0.54, r"$\mu$" + "\n" + r"$\longrightarrow$", ha="center", fontsize=21)
+    legend = [Line2D([0], [0], color=c, ls=s, lw=w, label=l) for c, s, w, l in (
+        ("#283544", "-", 2.8, "Original edge"),
+        ("#68717d", "--", 2.2, "Shadow to original"),
+        ("#3c7b51", ":", 2.5, "Apex to shadow"),
+    )]
+    fig.legend(handles=legend, loc="lower center", ncol=3, frameon=False, fontsize=11)
+    fig.subplots_adjust(left=0.03, right=0.97, top=0.86, bottom=0.16, wspace=0.28)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=140, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

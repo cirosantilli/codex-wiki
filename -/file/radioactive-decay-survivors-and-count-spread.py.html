@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>radioactive-decay-survivors-and-count-spread.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="radioactive-decay-survivors-and-count-spread.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/radioactive-decay-survivors-and-count-spread.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">radioactive-decay-survivors-and-count-spread.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/radioactive-decay-survivors-and-count-spread.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/radioactive-decay-survivors-and-count-spread.py">radioactive-decay-survivors-and-count-spread.py</a></b></div></nav></div><div class="p"><b>radioactive-decay-survivors-and-count-spread.py</b></div><div class="code"><div><pre><code>"""Illustrate a stipulated independent radioactive-decay model; write to cwd."""
+from pathlib import Path
+import math
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    initial = 1000
+    half_life = 3.0
+    rate = math.log(2) / half_life
+    time = np.linspace(0, 12, 401)
+    survival = np.exp(-rate * time)
+    mean = initial * survival
+    spread = np.sqrt(initial * survival * (1 - survival))
+    rng = np.random.default_rng(7)
+    plt.rcParams.update({'font.size': 10, 'axes.titlesize': 12})
+    fig, (left, right) = plt.subplots(1, 2, figsize=(11.4, 5.0), dpi=120)
+    fig.patch.set_facecolor('white')
+    for index in range(9):
+        lifetimes = rng.exponential(1 / rate, size=initial)
+        survivors = initial - np.searchsorted(np.sort(lifetimes), time, side='right')
+        left.step(time, survivors, where='post', color='#6e8da7', alpha=0.48,
+                  linewidth=0.9, label='Independent simulated histories' if index == 0 else None)
+    left.fill_between(time, mean - spread, mean + spread, color='#e6ab02', alpha=0.22,
+                      label='Mean ± one standard deviation')
+    left.plot(time, mean, color='#b45d08', linewidth=2.0, label='Exact expected survivor count')
+    left.scatter([0, 3, 6, 9, 12], [1000, 500, 250, 125, 62.5], s=22, color='#b45d08', zorder=5)
+    left.set(xlabel='Time (hours)', ylabel='Surviving parent nuclei', xlim=(0, 12), ylim=(0, 1040),
+             title='One history has steps; the mean is smooth')
+    left.set_xticks([0, 3, 6, 9, 12])
+    left.grid(alpha=0.17)
+    left.legend(loc='upper right', fontsize=8, framealpha=0.95)
+    probability = 1 / 8
+    count = np.arange(initial + 1)
+    log_mass = np.array([math.lgamma(initial + 1) - math.lgamma(int(k) + 1)
+                        - math.lgamma(initial - int(k) + 1)
+                        + k * math.log(probability)
+                        + (initial - k) * math.log1p(-probability) for k in count])
+    mass = np.exp(log_mass)
+    assert abs(mass.sum() - 1) &lt; 2e-12
+    right.bar(count, mass, width=0.9, color='#386f93', alpha=0.85)
+    right.axvline(125, color='#b45d08', linestyle='--', linewidth=1.6, label='Mean = 125 nuclei')
+    right.set(xlabel='Surviving parent nuclei after 9 hours', ylabel='Probability of this integer count',
+              xlim=(70, 185), title='Exact binomial law after three half-lives')
+    right.text(0.97, 0.93, 'N = 1000, p = 1/8\nStandard deviation ≈ 10.46 nuclei',
+               ha='right', va='top', transform=right.transAxes, fontsize=9,
+               bbox={'facecolor': 'white', 'edgecolor': '#dddddd', 'alpha': 0.95})
+    right.grid(axis='y', alpha=0.17)
+    right.legend(loc='upper left', fontsize=8)
+    fig.text(0.5, 0.018, 'Chosen model only: constant independent decay rates, no replenishment and no detector effects.',
+             ha='center', fontsize=9)
+    fig.tight_layout(rect=(0, 0.055, 1, 1), w_pad=2)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + '.png'), facecolor='white', transparent=False)
+    plt.close(fig)
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>wave-pulse-propagation.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="wave-pulse-propagation.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/wave-pulse-propagation.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">wave-pulse-propagation.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/wave-pulse-propagation.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/wave-pulse-propagation.py">wave-pulse-propagation.py</a></b></div></nav></div><div class="p"><b>wave-pulse-propagation.py</b></div><div class="code"><div><pre><code>"""Plot a smooth wave pulse and its causal interval; save PNG in the cwd.
+
+Run from _media with MPLBACKEND=Agg MPLCONFIGDIR=/tmp.
+Tested with Python 3.14.4, NumPy 2.3.5 and Matplotlib 3.10.7.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def bump(z):
+    """Smooth compact bump, with support [-1, 1] and peak one."""
+    z = np.asarray(z, dtype=float)
+    out = np.zeros_like(z)
+    inside = np.abs(z) &lt; 1
+    out[inside] = np.exp(1 - 1 / (1 - z[inside] ** 2))
+    return out
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                         "axes.spines.right": False, "figure.facecolor": "white",
+                         "axes.facecolor": "white", "savefig.facecolor": "white"})
+    left_color, right_color, total_color = "#c75a11", "#176ca4", "#252525"
+    fig = plt.figure(figsize=(10, 6.3), layout="constrained")
+    grid = fig.add_gridspec(3, 2, width_ratios=(1.25, 1), wspace=0.16)
+    fig.suptitle("A pulse released from rest: splitting and finite-speed causality",
+                 fontsize=15)
+    x = np.linspace(-3, 3, 1501)
+    for row, t in enumerate((0.0, 0.5, 1.5)):
+        ax = fig.add_subplot(grid[row, 0])
+        left, right = 0.5 * bump(x + t), 0.5 * bump(x - t)
+        ax.plot(x, left + right, color=total_color, lw=2.7, label="total")
+        ax.plot(x, left, color=left_color, lw=2, ls="--", label="left-moving half")
+        ax.plot(x, right, color=right_color, lw=2, ls=":", label="right-moving half")
+        ax.set(xlim=(-3, 3), ylim=(-0.07, 1.12), ylabel=r"$u/A$")
+        ax.text(0.025, 0.86, rf"$ct/a={t:g}$", transform=ax.transAxes)
+        ax.set_yticks((0, 0.5, 1))
+        ax.grid(alpha=0.18)
+        if row == 0:
+            ax.set_title(r"$f(x)=A\,b(x/a),\quad g(x)=0$", fontsize=12)
+            ax.legend(loc="upper right", fontsize=8.5, framealpha=1)
+        if row == 2:
+            ax.set_xlabel(r"Position $x/a$")
+            for center, direction, color in ((-t, -1, left_color), (t, 1, right_color)):
+                ax.annotate("", xy=(center + direction * 0.7, 0.83),
+                            xytext=(center, 0.83),
+                            arrowprops={"arrowstyle": "-&gt;", "color": color, "lw": 2})
+        else:
+            ax.tick_params(labelbottom=False)
+
+    ax = fig.add_subplot(grid[:, 1])
+    x_star, t_star = 0.5, 1.5
+    ax.fill((-1, 2, x_star), (0, 0, t_star), color="#e4edf4", zorder=0)
+    ax.plot((-1, x_star), (0, t_star), color=left_color, lw=2)
+    ax.plot((2, x_star), (0, t_star), color=right_color, lw=2)
+    ax.plot((-1, 2), (0, 0), color="#252525", lw=5, solid_capstyle="butt")
+    ax.scatter((x_star,), (t_star,), color="#252525", zorder=4)
+    ax.text(x_star, t_star + 0.06, r"$(x_*,t_*)=(0.5,1.5)$", ha="center", fontsize=11)
+    ax.text(x_star, 0.30, "Only initial data in\nthis interval can matter",
+            ha="center", fontsize=11)
+    ax.text(-0.42, 0.94, r"$x-t=-1$", rotation=55, color=left_color)
+    ax.text(1.37, 0.88, r"$x+t=2$", rotation=-55, color=right_color)
+    ax.annotate("initial interval [-1, 2]", xy=(0.5, 0), xytext=(0.5, -0.27),
+                ha="center", arrowprops={"arrowstyle": "-&gt;", "color": "#555555"})
+    ax.set(xlim=(-1.55, 2.55), ylim=(-0.34, 1.91), xlabel="Position x", ylabel="Time t")
+    ax.set_title("Backward characteristics\n(normalized speed c = 1)", fontsize=12)
+    ax.set_xticks((-1, 0, 0.5, 2))
+    ax.set_yticks((0, 0.5, 1, 1.5))
+    ax.grid(alpha=0.18)
+    fig.savefig(Path.cwd() / "wave-pulse-propagation.png", dpi=140, transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

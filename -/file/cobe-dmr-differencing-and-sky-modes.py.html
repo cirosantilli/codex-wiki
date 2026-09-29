@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>cobe-dmr-differencing-and-sky-modes.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="cobe-dmr-differencing-and-sky-modes.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/cobe-dmr-differencing-and-sky-modes.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">cobe-dmr-differencing-and-sky-modes.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/cobe-dmr-differencing-and-sky-modes.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/cobe-dmr-differencing-and-sky-modes.py">cobe-dmr-differencing-and-sky-modes.py</a></b></div></nav></div><div class="p"><b>cobe-dmr-differencing-and-sky-modes.py</b></div><div class="code"><div><pre><code>"""Original quadrupole sky and ideal directional-difference illustration.
+
+Run from _media; tested with Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7.
+No measured COBE data. The great-circle scan is deliberately incomplete.
+"""
+from pathlib import Path
+import numpy as np
+import matplotlib.pyplot as plt
+
+BASENAME = Path(__file__).stem
+Q = 30.0
+ALPHA = np.pi/3
+
+
+def main():
+    plt.rcParams.update({'font.size': 11, 'axes.spines.top': False,
+                         'axes.spines.right': False, 'figure.facecolor': 'white'})
+    fig = plt.figure(figsize=(11, 7.6), layout='constrained')
+    grid = fig.add_gridspec(2, 2, height_ratios=[1, 1.15])
+    ax = fig.add_subplot(grid[0, 0], projection='mollweide')
+    lon = np.linspace(-np.pi, np.pi, 241)
+    lat = np.linspace(-np.pi/2, np.pi/2, 121)
+    ll, bb = np.meshgrid(lon, lat)
+    sky = Q * (3*np.sin(bb)**2-1)/2
+    im = ax.pcolormesh(ll, bb, sky, cmap='RdBu_r', vmin=-Q, vmax=Q, shading='auto', rasterized=True)
+    ax.grid(alpha=.3); ax.set_xticklabels([])
+    ax.set_title('Chosen axisymmetric quadrupole', pad=15)
+    fig.colorbar(im, ax=ax, orientation='horizontal', shrink=.8, pad=.05,
+                 label='Temperature relative to a chosen mean (μK)')
+    ax = fig.add_subplot(grid[0, 1]); ax.set_aspect('equal'); ax.axis('off')
+    ax.set(xlim=(-1.25, 1.25), ylim=(-.5, 1.55))
+    ax.set_title('Pair directions separated by 60°')
+    origin = np.array([0., -.2])
+    for angle, label, color in [(60, 'A', '#2166ac'), (120, 'B', '#cb521d')]:
+        end = origin + 1.35*np.array([np.cos(np.deg2rad(angle)), np.sin(np.deg2rad(angle))])
+        ax.annotate('', xy=end, xytext=origin, arrowprops={'arrowstyle': '-|&gt;', 'lw': 2, 'color': color})
+        ax.text(end[0]*1.15, end[1]+.1, label, ha='center', color=color)
+    arc = np.linspace(np.pi/3, 2*np.pi/3, 60)
+    ax.plot(.6*np.cos(arc), -.2+.6*np.sin(arc), color='#526273')
+    ax.text(0, .25, '60°', ha='center')
+    ax.text(0, -.45, 'Ideal readout: d = T(A) − T(B)', ha='center')
+    ax = fig.add_subplot(grid[1, :])
+    phi = np.linspace(0, 2*np.pi, 721)
+    ta = Q*(3*np.cos(phi)**2-1)/2
+    tb = Q*(3*np.cos(phi+ALPHA)**2-1)/2
+    ax.plot(np.rad2deg(phi), ta, color='#2166ac', lw=1.5, label='Beam A: quadrupole')
+    ax.plot(np.rad2deg(phi), tb, color='#cb521d', lw=1.5, ls='--', label='Beam B: quadrupole')
+    ax.plot(np.rad2deg(phi), ta-tb, color='#6a3d9a', lw=2.4, label='Difference A − B')
+    ax.axhline(0, color='#333333', lw=1.4, ls=':', label='Any monopole: zero difference')
+    ax.set(xlim=(0, 360), ylim=(-46, 64), xticks=np.arange(0, 361, 60),
+           xlabel='Beam A angle φ on a chosen great circle (degrees)', ylabel='Temperature (μK)',
+           title='Directional response: T(φ) = 30 P₂(cos φ) μK; beam B at φ + 60°')
+    ax.grid(alpha=.2); ax.legend(loc='upper center', ncol=2, fontsize=10, frameon=False)
+    fig.suptitle('Ideal sky differencing — calculated modes, not COBE data', fontsize=14)
+    fig.savefig(BASENAME+'.png', dpi=100, facecolor='white', transparent=False)
+    plt.close(fig)
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

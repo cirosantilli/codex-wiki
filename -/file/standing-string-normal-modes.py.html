@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>standing-string-normal-modes.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="standing-string-normal-modes.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/standing-string-normal-modes.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">standing-string-normal-modes.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/standing-string-normal-modes.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/standing-string-normal-modes.py">standing-string-normal-modes.py</a></b></div></nav></div><div class="p"><b>standing-string-normal-modes.py</b></div><div class="code"><div><pre><code>"""Generate standing-string-normal-modes.png in the current working directory.
+
+Tested: Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+Run from _media with MPLBACKEND=Agg MPLCONFIGDIR=/tmp.
+The parameters describe an ideal model, not a measured musical instrument.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "figure.facecolor": "white",
+                         "axes.facecolor": "white", "savefig.facecolor": "white",
+                         "axes.spines.top": False, "axes.spines.right": False})
+    length, tension, density = 1.0, 1.0, 1.0
+    speed = np.sqrt(tension / density)
+    position = np.linspace(0, length, 1201)
+    snapshots = [(0, "0", "#176ca4", "-"),
+                 (1 / 8, "1/8", "#dc951c", "--"),
+                 (1 / 4, "1/4", "#40845a", ":"),
+                 (1 / 2, "1/2", "#bd446b", "-.")]
+    fig, axes = plt.subplots(3, 1, figsize=(8.4, 6.7), sharex=True)
+    fig.subplots_adjust(left=0.10, right=0.97, top=0.81, bottom=0.15, hspace=0.57)
+    fig.suptitle("First three normal modes of an ideal fixed string\n"
+                 r"$L=1$ m, $\tau=1$ N, $\mu=1$ kg/m; $c=1$ m/s",
+                 fontsize=13, y=0.98)
+    fig.text(0.5, 0.865, r"Snapshots use each mode's OWN period $T_n=1/f_n$; phase $\varphi=0$",
+             ha="center", fontsize=10)
+    for n, ax in enumerate(axes, start=1):
+        frequency = n * speed / (2 * length)
+        period = 1 / frequency
+        shape = np.sin(n * np.pi * position / length)
+        for fraction, label, color, style in snapshots:
+            factor = np.cos(2 * np.pi * fraction)
+            if fraction == 1 / 4:
+                factor = 0.0
+            ax.plot(position / length, shape * factor, color=color, ls=style,
+                    lw=2.1, label=rf"$t/T_n={label}$")
+        nodes = np.arange(n + 1) / n
+        ax.scatter(nodes, np.zeros_like(nodes), color="#222222", s=30,
+                   zorder=5, label="permanent nodes (ends included)")
+        ax.set(xlim=(-0.025, 1.025), ylim=(-1.25, 1.25), ylabel=r"$u_n/A$")
+        ax.set_yticks([-1, 0, 1])
+        period_label = ["2", "1", "2/3"][n - 1]
+        ax.set_title(rf"$n={n}$: $f_n={frequency:g}$ Hz, $T_n={period_label}$ s; "
+                     f"{n - 1} interior node{'s' if n != 2 else ''}", loc="left", fontsize=11)
+        ax.grid(alpha=0.18)
+    axes[-1].set_xlabel(r"Position $x/L$")
+    axes[-1].set_xticks([0, 1 / 4, 1 / 2, 3 / 4, 1])
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, 0.006),
+               ncol=3, fontsize=9, frameon=False)
+    fig.savefig(Path.cwd() / "standing-string-normal-modes.png", dpi=140,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

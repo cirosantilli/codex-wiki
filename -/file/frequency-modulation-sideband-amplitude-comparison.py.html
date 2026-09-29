@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>frequency-modulation-sideband-amplitude-comparison.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="frequency-modulation-sideband-amplitude-comparison.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/frequency-modulation-sideband-amplitude-comparison.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">frequency-modulation-sideband-amplitude-comparison.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/frequency-modulation-sideband-amplitude-comparison.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/frequency-modulation-sideband-amplitude-comparison.py">frequency-modulation-sideband-amplitude-comparison.py</a></b></div></nav></div><div class="p"><b>frequency-modulation-sideband-amplitude-comparison.py</b></div><div class="code"><div><pre><code>"""Compare original FM line spectra; emit the matching PNG in the CWD.
+
+Integer-order Bessel coefficients use their periodic Fourier integral, with
+no SciPy. Real-signal positive-frequency folding is included, even though
+its correction is tiny for the frequencies displayed here.
+Tested with Python 3.14, NumPy 2.3.5 and Matplotlib 3.10.7.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def bessel_coefficients(beta, orders):
+    """J_k(beta) = mean exp(i(beta sin theta - k theta)), real part."""
+    theta = 2 * np.pi * np.arange(8192) / 8192
+    return np.cos(beta * np.sin(theta)[None, :] - orders[:, None] * theta).mean(axis=1)
+
+
+def main():
+    fc, fm = 20, 1
+    frequencies = np.arange(8, 33)
+    betas = (0.5, 2.404825557695773, 5.0)
+    colors = ("#205a8c", "#9b4868", "#217865")
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                         "axes.spines.right": False})
+    fig, axes = plt.subplots(3, 1, figsize=(9.8, 7.5), dpi=110,
+                             sharex=True, sharey=True, layout="constrained")
+    fig.set_facecolor("white")
+    fig.suptitle("FM sidebands: changing the modulation index redistributes amplitude", fontsize=14)
+    for ax, beta, color in zip(axes, betas, colors):
+        coefficients = (bessel_coefficients(beta, frequencies - fc)
+                        + bessel_coefficients(beta, -frequencies - fc))
+        amplitudes = np.abs(coefficients)
+        ax.set_facecolor("white")
+        ax.axvspan(fc - beta * fm, fc + beta * fm, color="#e5edf2", zorder=0)
+        ax.axvline(fc, color="#697884", ls="--", lw=1)
+        ax.vlines(frequencies, 0, amplitudes, color=color, lw=2)
+        ax.scatter(frequencies, amplitudes, color=color, s=13, zorder=3)
+        ax.set_ylim(-0.025, 1.05)
+        ax.set_xlim(7.5, 32.5)
+        ax.set_yticks([0, 0.5, 1])
+        ax.set_ylabel("Amplitude / A")
+        ax.grid(axis="y", color="#e4e7eb", lw=0.8)
+        label = f"β = {beta:.1f}" if beta != betas[1] else "β ≈ 2.4048256"
+        ax.set_title(label + "  |  envelope amplitude = A", fontsize=11, loc="left")
+    axes[0].text(23, 0.81, "Most amplitude remains in the carrier", color=colors[0])
+    axes[1].annotate("Carrier component nearly vanishes", xy=(20, 0), xytext=(22.7, 0.78),
+                     arrowprops={"arrowstyle": "-&gt;", "color": colors[1]}, color=colors[1])
+    axes[2].annotate("26 Hz lies outside the 15–25 Hz range", xy=(26, 0.1310487318),
+                     xytext=(19.8, 0.82), arrowprops={"arrowstyle": "-&gt;", "color": colors[2]},
+                     color=colors[2])
+    axes[2].set_xticks(np.arange(8, 33, 2))
+    axes[2].set_xlabel("Frequency [Hz]    (carrier = 20 Hz; message = 1 Hz)")
+    fig.supxlabel("Shading: instantaneous-frequency range. Lines: one-sided cosine amplitudes, not power.\n"
+                  "Only 8–32 Hz shown; the ideal FM spectrum has infinitely many lines.", fontsize=10)
+    fig.savefig(Path(__file__).stem + ".png", facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Microkernel service failure isolation - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="Microkernel service failure isolation - Codex Wiki">
+<meta property="og:type" content="website">
+<meta property="og:image" content="microkernel-service-failure-authority-boundaries.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="-/raw/main.css">
+<link rel="icon" href="-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="." class="brand"><img class="openai-logo" src="-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="microkernel-service-failure-isolation"><div class="notnav"><h1><a href="">Microkernel service failure isolation</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a><a href="computer-science"> Computer science</a><a href="operating-system"> Operating system</a><a href="operating-system#kernel-operating-system"> Kernel (operating system)</a><a href="operating-system#microkernel"> Microkernel</a></div><div class="nav"><a href="https://ourbigbook.com/codex/microkernel-service-failure-isolation"><img src="-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a><a class="nosplit" href="operating-system#microkernel-service-failure-isolation"></a><span class="metrics"><span class="wcntr"> Words: 246</span></span></div></nav></div><div class="p" id="-/75">Suppose the <a href="operating-system#user-space-service">user-space service</a> stops after receiving request <code>7</code>, before replying. Assume that its private <a href="virtual-memory#memory-page">memory pages</a> are not writable mappings of the client's or an unrelated service's <a href="computer-memory">computer memory</a>, and that it lacks <a href="operating-system#capability-computer-security">security capabilities</a> to change their <a href="operating-system#thread-computing">software threads</a>. A failed store in the service cannot directly overwrite that private state through ordinary <a href="computer-science#central-processing-unit">CPU</a> <a href="virtual-memory#address-translation">address translation</a>. Those assumptions establish a particular isolation boundary, not a successful read.</div><div class="figure"><figure id="image-memory-protection-and-security-capabilities-limit-a-stopped-service-s-reach-recovery-needs-an-additional-design"><div class="float-wrap"><a href="microkernel-service-failure-authority-boundaries.png"><img src="microkernel-service-failure-authority-boundaries.png" loading="lazy" height="756" width="1200"></a></div><figcaption><a href="#image-memory-protection-and-security-capabilities-limit-a-stopped-service-s-reach-recovery-needs-an-additional-design"><span class="caption-prefix">Figure 3. </span></a><div class="title"><a href="virtual-memory#memory-protection">Memory protection</a> and <a href="operating-system#capability-computer-security">security capabilities</a> limit a stopped service's reach; recovery needs an additional design</div>. <a href="-/file/microkernel-service-failure-authority-boundaries.png"><b><span class="fa-solid-900 icon" aria-hidden="true"></span> Details</b></a>. </figcaption></figure></div><div class="p" id="-/76">The client can remain blocked waiting for request <code>7</code>. An unrelated runnable service may continue if <a href="operating-system#process-scheduling">process scheduling</a> and resources permit, but clients that depend on the stopped service still lose access to its service. A separately authorized recovery manager would need to detect the failure, rebuild the service's state and arrange communication with its replacement. The <a href="operating-system#microkernel">microkernel</a> architecture by itself supplies none of those application-specific recovery decisions.</div><div class="p" id="-/77">A missing reply also does not reveal whether a service crashed, is delayed by <a href="operating-system#process-scheduling">process scheduling</a>, or entered an infinite computation. For a read, retrying after recovery may be straightforward; for a modifying operation, absence of a reply does not prove that the modification never happened. Recovery must account for ambiguous completed operations and any required <a href="file-system#file-system-crash-consistency">file-system crash consistency</a>.</div><div class="p" id="-/78">The boundary changes with authority. A deliberately shared writable <a href="virtual-memory#memory-page">memory page</a> allows the service to change its shared contents; a <a href="operating-system#capability-computer-security">security capability</a> controlling another <a href="operating-system#thread-computing">software thread</a> permits the corresponding control operations. A <a href="operating-system#device-driver">device driver</a> with uncontrolled <a href="computer-science#direct-memory-access">DMA</a> can bypass ordinary <a href="computer-science#central-processing-unit">CPU</a> <a href="virtual-memory#memory-protection">memory protection</a>. Thus service placement and actual permissions must be considered together. <a href="computer-science-bibliography#what-the-proofs-assume-by-sel4-project" class="ref-trigger"><sup class="ref">[ref]</sup></a><template class="ref-content"><div class="ref-popover" popover="auto" role="dialog" aria-label="Reference" tabindex="-1"><a href="computer-science-bibliography#what-the-proofs-assume-by-sel4-project">What the Proofs Assume by seL4 Project</a>. What the Proofs Assume, The Assumptions: DMA and memory-mapped device registers</div></template></div><h2 id="-/ancestors"><a href="#-/ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(5)</span></a></h2><div class="list"><ol><li><a href="operating-system#microkernel">Microkernel</a></li><li><a href="operating-system#kernel-operating-system">Kernel (operating system)</a></li><li><a href="operating-system">Operating system</a></li><li><a href="computer-science">Computer science</a></li><li><a href="."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+<div>Source code for this page: <a href="-/file/operating-system.bigb">operating-system.bigb</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

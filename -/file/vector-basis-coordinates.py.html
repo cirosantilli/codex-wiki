@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>vector-basis-coordinates.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="vector-basis-coordinates.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/vector-basis-coordinates.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">vector-basis-coordinates.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/vector-basis-coordinates.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/vector-basis-coordinates.py">vector-basis-coordinates.py</a></b></div></nav></div><div class="p"><b>vector-basis-coordinates.py</b></div><div class="code"><div><pre><code>"""Show one vector in Cartesian and oblique bases; write the PNG to cwd."""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def arrow(ax, start, end, color, label=None, label_offset=(0, 0)):
+    ax.annotate('', xy=end, xytext=start,
+                arrowprops={'arrowstyle': '-|&gt;', 'color': color, 'lw': 2.4,
+                            'mutation_scale': 16})
+    if label:
+        midpoint = (np.asarray(start) + end)/2 + np.asarray(label_offset)
+        ax.text(*midpoint, label, color=color, fontsize=12,
+                bbox={'facecolor': 'white', 'edgecolor': 'none', 'alpha': .8})
+
+
+def main():
+    plt.rcParams.update({'font.size': 12})
+    basis = np.array([[2., 1.], [1., 2.]])
+    vector = np.array([5., 4.])
+    coefficients = np.linalg.solve(basis, vector)
+    assert np.allclose(coefficients, [2, 1])
+    fig, axes = plt.subplots(1, 2, figsize=(11, 5.3), layout='constrained', facecolor='white')
+    colors = ['#2670aa', '#cd6523', '#228268']
+    for ax in axes:
+        ax.axhline(0, color='#7c838a', lw=.8)
+        ax.axvline(0, color='#7c838a', lw=.8)
+        ax.set(xlim=(-.7, 6.2), ylim=(-.7, 5.2), xlabel='x', ylabel='y', aspect='equal')
+        ax.set_xticks(range(0, 7))
+        ax.set_yticks(range(0, 6))
+        arrow(ax, [0, 0], vector, colors[2])
+        ax.scatter(*vector, color=colors[2], zorder=4)
+        ax.text(4.85, 4.18, 'v = (5, 4)', color=colors[2], fontsize=12, ha='right')
+    axes[0].grid(alpha=.2)
+    arrow(axes[0], [0, 0], [5, 0], colors[0], r'$5e_1$', (-.3, .15))
+    arrow(axes[0], [5, 0], vector, colors[1], r'$4e_2$', (.12, 0))
+    axes[0].plot([0, 5], [4, 4], '--', color='#b0b6be')
+    axes[0].plot([0, 0], [0, 4], '--', color='#b0b6be')
+    axes[0].set_title(r'Cartesian basis: $v=5e_1+4e_2$')
+
+    b1, b2 = basis[:, 0], basis[:, 1]
+    for coefficient in range(-3, 5):
+        t = np.array([-4, 5])
+        line1 = coefficient*b1[:, None] + t*b2[:, None]
+        line2 = coefficient*b2[:, None] + t*b1[:, None]
+        axes[1].plot(*line1, color='#dce3e9', lw=.8, zorder=0)
+        axes[1].plot(*line2, color='#dce3e9', lw=.8, zorder=0)
+    arrow(axes[1], [0, 0], 2*b1, colors[0], r'$2b_1$', (0, -.4))
+    arrow(axes[1], 2*b1, vector, colors[1], r'$b_2$', (.12, -.3))
+    axes[1].plot([0, b2[0], vector[0]], [0, b2[1], vector[1]], '--', color='#a6afb8')
+    axes[1].scatter(*b1, color=colors[0], s=30)
+    axes[1].text(2.08, 1.16, r'$b_1=(2,1)$', color=colors[0], fontsize=10)
+    axes[1].text(.05, 2.05, r'$b_2=(1,2)$', color=colors[1], fontsize=10)
+    axes[1].set_title(r'Oblique basis: $v=2b_1+b_2$')
+    fig.suptitle('Coordinates change; the underlying vector stays the same', fontsize=16)
+    fig.savefig(Path.cwd() / 'vector-basis-coordinates.png', dpi=120, facecolor='white', bbox_inches='tight')
+    plt.close(fig)
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

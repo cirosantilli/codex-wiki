@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>matrix-preconditioning-energy-ellipses.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="matrix-preconditioning-energy-ellipses.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/matrix-preconditioning-energy-ellipses.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">matrix-preconditioning-energy-ellipses.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/matrix-preconditioning-energy-ellipses.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/matrix-preconditioning-energy-ellipses.py">matrix-preconditioning-energy-ellipses.py</a></b></div></nav></div><div class="p"><b>matrix-preconditioning-energy-ellipses.py</b></div><div class="code"><div><pre><code>"""Original equal-energy contours before and after diagonal scaling.
+
+Tested with Python 3.14, NumPy 2.3.5 and Matplotlib 3.10.7.
+Run from _media; the output basename matches this script's basename.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+A = np.array([[1.0, 0.2], [0.2, 100.0]])
+S = np.diag([1.0, 10.0])
+B = np.linalg.solve(S, np.linalg.solve(S, A).T).T
+levels = [0.25, 1.0, 2.04]
+theta = np.linspace(0.0, 2.0 * np.pi, 1201)
+circle = np.vstack([np.cos(theta), np.sin(theta)])
+colors = ['#aec7e8', '#5b8fb9', '#245b85']
+plt.rcParams.update({'font.size': 11, 'axes.titlesize': 12, 'figure.facecolor': 'white'})
+fig, axes = plt.subplots(1, 2, figsize=(9.4, 4.8), layout='constrained')
+fig.suptitle('Diagonal scaling preserves energy and changes its geometry', fontsize=14)
+for ax, matrix, prefix, point, title in zip(
+    axes, [A, B], ['e', r'\eta'], [np.array([1.0, 0.1]), np.array([1.0, 1.0])],
+    ['Original coordinates', 'Scaled coordinates'], strict=True
+):
+    values, vectors = np.linalg.eigh(matrix)
+    for t, color in zip(levels, colors, strict=True):
+        points = vectors @ (np.sqrt(t / values)[:, None] * circle)
+        assert np.max(np.abs(np.sum(points * (matrix @ points), axis=0) - t)) &lt; 1e-12
+        ax.plot(*points, color=color, linewidth=2, label=f'Energy = {t/2:g}')
+    ax.axhline(0, color='#cccccc', linewidth=0.8)
+    ax.axvline(0, color='#cccccc', linewidth=0.8)
+    ax.plot(*point, 'o', color='#a23c72', markersize=6)
+    label = '(1, 0.1)' if prefix == 'e' else '(1, 1)'
+    ax.annotate(label, point, xytext=(-45, 16), textcoords='offset points', color='#a23c72')
+    assert np.isclose(point @ matrix @ point / 2, 1.02)
+    ax.set(xlim=(-1.6, 1.6), ylim=(-1.6, 1.6), aspect='equal',
+           xlabel=f'${prefix}_1$', ylabel=f'${prefix}_2$',
+           title=title + '\n' + rf'$\kappa_2={values[-1]/values[0]:.6f}$')
+    ax.grid(alpha=0.15)
+axes[0].legend(loc='upper left', fontsize=10, framealpha=1)
+fig.supxlabel(r'$\eta=M^{1/2}e=(e_1,10e_2)^T$; both panels use equal coordinate scales', fontsize=11)
+fig.savefig(Path(__file__).stem + '.png', dpi=120, facecolor='white', transparent=False)
+plt.close(fig)
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

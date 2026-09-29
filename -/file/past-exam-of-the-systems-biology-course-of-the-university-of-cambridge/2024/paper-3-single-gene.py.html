@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-systems-biology-course-of-the-university-of-cambridge/2024/paper-3-single-gene.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-systems-biology-course-of-the-university-of-cambridge/2024/paper-3-single-gene.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../-/raw/main.css">
+<link rel="icon" href="../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../" class="brand"><img class="openai-logo" src="../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-systems-biology-course-of-the-university-of-cambridge/2024/paper-3-single-gene.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-systems-biology-course-of-the-university-of-cambridge/2024/paper-3-single-gene.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-systems-biology-course-of-the-university-of-cambridge/2024/paper-3-single-gene.py"><img src="../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../-/dir">(root)</a> / <a href="../../../../-/dir/past-exam-of-the-systems-biology-course-of-the-university-of-cambridge">past-exam-of-the-systems-biology-course-of-the-university-of-cambridge</a> / <a href="../../../../-/dir/past-exam-of-the-systems-biology-course-of-the-university-of-cambridge/2024">2024</a> / <a href="../../../../-/raw/past-exam-of-the-systems-biology-course-of-the-university-of-cambridge/2024/paper-3-single-gene.py">paper-3-single-gene.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-systems-biology-course-of-the-university-of-cambridge/2024/paper-3-single-gene.py</b></div><div class="code"><div><pre><code>"""Independent Hill responses and trajectories; Python 3.14/matplotlib 3.10.7.
+
+Write paper-3-single-gene.png to the current working directory.
+"""
+from pathlib import Path
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+
+def hill(u, K, n):
+    u = np.asarray(u)
+    return u**n / (K**n + u**n)
+
+
+def rhs(s, X):
+    Y, Z = s
+    return np.array([2*hill(X, 1, 2)-Y, 3*hill(X, 2, 4)-Z])
+
+
+def integrate(f, initial, times):
+    out = np.empty((len(times), len(initial)))
+    out[0] = initial
+    for j, dt in enumerate(np.diff(times)):
+        s = out[j]
+        k1 = f(s)
+        k2 = f(s+dt*k1/2)
+        k3 = f(s+dt*k2/2)
+        k4 = f(s+dt*k3)
+        out[j+1] = s + dt*(k1+2*k2+2*k3+k4)/6
+    return out
+
+
+def main():
+    plt.rcParams.update({'font.size': 10, 'figure.facecolor': 'white'})
+    fig, axes = plt.subplots(1, 2, figsize=(10, 3.8), constrained_layout=True)
+    X = np.linspace(0, 5, 501)
+    axes[0].plot(X, 2*hill(X, 1, 2), label=r'$Y^*: K=1,\ n=2$', color='#176b9c')
+    axes[0].plot(X, 3*hill(X, 2, 4), label=r'$Z^*: K=2,\ n=4$', color='#c05526')
+    axes[0].scatter([1,2], [1,1.5], color=['#176b9c','#c05526'], zorder=4)
+    axes[0].set(xlabel='Input concentration X', ylabel='Equilibrium concentration', title='Different thresholds and steepness')
+    axes[0].legend(loc='lower right')
+    t = np.linspace(0, 8, 801)
+    for initial, ls in [([0,0], '-'), ([3,4], '--')]:
+        out = integrate(lambda s: rhs(s, 2), initial, t)
+        exact = np.array([1.6,1.5])+(np.array(initial)-[1.6,1.5])*np.exp(-t[:,None])
+        assert np.max(np.abs(out-exact)) &lt; 1e-8
+        axes[1].plot(t, out[:,0], ls, color='#176b9c', label=f'Y, initial {initial}')
+        axes[1].plot(t, out[:,1], ls, color='#c05526', label=f'Z, initial {initial}')
+    axes[1].axhline(1.6, color='#176b9c', alpha=.3, lw=1)
+    axes[1].axhline(1.5, color='#c05526', alpha=.3, lw=1)
+    axes[1].set(xlabel='Time (inverse degradation-rate units)', ylabel='Concentration', title=r'Both starts converge: $X=2$')
+    axes[1].legend(fontsize=8)
+    for ax in axes:
+        ax.grid(alpha=.18);ax.set_ylim(bottom=0)
+    fig.savefig(Path('paper-3-single-gene.png'), dpi=125, facecolor='white')
+    plt.close(fig)
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

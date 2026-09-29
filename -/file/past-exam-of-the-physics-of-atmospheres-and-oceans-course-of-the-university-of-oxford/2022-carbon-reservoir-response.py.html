@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-physics-of-atmospheres-and-oceans-course-of-the-university-of-oxford/2022-carbon-reservoir-response.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-physics-of-atmospheres-and-oceans-course-of-the-university-of-oxford/2022-carbon-reservoir-response.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../-/raw/main.css">
+<link rel="icon" href="../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../" class="brand"><img class="openai-logo" src="../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-physics-of-atmospheres-and-oceans-course-of-the-university-of-oxford/2022-carbon-reservoir-response.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-physics-of-atmospheres-and-oceans-course-of-the-university-of-oxford/2022-carbon-reservoir-response.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-physics-of-atmospheres-and-oceans-course-of-the-university-of-oxford/2022-carbon-reservoir-response.py"><img src="../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../-/dir">(root)</a> / <a href="../../../-/dir/past-exam-of-the-physics-of-atmospheres-and-oceans-course-of-the-university-of-oxford">past-exam-of-the-physics-of-atmospheres-and-oceans-course-of-the-university-of-oxford</a> / <a href="../../../-/raw/past-exam-of-the-physics-of-atmospheres-and-oceans-course-of-the-university-of-oxford/2022-carbon-reservoir-response.py">2022-carbon-reservoir-response.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-physics-of-atmospheres-and-oceans-course-of-the-university-of-oxford/2022-carbon-reservoir-response.py</b></div><div class="code"><div><pre><code>"""Original solution illustration. Tested with Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7.
+Run from the desired output directory; this script writes only its PNG basename there.
+"""
+from pathlib import Path
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                     "axes.spines.right": False, "figure.facecolor": "white",
+                     "axes.facecolor": "white", "savefig.facecolor": "white"})
+
+R=np.array([7.8,7.8,78.]);r,s=.4,.04
+J=np.array([[-r/R[0],r/R[0],0],[r/R[1],-(r+s)/R[1],s/R[1]],[0,s/R[2],-s/R[2]]])
+S=np.diag(np.sqrt(R))@J@np.diag(1/np.sqrt(R))
+lam,Q=np.linalg.eigh(S);lam[abs(lam)&lt;1e-12]=0;weights=Q[0]**2/R[0]
+t=np.linspace(0,400,4001)
+def response(q,rate=False):
+ q=np.maximum(q,0);out=np.zeros_like(q)
+ for w,l in zip(weights,lam):
+  if l==0:term=q if rate else q*q/2
+  else:term=np.expm1(l*q)/l if rate else (np.expm1(l*q)-l*q)/(l*l)
+  out+=w*term
+ return out
+C=.5*(response(t)-2*response(t-100)+response(t-200))
+rate=.5*(response(t,True)-2*response(t-100,True)+response(t-200,True))
+E=.5*(t-2*np.maximum(t-100,0)+np.maximum(t-200,0))
+fig,(ax,bx)=plt.subplots(2,1,figsize=(8,6.1),sharex=True,layout="constrained",height_ratios=[1.5,1])
+ax.plot(t,C,lw=2.5,color="#326f9e",label=r"Atmospheric anomaly $C_a$")
+ax.axhline(5000/sum(R),color="0.45",ls=":",label="Infinite-time anomaly: 53.4 ppmv")
+for year in [200,400]:
+ val=np.interp(year,t,C);ax.scatter([year],[val],color="#326f9e",zorder=4)
+ ax.annotate(f"Year {year}: {val:.1f} ppmv",(year,val),xytext=((250,300) if year==200 else (year-105,val+32)),arrowprops={"arrowstyle":"-&gt;"},fontsize=10)
+i=C.argmax();ax.annotate(f"Peak: {C[i]:.1f} ppmv\nat year {t[i]:.0f}",(t[i],C[i]),xytext=(35,293),arrowprops={"arrowstyle":"-&gt;"},fontsize=10)
+ax.set(ylabel="Concentration anomaly (ppmv)",ylim=(0,340),title="Atmospheric response to a finite emissions pulse")
+ax.legend(loc="lower right",frameon=False,fontsize=9)
+bx.plot(t,E,color="0.5",ls="--",label="Emissions")
+bx.set(ylabel=r"Emissions (GtCO$_2$/yr)",xlabel="Years since emissions begin",xlim=(0,400),ylim=(-21,58))
+cx=bx.twinx();cx.spines["right"].set_visible(True)
+cx.plot(t,rate,color="#bc4d27",lw=2,label=r"Rate $dC_a/dt$")
+cx.axhline(0,color="#bc4d27",lw=.6,alpha=.4)
+cx.set(ylabel="Concentration rate (ppmv/yr)",ylim=(-1.5,4.15))
+cx.annotate("Maximum rise: 3.27 ppmv/yr",(100,np.interp(100,t,rate)),xytext=(145,3.5),arrowprops={"arrowstyle":"-&gt;"},fontsize=9,color="#9a3e20")
+bx.legend(loc="upper left",frameon=False,fontsize=9);cx.legend(loc="lower right",frameon=False,fontsize=9)
+for axis in (ax,bx):axis.grid(alpha=.15)
+
+fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name,
+            dpi=120, facecolor="white", transparent=False,
+            metadata={"Software": "Matplotlib"})
+plt.close(fig)
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

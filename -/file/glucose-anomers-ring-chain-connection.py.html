@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>glucose-anomers-ring-chain-connection.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="glucose-anomers-ring-chain-connection.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/glucose-anomers-ring-chain-connection.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">glucose-anomers-ring-chain-connection.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/glucose-anomers-ring-chain-connection.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/glucose-anomers-ring-chain-connection.py">glucose-anomers-ring-chain-connection.py</a></b></div></nav></div><div class="p"><b>glucose-anomers-ring-chain-connection.py</b></div><div class="code"><div><pre><code>"""Original anomer comparison with a shared open-chain connection.
+
+Python 3.14, matplotlib 3.10.7. Output is basename.png in CWD.
+Haworth diagrams are symbolic configurations, not flat molecular geometries.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+
+
+INK = "#223344"
+OXYGEN = "#166280"
+ANOMERIC = "#aa3b20"
+
+
+def label(ax, x, y, s, size=13, color=INK, **kwargs):
+    ax.text(x, y, s, fontsize=size, color=color, ha="center", va="center", **kwargs)
+
+
+def line(ax, a, b, color=INK, lw=1.8):
+    ax.plot([a[0], b[0]], [a[1], b[1]], color=color, lw=lw, solid_capstyle="round")
+
+
+def ring(ax, cx, cy, beta):
+    points = {1:(cx+1.75,cy), 2:(cx+.88,cy-.62), 3:(cx-.88,cy-.62),
+              4:(cx-1.75,cy), 5:(cx-.88,cy+.62), "O":(cx+.88,cy+.62)}
+    order = [1, 2, 3, 4, 5, "O", 1]
+    for a,b in zip(order, order[1:]):
+        line(ax, points[a], points[b], lw=3.5 if a in [1,2,3] else 1.6)
+    for n,(x,y) in points.items():
+        label(ax, x, y, "O" if n == "O" else f"C{n}", 12,
+              OXYGEN if n == "O" else ANOMERIC if n == 1 else INK,
+              bbox={"facecolor":"white", "edgecolor":"none", "pad":1.2}, zorder=4)
+    # Up/down refers to the reference ring plane, not axial/equatorial.
+    for n, up in [(1,beta), (2,False), (3,True), (4,False), (5,True)]:
+        x,y=points[n]
+        sign=1 if up else -1
+        col=ANOMERIC if n == 1 else OXYGEN if n == 5 else INK
+        length, offset = (.55,.78) if n == 3 else (.89,1.12)
+        line(ax,(x,y+sign*.12),(x,y+sign*length),col)
+        label(ax,x,y+sign*offset,r"C6: CH$_2$OH" if n == 5 else "OH",12,col,
+              bbox={"facecolor":"white", "edgecolor":"none", "pad":.7})
+    label(ax,cx,cy+2.28,"β-D-glucopyranose" if beta else "α-D-glucopyranose",18,weight="bold")
+    label(ax,cx,cy-2.10,"C1 OH up: same face as C6" if beta else "C1 OH down: opposite face to C6",12,ANOMERIC)
+
+
+def open_chain(ax, x, y):
+    # Compact Fischer formula with explicit aldehyde and all retained stereocenters.
+    for i in range(5):
+        line(ax,(x,y-i*.57-.10),(x,y-(i+1)*.57+.10))
+    for i in range(6):
+        yy=y-i*.57
+        label(ax,x-1.16,yy,f"C{i+1}",10,ANOMERIC if i == 0 else INK)
+        if i == 0:
+            label(ax,x,yy,"CHO",12,ANOMERIC,bbox={"facecolor":"white","edgecolor":"none","pad":1})
+        elif i == 5:
+            label(ax,x,yy,r"CH$_2$OH",12,bbox={"facecolor":"white","edgecolor":"none","pad":1})
+        else:
+            right=i != 2
+            line(ax,(x-.54,yy),(x+.54,yy))
+            label(ax,x-.77,yy,"H" if right else "HO",11)
+            label(ax,x+.77,yy,"OH" if right else "H",11,OXYGEN if i == 4 else INK)
+
+
+def main():
+    plt.rcParams.update({"font.family":"DejaVu Sans"})
+    fig,ax=plt.subplots(figsize=(11,8),dpi=140,facecolor="white")
+    fig.subplots_adjust(left=.02,right=.98,bottom=.03,top=.98)
+    ax.set(xlim=(0,16),ylim=(0,12))
+    ax.axis("off")
+    label(ax,8,11.57,"Anomers share the same six carbon atoms",21,weight="bold")
+    ring(ax,4,8.2,False)
+    ring(ax,12,8.2,True)
+    open_chain(ax,8,4.83)
+    for a,b in [((5.9,6.45),(7.05,4.78)),((10.1,6.45),(8.95,4.78))]:
+        ax.annotate("",xy=b,xytext=a,arrowprops={"arrowstyle":"&lt;-&gt;","lw":1.7,"color":OXYGEN,
+                                                            "shrinkA":0,"shrinkB":0})
+    label(ax,4.3,4.6,"Open C1–O5 bond;\nrestore C1 aldehyde",12,OXYGEN)
+    label(ax,11.9,4.6,"C5 OH can close\nonto either C1 face",12,OXYGEN)
+    label(ax,4.2,2.95,"Same C2/C3/C4 OH:\ndown / up / down",12)
+    label(ax,12,2.95,"O5 becomes ring oxygen;\nC6 stays outside the ring",12,OXYGEN)
+    label(ax,8,1.30,"Open-chain D-glucose (minor form in water)",12)
+    label(ax,8,.76,"Haworth rings encode above/below; real rings are puckered. Ring C–H bonds omitted.",11)
+    label(ax,8,.30,"Fischer crosses: horizontal toward you, vertical away. Arrows show connectivity, not rates.",11)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"),facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

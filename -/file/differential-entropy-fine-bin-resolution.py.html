@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>differential-entropy-fine-bin-resolution.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="differential-entropy-fine-bin-resolution.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/differential-entropy-fine-bin-resolution.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">differential-entropy-fine-bin-resolution.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/differential-entropy-fine-bin-resolution.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/differential-entropy-fine-bin-resolution.py">differential-entropy-fine-bin-resolution.py</a></b></div></nav></div><div class="p"><b>differential-entropy-fine-bin-resolution.py</b></div><div class="code"><div><pre><code>"""Compute exact bin masses for U(0,1) and its square; output PNG to cwd."""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    counts = 2 ** np.arange(0, 13)
+    uniform_entropy = np.log(counts)
+    squared_entropy = []
+    for n in counts:
+        edges = np.arange(n + 1, dtype=float) / n
+        masses = np.diff(np.sqrt(edges))
+        assert np.all(masses &gt; 0) and np.isclose(masses.sum(), 1)
+        squared_entropy.append(-np.dot(masses, np.log(masses)))
+    squared_entropy = np.asarray(squared_entropy)
+    corrected = squared_entropy - np.log(counts)
+    exact_squared = np.log(2) - 1
+    assert corrected[-1] &gt; exact_squared
+    assert abs(corrected[-1] - exact_squared) &lt; 0.01
+    plt.rcParams.update({"font.size": 12, "axes.titlesize": 15})
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4.9), dpi=120)
+    fig.patch.set_facecolor("white")
+    axes[0].plot(counts, uniform_entropy, "o-", color="#226d9d", label="Uniform X")
+    axes[0].plot(counts, squared_entropy, "s-", color="#aa5127", label="Y = X²")
+    axes[0].set_title("Discrete bin entropy grows")
+    axes[0].set_ylabel("H(Qₙ), nats")
+    axes[0].legend(loc="upper left")
+    axes[1].plot(counts, np.zeros_like(counts), "o-", color="#226d9d", label="Uniform: h = 0")
+    axes[1].plot(counts, corrected, "s-", color="#aa5127", label="Squared: finite-bin value")
+    axes[1].axhline(exact_squared, linestyle="--", color="#aa5127", lw=1.4)
+    axes[1].text(2.0, exact_squared - 0.018, "h(Y) = ln 2 − 1 ≈ −0.306853", color="#aa5127", fontsize=11)
+    axes[1].set_ylim(-0.37, 0.035)
+    axes[1].set_title("Subtracting ln n removes resolution")
+    axes[1].set_ylabel("H(Qₙ) − ln n, nats")
+    axes[1].legend(loc="upper right", fontsize=10)
+    for ax in axes:
+        ax.set_xscale("log", base=2)
+        ax.set_xticks([1, 4, 16, 64, 256, 1024, 4096], labels=["1", "4", "16", "64", "256", "1024", "4096"])
+        ax.set_xlabel("Number n of equal-width bins in (0,1)")
+        ax.grid(alpha=0.2)
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.suptitle("Fine-bin probabilities connect discrete and differential entropy", fontsize=17)
+    fig.text(0.5, 0.025, "Exact model probabilities: pⱼ = 1/n or √((j+1)/n) − √(j/n).", ha="center")
+    fig.subplots_adjust(left=0.075, right=0.98, top=0.8, bottom=0.18, wspace=0.26)
+    fig.savefig(Path(__file__).with_suffix(".png").name, facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

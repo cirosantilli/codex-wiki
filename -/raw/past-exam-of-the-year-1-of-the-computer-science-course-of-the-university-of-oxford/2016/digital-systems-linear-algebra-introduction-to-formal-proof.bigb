@@ -1,0 +1,684 @@
+= Digital systems, linear algebra, introduction to formal proof
+{scope}
+{title2=A10101W1}
+
+Source paper: https://www.whatdotheyknow.com/request/ba_computer_science_past_papers/response/2577745/attach/2/202402%20183%20CS%20Papers.zip?cookie_passthrough=1[released examination archive], member `2015/T/a10101w1.pdf`; original cover dated 2016-06-16. The cover establishes the examination year despite the archive directory name.
+
+== 1
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Use a synchronous <binary counter> with three positive-edge-triggered <D flip-flops>, all driven by the same <clock signal>. Write their outputs $q_2q_1q_0$, with $q_0$ the <least significant bit>. The next-state <Boolean functions> are
+$$
+\boxed{D_0=\neg q_0,\qquad D_1=q_1\oplus q_0,\qquad D_2=q_2\oplus(q_1\land q_0).}
+$$
+Implement these with one <NOT gate>, two <exclusive or> gates, and one <AND gate>. Connect each $D_i$ to its corresponding <D flip-flop>; its output $q_i$ is address line $i$. A reset input clears all three <flip-flops> to zero, so the first selected sensor is sensor zero.
+
+The state sequence is
+$$
+000\to001\to010\to011\to100\to101\to110\to111\to000.
+$$
+The low <bit> toggles at every <clock edge>, the middle <bit> toggles exactly when the old low <bit> is one, and the high <bit> toggles exactly when both old lower <bits> are one. These are precisely the <carry> conditions for incrementing a three-<bit> <binary representation>. Every possible state belongs to the cycle, so there is no unused state requiring recovery. Choose a <clock period> allowing the <combinational logic> to settle before the next capture.
+
+=== b
+{scope}
+
+==== Solution
+
+For data inputs $d_0,\ldots,d_7$ and selection <bits> $s_2s_1s_0$, use a three-to-eight <binary decoder>. Its output $e_i$ is the <minterm> that is one exactly when the selection equals the three-<bit> <binary representation> of $i$. For example,
+$$
+e_0=\neg s_2\land\neg s_1\land\neg s_0,\quad e_1=\neg s_2\land\neg s_1\land s_0,\quad e_7=s_2\land s_1\land s_0.
+$$
+Gate each data input with its decoded selection using an <AND gate>, then combine all eight results with an <OR gate>:
+$$
+\boxed{z=\bigvee_{i=0}^7(e_i\land d_i).}
+$$
+Exactly one $e_i$ is asserted, so $z=d_i$ for the selected $i$, regardless of the other data inputs. A direct implementation uses three shared <NOT gates>, eight three-input <AND gates> for the <binary decoder>, eight two-input <AND gates> for the data, and one eight-input <OR gate>. Equivalently, combine each decoder term with its data input in one four-input <AND gate>. Larger <logic gates> may be built from two-input ones.
+
+=== c
+{scope}
+
+==== Solution
+
+Use **eight parallel 8:1 <multiplexers> and one shared three-<bit> <binary counter>**. If $d_{i,j}$ is <bit> $j$ from sensor $i$, connect $d_{0,j},\ldots,d_{7,j}$ to <multiplexer> $j$. Connect all selection inputs to the <binary counter> outputs. Then data line $j$ carries $d_{q,j}$, so all eight data lines belong to the same selected sensor. Send the three counter outputs to the receiver as the address lines as well.
+
+\Image[digital-main-sensor-multiplex.png]
+{title=One shared <binary counter> selects the same sensor in eight parallel <multiplexers>}
+
+After reset the receiver sees sensors $0,1,\ldots,7,0,\ldots$, one per <clock period>. Sample the data and address only after the <binary counter> and <multiplexers> have settled, for example on the opposite <clock edge> with a sufficiently long <clock period>. Changing addresses can otherwise cause transient <logic hazards>. The transmitter uses **eleven signal lines**, apart from any shared clock or reset connection.
+
+=== d
+{scope}
+
+==== Solution
+
+Use **an eight-<bit> modulo-256 <binary counter>, eight 256:1 <multiplexers>, eight data lines and eight address lines**. Thus there are **sixteen signal lines**, apart from clock and reset, and a full scan takes 256 <clock periods>. The counter next-state equations generalize to
+$$
+D_0=\neg q_0,\qquad D_i=q_i\oplus\bigwedge_{j=0}^{i-1}q_j\quad(1\leq i\leq7).
+$$
+A 256:1 <multiplexer> for one data <bit> can be made hierarchically: 32 first-stage 8:1 <multiplexers> select within eight-sensor groups using $q_2q_1q_0$; four second-stage 8:1 <multiplexers> select groups using $q_5q_4q_3$; one final 4:1 <multiplexer> selects using $q_7q_6$. A final 8:1 <multiplexer> also works if one select input is fixed to zero and only four data inputs are used. Repeat this network eight times, sharing all selection lines. Allow for the extra <propagation delay> when choosing the <clock period>.
+
+== 2
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Generate four partial-product <bits> with <AND gates>:
+$$
+p_{00}=x_0y_0,\quad p_{10}=x_1y_0,\quad p_{01}=x_0y_1,\quad p_{11}=x_1y_1.
+$$
+The <binary multiplication> expansion is $XY=p_{00}+2(p_{10}+p_{01})+4p_{11}$. Add the two weight-two <bits> with a <half adder>, then add its <carry> to $p_{11}$ with a second <half adder>. The complete <combinational logic> is
+$$
+\begin{aligned}
+z_0&=p_{00},&z_1&=p_{10}\oplus p_{01},&c&=p_{10}\land p_{01},\\
+z_2&=p_{11}\oplus c,&z_3&=p_{11}\land c.
+\end{aligned}
+$$
+Thus **four <AND gates> for the partial products and two <half adders> suffice**. Each <half adder> contains one <exclusive or> gate and one <AND gate>. In the largest case $3\times3=9$, these equations produce $1001$, including the necessary fourth output <bit>.
+
+=== b
+{scope}
+
+==== Solution
+
+Split the four-<bit> unsigned inputs into two-<bit> halves: $X=4X_H+X_L$ and $Y=4Y_H+Y_L$. Use four copies of the two-<bit> <binary multiplier> to compute $P_{LL}=X_LY_L$, $P_{HL}=X_HY_L$, $P_{LH}=X_LY_H$, and $P_{HH}=X_HY_H$. Then
+$$
+\boxed{XY=P_{LL}+4P_{HL}+4P_{LH}+16P_{HH}.}
+$$
+The extreme terms occupy disjoint output positions: $P_{LL}$ uses positions zero to three and $16P_{HH}$ uses positions four to seven. Form $W$ by concatenating their four-<bit> outputs, with $P_{HH}$ in the upper half and $P_{LL}$ in the lower half. This needs wiring alone, so $W=16P_{HH}+P_{LL}$ without an <adder>.
+
+Use the first eight-<bit> <adder> to form $R=P_{HL}+P_{LH}$ after zero-extension, and the second to form $Z=W+(R\ll2)$. Thus **four two-<bit> <binary multipliers> and two eight-<bit> <adders> suffice**. The fixed <left bit shift> is also wiring alone.
+
+The middle sum can reach $9+9=18$, so preserve all five of its potentially nonzero <bits>; retaining only four would be wrong. Its shifted value is at most 72. The final result is at most $15\times15=225$, so both additions fit in eight <bits>. Concatenating the disjoint extreme terms is what saves an addition.
+
+=== c
+{scope}
+
+==== Solution
+
+Use unsigned inputs as in the preceding parts. Store a 16-<bit> accumulator $P$, a 16-<bit> shifted multiplicand $M$, an eight-<bit> multiplier $Q$, and a three-<bit> iteration <binary counter> $k$. The <sequential circuit> has one 16-<bit> <adder>, a 16-<bit> <multiplexer> selecting $M$ or zero from $Q_0$, fixed one-place <bit shifts>, and load/hold selection for the <digital registers>. The input values are captured when `start` is accepted, so later input changes cannot alter the operation.
+
+\Image[digital-main-sequential-multiplier.png]
+{title=The shift-and-add <binary multiplier> reuses one 16-bit <adder> for eight iterations}
+
+Use three control states with the following synchronous transition table. All assignments in a row use the old <digital register> values and occur together at the active <clock edge>.
+
+|| State
+|| Condition
+|| Register updates
+|| Next state
+| IDLE
+| `start = 0`
+| Hold all <digital registers>
+| IDLE
+| IDLE
+| `start = 1`
+| $P\gets0$, $M\gets\operatorname{zeroextend}_{16}(X)$, $Q\gets Y$, $k\gets0$
+| RUN
+| RUN
+| $k<7$
+| $P\gets P+(Q_0?M:0)$, $M\gets M\ll1$, $Q\gets Q\gg1$, $k\gets k+1$
+| RUN
+| RUN
+| $k=7$
+| $P\gets P+(Q_0?M:0)$, $M\gets M\ll1$, $Q\gets Q\gg1$; hold $k$
+| DONE
+| DONE
+| `start = 1`
+| Hold all <digital registers>
+| DONE
+| DONE
+| `start = 0`
+| Hold all <digital registers>
+| IDLE
+
+Reset selects IDLE and clears the <digital registers>. Set **$Z=P$ and `done = 1` exactly in DONE**. A `start` pulse in IDLE launches one multiplication; further pulses during RUN are ignored. Holding `start` high cannot repeatedly launch operations: DONE waits for it to go low before rearming. The product remains stored while waiting and through the following IDLE state. There are **eight RUN <clock edges> after the loading edge**; the last addition is captured before `done` becomes high.
+
+For correctness, let $X_0,Y_0$ denote the captured values. After $i$ iterations, for $0\leq i\leq8$, the <loop invariant> is
+$$
+P_i=X_0(Y_0\bmod2^i),\quad M_i=2^iX_0,\quad Q_i=\lfloor Y_0/2^i\rfloor,
+$$
+so $P_i+M_iQ_i=X_0Y_0$. Writing $Q_i=2q+b$, the next accumulation adds $bM_i$, the <left bit shift> doubles $M_i$, and the <logical right shift> changes $Q_i$ to $q$. Hence the invariant is preserved. At $i=8$, $Q_i=0$, giving **$Z=P_8=X_0Y_0$**. The largest product is $255^2=65025<2^{16}$, so the accumulator fits. Even the final shifted multiplicand is $256X_0\leq65280$, so it also fits.
+
+== 3
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+The <calling convention> passes the integer argument in **`$a0`**, returns the result in **`$v0`**, and uses **`jal` with `$ra`** for a call and its <return address>. The callee returns using `jr $ra`. Its <stack frame> grows downwards from `$sp` and must be removed before returning, restoring the caller's <stack pointer>.
+
+The `$s` <processor registers> are <callee-saved registers>: a callee that uses `$s0` or `$s1` must restore their incoming values. The `$a`, `$v`, and `$t` <processor registers> are <caller-saved registers>; a caller must preserve any of their values that it needs after a call. Consequently `foo` keeps its own argument in `$s0` and the first call's result in `$s1`, where nested calls preserve them. Because a nested `jal` overwrites `$ra`, `foo` also saves its incoming <return address>. Every recursive activation has its own <stack frame>.
+
+The supplied <MIPS instructions> use the paper's simplified convention: <pseudoinstructions> such as `subi` are accepted, and control transfers have no <branch delay slot>. The completed code below follows that convention. A hardware implementation with delayed control transfers requires suitable scheduling or `nop` instructions throughout the supplied code as well.
+
+=== b
+{scope}
+
+==== Solution
+
+The entry sequence creates one 12-byte <stack frame>, then preserves the <return address> and both used <callee-saved registers>:
+```
+subi $sp, $sp, 12    # allocate three four-byte words
+sw   $ra, 0($sp)     # save return address of this activation
+sw   $s0, 4($sp)     # save caller's s0
+sw   $s1, 8($sp)     # save caller's s1
+```
+The closing sequence reverses these effects:
+```
+lw   $ra, 0($sp)     # recover return address of this activation
+lw   $s0, 4($sp)     # restore caller's s0
+lw   $s1, 8($sp)     # restore caller's s1
+addi $sp, $sp, 12    # deallocate the frame
+jr   $ra            # return to the caller
+```
+Loads must precede deallocation because their offsets refer to the current <stack frame>. The <return value> in `$v0` is deliberately retained. Saving `$ra` is essential even though it is not an `$s` <processor register>: otherwise the second nested call would destroy the address to which this activation must return.
+
+=== c
+{scope}
+
+==== Solution
+
+The missing <MIPS instructions>, in order, are
+```
+bne  $t0, $0, fooRet1
+subi $a0, $s0, 3
+add  $v0, $s1, $v0
+```
+The comparison `slti $t0, $s0, 3` makes `$t0` nonzero exactly when $y<3$, so the first instruction selects the base case. The second forms $y-3$ from the saved argument, rather than relying on `$a0` surviving the first call. After the second call, `$s1` holds `bar(y-2)` and `$v0` holds `bar(y-3)`; the final addition puts **their sum in `$v0`**, as required by the <calling convention>.
+
+=== d
+{scope}
+
+==== Solution
+
+The blanks are **`x < 2`** and **`return x - foo(x + 1)`**. The compiled `slti` and `bne` select the first branch exactly for $x<2$. Otherwise `addi` forms $x+1$, `jal foo` returns its value in `$v0`, and `sub $v0, $s0, $v0` subtracts that value from the preserved $x$. Thus the complete high-level implementation is
+```
+proc bar(val x : int) : int
+begin if x < 2 then
+          return 1
+      else
+          return x - foo(x + 1)
+      end
+end
+```
+Although the immediate call increases the argument, substitution into `foo`'s two recursive calls decreases the corresponding `bar` arguments to $x-1$ and $x-2$ whenever the recursive branch is entered. The mutual <recursion> therefore terminates on ordinary integer inputs, assuming sufficient <stack> space and no machine arithmetic overflow.
+
+=== e
+{scope}
+
+==== Solution
+
+Keep both the limit and current argument in <callee-saved registers>, so a call to `foo` preserves them. Under the same no-delay-slot convention, use
+```
+li   $s0, n
+li   $s1, 1
+slti $t0, $s0, 1
+bne  $t0, $0, testEnd
+testLoop:
+move $a0, $s1
+jal  foo
+break 1
+beq  $s1, $s0, testEnd
+addi $s1, $s1, 1
+b    testLoop
+testEnd:
+break 0
+b    testEnd
+```
+At every **`break 1`**, `$s1` is the tested value and `$v0` is its result. Resuming after the breakpoint continues to the next value; after $n$ the program reaches its separate final stop. The initial guard handles $n<1$ with no calls. Testing equality before incrementing also avoids overflowing the loop variable after the final call when $n$ is the largest positive machine integer. As with the supplied procedures, evaluating all calls assumes enough <stack> space and representable arithmetic results.
+
+== 4
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+The third left-hand side is three times the first minus the second. Consistency of this <linear system> therefore requires $2=3a-a^2$, or
+$$
+a^2-3a+2=(a-1)(a-2)=0.
+$$
+This is also sufficient: the first two rows are <linearly independent>, and on setting the free variable $x_3=t$ they give
+$$
+\boxed{a\in\{1,2\},\qquad (x_1,x_2,x_3)=(a-t,\ a^2-2a-3t,\ t),\quad t\in\mathbb R.}
+$$
+Substitution into the third equation gives $3a-a^2=2$ for either allowed $a$. Explicitly the solution families are $(1-t,-1-3t,t)$ and $(2-t,-3t,t)$. For every other $a$, the same row relation gives an immediate inconsistency.
+
+=== b
+{scope}
+
+==== Solution
+
+Denote the columns by $c_1,\ldots,c_4$. The first two are <linearly independent>, because the top two coordinates have <determinant> $3\cdot2-(-1)\cdot1=7$. Direct calculation gives
+$$
+c_3=\frac17c_1-\frac47c_2,\qquad c_4=\frac57c_1+\frac17c_2.
+$$
+Thus a <column-space basis> is **$\{(3,1,9)^T,(-1,2,4)^T\}$**, and
+$$
+\boxed{\operatorname{Col}(A)=\operatorname{span}\{c_1,c_2\}=\{(u,v,2u+3v)^T:u,v\in\mathbb R\}.}
+$$
+For the last description, the third row equals twice the first row plus three times the second, so every column lies in that plane. Since the two independent columns already span a two-dimensional <vector subspace>, they fill the plane.
+
+The target vector satisfies $5=2(-2)+3(3)$, so it is in the <column space>. An especially simple <linear combination> is
+$$
+\boxed{\mathbf b=c_2-c_3=(-1,2,4)^T-(1,-1,-1)^T=(-2,3,5)^T.}
+$$
+In terms of the displayed <basis>, the same vector is $-c_1/7+11c_2/7$. The <column space> itself is unique; the freedom is in choosing its <basis>.
+
+=== c
+{scope}
+
+==== Solution
+
+**No.** Take the one-by-one <matrices> $A=[1]$, $B=[-1]$. Both <column spaces> are $C=\mathbb R$, whereas $A+B=[0]$ has <column space> $\{0\}$. More generally, taking $B=-A$ cancels any nonzero <column space>. One always has $\operatorname{Col}(A+B)\subseteq C$, because each sum column lies in the <vector subspace> $C$, but equality can fail through cancellation.
+
+== 5
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+For square <matrices> of the same size,
+$$
+\boxed{\det(AB)=\det(A)\det(B).}
+$$
+For an upper or lower <triangular matrix> $T$, its <determinant> is the product of its diagonal entries:
+$$
+\boxed{\det(T)=\prod_{i=1}^n t_{ii}.}
+$$
+These formulas include <singular matrices> and zero diagonal entries.
+
+=== b
+{scope}
+
+==== Solution
+
+Let $e_i$ be standard coordinate columns. The required <elementary matrix> is
+$$
+\boxed{E=I_n+\alpha e_je_i^T,\qquad EA:\ R_j\gets R_j+\alpha R_i.}
+$$
+It is the <identity matrix> with the extra entry $\alpha$ in position $(j,i)$. Left <matrix multiplication> implements the row operation: all other rows are unchanged. Since $j>i$, $E$ is a lower <triangular matrix> with every diagonal entry one. Part (a) therefore gives $\det(E)=1$ and
+$$
+\boxed{\det(EA)=\det(E)\det(A)=\det(A).}
+$$
+Hence adding a multiple of one row to another leaves the <determinant> unchanged, even if $A$ is singular.
+
+=== c
+{scope}
+
+==== Solution
+
+Use $-A=(-I_n)A$. The <diagonal matrix> $-I_n$ has $n$ diagonal entries equal to $-1$, so the product and <triangular matrix> formulas from part (a) give
+$$
+\boxed{\det(-A)=\det(-I_n)\det(A)=(-1)^n\det(A).}
+$$
+Equivalently, multiplying each of the $n$ rows by $-1$ supplies one factor $-1$ per row.
+
+=== d
+{scope}
+
+==== Solution
+
+Write the <determinant> in its <Leibniz formula for determinants>, where $S_n$ is the set of <permutations> of $\{1,\ldots,n\}$:
+$$
+\det(A)=\sum_{\sigma\in S_n}\operatorname{sgn}(\sigma)\prod_{i=1}^n a_{i,\sigma(i)}.
+$$
+The <permutation sign> is justified by the given row-interchange property: a <permutation matrix> is obtained from the <identity matrix> by row interchanges, and every interchange changes its <determinant> by a factor $-1$. Reversing a sequence of interchanges constructs the inverse <permutation> with the same number of interchanges. Consequently $\operatorname{sgn}(\sigma^{-1})=\operatorname{sgn}(\sigma)$. The <Leibniz formula for determinants> can itself be obtained by expanding the rows multilinearly in the <standard basis>: repeated selected coordinate rows contribute zero, and the remaining terms are precisely these signed <permutation matrices>.
+
+Since $(A^T)_{ij}=a_{ji}$, the same formula gives
+$$
+\det(A^T)=\sum_{\sigma\in S_n}\operatorname{sgn}(\sigma)\prod_{i=1}^n a_{\sigma(i),i}.
+$$
+Reindex the product with $j=\sigma(i)$ and reindex the sum with $\tau=\sigma^{-1}$. Both reindexings are bijections, so
+$$
+\det(A^T)=\sum_{\tau\in S_n}\operatorname{sgn}(\tau)\prod_{j=1}^n a_{j,\tau(j)}=\det(A).
+$$
+Thus **$\det(A)=\det(A^T)$** for every real square <matrix>, including <singular matrices>. This proof does not assume the analogous column-operation rules in order to establish the <transpose> identity.
+
+=== e
+{scope}
+
+==== Solution
+
+For a <skew-symmetric matrix>, $A^T=-A$. By parts (c) and (d),
+$$
+\det(A)=\det(A^T)=\det(-A)=(-1)^n\det(A).
+$$
+If $n$ is odd, $\det(A)=-\det(A)$, hence $2\det(A)=0$ over $\mathbb R$. Therefore **$\det(A)=0$, so $A$ is a <singular matrix>**. The conclusion depends on odd dimension: in dimension two, $\begin{pmatrix}0&1\\-1&0\end{pmatrix}$ is <skew-symmetric> and has <determinant> one.
+
+== 6
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+An <eigenvalue> and <eigenvector> pair $(\lambda,v)$ for a square <matrix> $A$ satisfies
+$$
+\boxed{Av=\lambda v,\qquad v\ne0.}
+$$
+The <scalar> $\lambda$ and the coordinates of $v$ belong to the chosen <field>, usually $\mathbb R$ or $\mathbb C$. The nonzero condition is essential: the zero <vector> satisfies the equation for every $\lambda$ and therefore cannot define an <eigenvalue>.
+
+=== b
+{scope}
+
+==== Solution
+
+The <vectors> $v_1,\ldots,v_n$ are <linearly independent> if
+$$
+\alpha_1v_1+\cdots+\alpha_nv_n=0\quad\Longrightarrow\quad\alpha_1=\cdots=\alpha_n=0.
+$$
+They are <linearly dependent> if some such relation has **at least one nonzero coefficient**. All coefficients lie in the underlying <field>. Thus <linear independence> means that only the trivial <linear combination> gives zero; <linear dependence> means that a nontrivial one does.
+
+=== c
+{scope}
+
+==== Solution
+
+Apply $A$ to the stated <linear combination> and use each <eigenvector> equation:
+$$
+\lambda_{k+1}z_{k+1}=Az_{k+1}=\sum_{i=1}^k\alpha_iAz_i=\sum_{i=1}^k\alpha_i\lambda_i z_i.
+$$
+Subtract $\lambda_{k+1}$ times the original relation. This gives
+$$
+\sum_{i=1}^k\alpha_i(\lambda_i-\lambda_{k+1})z_i=0.
+$$
+The assumed <linear independence> implies $\alpha_i(\lambda_i-\lambda_{k+1})=0$ separately for every $i$. Since the <eigenvector> $z_{k+1}$ is nonzero, not all $\alpha_i$ can vanish. Choose any $i$ with $\alpha_i\ne0$; division by that coefficient gives **$\lambda_i=\lambda_{k+1}$**. In fact every nonzero coefficient is attached to that same <eigenvalue>.
+
+=== d
+{scope}
+
+==== Solution
+
+Interpret “distinct <eigenvalues>” as **$n$ pairwise distinct <eigenvalues> in the chosen <field>**. Select a nonzero <eigenvector> $z_i$ for each. A single nonzero <vector> is <linearly independent>. Suppose inductively that $z_1,\ldots,z_k$ are <linearly independent>. If adding $z_{k+1}$ made the set <linearly dependent>, its nontrivial relation would have a nonzero coefficient of $z_{k+1}$, since otherwise it would contradict the induction hypothesis. Solving for $z_{k+1}$ would place it in the <linear span> of the first $k$ <eigenvectors>.
+
+Part (c) would then force $\lambda_{k+1}=\lambda_i$ for some $i\leq k$, contradicting pairwise distinctness. <Mathematical induction> therefore proves that **all $n$ selected <eigenvectors> are <linearly independent>**, forming a <basis>. If the <field> is $\mathbb R$, the assertion requires $n$ real <eigenvalues>; a real <matrix> can instead have nonreal <eigenvalues> and a <eigenvector> basis over the <complex numbers>.
+
+=== e
+{scope}
+
+==== Solution
+
+For $A$, the <triangular matrix> formula gives the <characteristic polynomial>
+$$
+\det(tI-A)=(t-1)(t-3)(t-2).
+$$
+The three <eigenvalues> are distinct, so part (d) already proves the existence of an <eigenvector> <basis>. Explicit choices, ordered by <eigenvalues> $1,3,2$, are
+$$
+\boxed{(1,0,0)^T,\quad(1,1,0)^T,\quad(2,-1,1)^T.}
+$$
+Their column <matrix> has <determinant> one, and direct multiplication gives respectively one, three and two times the indicated <vector>.
+
+For $B$, expansion along the last row gives
+$$
+\det(tI-B)=(t-3)((t-3)^2-1)=(t-3)(t-4)(t-2).
+$$
+Again the three <eigenvalues> are distinct. An explicit <eigenvector> <basis>, ordered by <eigenvalues> $4,2,3$, is
+$$
+\boxed{(1,1,0)^T,\quad(1,-1,0)^T,\quad(0,-1,1)^T.}
+$$
+Its column <matrix> has <determinant> $-2\ne0$. In particular, $B$'s diagonal entries are not its <eigenvalues>: it is not a <triangular matrix>.
+
+Finally $C=I_3$, so every nonzero <vector> is an <eigenvector> with <eigenvalue> one. Choose **the <standard basis> $e_1,e_2,e_3$**. These are <linearly independent> even though their <eigenvalues> coincide. Distinct <eigenvalues> are sufficient for an <eigenvector> <basis>, and are not necessary.
+
+== 7
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+The <implication introduction rule> opens a <subproof> with a <temporary assumption> $\phi$, derives $\psi$, and discharges that assumption to conclude **$\phi\to\psi$**. The <negation introduction rule> opens a <subproof> with a <temporary assumption> $\phi$, derives <logical falsity> $\bot$, and discharges it to conclude **$\neg\phi$**.
+
+The boxes record the scopes and dependencies of the <temporary assumptions>. A result derived inside a box cannot be used outside it without the appropriate discharge rule; it may depend on the boxed assumption. Other, surrounding assumptions remain in force. This is how the <natural deduction> rules distinguish a conditional derivation from an unconditional assertion.
+
+=== b
+{scope}
+
+==== Solution
+
+Let $H=(P\land Q)\lor(P\land R)$. In the following <natural deduction> proofs, indentation and vertical bars mark assumption scopes. Rule names are the introduction and elimination rules supplied by the paper.
+
+First work backwards from the premise using <disjunction elimination>, proving the whole desired <logical conjunction> in each case:
+```
+1  H               premise
+ 2  | P ∧ Q        assumption
+ 3  | P            ∧-elim-L 2
+ 4  | Q            ∧-elim-R 2
+ 5  | Q ∨ R        ∨-intro-L 4
+ 6  | P ∧ (Q ∨ R)  ∧-intro 3,5
+ 7  | P ∧ R        assumption (new case)
+ 8  | P            ∧-elim-L 7
+ 9  | R            ∧-elim-R 7
+10  | Q ∨ R        ∨-intro-R 9
+11  | P ∧ (Q ∨ R)  ∧-intro 8,10
+12  P ∧ (Q ∨ R)    ∨-elim 1,2–6,7–11
+```
+Alternatively, first transform the goal by <conjunction introduction>, obtaining $P$ and $Q\lor R$ by separate <disjunction elimination> proofs:
+```
+1  H             premise
+ 2  | P ∧ Q      assumption
+ 3  | P          ∧-elim-L 2
+ 4  | P ∧ R      assumption (new case)
+ 5  | P          ∧-elim-L 4
+ 6  P            ∨-elim 1,2–3,4–5
+ 7  | P ∧ Q      assumption
+ 8  | Q          ∧-elim-R 7
+ 9  | Q ∨ R      ∨-intro-L 8
+10  | P ∧ R      assumption (new case)
+11  | R          ∧-elim-R 10
+12  | Q ∨ R      ∨-intro-R 11
+13  Q ∨ R        ∨-elim 1,7–9,10–12
+14  P ∧ (Q ∨ R)  ∧-intro 6,13
+```
+The essential difference is the final rule: the first proof splits the premise once, while the second splits the goal first and then analyzes the premise twice. Counting only rule applications, **both displayed proofs take nine inference steps**. The first uses four <conjunction elimination> steps, two <disjunction introduction> steps, two <conjunction introduction> steps and one <disjunction elimination>; the second replaces one <conjunction introduction> with a second <disjunction elimination>. If assumption lines are counted as displayed proof lines, the second is longer, 14 rather than 12, because it opens four case assumptions rather than two. Thus a raw line count and an inference-step count need not agree.
+
+=== c
+{scope}
+
+==== Solution
+
+<Proof by contradiction>, or <reductio ad absurdum>, has the form
+$$
+\boxed{\frac{\Gamma,\neg\phi\vdash\bot}{\Gamma\vdash\phi}\quad\mathrm{RAA},}
+$$
+discharging the assumption $\neg\phi$. This is the classical rule that concludes $\phi$ directly, as opposed to the <negation introduction rule>, which concludes a negation.
+
+To derive <double-negation elimination> using RAA without assuming <double-negation elimination> itself, use
+```
+1  ¬¬φ   premise
+2  | ¬φ  assumption
+3  | ⊥   ¬-elim 2,1
+4  φ     RAA 2–3
+```
+Here line 1 is the negation of line 2. Thus only <negation elimination rule> inside the <subproof>, followed by RAA, is needed.
+
+=== d
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+Abbreviate $H=(\neg P)\to Q$ and $K=(\neg P)\to\neg Q$. Use the primitive <natural deduction> rules, including <double-negation elimination>:
+```
+1  H             premise
+ 2  | H          assumption
+ 3  | | K        assumption
+ 4  | | | ¬P     assumption
+ 5  | | | Q      →-elim 2,4
+ 6  | | | ¬Q     →-elim 3,4
+ 7  | | | ⊥      ¬-elim 5,6
+ 8  | | ¬¬P      ¬-intro 4–7
+ 9  | | P        ¬¬-elim 8
+10  | K → P      →-intro 3–9
+11  H → (K → P)  →-intro 2–10
+```
+The outer premise is redundant: the proof uses the locally assumed $H$, so the conclusion is already a theorem. Keeping the redundant premise is allowed. The successive discharges give **$((\neg P)\to Q)\to(((\neg P)\to\neg Q)\to P)$** with exactly the requested assumption scopes.
+
+==== ii
+{scope}
+
+===== Solution
+
+First derive $A$ by <double-negation elimination>, then derive $\neg B$ by <negation introduction>. The <logical falsity elimination rule> is used only inside the attempt to derive $A$.
+```
+1  ¬(A → B)  premise
+ 2  | ¬A     assumption
+ 3  | | A    assumption
+ 4  | | ⊥    ¬-elim 3,2
+ 5  | | B    ⊥-elim 4
+ 6  | A → B  →-intro 3–5
+ 7  | ⊥      ¬-elim 6,1
+ 8  ¬¬A      ¬-intro 2–7
+ 9  A        ¬¬-elim 8
+10  | B      assumption
+11  | | A    assumption
+12  | | B    reiteration 10
+13  | A → B  →-intro 11–12
+14  | ⊥      ¬-elim 13,1
+15  ¬B       ¬-intro 10–14
+16  A ∧ ¬B   ∧-intro 9,15
+```
+Reiteration at line 12 merely uses an assumption that remains in scope. The final **$A\land\neg B$** follows by <conjunction introduction>. This explicitly supplies the classical step needed to obtain $A$ rather than just $\neg\neg A$.
+
+== 8
+{scope}
+
+=== a
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+Use <negation introduction> on the unwanted <existential quantification>, and <existential quantifier elimination rule> with a fresh witness $a$:
+```
+1  ∀x. ¬P(x)    premise
+2  | ∃x. P(x)   assumption
+3  | | P(a)     assumption, a fresh
+4  | | ¬P(a)    ∀-elim 1
+5  | | ⊥        ¬-elim 3,4
+6  | ⊥          ∃-elim 2,3–5
+7  ¬(∃x. P(x))  ¬-intro 2–6
+```
+The witness name occurs neither in the surrounding assumptions nor in the conclusion $\bot$ of its <subproof>. This satisfies the <eigenvariable condition>; it is not an arbitrarily chosen fixed element assumed to witness the <existential quantification>. The result is **$\neg\exists x\,P(x)$**.
+
+==== ii
+{scope}
+
+===== Solution
+
+Choose a fresh parameter $a$. The <universal quantifier elimination rule> supplies both the implication and its premise at that same parameter:
+```
+1  ∀x. (P(x) → Q(x))        premise
+2  | ∀x. P(x)               assumption
+3  | P(a)                   ∀-elim 2
+4  | P(a) → Q(a)            ∀-elim 1
+5  | Q(a)                   →-elim 4,3
+6  | ∀x. Q(x)               ∀-intro 5, a fresh
+7  (∀x. P(x)) → (∀x. Q(x))  →-intro 2–6
+```
+The <eigenvariable condition> holds because $a$ is absent from both undischarged assumptions at line 6. Hence **the universally quantified implication is proved**.
+
+The proposed version with merely $P(x)$ in the antecedent is **not derivable**. For a <counterexample>, take a two-element domain $\{0,1\}$ with $P$ and $Q$ both true precisely at zero. The universal premise holds. Under the assignment $x=0$, $P(x)$ is true but $\forall x\,Q(x)$ is false. By <soundness>, a formal proof cannot exist. Attempting the previous derivation would fail exactly at <universal quantifier introduction rule>: the parameter would occur in the undischarged assumption $P(x)$, so it would not be fresh.
+
+=== b
+{scope}
+
+==== Solution
+
+Write $H(t)=\forall p\,((S(t,p)\to\neg S(p,p))\land(\neg S(p,p)\to S(t,p)))$. Use <negation introduction> on the existential claim. For its fresh witness $b$, instantiate $p=b$; the resulting self-application says both $S(b,b)\to\neg S(b,b)$ and its reverse. The given <law of excluded middle> then provides the two cases.
+```
+1  ∀x. ∀y. (S(x,y) ∨ ¬S(x,y))                    premise
+ 2  | ∃b. H(b)                                   assumption
+ 3  | | H(b)                                     assumption, b fresh
+ 4  | | (S(b,b) → ¬S(b,b)) ∧ (¬S(b,b) → S(b,b))  ∀-elim 3, p := b
+ 5  | | S(b,b) → ¬S(b,b)                         ∧-elim-L 4
+ 6  | | ¬S(b,b) → S(b,b)                         ∧-elim-R 4
+ 7  | | ∀y. (S(b,y) ∨ ¬S(b,y))                   ∀-elim 1, x := b
+ 8  | | S(b,b) ∨ ¬S(b,b)                         ∀-elim 7, y := b
+ 9  | | | S(b,b)                                 assumption
+10  | | | ¬S(b,b)                                →-elim 5,9
+11  | | | ⊥                                      ¬-elim 9,10
+12  | | | ¬S(b,b)                                assumption (new case)
+13  | | | S(b,b)                                 →-elim 6,12
+14  | | | ⊥                                      ¬-elim 13,12
+15  | | ⊥                                        ∨-elim 8,9–11,12–14
+16  | ⊥                                          ∃-elim 2,3–15
+17  ¬∃b. H(b)                                    ¬-intro 2–16
+```
+Both case assumptions are discharged at line 15; the witness assumption is discharged at line 16. Since $b$ is absent from the surrounding premise and the exported conclusion $\bot$, <existential quantifier elimination rule> is valid. Line 17 is **the required negated existential**. This is the diagonal self-application underlying the <barber paradox>.
+
+=== c
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+<Equality introduction rule> is reflexivity; <equality elimination rule> permits substitution of equals in a formula:
+$$
+\boxed{\frac{}{\Gamma\vdash t=t}\ (=\mathrm I),\qquad\frac{\Gamma\vdash s=t\quad\Gamma\vdash\phi(s)}{\Gamma\vdash\phi(t)}\ (=\mathrm E).}
+$$
+Terms substituted into $\phi$ must be <free for substitution>, so no variable becomes captured. The notation $\phi(s),\phi(t)$ means substitution into the same designated free variable positions of one formula; other occurrences may remain fixed. These rules express <first-order equality> without assuming symmetry or transitivity as additional axioms.
+
+==== ii
+{scope}
+
+===== Solution
+
+For transitivity of <first-order equality>, take the substitution formula $\phi(u)\equiv(T_1=u)$:
+```
+1  T₁ = T₂  premise
+2  T₂ = T₃  premise
+3  T₁ = T₃  =-elim 2,1; φ(u) := (T₁ = u)
+```
+For symmetry, use reflexivity and $\psi(u)\equiv(u=T_1)$:
+```
+1  T₁ = T₂  premise
+2  T₁ = T₁  =-intro
+3  T₂ = T₁  =-elim 1,2; ψ(u) := (u = T₁)
+```
+Thus **both transitivity and symmetry follow from the two equality rules**. In the symmetry proof, only the designated first occurrence in $T_1=T_1$ is replaced; the second remains fixed.
+
+==== iii
+{scope}
+
+===== Solution
+
+Choose distinct fresh parameters $a,b$. Within the assumption $a=b$, <equality elimination rule> gives the forward implication directly. Derive the reverse equality explicitly before using it for the reverse implication:
+```
+1  | a = b                                           assumption
+ 2  | | P(a)                                         assumption
+ 3  | | P(b)                                         =-elim 1,2
+ 4  | P(a) → P(b)                                    →-intro 2–3
+ 5  | a = a                                          =-intro
+ 6  | b = a                                          =-elim 1,5; φ(u) := (u = a)
+ 7  | | P(b)                                         assumption
+ 8  | | P(a)                                         =-elim 6,7
+ 9  | P(b) → P(a)                                    →-intro 7–8
+10  | (P(a) → P(b)) ∧ (P(b) → P(a))                  ∧-intro 4,9
+11  a = b → ((P(a) → P(b)) ∧ (P(b) → P(a)))          →-intro 1–10
+12  ∀y. a = y → ((P(a) → P(y)) ∧ (P(y) → P(a)))      ∀-intro 11, b fresh
+13  ∀x. ∀y. x = y → ((P(x) → P(y)) ∧ (P(y) → P(x)))  ∀-intro 12, a fresh
+```
+The equality assumption is discharged before either <universal quantifier introduction rule>. There are then no undischarged assumptions, so both <eigenvariable condition> requirements hold. The final **universal theorem** expresses that equal arguments are interchangeable in the <predicate> $P$ in both directions.

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>reachability-bounded-and-shared.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="reachability-bounded-and-shared.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/reachability-bounded-and-shared.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">reachability-bounded-and-shared.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/reachability-bounded-and-shared.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/reachability-bounded-and-shared.py">reachability-bounded-and-shared.py</a></b></div></nav></div><div class="p"><b>reachability-bounded-and-shared.py</b></div><div class="code"><div><pre><code>"""Exact bounded reachable region and invariant shared-input line.
+
+Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-matplotlib python3 ../reachability-bounded-and-shared.py
+Outputs reachability-bounded-and-shared.png to CWD.
+Tested: Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7+dfsg1.
+The curves are analytic toy predictions, not measurements. T=2, |u|&lt;=1.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def position_bounds(v, duration):
+    center = duration * v / 2
+    radius = (duration**2 - v**2) / 4
+    return center - radius, center + radius
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "axes.titlesize": 13})
+    fig, axs = plt.subplots(1, 2, figsize=(9.6, 4.8), layout="constrained")
+    fig.set_facecolor("white")
+    fig.suptitle("Reachable endpoints depend on both dynamics and allowed inputs", fontsize=15)
+    blue, orange, red = "#176b9a", "#cc7024", "#b32939"
+    left, right = axs
+    v = np.linspace(-2, 2, 1001)
+    lower, upper = position_bounds(v, 2)
+    assert np.all(lower &lt;= upper)
+    assert np.allclose(position_bounds(np.array([0]), 2), [[-1], [1]])
+    left.fill_betweenx(v, lower, upper, color="#d6eaf5")
+    left.plot(upper, v, color=blue, lw=2.3, label="+1 first, −1 last")
+    left.plot(lower, v, color=orange, lw=2.3, label="−1 first, +1 last")
+    left.plot([-1, 1], [0, 0], color="#333333", lw=2)
+    left.scatter([-1, 0, 1], [0, 0, 0], s=30, color="#333333", zorder=4)
+    left.scatter([1.5], [0], s=60, marker="x", color=red, lw=2, zorder=5)
+    left.annotate("(3/2, 0)\nunreachable", (1.5, 0), xytext=(1.22, -0.72), ha="center", fontsize=10, color=red, arrowprops={"arrowstyle": "-&gt;", "color": red})
+    left.annotate("Rest-to-rest interval [−1, 1]", (0, 0), xytext=(-0.22, 0.64), ha="center", fontsize=10, arrowprops={"arrowstyle": "-&gt;", "color": "#555555"}, bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.9})
+    left.set(title="Double integrator: rank 2\nT = 2, |u| ≤ 1", xlabel="Final position p", ylabel="Final velocity v", xlim=(-2.45, 2.45), ylim=(-2.45, 2.45))
+    left.legend(loc="lower left", fontsize=9, framealpha=1)
+
+    # A=0, B=(1,1)^T: only the diagonal direction is influenced.
+    shared_matrix = np.array([[1, 0], [1, 0]])
+    assert np.linalg.matrix_rank(shared_matrix) == 1
+    q = np.array([-3, 3])
+    right.plot(q, q, "--", color="#888888", lw=2, label="Unrestricted inputs: entire line")
+    right.plot([-2, 2], [-2, 2], color=blue, lw=4, label="|u| ≤ 1: only the segment")
+    right.scatter([-2, 0, 2], [-2, 0, 2], color=blue, s=30, zorder=4)
+    right.scatter([1], [0], marker="x", color=red, s=60, lw=2, zorder=5)
+    right.annotate("(1, 0) unreachable\nat every duration", (1, 0), xytext=(1.07, -1.3), ha="center", fontsize=10, color=red, arrowprops={"arrowstyle": "-&gt;", "color": red})
+    right.text(-2.75, 2.25, "Invariant: z₁ − z₂ = 0\nrange C = span{(1, 1)}", fontsize=10, va="top", bbox={"facecolor": "white", "edgecolor": "none"})
+    right.set(title="Shared input: rank 1\nż₁ = ż₂ = u, start at zero", xlabel="Final state z₁", ylabel="Final state z₂", xlim=(-3, 3), ylim=(-3, 3))
+    right.legend(loc="lower left", fontsize=9, framealpha=1)
+    for ax in axs:
+        ax.set_facecolor("white")
+        ax.axhline(0, color="#bbbbbb", lw=0.7, zorder=0)
+        ax.axvline(0, color="#bbbbbb", lw=0.7, zorder=0)
+        ax.grid(alpha=0.18)
+        ax.set_aspect("equal", adjustable="box")
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.text(0.5, -0.008, "Analytic mathematical examples • dimensionless coordinates • no measurements", ha="center", fontsize=10)
+    fig.savefig(Path.cwd() / "reachability-bounded-and-shared.png", dpi=120, facecolor="white", transparent=False, bbox_inches="tight")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

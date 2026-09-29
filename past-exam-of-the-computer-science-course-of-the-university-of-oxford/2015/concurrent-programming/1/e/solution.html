@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Past exam of the computer science course of the University of Oxford / 2015 / Concurrent programming / 1 / e / Solution - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="Past exam of the computer science course of the University of Oxford / 2015 / Concurrent programming / 1 / e / Solution - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="solution"><div class="notnav"><h1><a href="../../../../../past-exam-of-the-computer-science-course-of-the-university-of-oxford">Past exam of the computer science course of the University of Oxford</a><span class="meta"> / </span><a href="../../../../2015">2015</a><span class="meta"> / </span><a href="../../../concurrent-programming">Concurrent programming</a><span class="meta"> / </span><a href="../../../concurrent-programming#1">1</a><span class="meta"> / </span><a href="../../../concurrent-programming#1/e">e</a><span class="meta"> / </span><a href="">Solution</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a  href="#-/ancestors">&nbsp;...</a><a href="../../../../../university-of-oxford#computer-science-course-of-the-university-of-oxford"> Computer science course of the University of Oxford</a><a href="../../../../../past-exam-of-the-computer-science-course-of-the-university-of-oxford"> Past exam of the computer science course of the University of Oxford</a><a href="../../../../2015"> 2015</a><a href="../../../concurrent-programming"> Concurrent programming</a><a href="../../../concurrent-programming#1"> 1</a><a href="../../../concurrent-programming#1/e"> e</a></div><div class="nav"><a href="https://ourbigbook.com/codex/past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/concurrent-programming/1/e/solution"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a><a class="nosplit" href="../../../concurrent-programming#1/e/solution"></a><span class="metrics"><span class="wcntr"> Words: 789</span></span></div></nav></div><div class="p" id="-/29">Use a return <a href="../../../../../operating-system#control-channel">control channel</a> to carry both cancellation and one-slot <a href="../../../../../computer-network#flow-control">flow control</a>. The latter is what prevents a silent consumer from obstructing other streams. Keep the preceding <code>MUX</code> type and add</div><div class="code" id="-/30"><div><pre><code>sealed trait CTRL
+final case class Grant(stream: Int) extends CTRL
+final case class Cancel(stream: Int) extends CTRL</code></pre></div></div><div class="p" id="-/31">Here is a precise event-loop specification of the modified generators. <code>choose</code> means a fair <a href="../../../../../computer-science#communicating-scala-objects">Communicating Scala Objects</a> <a href="../../../../../computer-science#guarded-alternation">guarded alternation</a> over the listed input events, output events and a short closure-poll timer; every selected transition below is finite and contains no further blocking communication. An output transition commits its state change only after its selected send succeeds. The notation is operational pseudocode, with the requested signatures; it does not introduce an assumed nonblocking send primitive.</div><div class="code" id="-/32"><div><pre><code>def iMux[T](ins: Seq[?[T]], ctrl: ?[CTRL], mid: ![MUX[T]]): PROC
+  for each stream i:
+    credit[i] = true; inputOpen[i] = true; terminal[i] = false
+    pending[i] = None                     // Option[MUX[T]]
+  until every terminal[i]:
+    poll closures:
+      if !ins[i].canInput: inputOpen[i] = false
+      if !terminal[i] &amp;&amp; !inputOpen[i] &amp;&amp; pending[i].isEmpty:
+        pending[i] = Some(MUX(i, None))   // end follows earlier data
+    choose:
+      ctrl ? Grant(i):
+        if !terminal[i]: credit[i] = true
+      ctrl ? Cancel(i):
+        terminal[i] = true; pending[i] = None; ins[i].closeIn
+      ins[i] ? x, enabled when inputOpen[i] &amp;&amp; !terminal[i]
+                              &amp;&amp; credit[i] &amp;&amp; pending[i].isEmpty:
+        credit[i] = false; pending[i] = Some(MUX(i, Some(x)))
+      mid ! pending[i].get, enabled when pending[i].nonEmpty:
+        if pending[i].get.item.isEmpty: terminal[i] = true
+        pending[i] = None
+      poll timer: no action
+  finally: close every ins[i] input; close mid output and ctrl input
+
+def iDemux[T](ctrl: ![CTRL], mid: ?[MUX[T]], outs: Seq[![T]]): PROC
+  for each stream i:
+    slot[i] = None; ended[i] = false; cancelled[i] = false
+  replies = empty FIFO queue of CTRL
+  until every (cancelled[i] || (ended[i] &amp;&amp; slot[i].isEmpty)):
+    poll closures:
+      if !cancelled[i] &amp;&amp; !ended[i] &amp;&amp; !outs[i].canOutput:
+        cancelled[i] = true; slot[i] = None
+        delete any queued Grant(i); append Cancel(i) to replies
+      if !cancelled[i] &amp;&amp; ended[i] &amp;&amp; slot[i].nonEmpty
+                                      &amp;&amp; !outs[i].canOutput:
+        cancelled[i] = true; slot[i] = None
+      if ended[i] &amp;&amp; slot[i].isEmpty: outs[i].closeOut
+    choose:
+      mid ? MUX(i, Some(x)):
+        if !cancelled[i]: assert slot[i].isEmpty; slot[i] = Some(x)
+      mid ? MUX(i, None):
+        ended[i] = true
+      outs[i] ! slot[i].get, enabled when !cancelled[i] &amp;&amp; slot[i].nonEmpty:
+        slot[i] = None
+        if !ended[i]: append Grant(i) to replies
+      ctrl ! replies.front, enabled when replies.nonEmpty:
+        remove replies.front
+      poll timer: no action
+  finally: close mid input, every output, and ctrl output</code></pre></div></div><div class="p" id="-/33">There is one receive event on <code>mid</code>, with the two packet forms dispatched in its body, and one send event on <code>mid</code>, offering a fairly chosen pending stream. There is likewise one send event on <code>ctrl</code>. If <code>mid</code> becomes exhausted, the <a href="../../../../../operating-system#channel-demultiplexer">channel demultiplexer</a> marks any remaining streams ended, discards queued replies, and drains or cancels their slots; the sender has then finished and needs no more grants. If the control input closes, the <a href="../../../../../operating-system#channel-multiplexer">channel multiplexer</a> enters cleanup. If the receiver finds its control output closed, it discards queued replies and disables further control sends, but continues receiving end markers and draining its slots; sender completion must not discard already accepted values. A channel closing during an individual guarded operation is handled locally: a failed <code>outs(i)</code> send cancels that stream and queues <code>Cancel(i)</code> unless it had already ended; exhaustion of a shared port uses the cleanup rules just stated. Ports that closed while their data events were disabled are found by the poll. These rules specify closure handling as well as normal transitions.</div><div class="p" id="-/34">The credit starts at one and is consumed when an input is accepted. It is returned only after the corresponding output finishes. Thus the one permitted outstanding value for stream <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6595em;"></span><span class="mord mathnormal">i</span></span></span></span> is either pending at the sender or stored at the receiver, never both. An end marker needs no credit and follows that stream's last data packet on the ordered shared <a href="../../../../../operating-system#message-passing-channel">message-passing channel</a>. It can arrive while that value is still waiting for its consumer; the receiver then delays closing the output until its slot empties. The invariant is<div class="math" id="-/35"><div><div class="equation"><div><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.68em;vertical-align:-0.59em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.09em;"><span style="top:-3.68em;"><span class="pstrut" style="height:3.68em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord">0</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord">∣</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07847em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0785em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">∣</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord">∣</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mord">∣</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">≤</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord">1</span><span class="mspace" style="margin-right:1em;"></span><span class="mord text"><span class="mord">until stream </span></span><span class="mord mathnormal">i</span><span class="mord text"><span class="mord"> is cancelled</span></span><span class="mord">.</span></span></span></span></span><span style="top:-3.09em;"><span class="pstrut" style="height:3.68em;"></span><span class="stretchy fbox" style="height:1.68em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.59em;"><span></span></span></span></span></span></span></span></span></div><div class="number"><a href="#-/35">(5)</a></div></div></div></div>As in a <a href="../../../../../operating-system#strict-buffer">strict buffer</a>, cancellation can discard the last outstanding value. A cancelled receiver ignores a data packet already in flight; a later grant cannot resurrect a cancelled sender. No selected data delivery blocks the event loop, and control replies are queued rather than sent inside a receive handler. In particular, there is no cycle in which the sender blocks sending data while the receiver blocks sending cancellation. Closing the control output at final receiver termination also releases the sender if a last cancellation was still queued.</div><div class="p" id="-/36">Under fair event selection and eventual scheduling, an individual cancellation reaches its producer without waiting for any unrelated consumer. Producer closure similarly delivers its own end marker without waiting for another stream to drain. This gives finite <a href="../../../../../computer-network#flow-control">flow control</a> equivalent in ordering and termination to capacity-one <a href="../../../../../operating-system#strict-buffer">strict buffers</a>, with finite protocol delays. A physical shared <a href="../../../../../operating-system#message-passing-channel">message-passing channel</a> necessarily serializes transfers, so instantaneous readiness and absolute real-time delay bounds are not identical to physically separate buffers.</div><h2 id="-/ancestors"><a href="#-/ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(11)</span></a></h2><div class="list"><ol><li><a href="../../../concurrent-programming#1/e">E</a></li><li><a href="../../../concurrent-programming#1">1</a></li><li><a href="../../../concurrent-programming">Concurrent programming</a></li><li><a href="../../../../2015">2015</a></li><li><a href="../../../../../past-exam-of-the-computer-science-course-of-the-university-of-oxford">Past exam of the computer science course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#computer-science-course-of-the-university-of-oxford">Computer science course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#undergraduate-course-of-the-university-of-oxford">Undergraduate course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#course-of-the-university-of-oxford">Course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford">University of Oxford</a></li><li><a href="../../../../..#list-of-universities">List of universities</a></li><li><a href="../../../../.."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+<div>Source code for this page: <a href="../../../../../-/file/past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/concurrent-programming.bigb">past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/concurrent-programming.bigb</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/concurrent-programming/1/e/";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>analytic-continuation-geometric-series.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="analytic-continuation-geometric-series.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/analytic-continuation-geometric-series.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">analytic-continuation-geometric-series.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/analytic-continuation-geometric-series.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/analytic-continuation-geometric-series.py">analytic-continuation-geometric-series.py</a></b></div></nav></div><div class="p"><b>analytic-continuation-geometric-series.py</b></div><div class="code"><div><pre><code>"""Illustrate geometric-series convergence versus analytic continuation.
+
+Tested with Python 3.14, NumPy 2.3.5, and Matplotlib 3.10.7.
+Write an opaque white same-basename PNG in the current working directory.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle
+import numpy as np
+
+
+def main():
+    # Check finite sums directly, their remainder, and a recentered series.
+    n = np.arange(21)
+    points = np.array([0.5, 0.3 + 0.4j, -0.75])
+    sums = np.sum(points[:, None] ** n, axis=1)
+    remainder = points**21 / (1 - points)
+    assert np.max(np.abs(1 / (1 - points) - sums - remainder)) &lt; 1e-14
+    outside = np.cumsum(2.0 ** np.arange(11))
+    assert np.array_equal(outside, 2.0 ** np.arange(1, 12) - 1)
+    recentered = 0.5 * np.sum((-0.25) ** np.arange(25))
+    assert abs(recentered - 0.4) &lt; 1e-14
+
+    blue, orange, red = "#186a9a", "#cb721f", "#b63a40"
+    fig, (plane, real) = plt.subplots(1, 2, figsize=(10, 4.6), dpi=130)
+    fig.patch.set_facecolor("white")
+    plane.add_patch(Circle((0, 0), 1, facecolor="#e8f2fa", edgecolor=blue,
+                           linestyle="--", linewidth=2))
+    plane.axhline(0, color="0.75", lw=0.8)
+    plane.axvline(0, color="0.75", lw=0.8)
+    plane.scatter([1], [0], marker="x", color=red, s=75, lw=2, zorder=5)
+    plane.scatter([0.5, 2], [0, 0], color=[blue, orange], s=35, zorder=5)
+    plane.annotate("Pole at 1", (1, 0), (1.35, -0.62), color=red,
+                   arrowprops={"arrowstyle": "-&gt;", "color": red})
+    plane.text(0, 0.48, r"Series converges" + "\n" + r"$|z|&lt;1$",
+               color=blue, ha="center", fontsize=11)
+    plane.text(0.5, -0.26, r"$1/2$", ha="center", color=blue)
+    plane.text(2, 0.18, r"$2$", ha="center", color=orange)
+    plane.text(-1.15, -1.42, "Continuation exists on both sides\nof the circle, except at the pole.",
+               fontsize=10, color="0.25")
+    plane.set(xlim=(-1.55, 2.65), ylim=(-1.6, 1.6), xlabel=r"$\operatorname{Re}z$",
+              ylabel=r"$\operatorname{Im}z$", title="Original radius is still 1")
+    plane.set_aspect("equal")
+
+    real.axvspan(-1, 1, color="#e8f2fa")
+    real.axhline(0, color="0.75", lw=0.8)
+    for a, b in [(-2.1, 0.95), (1.05, 2.6)]:
+        x = np.linspace(a, b, 700)
+        real.plot(x, 1 / (1 - x), color=blue, lw=2.2)
+    x = np.linspace(-2.1, 2.6, 700)
+    real.plot(x, np.sum(x[:, None] ** np.arange(6), axis=1),
+              color=orange, lw=1.6, linestyle="--", label=r"Finite sum $S_5(x)$")
+    real.axvline(1, color=red, lw=1.1, linestyle=":")
+    real.axvline(-1, color=blue, lw=0.8, linestyle=":")
+    real.scatter([0.5, 2], [2, -1], color=blue, s=35, zorder=5)
+    real.annotate(r"$F(1/2)=2$", (0.5, 2), (-1.65, 3.8), color=blue,
+                  arrowprops={"arrowstyle": "-&gt;", "color": blue})
+    real.annotate(r"$F(2)=-1$", (2, -1), (1.25, -4.6), color=blue,
+                  arrowprops={"arrowstyle": "-&gt;", "color": blue})
+    real.text(0.97, 0.87, r"$S_5(2)=63$ (off scale)" + "\n" + r"$S_N(2)\to+\infty$",
+              transform=real.transAxes, ha="right", color=orange, fontsize=10)
+    real.plot([], [], color=blue, lw=2.2, label=r"Continuation $F(x)=1/(1-x)$")
+    real.legend(loc="lower left", fontsize=9, framealpha=1)
+    real.set(xlim=(-2.1, 2.6), ylim=(-8, 8), xlabel=r"Real input $x$",
+             ylabel="Value", title="Extension does not change convergence")
+    real.text(0.5, -0.22, r"Shaded interval: original series converges only for $-1&lt;x&lt;1$",
+              transform=real.transAxes, ha="center", fontsize=9)
+    for ax in (plane, real):
+        ax.set_facecolor("white")
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.suptitle(r"Geometric series $1+z+z^2+\cdots$ and its analytic continuation", fontsize=14)
+    fig.subplots_adjust(left=0.07, right=0.98, bottom=0.21, top=0.81, wspace=0.34)
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+    print(f"Verified finite-sum remainders; S_10(2)={outside[-1]:.0f}; "
+          f"recentered F(-3/2)={recentered:.15g}.")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

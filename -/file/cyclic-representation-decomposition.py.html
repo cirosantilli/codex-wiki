@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>cyclic-representation-decomposition.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="cyclic-representation-decomposition.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/cyclic-representation-decomposition.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">cyclic-representation-decomposition.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/cyclic-representation-decomposition.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/cyclic-representation-decomposition.py">cyclic-representation-decomposition.py</a></b></div></nav></div><div class="p"><b>cyclic-representation-decomposition.py</b></div><div class="code"><div><pre><code>"""Mean/contrast decomposition of a three-coordinate cyclic representation."""
+
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    p = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+    b = np.column_stack((np.array([2, -1, -1]) / np.sqrt(6),
+                         np.array([0, 1, -1]) / np.sqrt(2)))
+    rotation = np.array([[-0.5, -np.sqrt(3) / 2],
+                         [np.sqrt(3) / 2, -0.5]])
+    assert np.allclose(b.T @ b, np.eye(2))
+    assert np.allclose(b.T @ p @ b, rotation)
+    assert np.array_equal(np.linalg.matrix_power(p, 3), np.eye(3))
+    x = np.array([4, 1, 1])
+    mean = np.full(3, x.mean())
+    contrast = x - mean
+    assert np.array_equal(contrast, [2, -1, -1])
+
+    fig, axes = plt.subplots(1, 2, figsize=(10.5, 5.3), dpi=120)
+    fig.patch.set_facecolor("white")
+    sites = np.arange(3)
+    colors = ["#333e60", "#147c67", "#c76716"]
+    for offset, values, color, label in zip(
+            [-0.24, 0, 0.24], [x, mean, contrast], colors,
+            ["original", "fixed mean", "zero-sum contrast"]):
+        bars = axes[0].bar(sites + offset, values, 0.23, color=color, label=label)
+        axes[0].bar_label(bars, padding=3, fontsize=11)
+    axes[0].axhline(0, color="#444444", lw=0.8)
+    axes[0].set_xticks(sites, ["1", "2", "3"])
+    axes[0].set_xlabel("Coordinate label")
+    axes[0].set_ylabel("Value")
+    axes[0].set_ylim(-1.6, 4.8)
+    axes[0].set_title(r"$(4,1,1)=2(1,1,1)+(2,-1,-1)$", fontsize=13)
+    axes[0].legend(loc="upper center", bbox_to_anchor=(0.5, -0.24),
+                   ncol=3, frameon=False, fontsize=10, columnspacing=1)
+    ax = axes[1]
+    ax.set_aspect("equal")
+    ax.set_xlim(-3.1, 3.7)
+    ax.set_ylim(-3.1, 3.1)
+    t = np.linspace(0, 2 * np.pi, 400)
+    ax.plot(np.sqrt(6) * np.cos(t), np.sqrt(6) * np.sin(t),
+            ls="--", color="#c5cbd1", lw=1)
+    vectors = [np.linalg.matrix_power(p, n) @ contrast for n in range(3)]
+    labels = [r"$v=(2,-1,-1)$", r"$Pv=(-1,2,-1)$",
+              r"$P^2v=(-1,-1,2)$"]
+    for vector, label, color in zip(vectors, labels, colors):
+        xy = b.T @ vector
+        ax.annotate("", xy=xy, xytext=(0, 0),
+                    arrowprops={"arrowstyle": "-|&gt;", "color": color,
+                                "lw": 2.5, "mutation_scale": 18})
+        pos = xy * 1.08
+        ax.text(*pos, label, color=color, fontsize=10,
+                ha="right" if xy[0] &gt;= 0 else "center",
+                va="bottom" if xy[1] &gt;= 0 else "top")
+    ax.axhline(0, color="#eeeeee", zorder=0)
+    ax.axvline(0, color="#eeeeee", zorder=0)
+    ax.set_xlabel(r"Coefficient of $u=(2,-1,-1)/\sqrt{6}$")
+    ax.set_ylabel(r"Coefficient of $v_{\rm basis}=(0,1,-1)/\sqrt{2}$")
+    ax.set_title("The contrast plane: rotation by 120 degrees", fontsize=13)
+    fig.suptitle("A symmetry-preserved line plus a symmetry-preserved plane",
+                 fontsize=16, y=0.98)
+    fig.subplots_adjust(left=0.07, right=0.98, bottom=0.24, top=0.84, wspace=0.36)
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name,
+                facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

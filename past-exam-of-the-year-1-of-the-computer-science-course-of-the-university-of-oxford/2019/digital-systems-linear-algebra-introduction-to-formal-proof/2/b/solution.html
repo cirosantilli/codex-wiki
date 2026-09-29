@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Past exam of the year 1 of the computer science course of the University of Oxford / 2019 / Digital systems, linear algebra, introduction to formal proof / 2 / b / Solution - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="Past exam of the year 1 of the computer science course of the University of Oxford / 2019 / Digital systems, linear algebra, introduction to formal proof / 2 / b / Solution - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="solution"><div class="notnav"><h1><a href="../../../../../past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford">Past exam of the year 1 of the computer science course of the University of Oxford</a><span class="meta"> / </span><a href="../../../../2019">2019</a><span class="meta"> / </span><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof">Digital systems, linear algebra, introduction to formal proof</a><span class="meta"> / </span><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof#2">2</a><span class="meta"> / </span><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof#2/b">b</a><span class="meta"> / </span><a href="">Solution</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a  href="#-/ancestors">&nbsp;...</a><a href="../../../../../university-of-oxford#year-1-of-the-computer-science-course-of-the-university-of-oxford"> Year 1 of the computer science course of the University of Oxford</a><a href="../../../../../past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford"> Past exam of the year 1 of the computer science course of the University of Oxford</a><a href="../../../../2019"> 2019</a><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof"> Digital systems, linear algebra, introduction to formal proof</a><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof#2"> 2</a><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof#2/b"> b</a></div><div class="nav"><a href="https://ourbigbook.com/codex/past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2019/digital-systems-linear-algebra-introduction-to-formal-proof/2/b/solution"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a><a class="nosplit" href="../../../digital-systems-linear-algebra-introduction-to-formal-proof#2/b/solution"></a><span class="metrics"><span class="wcntr"> Words: 296</span></span></div></nav></div><div class="p" id="-/31"><b>Maintain a counter and independent timed <a href="../../../../../foundations-of-mathematics#finite-state-machine">finite-state machine</a> for each detector–light pair, while sharing the <a href="../../../../../operating-system#interrupt">interrupt</a> scan and timer infrastructure.</b> Blocking for one channel's flash would unnecessarily delay every other channel.</div><div class="code" id="-/32"><div><pre><code>eye_handler():
+    for i in all_channels:
+        if EYE_DETECTED[i] != 0:
+            EYE_DETECTED[i] = 0
+            pending[i] = pending[i] + 1
+
+main_event_loop():
+    initialise each LIGHT[i] = 0
+    initialise pending[i] = 0, state[i] = IDLE
+    enable detector interrupts
+    forever:
+        now = monotonic_timer_snapshot()
+        for i in all_channels:
+            service_channel(i, now)
+        arrange the next wake-up for new work or the earliest deadline</code></pre></div></div><div class="p" id="-/33"><code>service_channel</code> is the three-state sequencer from (a), with its own <code>started[i]</code> and an interrupt-safe <code>try_take_event(i)</code>. <a href="../../../../../operating-system#shared-interrupt-demultiplexing">Shared interrupt demultiplexing</a> uses separate <code>if</code> tests, not an <code>else if</code> chain: simultaneous pending detectors must all be acknowledged and counted. If a new detector becomes pending during the scan, the controller must retrigger while a flag remains set or the handler must rescan appropriately; the exact <a href="../../../../../operating-system#interrupt-controller">interrupt controller</a> semantics must be checked rather than assuming a single scan can never miss an edge.</div><div class="p" id="-/34">One <a href="../../../../../foundations-of-mathematics#hardware-timer">hardware timer</a> can schedule the earliest active channel deadline. On its expiry, service every due channel and rearm for the next deadline; a periodic tick with adequate resolution is a simpler alternative. Detectors and the timer can then interleave without serial one-second waits. The handler/main-program counter accesses need the same short <a href="../../../../../operating-system#critical-section">critical section</a> protection as in (a). Keep timing state in one execution context, or protect it too if both a timer handler and the main program modify it.</div><div class="p" id="-/35">The <a href="../../../../../algorithm#loop-invariant">loop invariants</a> are per channel: the pending count equals recorded but unstarted events, <code>ON</code> means that channel's light is on, and <code>GAP</code> prevents a new flash until one second after its preceding light-off transition. Different channels may flash simultaneously. The <a href="../../../../../operating-system#single-bit-event-latch">event latch</a> rearming limitation, finite backlog capacity and timer-resolution qualifications apply independently to each channel. These cannot be solved by replacing several <a href="../../../../../operating-system#event-counter">event counters</a> with one global <a href="../../../../../theoretical-computer-science#boolean-variable">Boolean variable</a>.</div><h2 id="-/ancestors"><a href="#-/ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(12)</span></a></h2><div class="list"><ol><li><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof#2/b">B</a></li><li><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof#2">2</a></li><li><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof">Digital systems, linear algebra, introduction to formal proof</a></li><li><a href="../../../../2019">2019</a></li><li><a href="../../../../../past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford">Past exam of the year 1 of the computer science course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#year-1-of-the-computer-science-course-of-the-university-of-oxford">Year 1 of the computer science course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#computer-science-course-of-the-university-of-oxford">Computer science course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#undergraduate-course-of-the-university-of-oxford">Undergraduate course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#course-of-the-university-of-oxford">Course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford">University of Oxford</a></li><li><a href="../../../../..#list-of-universities">List of universities</a></li><li><a href="../../../../.."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+<div>Source code for this page: <a href="../../../../../-/file/past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2019/digital-systems-linear-algebra-introduction-to-formal-proof.bigb">past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2019/digital-systems-linear-algebra-introduction-to-formal-proof.bigb</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2019/digital-systems-linear-algebra-introduction-to-formal-proof/2/b/";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

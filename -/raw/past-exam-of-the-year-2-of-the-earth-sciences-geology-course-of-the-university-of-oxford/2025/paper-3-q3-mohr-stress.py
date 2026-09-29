@@ -1,0 +1,61 @@
+"""Original stress construction, Python 3.14.4 / NumPy 2.3.5 / Matplotlib 3.10.7.
+Compression positive. theta measures the normal counterclockwise from sigma1;
+positive shear uses clockwise tangent t=(sin(theta),-cos(theta)).
+Writes an opaque basename PNG to the current working directory.
+"""
+from pathlib import Path
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Arc, Rectangle
+
+def arrow(ax,a,b,color="black",lw=1.5):
+    ax.annotate("",xy=b,xytext=a,arrowprops={"arrowstyle":"->","color":color,"lw":lw})
+
+def main():
+    plt.rcParams.update({"font.size":10})
+    fig,axes=plt.subplots(1,3,figsize=(12.2,5),layout="constrained")
+    fig.set_constrained_layout_pads(h_pad=.12,w_pad=.08)
+    ax=axes[0]
+    ax.add_patch(Rectangle((-1,-1),2,2,facecolor="#f2e5ca",edgecolor="0.3"))
+    for a,b in [((-1.5,0),(-1,0)),((1.5,0),(1,0)),((0,-1.5),(0,-1)),((0,1.5),(0,1))]: arrow(ax,a,b)
+    ax.text(-1.65,.17,r"$\sigma_1=80$",fontsize=9)
+    ax.text(.12,1.35,r"$\sigma_3=20$",fontsize=9)
+    n=np.array([np.cos(np.pi/6),np.sin(np.pi/6)]);t=np.array([n[1],-n[0]])
+    ax.plot([-t[0],t[0]],[-t[1],t[1]],"k",lw=2)
+    arrow(ax,(0,0),n,"#225f89");ax.text(*(.9*n+[0,.1]),r"$\mathbf{n}$")
+    arrow(ax,(0,0),.85*t,"#9a3d23");ax.text(*(.9*t+[.1,0]),r"$\mathbf{t}$")
+    ax.plot([0,1],[0,0],color="0.7",lw=.7)
+    ax.add_patch(Arc((0,0),.8,.8,theta1=0,theta2=30,color="#225f89"));ax.text(.5,.09,r"$\theta$")
+    # Physical force on the positive-normal face is minus compression-positive traction.
+    arrow(ax,(0,0),(-.8*n[0],-.2*n[1]),"#932b56",2)
+    ax.text(-1.52,-1.95,"On +n face: force/area = −σₙ n −τ t\nθ = 30°; axes are principal directions",fontsize=9)
+    ax.set(xlim=(-1.8,1.8),ylim=(-2.15,1.75),title="Rock and oriented internal plane")
+    ax.set_aspect("equal");ax.axis("off")
+    a=np.linspace(0,2*np.pi,721)
+    ax=axes[1];C,R=50,30
+    ax.plot(C+R*np.cos(a),R*np.sin(a),color="#225f89",lw=2)
+    ax.axhline(0,color="0.4",lw=.8);ax.axvline(0,color="0.4",lw=.8)
+    px,py=C+R/2,R*np.sqrt(3)/2
+    ax.plot([C,px],[0,py],color="#9a3d23");ax.plot(px,py,"o",color="#9a3d23")
+    ax.add_patch(Arc((C,0),25,25,theta1=0,theta2=60,color="#9a3d23"))
+    ax.text(63,7,r"$2\theta$",color="#9a3d23")
+    ax.annotate(r"$(\sigma_n,\tau)=(65,26)$",(px,py),xytext=(16,39),arrowprops={"arrowstyle":"->"},fontsize=9)
+    for x,label in [(20,r"$\sigma_3$"),(50,r"$C$"),(80,r"$\sigma_1$")]:ax.text(x,-6,label,ha="center")
+    ax.text(6,-37,r"$C=(\sigma_1+\sigma_3)/2$"+"\n"+r"$R=(\sigma_1-\sigma_3)/2$",fontsize=9)
+    ax.set(xlim=(-2,96),ylim=(-45,48),xlabel="Normal stress σₙ / MPa",ylabel="Signed shear τ / MPa",title="Mohr circle: θ becomes 2θ");ax.set_aspect("equal")
+    ax=axes[2]
+    ax.plot(C+R*np.cos(a),R*np.sin(a),color="#225f89",label="P = 0 MPa")
+    ax.plot(C-15+R*np.cos(a),R*np.sin(a),color="#9a3d23",label="P = 15 MPa")
+    s=np.linspace(0,90,100)
+    ax.plot(s,10+.6*s,"k--",label="|τ| = 10 + 0.6 σ′ₙ")
+    ax.plot(s,-10-.6*s,"k--")
+    ax.axhline(0,color="0.6",lw=.7);arrow(ax,(50,0),(35,0),"#9a3d23")
+    ax.text(23,-7,"−P",color="#9a3d23")
+    ax.set(xlim=(-3,96),ylim=(-48,55),xlabel="Effective normal stress σ′ₙ / MPa",ylabel="Signed shear τ / MPa",title="Fixed total stress; pressure coefficient = 1")
+    ax.legend(fontsize=8,loc="upper left");ax.set_aspect("equal")
+    fig.suptitle("Illustrative loading: compression positive; orange circle crosses strength (not a stable final state)",fontsize=11)
+    fig.savefig(Path(__file__).with_suffix(".png").name,dpi=130,facecolor="white")
+
+if __name__=="__main__":main()

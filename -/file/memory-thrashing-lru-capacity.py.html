@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>memory-thrashing-lru-capacity.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="memory-thrashing-lru-capacity.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/memory-thrashing-lru-capacity.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">memory-thrashing-lru-capacity.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/memory-thrashing-lru-capacity.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/memory-thrashing-lru-capacity.py">memory-thrashing-lru-capacity.py</a></b></div></nav></div><div class="p"><b>memory-thrashing-lru-capacity.py</b></div><div class="code"><div><pre><code>"""Draw hits, misses and cumulative misses for a four-page cyclic trace.
+
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+Run from _media; writes the matching opaque white PNG to the current directory.
+Exact LRU, initially empty frames, demand paging and no prefetching are assumed.
+"""
+
+from collections import OrderedDict
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import numpy as np
+
+
+def lru_misses(trace, capacity):
+    resident = OrderedDict()
+    misses = []
+    for page in trace:
+        missed = page not in resident
+        misses.append(missed)
+        if missed and len(resident) == capacity:
+            resident.popitem(last=False)
+        resident[page] = None
+        resident.move_to_end(page)
+    return np.array(misses, dtype=bool)
+
+
+def main():
+    trace = [1, 2, 3, 4] * 5
+    times = np.arange(1, 21)
+    miss3 = lru_misses(trace, 3)
+    miss4 = lru_misses(trace, 4)
+    assert miss3.sum() == 20 and miss4.sum() == 4
+    assert miss3[4:].sum() == 16 and miss4[4:].sum() == 0
+
+    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 11})
+    orange, teal, blue = "#af4d16", "#227a67", "#2268a2"
+    fig, (ax, counts) = plt.subplots(2, 1, figsize=(10.8, 6.5), dpi=110,
+                                    gridspec_kw={"height_ratios": [1, 1.7]})
+    fig.patch.set_facecolor("white")
+    fig.suptitle("One extra frame stops repeated misses in this cyclic trace",
+                 fontsize=18, fontweight="bold", y=0.975)
+    fig.text(0.5, 0.90, "Exact LRU  •  20 references: (1, 2, 3, 4) × 5  •  start empty  •  no prefetching",
+             ha="center", fontsize=11)
+    for target in (ax, counts):
+        target.axvspan(0.5, 4.5, color="#fff0dc", zorder=0)
+        target.axvline(4.5, color="#8b642a", linestyle=":", linewidth=1.4)
+        target.set_xlim(0.5, 20.5)
+        target.set_xticks(times)
+    for row, missed in [(1, miss3), (0, miss4)]:
+        ax.scatter(times[missed], np.full(missed.sum(), row), color=orange,
+                   marker="s", s=210, zorder=3)
+        ax.scatter(times[~missed], np.full((~missed).sum(), row), color=teal,
+                   marker="o", s=210, zorder=3)
+        for t, flag in zip(times, missed):
+            ax.text(t, row, "M" if flag else "H", color="white", fontsize=9,
+                    ha="center", va="center", fontweight="bold", zorder=4)
+    ax.set(ylim=(-0.45, 1.7), yticks=[0, 1], yticklabels=["4 frames", "3 frames"])
+    ax.tick_params(axis="x", labelbottom=False, length=0)
+    top = ax.secondary_xaxis("top")
+    top.set_xticks(times, labels=trace)
+    top.set_xlabel("Requested page", labelpad=6)
+    ax.text(2.5, 1.42, "Initial loads", ha="center", color="#795623", fontsize=10)
+    ax.text(12.5, 1.42, "References 5–20: 3 frames → 16 misses; 4 frames → 0 misses",
+            ha="center", fontsize=10)
+    counts.step(np.arange(0, 21), np.r_[0, np.cumsum(miss3)], where="post",
+                color=orange, linewidth=2.6, label="3 frames: 20 / 20 misses (100%)")
+    counts.step(np.arange(0, 21), np.r_[0, np.cumsum(miss4)], where="post",
+                color=blue, linewidth=2.6, label="4 frames: 4 / 20 misses (20%)")
+    counts.set(ylim=(-0.5, 21), yticks=[0, 4, 8, 12, 16, 20],
+               xlabel="Reference index (state immediately after access)", ylabel="Cumulative misses")
+    counts.grid(alpha=0.22)
+    counts.legend(loc="upper left", framealpha=1, fontsize=10)
+    counts.text(12.5, 5.3, "Four compulsory misses, then only hits", ha="center", color=blue)
+    fig.legend(handles=[Line2D([], [], color=orange, marker="s", linestyle="", label="M: miss / nonresident fault"),
+                        Line2D([], [], color=teal, marker="o", linestyle="", label="H: resident hit")],
+               loc="lower center", bbox_to_anchor=(0.5, 0.055), ncol=2, frameon=False, fontsize=11)
+    fig.text(0.5, 0.021, "Miss counts alone describe residency. Thrashing also requires repeated costly page cycling.",
+             ha="center", fontsize=10)
+    fig.subplots_adjust(left=0.105, right=0.98, top=0.785, bottom=0.18, hspace=0.29)
+    fig.savefig(Path(__file__).stem + ".png", facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

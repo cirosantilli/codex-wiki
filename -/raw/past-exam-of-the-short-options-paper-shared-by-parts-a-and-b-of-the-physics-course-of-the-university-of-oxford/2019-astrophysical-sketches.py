@@ -1,0 +1,37 @@
+"""Generate original solution schematics; Python 3.14, NumPy 2.3, Matplotlib 3.10."""
+from pathlib import Path
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.patches import Circle
+plt.rcParams.update({'font.size': 11, 'figure.facecolor': 'white', 'axes.facecolor': 'white'})
+fig, (ax, hr) = plt.subplots(1, 2, figsize=(12, 5.3), layout='constrained')
+ax.set_title('Circular eclipsing binary at quadrature')
+ax.set_aspect('equal');ax.set_xlim(-1.7, 2.7);ax.set_ylim(-1.9, 1.7);ax.axis('off')
+for radius in (1,2):ax.add_patch(Circle((0,0),radius,fill=False,ls=':',color='0.7'))
+ax.plot(0,0,'k+');ax.text(.08,.07,'centre of mass')
+ax.add_patch(Circle((-1,0),.17,color='#c96d24'));ax.add_patch(Circle((2,0),.13,color='#4477aa'))
+ax.annotate('',(-1,1),(-1,.2),arrowprops={'arrowstyle':'->','lw':2,'color':'#c96d24'})
+ax.annotate('',(2,-1),(2,-.2),arrowprops={'arrowstyle':'->','lw':2,'color':'#4477aa'})
+ax.text(-1.1,1.15,'60 km/s',ha='center');ax.text(2,-1.3,'120 km/s',ha='center')
+ax.text(-1.15,-.45,r'$M_1=8.06M_\odot$',ha='center');ax.text(1.85,.4,r'$M_2=4.03M_\odot$',ha='center')
+ax.annotate('',(2,-.8),(-1,-.8),arrowprops={'arrowstyle':'<->'})
+ax.text(.4,-1.02,'a = 0.331 AU',ha='center')
+ax.annotate('observer: line of sight in orbital plane',(.55,1.2),(.55,1.65),ha='center',fontsize=10,arrowprops={'arrowstyle':'->'})
+hr.set_title('Old globular cluster: schematic populations')
+hr.set_xlim(4.65,3.45);hr.set_ylim(-3,3.6)
+hr.set_xlabel(r'$\log_{10}(T_{\rm eff}/{\rm K})$  (cooler to the right)');hr.set_ylabel(r'$\log_{10}(L/L_\odot)$')
+hr.plot([3.55,3.65,3.75,3.82],[-2.6,-1.5,-.4,.2],lw=3)
+hr.plot([3.82,3.75,3.68,3.61],[.2,.6,1.1,3],lw=3,color='#c96d24')
+hr.plot([4.15,3.9,3.72],[1.65,1.65,1.7],lw=3,color='#44aa99')
+hr.plot([3.72,3.64,3.59],[1.7,2.5,3.35],lw=3,color='#aa3377')
+hr.plot([4.5,4.25,4.0],[-.8,-1.8,-2.8],lw=3,color='0.4')
+hr.text(3.98,-1.0,'main sequence',ha='center',rotation=58)
+hr.annotate('turnoff',(3.82,.2),(4.22,.35),arrowprops={'arrowstyle':'->'})
+hr.text(3.70,2.1,'red giants',rotation=66,ha='center')
+hr.text(4.0,1.85,'horizontal branch',ha='center')
+hr.annotate('asymptotic giants',(3.60,3.15),(4.08,3.1),arrowprops={'arrowstyle':'->'})
+hr.text(4.36,-2.15,'white dwarfs',rotation=40,ha='center')
+hr.text(3.8,.9,'subgiants',ha='center',fontsize=10)
+fig.savefig(Path.cwd()/Path(__file__).with_suffix('.png').name,dpi=110,facecolor='white')

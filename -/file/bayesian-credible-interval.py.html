@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>bayesian-credible-interval.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="bayesian-credible-interval.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/bayesian-credible-interval.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">bayesian-credible-interval.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/bayesian-credible-interval.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/bayesian-credible-interval.py">bayesian-credible-interval.py</a></b></div></nav></div><div class="p"><b>bayesian-credible-interval.py</b></div><div class="code"><div><pre><code>"""Plot two exact-CDF beta credible intervals; tested with Python 3.14.4.
+
+Only NumPy, Matplotlib, and the standard library are required. The CDF is
+the analytically integrated polynomial density, evaluated in a positive
+Bernstein basis to avoid cancellation near one. Quantiles use bisection,
+not SciPy or integration of a sampled plot. Output is written to cwd.
+"""
+
+from math import comb, fsum
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def posterior_density(theta):
+    return 2860 * theta**9 * (1 - theta)**3
+
+
+def posterior_cdf(theta):
+    """CDF of Beta(10,4), equal to 286t^10-780t^11+715t^12-220t^13.
+
+    The binomial-tail polynomial has derivative 2860t^9(1-t)^3
+    and is zero at t=0, so it is the same antiderivative.
+    """
+    if not 0 &lt;= theta &lt;= 1:
+        raise ValueError("theta must lie in [0, 1]")
+    return fsum(comb(13, j) * theta**j * (1 - theta)**(13 - j)
+                for j in range(10, 14))
+
+
+def posterior_quantile(probability):
+    """Invert the exact polynomial CDF by 60 bisection steps."""
+    if not 0 &lt;= probability &lt;= 1:
+        raise ValueError("probability must lie in [0, 1]")
+    if probability in (0, 1):
+        return float(probability)
+    low, high = 0.0, 1.0
+    for _ in range(60):
+        middle = (low + high) / 2
+        if posterior_cdf(middle) &lt; probability:
+            low = middle
+        else:
+            high = middle
+    return (low + high) / 2
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "axes.titlesize": 13})
+    lower = posterior_quantile(0.025)
+    upper = posterior_quantile(0.975)
+    one_sided = posterior_quantile(0.95)
+    theta = np.linspace(0, 1, 2001)
+    fig, axes = plt.subplots(1, 2, figsize=(11, 5.1), dpi=120,
+                             facecolor="white", sharey=True)
+    intervals = [(lower, upper, "Equal-tailed 95% interval",
+                  "2.5% in each excluded tail"),
+                 (0, one_sided, "One-sided 95% upper bound",
+                  "5% in the excluded right tail")]
+    for ax, (left, right, title, tail_note) in zip(axes, intervals):
+        ax.plot(theta, posterior_density(theta), color="#007c68", lw=2.6)
+        inside = np.linspace(left, right, 1001)
+        ax.fill_between(inside, posterior_density(inside),
+                        color="#56b4a4", alpha=0.5)
+        for endpoint in (left, right):
+            ax.vlines(endpoint, 0, posterior_density(endpoint),
+                      color="#005848", linestyle="--", lw=1.5)
+        ax.text(0.04, 0.94, f"[{left:.6f}, {right:.6f}]\n{tail_note}",
+                transform=ax.transAxes, fontsize=11, va="top")
+        ax.text(0.61, 1.15, "Shaded area\n= 0.95", fontsize=12, ha="center")
+        ax.set(xlim=(0, 1), ylim=(0, 4.1), title=title,
+               xlabel="Unknown heads probability θ")
+        ax.grid(color="#e6eaed")
+        ax.spines[["top", "right"]].set_visible(False)
+    axes[0].set_ylabel("Posterior probability density")
+    fig.suptitle("Same Beta(10, 4) posterior; two different 95% ranges", fontsize=16)
+    fig.text(0.5, 0.035,
+             "Endpoints solve the exact polynomial CDF. "
+             "Both shaded regions contain 95% posterior probability.",
+             ha="center", fontsize=11)
+    fig.subplots_adjust(left=0.07, right=0.975, bottom=0.17,
+                        top=0.79, wspace=0.14)
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+    print(f"Equal-tailed: [{lower:.12f}, {upper:.12f}], "
+          f"mass={posterior_cdf(upper) - posterior_cdf(lower):.15f}")
+    print(f"One-sided: [0, {one_sided:.12f}], "
+          f"mass={posterior_cdf(one_sided):.15f}")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

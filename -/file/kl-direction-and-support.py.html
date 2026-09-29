@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>kl-direction-and-support.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="kl-direction-and-support.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/kl-direction-and-support.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">kl-direction-and-support.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/kl-direction-and-support.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/kl-direction-and-support.py">kl-direction-and-support.py</a></b></div></nav></div><div class="p"><b>kl-direction-and-support.py</b></div><div class="code"><div><pre><code>"""Illustrate KL direction and zero support; tested with Python 3.14.4."""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def kl(p, q):
+    positive = p &gt; 0
+    if np.any(q[positive] == 0):
+        return np.inf
+    return float(np.sum(p[positive] * np.log(p[positive] / q[positive])))
+
+
+def main():
+    p, q = np.array([0.75, 0.25]), np.array([0.5, 0.5])
+    forward, reverse = kl(p, q), kl(q, p)
+    certain = np.array([1.0, 0.0])
+    print(f"D(P||Q)={forward:.12f} nat; D(Q||P)={reverse:.12f} nat; "
+          f"forward in bits={forward / np.log(2):.12f}")
+    print(f"P=(1,0), Q=(.5,.5): forward={kl(certain, q):.12f}, "
+          f"reverse={kl(q, certain)}; identical point masses={kl(certain, certain)}")
+
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                         "axes.spines.right": False})
+    fig, (terms, support) = plt.subplots(1, 2, figsize=(10, 4.8),
+                                        layout="constrained", facecolor="white")
+    blue, orange = "#2368a2", "#bd6816"
+    x = np.arange(2)
+    terms.bar(x - 0.18, p * np.log(p / q), width=0.34, color=blue,
+              label=r"$p_i\log(p_i/q_i)$")
+    terms.bar(x + 0.18, q * np.log(q / p), width=0.34, color=orange,
+              label=r"$q_i\log(q_i/p_i)$")
+    terms.axhline(0, color="#444444", lw=1)
+    terms.set(xticks=x, xticklabels=["Outcome 1", "Outcome 2"],
+              ylim=(-0.28, 0.49), ylabel="Contribution (nat)",
+              title="P = (0.75, 0.25), Q = (0.5, 0.5)")
+    terms.text(0.02, 0.96,
+               f"Totals: forward {forward:.6f}\n            reverse {reverse:.6f}",
+               transform=terms.transAxes, va="top", fontsize=10)
+    terms.legend(loc="lower right", fontsize=10)
+    terms.set_axisbelow(True)
+    terms.yaxis.grid(alpha=0.18)
+
+    support.bar(x - 0.18, certain, width=0.34, color=blue, label="P = (1, 0)")
+    support.bar(x + 0.18, q, width=0.34, color=orange, label="Q = (0.5, 0.5)")
+    support.scatter(1 - 0.18, 0, color=blue, s=50, zorder=4)
+    support.set(xticks=x, xticklabels=["Outcome 1", "Outcome 2"],
+                ylim=(-0.04, 1.5), ylabel="Probability",
+                title="Zero probability changes the answer")
+    support.text(0.04, 0.95,
+                 r"$D(P\Vert Q)=\log 2\approx0.693147$" + "\n" +
+                 r"$D(Q\Vert P)=+\infty$",
+                 transform=support.transAxes, va="top", fontsize=11)
+    support.annotate("P rules out\noutcome 2", (0.82, 0), xytext=(0.6, 0.78),
+                     arrowprops={"arrowstyle": "-&gt;", "color": blue},
+                     color=blue, fontsize=10)
+    support.legend(loc="upper left", bbox_to_anchor=(0.02, 0.68), fontsize=10)
+    support.set_axisbelow(True)
+    support.yaxis.grid(alpha=0.18)
+    fig.suptitle("Relative entropy depends on direction", fontsize=15)
+    fig.savefig(Path.cwd() / "kl-direction-and-support.png", dpi=120,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

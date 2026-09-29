@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>file-system.bigb - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="file-system.bigb - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/file-system.bigb"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">file-system.bigb</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/file-system.bigb"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/file-system.bigb">file-system.bigb</a></b></div></nav></div><div class="p"><b>file-system.bigb</b></div><div class="code"><div><pre><code>= File system
+{wiki}
+
+A &lt;file system&gt; organizes &lt;files&gt;, their &lt;file metadata&gt;, and the names through which they can be found. In the &lt;Unix&gt; model used here, a &lt;file-system directory&gt; contains &lt;directory entries&gt; associating names with &lt;inodes&gt;; an &lt;inode&gt; describes the underlying &lt;file&gt; and how to locate its contents. The &lt;file-system namespace&gt; answers "what does this name reach?", while the &lt;inode&gt; answers "which &lt;file&gt; is it?". These are distinct responsibilities, even though they cooperate on every lookup.
+
+For a computed toy example, let one &lt;file-system directory&gt; contain names `a` and `b`, both referring to &lt;inode&gt; 42 in the same &lt;file system&gt;. That &lt;inode&gt; has size 6 &lt;bytes&gt; and two &lt;hard links&gt;. Its direct references lead to four-&lt;byte&gt; &lt;file data blocks&gt; 7 and 9: block 7 holds `hell`, while block 9 holds `o` followed by a newline, with two unused slots. Reading either name therefore obtains the same six-&lt;byte&gt; contents `hello` followed by a newline. There is one &lt;file&gt; with two names, not two copies. This direct-reference layout and tiny block size are teaching choices, not requirements on every &lt;file system&gt;.
+
+\Image[file-system-inodes-and-hard-links.png]
+{title=Two &lt;hard links&gt; reach one &lt;inode&gt;; a &lt;file descriptor&gt; reaches it through an &lt;open file description&gt;}
+
+The separation is useful because a rename within this &lt;file system&gt;, from `a` to a previously unused name `c`, can change a &lt;directory entry&gt; without copying the six &lt;bytes&gt; of contents. The remaining name `b` still reaches &lt;inode&gt; 42. A successful write changing the first &lt;byte&gt; through either name changes what both names subsequently read, to `jello` followed by a newline. This sharing is the attraction of &lt;hard links&gt;, and also why a &lt;hard link&gt; is not an independent backup. A program that replaces a named &lt;file&gt; with a different &lt;file&gt; can instead make the names diverge. https://pubs.opengroup.org/onlinepubs/9799919799/functions/rename.html[The Open Group, POSIX.1-2024, rename: changing names and replacing directory entries]{ref}
+
+= Linked file allocation
+{parent=File system}
+
+A &lt;file system&gt; organization in which each &lt;file data block&gt; identifies its successor. It supports sequential traversal and growth without a fixed per-file index tree, but arbitrary &lt;file offsets&gt; require following the chain. Adding predecessor links permits reverse traversal.
+
+= Internal fragmentation
+{parent=File system}
+
+Allocated space unused inside an allocation unit. For a &lt;computer file&gt; stored in fixed-size &lt;file data blocks&gt;, the final partially occupied block can waste almost one block.
+
+= Free-block list
+{parent=File system}
+
+A representation of currently unallocated &lt;disk block numbers&gt;, maintained as a list or linked groups of available numbers. Allocation removes a number; deallocation returns it after ownership is relinquished. Reserved structures and blocks still owned by an unnamed but open &lt;file&gt; are unavailable. A &lt;block allocation bitmap&gt; is an alternative representation of the same allocation state.
+
+= Disk block number
+{parent=File system}
+
+A &lt;disk block number&gt; identifies a fixed-size storage region on a volume. It locates storage rather than naming a &lt;file&gt;. A &lt;file&gt; can occupy several numbered &lt;file data blocks&gt;, while a disk block containing several &lt;inodes&gt; can describe several &lt;files&gt;.
+
+= Disk compaction
+{parent=File system}
+
+Move file contents to consolidate their allocated regions. A per-file read-then-write cost model charges two transfers and, if specified, two separate seek and rotation overheads for each moved file. That model differs from an ideal sequential transfer of the same total number of bytes.
+
+= Computer file
+{parent=File system}
+
+= File
+{synonym}
+
+An object whose contents and attributes can be accessed through &lt;operating system&gt; interfaces. Here an ordinary &lt;file&gt; means a &lt;byte&gt; sequence with &lt;file metadata&gt;, distinct from a &lt;file-system directory&gt; or a &lt;symbolic link&gt;. Its contents need not disappear when the creating &lt;operating-system process&gt; ends.
+
+= Sparse file
+{parent=Computer file}
+{wiki}
+
+A &lt;computer file&gt; whose logically zero-filled regions need not occupy physical &lt;file data blocks&gt;. The &lt;file offset&gt; and byte length describe the logical content independently of the blocks actually allocated.
+
+= File offset
+{parent=Computer file}
+
+A &lt;byte&gt; position measured from the start of a &lt;file&gt;, beginning at zero. A &lt;memory-mapped file&gt; combines a starting &lt;file offset&gt; with a displacement inside its mapping; this is distinct from an &lt;open file description&gt;'s current read/write position.
+
+= File metadata
+{parent=Computer file}
+
+Information describing a &lt;file&gt;, such as type, owner, access permissions, size, timestamps and &lt;hard link&gt; count. In the toy layout, the &lt;inode&gt; carries these attributes; the &lt;directory entries&gt; carry the names. The distinction matters because renaming a &lt;file&gt; need not copy its contents.
+
+= File data block
+{parent=Computer file}
+
+A storage unit holding part of a &lt;file&gt;'s contents. The toy &lt;inode&gt; references two four-&lt;byte&gt; &lt;file data blocks&gt; for six &lt;bytes&gt; of contents: allocated capacity is $2\cdot4=8$ &lt;bytes&gt;, while logical size is $4+2=6$ &lt;bytes&gt;. This counts only the two &lt;file data blocks&gt;, excluding storage for the &lt;inode&gt; and &lt;directory entries&gt;.
+
+= File-system directory
+{parent=File system}
+
+A &lt;file&gt; containing &lt;directory entries&gt;. Each entry supplies a name in that &lt;file-system directory&gt;; two entries in the same &lt;file-system directory&gt; cannot have the same name. In an &lt;inode&gt;-based &lt;file system&gt;, a &lt;file-system directory&gt; has its own &lt;inode&gt;, and its contents describe names of other objects. https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap03.html#tag_03_103[The Open Group, POSIX.1-2024, sections 3.103–3.104: directory and directory entry]{ref}
+
+= Directory entry
+{parent=File-system directory}
+
+An association between a name in a &lt;file-system directory&gt; and a &lt;file&gt;. In the toy &lt;file system&gt;, the pairs are `(a, 42)` and `(b, 42)`: each name resolves to the same &lt;inode&gt;. The name belongs to the &lt;directory entry&gt;, rather than being the single authoritative name stored in that &lt;inode&gt;.
+
+= File-system namespace
+{parent=File system}
+
+The organization of names and the rules for resolving them to &lt;files&gt;. A path such as `/notes/a` selects successive &lt;directory entries&gt; starting from the root &lt;file-system directory&gt;. Its spelling describes a route, not an immutable identity: replacing the final &lt;directory entry&gt; can make the same path reach a different &lt;inode&gt;.
+
+= Hard link
+{parent=File-system namespace}
+
+A &lt;directory entry&gt; associating a name directly with an existing &lt;file&gt;. In the &lt;inode&gt;-based example, successful `link("a", "b")` adds the second name for &lt;inode&gt; 42 and increases its &lt;hard link&gt; count from 1 to 2. Both &lt;directory entries&gt; have equal status; removing `a` leaves `b` usable. This example assumes both names are in the same &lt;file system&gt;, the destination name is unused, and the operation is permitted. https://pubs.opengroup.org/onlinepubs/9699919799/functions/link.html[The Open Group, POSIX.1-2017, link: adding a directory entry and incrementing the link count]{ref}
+
+= Unlinking an open file
+{parent=Hard link}
+
+For an ordinary &lt;file&gt; under the &lt;POSIX&gt; rules used here, successful `unlink("a")` removes the named &lt;directory entry&gt; and decreases the &lt;hard link&gt; count. An existing &lt;open file description&gt; still refers to the same &lt;file&gt;; removing a name does not detach an already open &lt;file descriptor&gt;. When the final &lt;hard link&gt; disappears, the contents remain available through open references until those references close. This distinction is between the lifetime of a name and the lifetime of the underlying &lt;file&gt;. https://pubs.opengroup.org/onlinepubs/9699919799/functions/unlink.html[The Open Group, POSIX.1-2017, unlink: removal of names and deferred removal of open-file contents]{ref}
+
+Start with names `a` and `b` for &lt;inode&gt; 42 and one &lt;file descriptor&gt; `3` referring to one &lt;open file description&gt;. Let $L$ count &lt;hard links&gt; and $O$ count live &lt;open file descriptions&gt; for this &lt;file&gt;. Assume successful operations, no additional references, and no &lt;memory-mapped file&gt;. The stages are
+$$
+(L,O):\quad (2,1)\xrightarrow{\mathrm{unlink}(a)}(1,1)\xrightarrow{\mathrm{unlink}(b)}(0,1)\xrightarrow{\mathrm{close}(3)}(0,0).
+$$
+After the first removal, `b` still works. After the second, neither name works, but a read through the existing &lt;file descriptor&gt; can still obtain all six &lt;bytes&gt; if its &lt;open file description&gt;'s current position is at the beginning. The final close releases the last open reference, allowing the &lt;inode&gt; and its &lt;file data blocks&gt; to be reclaimed. Freed storage is reusable; this does not promise that old &lt;bytes&gt; are securely erased. https://pubs.opengroup.org/onlinepubs/009604499/functions/close.html[The Open Group, POSIX, close: releasing descriptors, open file descriptions and unlinked-file storage]{ref}
+
+\Image[unlink-open-file-lifetime.png]
+{title=&lt;Hard link&gt; and open-reference counts distinguish removal of names from reclamation of a &lt;file&gt;}
+
+The reasoning is bookkeeping rather than a long proof: each successful removal subtracts one from $L$ and leaves $O$ unchanged; closing the only &lt;file descriptor&gt; in this example releases the sole &lt;open file description&gt;. Storage is reclaimable only at the last stage. $O$ is a teaching count, not a count of &lt;file descriptors&gt; or an asserted internal &lt;inode&gt; field: several &lt;file descriptors&gt; can share one &lt;open file description&gt;, and other references such as a &lt;memory-mapped file&gt; require additional lifetime accounting. The diagrams are abstract models, not operations on actual user &lt;files&gt;.
+
+= Symbolic link
+{parent=File-system namespace}
+
+A separate &lt;file&gt; containing a path string to be interpreted during lookup. A &lt;symbolic link&gt; to `a` stores that spelling rather than adding another &lt;hard link&gt; to &lt;inode&gt; 42; it can remain after `a` disappears and then fail to reach a target. It does not increase the target's &lt;hard link&gt; count. The diagrams below track only &lt;hard links&gt; and open references. https://pubs.opengroup.org/onlinepubs/009695299/functions/symlink.html[The Open Group, POSIX, symlink: storing the supplied path string]{ref}
+
+// Target: computer-science.bigb
+
+= Buffer cache
+{parent=File system}
+
+A memory cache of device blocks indexed by device identity and block number. A hit avoids slow device access; a miss obtains a buffer and reads the block. Dirty buffers carry modified data that must be written before reuse, and pinned buffers cannot be evicted while an operation uses them. Deferred writes improve throughput but need explicit durability handling.
+
+A &lt;buffer cache&gt; can hold both &lt;file data blocks&gt; and storage containing &lt;file metadata&gt;, such as &lt;inodes&gt; and &lt;block allocation bitmaps&gt;. Reusing a &lt;buffered device block&gt; saves repeated &lt;input-output&gt;; retaining several modifications before &lt;buffer cache writeback&gt; can combine them into one transfer. Section 40.7 of &lt;Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others&gt; explains these benefits for &lt;file systems&gt;.&lt;Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/File System Implementation&gt;[pp. 14–16: caching and buffering]{ref}
+
+The central distinction is that a &lt;dirty buffer&gt; needs a write, whereas a &lt;pinned buffer&gt; must retain its identity. A &lt;clean buffer&gt; can still be pinned, and a &lt;dirty buffer&gt; can have no client references. Neither releasing a reference nor obtaining a &lt;cache hit&gt; establishes &lt;file-system transaction durability&gt;.
+
+= Buffered device block
+{parent=Buffer cache}
+
+A &lt;data structure&gt; holding the contents of one fixed-size region of a storage device, together with its &lt;buffer cache key&gt;, &lt;buffer cache validity&gt;, modification state and lifetime information. A storage region containing &lt;file metadata&gt; is just as eligible as a &lt;file data block&gt;. The structure can survive many callers: releasing it usually makes it available for later reuse, rather than immediately deleting the cached contents.
+
+= Buffer cache key
+{parent=Buffered device block}
+{title2=$(d,b)$}
+
+The identity used to find a &lt;buffered device block&gt;. In the fixed-block-size model, $d$ identifies the device and $b$ its block number; $(d_1,7)$ and $(d_2,7)$ are different keys if $d_1\ne d_2$. A &lt;file&gt;'s pathname or its logical block offset alone is insufficient for this device-indexed model. Interfaces supporting different transfer sizes need to specify the size and overlap rules too.
+
+Maintain at most one logical &lt;buffered device block&gt; for each &lt;buffer cache key&gt; within this &lt;buffer cache&gt;. Otherwise two callers could modify different copies and later overwrite one another's changes. Lookup and reservation must therefore be coordinated by &lt;synchronization (computing)&gt;: even before contents are ready, a reserved key directs a second caller to the same structure. This invariant concerns the participating cache, not every copy of those &lt;bytes&gt; anywhere in the machine.
+
+= Buffer cache validity
+{parent=Buffered device block}
+
+Whether a &lt;buffered device block&gt;'s contents are ready for the requested use. Reserving a &lt;buffer cache key&gt; does not make its previous occupant's contents valid. A read fills the reserved structure before exposing its contents. A second caller finding an unfinished fill must wait; finding the identity is not yet a data &lt;cache hit&gt; under the convention used here. A failed fill must not expose the stale contents as valid.
+
+A buffered partial write first needs the untouched &lt;bytes&gt;: read the old contents on a &lt;cache miss&gt;, change the requested range, and retain the result as a &lt;dirty buffer&gt;. A complete overwrite can initialize every &lt;byte&gt; without reading the old contents if the interface permits that path. The &lt;buffer cache access trace&gt; deliberately uses partial writes, so every &lt;cache miss&gt; reads the old block.
+
+= Dirty buffer
+{parent=Buffered device block}
+
+A valid &lt;buffered device block&gt; with modifications still owed to its backing location. Until successful &lt;buffer cache writeback&gt;, simply reassigning its &lt;buffer cache key&gt; would lose those modifications. “Dirty” records a write obligation; a write of identical contents can still mark the structure dirty. Repeated buffered writes can leave only the latest contents to be transferred.
+
+= Clean buffer
+{parent=Buffered device block}
+
+A valid &lt;buffered device block&gt; with no outstanding write obligation to the backing location tracked by this cache. It can serve a &lt;cache hit&gt;. It becomes eligible for &lt;buffer cache eviction&gt; only when its retention and any pending &lt;input-output&gt; permit reuse. “Clean” does not assert that a device's volatile &lt;memory cache&gt; has been flushed to persistent storage.
+
+= Pinned buffer
+{parent=Buffered device block}
+
+A &lt;buffered device block&gt; whose identity is retained for unfinished work. &lt;Reference counting&gt; can represent both client references and additional pins. Dropping a client reference does not release an outstanding journal pin; dropping a pin does not remove somebody else's reference. In the &lt;buffer cache state model&gt;, $r$ counts all such retained references, so $r&gt;0$ prevents &lt;buffer cache eviction&gt;. This count keeps the structure alive; a &lt;mutex&gt; separately controls who can inspect or change its contents. Waiting callers also need lifetime protection.
+
+= Buffer cache writeback
+{parent=Buffer cache}
+
+Transferring a &lt;dirty buffer&gt;'s current contents to its backing location. The &lt;buffer cache state model&gt; permits no concurrent modification during the transfer and marks the result clean only after successful completion. A failed write preserves the obligation and prevents the proposed &lt;buffer cache eviction&gt;. A production implementation allowing new writes during &lt;input-output&gt; must retain their obligation rather than incorrectly clearing it when an older transfer finishes.
+
+A successful transfer can leave data in a device's volatile &lt;memory cache&gt;. A &lt;storage flush&gt; or the documented equivalent supplies a persistence boundary; &lt;file-system journaling&gt; supplies recovery rules for related updates. These are additional obligations, not consequences of becoming a &lt;clean buffer&gt;.&lt;Explicit volatile write back cache control by The kernel development community&gt;{ref}
+
+= Buffer cache eviction
+{parent=Buffer cache}
+
+Removing a &lt;buffer cache key&gt;'s resident contents so the storage in &lt;computer memory&gt; can serve another key. An unreferenced &lt;clean buffer&gt; can be reused directly in the &lt;buffer cache state model&gt;; an unreferenced &lt;dirty buffer&gt; requires successful &lt;buffer cache writeback&gt; first. A &lt;pinned buffer&gt; cannot be chosen regardless of cleanliness. &lt;LRU replacement&gt; ranks eligible candidates; it does not override lifetime protection. If every candidate is retained, a &lt;cache miss&gt; cannot obtain space until something releases a reference or capacity changes. This is a resource shortage, not permission to discard live contents.
+
+= Buffer cache state model
+{parent=Buffer cache}
+
+Use one fixed-size &lt;buffered device block&gt; per &lt;buffer cache key&gt;, serialized operations, successful reads and writes, and no outside changes to the backing contents. Record an absent state or a reserved key with validity $v$, dirty flag $D$, and retained-reference count $r$. The &lt;bits&gt; $v,D$ describe contents, while the nonnegative &lt;integer&gt; $r$ describes lifetime. Every &lt;dirty buffer&gt; is valid, so $D=1$ implies $v=1$. Reservation begins at $(v,D,r)=(0,0,1)$; successful fill changes only $v$ to 1. Modifying a valid retained structure sets $D=1$. Releasing a caller changes $r$, not $v$ or $D$.
+
+\Image[buffer-cache-block-state-transitions.png]
+{title=&lt;Buffer cache validity&gt;, &lt;dirty buffers&gt; and retained references impose different state-transition rules}
+
+The first diagram separates contents transitions from reference transitions. &lt;Buffer cache writeback&gt; temporarily retains the structure while transferring its contents; that internal reference is acquired and released inside the single serialized operation shown. &lt;Buffer cache eviction&gt; requires a valid &lt;clean buffer&gt; with $r=0$. The diagram omits read errors, explicit cancellation of invalid reservations, concurrent writes, invalidation and journal ordering. In particular, a journal can forbid otherwise possible &lt;buffer cache writeback&gt; until its &lt;write-ahead logging&gt; dependencies are satisfied.
+
+For a small independent check, bound $r$ to $0,1,2$. Starting absent, allow reservation, acquisition, successful fill, modification, successful &lt;buffer cache writeback&gt;, release of a valid retained structure, and eligible &lt;buffer cache eviction&gt;. Exactly nine abstract states are reachable: absent, two invalid reservations with $r=1,2$, and six valid states combining $D=0,1$ with $r=0,1,2$. Every transition preserves $D\le v$; the only eviction source has $(v,D,r)=(1,0,0)$. This bounded &lt;finite-state machine&gt; check supports these safety rules, not a claim that work always completes.
+
+= Buffer cache access trace
+{parent=Buffer cache state model}
+
+Let $A,B,C$ be three distinct &lt;buffer cache keys&gt; on one device. Use two initially empty slots, &lt;LRU replacement&gt; refreshed at each completed request, and synchronous successful &lt;buffer cache writeback&gt; of a dirty victim. Each request acquires its target, finishes any fill, reads or partially modifies it, and releases the client reference. An explicit pin on $A$ remains after request 2 through request 7; pin and unpin do not refresh recency. No other references, invalidations, background writes or durability operations occur. Initial backing contents are represented by the &lt;integers&gt; $A=10,B=20,C=30$; partial writes change the tracked value of $A$ to 11 and then 12 while preserving the unshown remainder.
+
+\Image[buffer-cache-pinned-dirty-eviction-trace.png]
+{title=Exact &lt;cache hits&gt;, &lt;cache misses&gt;, retained references and &lt;buffer cache evictions&gt; in a two-slot &lt;buffer cache&gt;}
+
+The eight data requests are read $A$, write $A=11$, read $B$, read $C$, read $A$, write $A=12$, read $C$, and read $B$ after unpinning $A$. They yield four &lt;cache hits&gt;, four &lt;cache misses&gt;, four device reads and one device write. The pin and unpin are lifetime operations, excluded from the data-request count. At the read of $C$, $A$ is older than $B$ but pinned, so the &lt;clean buffer&gt; for $B$ is evicted instead. Reading $A$ then returns 11 without device access even though its backing value is still 10. The second write supersedes 11; reading $C$ makes $A$ the older entry again. After unpinning, the final read of $B$ writes back 12 before evicting $A$. After that request, backing $A$ contains 12, while the resident keys are $C,B$.
+
+This example exposes the value of retaining modified contents: a &lt;cache hit&gt; can return a newer value than a device read would. It also exposes the cost of &lt;reference counting&gt; constraints: a pinned older entry forces a different victim. An independent capacity sweep gives two &lt;cache hits&gt;, six &lt;cache misses&gt; and two device writes with one slot and no pin, but three &lt;cache hits&gt;, five &lt;cache misses&gt; and two device writes with two slots and no pin. With one slot and the stipulated pin, the read of $B$ cannot proceed. With three slots, both pin choices give five &lt;cache hits&gt;, three &lt;cache misses&gt; and no eviction-triggered write; $A$ remains dirty with value 12, so the absence of a device write does not establish &lt;file-system transaction durability&gt;.
+
+= xv6 buffer cache
+{parent=Buffer cache}
+{c}
+
+The teaching implementation's `bget` checks device and block number under a shared &lt;spinlock&gt;, increments `refcnt` before releasing that lock, and then takes the buffer's content &lt;mutex&gt;. On a &lt;cache miss&gt; it reserves an unused structure and clears `valid`; `bread` fills it only if necessary. This makes lookup and reservation share one &lt;synchronization (computing)&gt; boundary. `brelse` releases the content &lt;mutex&gt; and decrements the reference count. Unlike the stipulated trace policy, it moves the structure to the recent end only when that decrement reaches zero. &lt;xv6 RISC-V source code/bio.c&gt;{ref}
+
+This implementation has `valid` and `refcnt` but no generic dirty flag. Its &lt;file-system journaling&gt; code records modified blocks with `log_write`, pins each newly recorded block, copies cached contents to the journal during commit, and unpins after installing the committed contents at their final locations. Thus journal pins keep modifications resident after callers release them. Its eviction loop does not perform the generic dirty-victim &lt;buffer cache writeback&gt; of our model. &lt;xv6 RISC-V source code/buf.h&gt;{ref}&lt;xv6 RISC-V source code/log.c&gt;{ref}
+
+= Page cache
+{parent=Buffer cache}
+
+Caching &lt;file&gt; contents in units based on &lt;memory pages&gt;, commonly by a &lt;file&gt; mapping and an offset, rather than necessarily by the device-and-block &lt;buffer cache key&gt; used above. A &lt;file&gt;'s offset must be mapped to storage before device access; the two naming systems describe different layers. How &lt;page cache&gt; and &lt;buffer cache&gt; storage relate depends on the &lt;operating system&gt; and &lt;file system&gt;. A separate duplicate copy at each layer is not a universal requirement.
+
+For the &lt;Linux kernel&gt; interfaces documented in &lt;Buffer Heads by The kernel development community&gt;, per-block state can be attached to larger cached memory units called &lt;Linux folios&gt;; `mark_buffer_dirty` also marks the backing page dirty in the &lt;page cache&gt;. The documented reclamation checks include dirty state, pending &lt;buffer cache writeback&gt; and elevated reference counts. That documentation deprecates &lt;Linux buffer heads&gt; for new &lt;file systems&gt; in favour of &lt;iomap&gt;. These are platform-specific interfaces, not a definition that every &lt;page cache&gt; has &lt;Linux buffer heads&gt; or that every &lt;buffer cache&gt; has its own disjoint allocation. &lt;Buffer Heads by The kernel development community&gt;{ref}
+
+= Linux buffer head
+{parent=Page cache}
+{c}
+
+The &lt;Linux kernel&gt;'s per-block state structure, which can be attached to a &lt;Linux folio&gt;. Its &lt;reference counting&gt; is distinct from its dirty and valid state.
+
+= Linux folio
+{parent=Page cache}
+{c}
+
+= iomap
+{parent=Page cache}
+{c}
+
+// Destination: computer-science.bigb
+
+= File-system journaling
+{parent=File system}
+
+&lt;File-system journaling&gt; makes a group of related &lt;file system&gt; updates recoverable after a crash by recording them in a journal before changing their final storage locations. The useful promise is &lt;file-system crash consistency&gt;: after &lt;journal replay&gt;, a protected &lt;file-system transaction&gt; has taken effect completely or has not taken effect. &lt;File-system transaction durability&gt; adds a different promise: an acknowledged update survives the crash. The protected group can contain only &lt;file metadata&gt;, or both &lt;file metadata&gt; and &lt;file data blocks&gt;, depending on the &lt;file-system journaling mode&gt;.
+
+Consider a tiny &lt;file&gt; containing `ABCD` in four-&lt;byte&gt; &lt;file data block&gt; 7. Its &lt;inode&gt; records size 4 and a reference to block 7. Appending `EFGH` in previously free block 9 requires three new stored records: $I$, the &lt;inode&gt; with size 8 and references to blocks 7 and 9; $B$, the &lt;block allocation bitmap&gt; marking block 9 allocated; and $D$, &lt;file data block&gt; 9 containing `EFGH`. An &lt;inode&gt; reference to a block still marked free lets a later allocation overwrite live contents; allocating a block without recording its owner can leak space. Even mutually consistent &lt;file metadata&gt; can expose stale contents if $D$ has not reached storage. Chapter 42 of &lt;Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Crash Consistency: FSCK and Journaling&gt; (section 42.1, pp. 2–4) develops this three-record append problem; the names, block numbers and tiny contents here are original teaching choices.
+
+The first diagram protects all three records with &lt;write-ahead logging&gt;. Each &lt;journal payload&gt; record identifies a final destination and its complete new contents. A &lt;storage flush&gt; makes the complete &lt;journal payload&gt; durable before a separate &lt;journal commit record&gt; is written and made durable. Only then may a &lt;journal checkpoint&gt; copy the records to their final locations. The journal remains available until those copies have themselves passed a &lt;storage flush&gt;; it can then be retired and its space reused. &lt;Journal replay&gt; repairs an interrupted &lt;journal checkpoint&gt; using the retained new contents.&lt;3.6. Journal (jbd2) by The kernel development community&gt;{ref}
+
+\Image[file-system-journal-transaction-timeline.png]
+{title=&lt;Write-ahead logging&gt; separates durable &lt;journal commit records&gt; from &lt;journal checkpoints&gt; and safe journal reuse}
+
+These are persistence dependencies, not a claim that issuing writes in this order is sufficient. A device can report completion while its volatile &lt;memory cache&gt; still holds the only copy. The &lt;Linux kernel&gt; documents both flushing earlier completed requests and making completion of a particular request depend on persistence. The timeline uses separate &lt;storage flushes&gt; to make the dependencies explicit; an implementation can use equivalent device-supported operations. A commit write can persist before its &lt;storage flush&gt; returns: recovery uses the actual durable marker, while acknowledgment waits for successful completion.&lt;Explicit volatile write back cache control by The kernel development community&gt;{ref}
+
+The appeal is that recovery knows exactly which updates to finish. It does not have to infer a user's intended contents from contradictory &lt;inodes&gt; and &lt;block allocation bitmaps&gt;. The cost includes writing the &lt;journal payload&gt; as well as its final copies and waiting for persistence boundaries. The journal records a recent transition, not a historical collection of recoverable &lt;files&gt;; &lt;file-system journaling&gt; is not a &lt;file-system backup&gt;.
+
+= File-system crash consistency
+{parent=File-system journaling}
+
+The guarantee that recovery produces a valid &lt;file system&gt; state under a specified crash model. For the protected &lt;file-system transaction&gt; in our full-data example, the observable &lt;file&gt; is either `ABCD` or `ABCDEFGH`; it never names a free block or exposes a half-applied protected append after recovery. This concerns the recovered state. The intermediate final-location records during a &lt;journal checkpoint&gt; may disagree until &lt;journal replay&gt; finishes, and live concurrent access requires separate &lt;synchronization (computing)&gt;.
+
+= File-system consistency checker
+{parent=File-system crash consistency}
+
+A program that compares independently represented facts in a &lt;file system&gt;, such as the &lt;hard link&gt; counts in &lt;inodes&gt; versus references found in &lt;directory entries&gt;, or the &lt;block allocation bitmap&gt; versus block ownership recovered from &lt;inodes&gt; and reserved structures. Disagreement detects corruption; repair policies must decide which evidence to trust and preserve recoverable data. A scan of names alone is insufficient to infer live ownership while the &lt;file system&gt; is changing or has unnamed open &lt;files&gt;, so checking requires a suitable stable view.
+
+= File-system transaction
+{parent=File-system journaling}
+
+A group of updates treated as one unit for &lt;file-system crash consistency&gt;. The three-record append above is one explicitly chosen group. Real &lt;file-system journaling&gt; can batch several &lt;system calls&gt; or split large work across several groups; it does not automatically make an application's several writes into one &lt;file-system transaction&gt;. An &lt;atomic operation&gt; for competing &lt;software threads&gt; likewise does not by itself provide &lt;file-system transaction durability&gt;.
+
+Creation shows why the group must include every related change. In a toy &lt;file-system directory&gt; with space for one more name, creating `notes` with contents `EFGH` needs a &lt;directory entry&gt; mapping `notes` to newly allocated &lt;inode&gt; 42, an &lt;inode allocation bitmap&gt; marking 42 in use, that &lt;inode&gt; with size 4 and a reference to block 9, a &lt;block allocation bitmap&gt; allocating 9, and &lt;file data block&gt; 9 with the contents. An exposed &lt;directory entry&gt; must reach an allocated &lt;inode&gt;, and its content references must reach allocated &lt;file data blocks&gt;. Protecting just the &lt;inode&gt; leaves these relationships outside the &lt;file-system transaction&gt;. This simplified five-record creation excludes parent-directory growth, timestamps and allocation counters; a real &lt;file system&gt; must include its own additional dependencies.
+
+= File-system transaction durability
+{parent=File-system transaction}
+
+An acknowledged &lt;file-system transaction&gt; remains recoverable after a crash under the stated storage assumptions. In the full-data timeline, durable &lt;journal payload&gt; and a durable &lt;journal commit record&gt; suffice even before the &lt;journal checkpoint&gt;. A crash before durable commit can lose the append while still preserving &lt;file-system crash consistency&gt;. A successful ordinary write may only have reached a &lt;buffer cache&gt;; an application requiring persistence must use its documented interface and check errors. On &lt;Linux kernel&gt;-based systems, &lt;fsync&gt; on a &lt;file descriptor&gt; persists the associated &lt;file&gt; contents and &lt;file metadata&gt;, but persisting a newly created name also requires &lt;fsync&gt; on the containing &lt;file-system directory&gt;.&lt;fsync(2) — Linux manual page by Linux man-pages project&gt;{ref}
+
+= fsync
+{c}
+{parent=File-system transaction durability}
+
+A &lt;system call&gt; for requesting persistence of a &lt;file&gt;'s changed contents and associated &lt;file metadata&gt;. Its scope, successful completion and separate &lt;file-system directory&gt; synchronization matter to &lt;file-system transaction durability&gt;.
+
+= Write-ahead logging
+{parent=File-system journaling}
+
+Making a recoverable journal entry durable before installing its protected updates at their final locations. In this article the journal contains new record images, so recovery redoes committed changes rather than undoing uncommitted changes. The diagrams assume one isolated &lt;file-system transaction&gt;, fresh journal slots with unambiguous record identities, no other writer, and &lt;atomic storage writes&gt; for each record and marker. A crash loses volatile state; previously durable contents remain intact. &lt;Storage flushes&gt; are honored, and recovery finishes before the &lt;file system&gt; is exposed. These are model assumptions, not a claim that every physical &lt;file data block&gt; write is indivisible on arbitrary hardware.
+
+= Journal payload
+{parent=Write-ahead logging}
+
+The protected new contents and destination information for a &lt;file-system transaction&gt;. In the diagrams, the three complete &lt;journal payload&gt; records correspond to $I,B,D$. Records can reach storage in any order within this phase. The &lt;journal commit record&gt; cannot become durable until all three are durable.
+
+= Journal commit record
+{parent=Write-ahead logging}
+
+A marker identifying a complete committed &lt;file-system transaction&gt;. A marker alone is insufficient if its &lt;journal payload&gt; is missing or belongs to another group. The simple model prevents this through ordering and fresh record identities. Real journal formats also validate record identities and integrity: the &lt;ext4&gt; documentation says replay discards a group lacking its commit or having mismatched integrity checks.&lt;3.6. Journal (jbd2) by The kernel development community&gt;{ref}
+
+= Journal checkpoint
+{parent=Write-ahead logging}
+
+Installing committed &lt;journal payload&gt; at final locations and making those copies durable. Safe retirement follows this completion, not merely submission of the copies. Discarding the journal while some copies remain only in a volatile &lt;memory cache&gt; can leave an unrecoverable mixture after a crash. Commit establishes a recoverable decision; a &lt;journal checkpoint&gt; permits reclamation of its journal space.
+
+= Journal replay
+{parent=Write-ahead logging}
+
+Reinstalling the complete new images of a committed &lt;file-system transaction&gt; after a crash. An uncommitted &lt;journal payload&gt; is ignored. Rewriting the same image has &lt;idempotence&gt;: repeating it gives the same contents, unlike performing "append four more &lt;bytes&gt;" again. If recovery itself crashes, retaining the journal until the &lt;journal checkpoint&gt; is durable allows the same recovery to restart.
+
+The second diagram exhausts the small full-data model. A triple lists $I,B,D$ in that order; a &lt;bit&gt; is 1 exactly when the corresponding new record has persisted. Before commit, any of the $2^3=8$ &lt;subsets&gt; of &lt;journal payload&gt; records can be durable, while every final-location triple is `000`. After commit, the journal triple is `111`, while any of the eight final-location triples can be durable. Retirement adds one state: the live journal is gone and the final-location triple is `111`. Thus there are $8+8+1=17$ distinct abstract crash states. Waiting for a &lt;storage flush&gt; without another record reaching persistence does not create an additional state. Retirement is modeled as an atomic change of live-log status: old payload &lt;bytes&gt; may remain physically present but are no longer part of the live journal.
+
+\Image[file-system-journal-crash-state-recovery.png]
+{title=All 17 abstract crash states recover to the old or new three-record append under the stated &lt;storage flush&gt; and &lt;atomic storage write&gt; assumptions}
+
+The short correctness argument has three cases. Before commit, final locations are unchanged. With commit, the complete &lt;journal payload&gt; restores `111` regardless of the current final-location &lt;subset&gt;. After retirement, `111` is already durable. Each of the six partial final-location triples is repairable because its journal is retained. The enumeration is exhaustive for these records and phase rules; it excludes torn records, dishonest flush completion, media corruption, journal reuse across several &lt;file-system transactions&gt; and failures of the recovery code. It is a model check, not a measured crash test of &lt;ext4&gt;.
+
+= File-system journaling mode
+{parent=File-system journaling}
+
+Which contents pass through the journal and which persistence dependencies accompany them. The &lt;ext4&gt; documentation distinguishes these modes: &lt;file metadata&gt; and contents both pass through the journal in `data=journal`; only &lt;file metadata&gt; is journaled in `data=ordered`, with associated contents forced to final locations before metadata commit; only &lt;file metadata&gt; is journaled in `data=writeback`, without that data-before-commit dependency.&lt;ext4 General Information by The kernel development community&gt;{ref}
+
+For our append, full data journaling uses the three-record model. Ordered metadata journaling protects $I,B$ in the journal and first persists $D$ directly in free block 9. Before commit, changing an unreferenced free block does not change the visible old &lt;file&gt;; after commit, &lt;journal replay&gt; supplies the new &lt;file metadata&gt; and the new contents are already durable. Without that dependency, recovery can produce correct allocation and size but stale contents in block 9. Ordered metadata journaling does not give general all-or-nothing contents for overwrites of already allocated &lt;file data blocks&gt;, nor does it combine arbitrary application writes into a &lt;file-system transaction&gt;. The choice of protected records determines the scope of the guarantee.
+
+= File-system allocation bitmap
+{parent=File system}
+
+A &lt;data structure&gt; using a &lt;bit&gt; per allocation unit to mark whether it is available. Its agreement with ownership references is a &lt;file-system crash consistency&gt; requirement; changing just this structure does not install the owner's update.
+
+= Block allocation bitmap
+{parent=File-system allocation bitmap}
+
+A &lt;file-system allocation bitmap&gt; for storage blocks. In the append model, the &lt;bit&gt; for &lt;file data block&gt; 9 changes from 0, free, to 1, allocated.
+
+= Inode allocation bitmap
+{parent=File-system allocation bitmap}
+
+A &lt;file-system allocation bitmap&gt; for &lt;inodes&gt;. Appending to an existing &lt;file&gt; does not allocate an &lt;inode&gt;; creating the toy &lt;file&gt; does.
+
+= Storage flush
+{parent=File system}
+
+A request whose successful completion, under the device's stated contract, makes preceding covered writes survive loss of volatile &lt;memory cache&gt; contents. The diagrams wait for completion at each persistence boundary. &lt;Storage flush&gt; and &lt;atomic storage write&gt; are different properties: persistence of completed writes does not make a multi-record update indivisible.
+
+= Atomic storage write
+{parent=File system}
+
+A write whose durable result after a crash is either the complete old record or the complete new record. Its unit and failure conditions must be stated. The diagrams assume this property for each payload record, final-location record, commit marker and retirement marker; they do not derive it from the size of a &lt;file data block&gt;.
+
+= ext4
+{c}
+{parent=File system}
+
+A &lt;Linux kernel&gt; &lt;file system&gt; whose documented &lt;file-system journaling modes&gt; provide the implementation examples here. The diagrams specify a simpler abstract protocol, not its full on-storage format.
+
+= File-system backup
+{parent=File system}
+
+A separately retained copy intended to recover &lt;files&gt; after loss or unwanted changes. A journal can be overwritten after a &lt;journal checkpoint&gt; and can faithfully commit an unwanted deletion; it does not supply that historical copy or protect against loss of the device holding the only copy.
+
+// Target: computer-science.bigb
+
+= Access control list
+{parent=File system}
+{wiki}
+{title2=ACL}
+
+// Target: computer-science.bigb
+
+= File Allocation Table
+{parent=File system}
+{c}
+{wiki}
+{title2=FAT}
+
+// Target: computer-science.bigb
+
+= FAT32
+{parent=File Allocation Table}
+{c}
+
+// Target: computer-science.bigb
+
+= NTFS
+{parent=File system}
+{c}
+{wiki}
+
+// Target: computer-science.bigb
+
+= Inode
+{parent=File system}
+{wiki}
+
+An &lt;inode&gt; is a &lt;data structure&gt; describing an object in an &lt;inode&gt;-based &lt;file system&gt;. For an ordinary &lt;file&gt;, it records &lt;file metadata&gt; such as type, owner, access permissions, size and &lt;hard link&gt; count, together with information locating the contents. In the direct-reference toy layout, &lt;inode&gt; 42 points to &lt;file data blocks&gt; 7 and 9; its two names `a` and `b` live in &lt;directory entries&gt;. Other &lt;file systems&gt; can locate contents differently, so the diagram is a model of the separation rather than a universal storage layout. https://pages.cs.wisc.edu/~remzi/OSTEP/file-implementation.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 40, sections 40.3–40.4: inodes and directory organization]{ref}
+
+An &lt;inode&gt; number is unique only within its &lt;file system&gt; among allocated objects. Two different &lt;file systems&gt; can each have &lt;inode&gt; 42, referring to unrelated &lt;files&gt;. &lt;POSIX&gt; exposes the &lt;file system&gt;'s device identity as `st_dev` and the &lt;file&gt;'s serial number as `st_ino`; the pair identifies a &lt;file&gt; within a running system. Neither the bare &lt;inode&gt; number nor that pair is a permanent historical identifier: after reclamation, a later &lt;file&gt; can reuse the number. In particular, comparing an old saved number with a new one does not establish continuity of the &lt;file&gt;. https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/sys_stat.h.html[The Open Group, POSIX.1-2017, sys/stat.h: joint identity from st_dev and st_ino]{ref}
+
+The design's appeal is that one &lt;inode&gt; unifies the &lt;file metadata&gt; and contents reached through several &lt;directory entries&gt;. Ritchie and Thompson's original 1974 account explicitly describes a &lt;directory entry&gt; as a name and an i-number, with the corresponding &lt;inode&gt; holding ownership, protection, size, content addresses and the &lt;hard link&gt; count. It gives a concrete early explanation of how names and &lt;file&gt; identity can evolve separately. https://www.cs.cmu.edu/~15712/papers/ritchie74.pdf[Ritchie and Thompson, The UNIX Time-Sharing System, 1974, section 4: implementation of the file system]{ref}
+
+// Target: computer-science.bigb
+
+= Indirect block pointer
+{parent=Inode}
+
+An address in a traditional &lt;inode&gt;-based &lt;file system&gt; that points to a block of further &lt;disk block numbers&gt;, rather than directly to user contents. If a block can store $q$ addresses, one singly indirect block can locate up to $q$ &lt;file data blocks&gt;, and a doubly indirect arrangement can locate up to $q^2$. The address blocks themselves consume allocated storage and must be reclaimed when their &lt;file&gt; no longer needs them. This lets small &lt;files&gt; use a short direct layout while supporting larger &lt;files&gt;.
+
+= Multilevel inode indexing
+{parent=Indirect block pointer}
+
+An &lt;inode&gt;-based &lt;file system&gt; uses direct pointers for small &lt;files&gt; and successive levels of &lt;indirect block pointers&gt; for larger ones. If an address block contains $q$ pointers, a depth-$k$ region addresses $q^k$ &lt;file data blocks&gt;. With the &lt;inode&gt; resident, an uncached byte access in that region requires $k$ address-block reads and one &lt;file data block&gt; read.
+
+= Inode table
+{parent=Inode}
+
+A persistent collection of &lt;inodes&gt; indexed by &lt;inode numbers&gt; in an &lt;inode&gt;-based &lt;file system&gt;. The same term can also denote an operating system's in-memory collection of active &lt;inodes&gt;; these must be distinguished. A persistent table belongs to a particular volume, while the system-wide active collection keys entries by both volume identity and &lt;inode number&gt;.
+
+= Inode number
+{parent=Inode}
+
+An &lt;inode number&gt; identifies an allocated &lt;inode&gt; within one &lt;file system&gt;. A &lt;directory entry&gt; stores a name and this number; it does not normally store the &lt;file data block&gt; addresses. Different volumes can reuse the same number for unrelated &lt;files&gt;, and a reclaimed number can later be reused on the same volume. This is therefore a local, current identity, rather than a permanent identifier.
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

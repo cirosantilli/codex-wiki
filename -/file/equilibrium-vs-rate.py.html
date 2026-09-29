@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>equilibrium-vs-rate.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="equilibrium-vs-rate.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/equilibrium-vs-rate.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">equilibrium-vs-rate.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/equilibrium-vs-rate.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/equilibrium-vs-rate.py">equilibrium-vs-rate.py</a></b></div></nav></div><div class="p"><b>equilibrium-vs-rate.py</b></div><div class="code"><div><pre><code>"""Compare relaxation speeds and the shared ideal-mixture free-energy minimum.
+
+Run from _media: MPLBACKEND=Agg MPLCONFIGDIR=/tmp python ../equilibrium-vs-rate.py
+Writes an opaque white PNG to the current working directory.
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    kf, kr = 0.3, 0.1
+    ratio = kf / kr
+    x_eq = ratio / (1.0 + ratio)
+    time = np.linspace(0.0, 14.0, 561)
+    base = x_eq * (1.0 - np.exp(-(kf + kr) * time))
+    faster = x_eq * (1.0 - np.exp(-2.0 * (kf + kr) * time))
+    x = np.linspace(0.0, 1.0, 1001)
+
+    def free_energy(fraction):
+        fraction = np.asarray(fraction)
+        other = 1.0 - fraction
+        return (fraction * np.log(np.maximum(fraction, np.finfo(float).tiny))
+                + other * np.log(np.maximum(other, np.finfo(float).tiny))
+                - fraction * np.log(ratio))
+
+    excess = free_energy(x) - free_energy(x_eq)
+    assert np.allclose(faster, x_eq * (1.0 - np.exp(-(kf + kr) * (2.0 * time))))
+    assert np.isclose(x_eq, 0.75)
+    assert np.isclose(x[np.argmin(excess)], x_eq)
+    assert np.all(excess &gt;= -1e-12)
+    assert np.isclose(free_energy(x_eq), -np.log(4.0))
+    driving = np.log(x[1:-1] / (1 - x[1:-1])) - np.log(ratio)
+    net = kf * (1 - x[1:-1]) - kr * x[1:-1]
+    assert np.all(driving * net &lt;= 1e-12)
+
+    plt.rcParams.update({"font.size": 11, "figure.facecolor": "white",
+                         "axes.facecolor": "white", "savefig.facecolor": "white",
+                         "axes.spines.top": False, "axes.spines.right": False})
+    fig, (speed, potential) = plt.subplots(1, 2, figsize=(10.0, 4.6), dpi=120)
+    fig.subplots_adjust(left=0.08, right=0.97, bottom=0.19, top=0.79, wspace=0.32)
+    fig.suptitle("Same equilibrium and free energy; twice the approach speed", fontsize=14)
+    blue, orange, green = "#236a9e", "#bc542c", "#257653"
+    speed.plot(time, base, color=blue, lw=2.5, label=r"0.3 / 0.1 s$^{-1}$; $\tau=2.5$ s")
+    speed.plot(time, faster, color=orange, lw=2.5, ls="--", label=r"0.6 / 0.2 s$^{-1}$; $\tau=1.25$ s")
+    speed.axhline(x_eq, color=green, ls=":", lw=1.5)
+    speed.text(6.5, 0.77, "[B]eq = 0.75 M", color=green)
+    speed.set(xlabel="Time (s)", ylabel="[B] (M)", xlim=(0, 14), ylim=(0, 0.87))
+    speed.set_title("Approach from pure A", fontsize=12)
+    speed.legend(loc="lower right", fontsize=9, frameon=False)
+    potential.plot(x, excess, color="#654994", lw=2.5)
+    potential.scatter([x_eq], [0], color=green, s=45, zorder=3)
+    potential.axvline(x_eq, color=green, ls=":", lw=1)
+    potential.annotate("Minimum at x = 0.75\nfor both rate pairs", xy=(x_eq, 0),
+                       xytext=(0.48, 0.48), color=green,
+                       arrowprops={"arrowstyle": "-&gt;", "color": green})
+    potential.set(xlabel=r"B fraction: $x=[\mathrm{B}]/([\mathrm{A}]+[\mathrm{B}])$",
+                  ylabel=r"$(F-F_{\rm eq})/(nRT)$", xlim=(0, 1), ylim=(-0.06, 1.5))
+    potential.set_title("Ideal mixture at fixed T and V", fontsize=12)
+    for axis in (speed, potential):
+        axis.grid(alpha=0.16)
+    fig.text(0.52, 0.045, r"Shared $K=3$: $F/(nRT)=(1-x)\ln(1-x)+x\ln x-x\ln3$ + constant",
+             ha="center", fontsize=11)
+    fig.savefig(Path.cwd() / "equilibrium-vs-rate.png", transparent=False)
+    plt.close(fig)
+    print(f"K={ratio:g}; equilibrium fraction={x_eq:g}; relaxation times=2.5, 1.25 s")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematical-models-of-financial-derivatives-course-of-the-university-of-oxford/2023-power-put-prices.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematical-models-of-financial-derivatives-course-of-the-university-of-oxford/2023-power-put-prices.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../-/raw/main.css">
+<link rel="icon" href="../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../" class="brand"><img class="openai-logo" src="../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematical-models-of-financial-derivatives-course-of-the-university-of-oxford/2023-power-put-prices.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematical-models-of-financial-derivatives-course-of-the-university-of-oxford/2023-power-put-prices.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematical-models-of-financial-derivatives-course-of-the-university-of-oxford/2023-power-put-prices.py"><img src="../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../-/dir">(root)</a> / <a href="../../../-/dir/past-exam-of-the-mathematical-models-of-financial-derivatives-course-of-the-university-of-oxford">past-exam-of-the-mathematical-models-of-financial-derivatives-course-of-the-university-of-oxford</a> / <a href="../../../-/raw/past-exam-of-the-mathematical-models-of-financial-derivatives-course-of-the-university-of-oxford/2023-power-put-prices.py">2023-power-put-prices.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematical-models-of-financial-derivatives-course-of-the-university-of-oxford/2023-power-put-prices.py</b></div><div class="code"><div><pre><code>"""Draw European power-put prices; write the PNG to the working directory."""
+
+from math import comb, erfc, sqrt
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def normal_lower_tail(value):
+    return np.fromiter((0.5 * erfc(float(x) / sqrt(2)) for x in value), float)
+
+
+def power_put(spot, power, strike=1.0, rate=0.05, volatility=0.30, time=1.0):
+    result = np.zeros_like(spot)
+    for j in range(power + 1):
+        d = (np.log(spot / strike) + (rate + (j - 0.5) * volatility**2) * time) / (
+            volatility * sqrt(time)
+        )
+        result += (
+            (-1) ** j
+            * comb(power, j)
+            * strike ** (power - j)
+            * spot**j
+            * np.exp(j * rate * time + j * (j - 1) * volatility**2 * time / 2)
+            * normal_lower_tail(d)
+        )
+    return np.exp(-rate * time) * result
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "axes.titlesize": 13, "savefig.facecolor": "white"})
+    spot = np.linspace(0.002, 1.9, 600)
+    figure, axes = plt.subplots(1, 3, figsize=(11.4, 3.7), sharex=True, sharey=True)
+    for power, ax in enumerate(axes, 1):
+        ax.plot(spot, power_put(spot, power), color="#1367aa", linewidth=2.3, label="Price before expiry")
+        ax.plot(spot, np.maximum(1 - spot, 0) ** power, "--", color="#666666", linewidth=1.5, label="Terminal payoff")
+        ax.plot(0, np.exp(-0.05), "o", color="#1367aa", markersize=4)
+        ax.axvline(1, color="#aaaaaa", linewidth=0.8, linestyle=":")
+        ax.set(title=rf"Power $n={power}$", xlabel=r"Spot price $S/K$", xlim=(0, 1.9), ylim=(-0.015, 1.04))
+        ax.grid(alpha=0.20)
+        ax.spines[["top", "right"]].set_visible(False)
+    axes[0].set_ylabel(r"Value in units of $K^n$")
+    axes[0].legend(loc="upper right", fontsize=8.7, frameon=False)
+    figure.suptitle(r"European power puts: $r=0.05$, $\sigma=0.30$, $T-t=1$", y=0.98, fontsize=14)
+    figure.tight_layout(rect=(0, 0, 1, 0.92), w_pad=1.7)
+    figure.savefig(Path.cwd() / "2023-power-put-prices.png", dpi=100)
+    plt.close(figure)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

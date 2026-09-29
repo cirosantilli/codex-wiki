@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Past exam of the computer science course of the University of Oxford / 2015 / Concurrent programming / 1 / d / Solution - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="Past exam of the computer science course of the University of Oxford / 2015 / Concurrent programming / 1 / d / Solution - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="solution"><div class="notnav"><h1><a href="../../../../../past-exam-of-the-computer-science-course-of-the-university-of-oxford">Past exam of the computer science course of the University of Oxford</a><span class="meta"> / </span><a href="../../../../2015">2015</a><span class="meta"> / </span><a href="../../../concurrent-programming">Concurrent programming</a><span class="meta"> / </span><a href="../../../concurrent-programming#1">1</a><span class="meta"> / </span><a href="../../../concurrent-programming#1/d">d</a><span class="meta"> / </span><a href="">Solution</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a  href="#-/ancestors">&nbsp;...</a><a href="../../../../../university-of-oxford#computer-science-course-of-the-university-of-oxford"> Computer science course of the University of Oxford</a><a href="../../../../../past-exam-of-the-computer-science-course-of-the-university-of-oxford"> Past exam of the computer science course of the University of Oxford</a><a href="../../../../2015"> 2015</a><a href="../../../concurrent-programming"> Concurrent programming</a><a href="../../../concurrent-programming#1"> 1</a><a href="../../../concurrent-programming#1/d"> d</a></div><div class="nav"><a href="https://ourbigbook.com/codex/past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/concurrent-programming/1/d/solution"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a><a class="nosplit" href="../../../concurrent-programming#1/d/solution"></a><span class="metrics"><span class="wcntr"> Words: 545</span></span></div></nav></div><div class="p" id="-/21">A <a href="../../../../../operating-system#channel-multiplexer">channel multiplexer</a> adds a stream identity; a <a href="../../../../../operating-system#channel-demultiplexer">channel demultiplexer</a> removes it and selects the corresponding output. Add an explicit per-stream end marker, since closing the shared <a href="../../../../../operating-system#message-passing-channel">message-passing channel</a> cannot identify which producer has finished. <code>End(i)</code> is represented by <code>None</code>; <code>Some(x)</code> represents a genuine value, including a <code>null</code> value if the application permits one.</div><div class="code" id="-/22"><div><pre><code>final case class MUX[T](stream: Int, item: Option[T])</code></pre></div></div><div class="p" id="-/23">The following <a href="../../../../../computer-science#communicating-scala-objects">Communicating Scala Objects</a> implementation uses a synchronous one-to-one <code>mid</code>. As in part (a), a short timer detects closure even when no communication is enabled. Only the <a href="../../../../../operating-system#channel-multiplexer">channel multiplexer</a> owns the input ports, and only the <a href="../../../../../operating-system#channel-demultiplexer">channel demultiplexer</a> owns the output ports. The <a href="../../../../../operating-system#channel-multiplexer">channel multiplexer</a> takes at most one input value before its corresponding <code>mid</code> write; it never accepts a second input while that write is pending.</div><div class="code" id="-/24"><div><pre><code>def iMux[T](ins: Seq[?[T]], mid: ![MUX[T]]): PROC = proc {
+  val ended = Array.fill(ins.length)(false)
+  val poll = 1000000L
+  try {
+    while (mid.canOutput &amp;&amp; ended.contains(false)) {
+      for (i &lt;- ins.indices if !ended(i) &amp;&amp; !ins(i).canInput) {
+        mid ! MUX[T](i, None)
+        ended(i) = true
+      }
+      if (ended.contains(false)) {
+        alt(
+          (| (for (i &lt;- ins.indices) yield
+            (!ended(i) &amp;&amp; ins(i)) =?=&gt; { x =&gt; mid ! MUX(i, Some(x)) }))
+          | after(poll) ==&gt; { () }
+        )
+      }
+    }
+  } catch { case _: io.threadcso.process.Stopped =&gt; () }
+  finally { ins.foreach(_.closeIn); mid.closeOut }
+}
+
+def iDemux[T](mid: ?[MUX[T]], outs: Seq[![T]]): PROC = proc {
+  val ended = Array.fill(outs.length)(false)
+  val poll = 1000000L
+  try {
+    while (mid.canInput &amp;&amp; ended.contains(false) &amp;&amp;
+           outs.indices.forall(i =&gt; ended(i) || outs(i).canOutput)) {
+      alt(
+        mid =?=&gt; { packet =&gt;
+          val i = packet.stream
+          require(i &gt;= 0 &amp;&amp; i &lt; outs.length &amp;&amp; !ended(i))
+          packet.item match {
+            case Some(x) =&gt; outs(i) ! x
+            case None =&gt; ended(i) = true; outs(i).closeOut
+          }
+        }
+        | after(poll) ==&gt; { () }
+      )
+    }
+  } catch { case _: io.threadcso.process.Stopped =&gt; () }
+  finally { mid.closeIn; outs.foreach(_.closeOut) }
+}</code></pre></div></div><div class="p" id="-/25">For each stream, the output <a href="../../../../../sequence-and-series#sequence">sequence</a> remains a prefix of its accepted input <a href="../../../../../sequence-and-series#sequence">sequence</a>. One value can be pending in the <a href="../../../../../operating-system#channel-demultiplexer">channel demultiplexer</a>, and one in the <a href="../../../../../operating-system#channel-multiplexer">channel multiplexer</a>, possibly from the same stream. Hence its discrepancy is at most two:<div class="math" id="-/26"><div><div class="equation"><div><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.10903em;">N</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord">2</span><span class="mord text"><span class="mord"> is a valid per-stream storage bound for this implementation</span></span><span class="mord">.</span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></div><div class="number"><a href="#-/26">(4)</a></div></div></div></div>There is a shared total of two pending values, so these processes do not supply the independent readiness of a parallel collection of capacity-two <a href="../../../../../operating-system#strict-buffer">strict buffers</a>. An unready consumer blocks the <a href="../../../../../operating-system#channel-demultiplexer">channel demultiplexer</a>'s ordinary send; the <a href="../../../../../operating-system#channel-multiplexer">channel multiplexer</a> can accept one further value and then blocks too. This is <a href="../../../../../operating-system#head-of-line-blocking">head-of-line blocking</a>.</div><div class="p" id="-/27">The <a href="../../../../../computer-science#guarded-alternation">alternation</a> may choose an input unfairly; replacing its selection policy by round-robin selection helps among simultaneously ready producers. Even fair input choice cannot compensate for a consumer that blocks the entire <a href="../../../../../operating-system#channel-demultiplexer">channel demultiplexer</a>. Closed-input scanning does allow a producer's end marker eventually to reach its consumer, but only after the shared transport and any earlier delivery become serviceable. Its own accepted values precede its end marker, so that consumer drains cleanly.</div><div class="p" id="-/28">Consumer-driven closure is more restrictive. With no return <a href="../../../../../operating-system#message-passing-channel">message-passing channel</a>, the sender cannot promptly learn which producer should stop. This implementation deliberately shuts down the whole <a href="../../../../../operating-system#multiplexed-channel">multiplexed channel</a> when it detects any unfinished consumer closing, thereby cancelling the other pairs too. If the <a href="../../../../../operating-system#channel-demultiplexer">channel demultiplexer</a> is already blocked on some other consumer, even that detection waits for the blocked send. Thus producer-driven ends can be represented separately but need not be delivered promptly; consumer-driven cancellation is global and need not be detected promptly. Merely adding an end marker does not solve either delay.</div><h2 id="-/ancestors"><a href="#-/ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(11)</span></a></h2><div class="list"><ol><li><a href="../../../concurrent-programming#1/d">D</a></li><li><a href="../../../concurrent-programming#1">1</a></li><li><a href="../../../concurrent-programming">Concurrent programming</a></li><li><a href="../../../../2015">2015</a></li><li><a href="../../../../../past-exam-of-the-computer-science-course-of-the-university-of-oxford">Past exam of the computer science course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#computer-science-course-of-the-university-of-oxford">Computer science course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#undergraduate-course-of-the-university-of-oxford">Undergraduate course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#course-of-the-university-of-oxford">Course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford">University of Oxford</a></li><li><a href="../../../../..#list-of-universities">List of universities</a></li><li><a href="../../../../.."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+<div>Source code for this page: <a href="../../../../../-/file/past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/concurrent-programming.bigb">past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/concurrent-programming.bigb</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/concurrent-programming/1/d/";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

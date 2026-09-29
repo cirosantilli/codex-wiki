@@ -1,0 +1,37 @@
+"""Original schematic; Python 3.14, numpy 2.3.5, matplotlib 3.10.7."""
+from pathlib import Path
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+fig, axes = plt.subplots(1, 2, figsize=(9, 4.2), dpi=100, facecolor='white')
+for ax in axes:
+    ax.set_facecolor('white')
+    ax.set_xlim(0, 1)
+    ax.set_xticks([])
+    ax.spines[['top', 'right', 'bottom']].set_visible(False)
+    ax.tick_params(axis='y', labelsize=11)
+axes[0].set_title('1s shell', fontsize=13)
+axes[0].hlines(0, .12, .48, color='0.6', linestyle='--')
+axes[0].text(.13, -.45, 'Unperturbed', fontsize=11)
+axes[0].hlines(1.5, .55, .95, color='#225ea8', linewidth=2.5)
+axes[0].text(.56, 1.72, '1s  (one orbital)', fontsize=11)
+axes[0].annotate('', (.52, 1.5), (.52, 0), arrowprops={'arrowstyle':'->'})
+axes[0].set_ylim(-1, 3)
+axes[0].set_yticks([0, 1.5], ['0', '3/2'])
+axes[0].set_ylabel(r'$(E+\mathrm{Ry})/(\alpha a_0^2)$', fontsize=12)
+axes[1].set_title('n = 2 shell', fontsize=13)
+axes[1].hlines(0, .1, .45, color='0.6', linestyle='--')
+axes[1].text(.11, -2.4, 'Unperturbed', fontsize=11)
+axes[1].hlines(3, .52, .96, color='#225ea8', linewidth=2.5)
+axes[1].text(.53, 4.4, r'$2p_0$', fontsize=12)
+axes[1].hlines(21, .52, .96, color='#d95f0e', linewidth=2.5)
+axes[1].text(.53, 22.5, r'$2s,\ 2p_{+1},\ 2p_{-1}$', fontsize=12)
+axes[1].set_ylim(-4, 27)
+axes[1].set_yticks([0, 3, 21])
+axes[1].set_ylabel(r'$(E+\mathrm{Ry}/4)/(\alpha a_0^2)$', fontsize=12)
+fig.suptitle(r'Quadratic perturbation: $\beta=-\alpha/2$', fontsize=15)
+fig.text(.5, .025, 'Separate energy origins; principal-shell gap omitted. Spin doubles each orbital.', ha='center', fontsize=10)
+fig.tight_layout(rect=(0, .07, 1, .91), w_pad=3)
+fig.savefig(Path.cwd()/Path(__file__).with_suffix('.png').name, facecolor='white', transparent=False, metadata={'Software':'codex-wiki'})
+plt.close(fig)

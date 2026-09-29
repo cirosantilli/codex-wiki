@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-30-coding-rates.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-30-coding-rates.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-30-coding-rates.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-30-coding-rates.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-30-coding-rates.py"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../../-/dir">(root)</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge">past-exam-of-the-mathematics-course-of-the-university-of-cambridge</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006">2006</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii">iii</a> / <a href="../../../../../-/raw/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-30-coding-rates.py">paper-30-coding-rates.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-30-coding-rates.py</b></div><div class="code"><div><pre><code>#!/usr/bin/env python3
+"""Plot binary-channel capacity and the Gilbert–Varshamov correction guarantee.
+
+Writes paper-30-coding-rates.png to the caller's current directory.
+"""
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def entropy(p):
+    p = np.asarray(p, dtype=float)
+    value = np.zeros_like(p)
+    mask = (p &gt; 0) &amp; (p &lt; 1)
+    value[mask] = -p[mask] * np.log2(p[mask]) - (1-p[mask]) * np.log2(1-p[mask])
+    return value
+
+
+def inverse_entropy(value):
+    left, right = 0.0, 0.5
+    for _ in range(64):
+        mid = (left + right) / 2
+        if float(entropy(mid)) &lt; value:
+            left = mid
+        else:
+            right = mid
+    return (left + right) / 2
+
+
+def main():
+    p = np.linspace(0, 0.5, 501)
+    q = np.linspace(0, 0.25, 251)
+    rate = 0.5
+    threshold = inverse_entropy(1-rate)
+    fig, ax = plt.subplots(figsize=(7.4, 4.6), layout="constrained", facecolor="white")
+    ax.set_facecolor("white")
+    ax.plot(p, 1-entropy(p), color="#1557a0", linewidth=2.4,
+            label=r"Channel capacity: $1-h_2(p)$")
+    ax.plot(q, 1-entropy(2*q), color="#b34a19", linewidth=2.4,
+            label=r"GV correction guarantee: $1-h_2(2p)$")
+    ax.axhline(rate, color="#555555", linestyle="--", linewidth=1)
+    for value, color in [(threshold/2, "#b34a19"), (threshold, "#1557a0")]:
+        ax.plot([value, value], [0, rate], color=color, linestyle=":", linewidth=1.4)
+        ax.plot(value, rate, "o", color=color, markersize=5)
+    ax.annotate(f"GV: p = {threshold/2:.3f}", (threshold/2, rate),
+                xytext=(0.012, 0.24), arrowprops={"arrowstyle": "-", "color": "#b34a19"},
+                color="#b34a19", fontsize=10)
+    ax.annotate(f"Shannon threshold: p = {threshold:.3f}", (threshold, rate),
+                xytext=(0.19, 0.57), arrowprops={"arrowstyle": "-", "color": "#1557a0"},
+                color="#1557a0", fontsize=10)
+    ax.text(0.38, rate+0.025, r"Example: $R=1/2$", color="#555555", fontsize=10)
+    ax.set(xlim=(0, 0.5), ylim=(0, 1.02), xlabel="Bit-error probability p",
+           ylabel="Rate (bits per channel use)",
+           title="Distance guarantee and random-channel capacity")
+    ax.grid(alpha=0.18)
+    ax.legend(loc="upper right", fontsize=9, framealpha=1)
+    fig.savefig(Path.cwd() / "paper-30-coding-rates.png", dpi=150, facecolor="white",
+                transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

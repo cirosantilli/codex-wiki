@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>step-growth-conversion-stoichiometry-sensitivity.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="step-growth-conversion-stoichiometry-sensitivity.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/step-growth-conversion-stoichiometry-sensitivity.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">step-growth-conversion-stoichiometry-sensitivity.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/step-growth-conversion-stoichiometry-sensitivity.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/step-growth-conversion-stoichiometry-sensitivity.py">step-growth-conversion-stoichiometry-sensitivity.py</a></b></div></nav></div><div class="p"><b>step-growth-conversion-stoichiometry-sensitivity.py</b></div><div class="code"><div><pre><code>"""Plot original ideal bifunctional step-growth sensitivities; run from _media.
+
+Tested with Python 3.14, matplotlib 3.10.7, numpy 2.3.5.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "font.family": "DejaVu Sans"})
+    fig, axes = plt.subplots(1, 2, figsize=(10.6, 5.2), facecolor="white")
+    p = np.linspace(0.9, 0.9999, 1600)
+    colors = ["#285da8", "#178249", "#b34b15"]
+    for r, color in zip([1.0, 0.99, 0.95], colors):
+        xn = (1 + r) / (1 + r - 2 * r * p)
+        axes[0].plot(p, xn, color=color, lw=2.3, label=rf"$r={r:g}$")
+    for pp, xx in [(0.95, 20), (0.98, 50), (0.995, 200)]:
+        axes[0].scatter(pp, xx, color=colors[0], s=30, zorder=4)
+        axes[0].annotate(f"({pp:g}, {xx})", (pp, xx), xytext=(-8, 10),
+                         textcoords="offset points", ha="right", fontsize=10)
+    axes[0].set(xlim=(0.9, 1.0), ylim=(7, 12000), yscale="log",
+                xlabel="Conversion p of limiting A groups", ylabel=r"Number-average degree $X_n$",
+                title="Late conversion controls chain length")
+    axes[0].legend(loc="upper left", frameon=False)
+    excess_percent = np.geomspace(0.01, 5, 1000)
+    r = 1 - excess_percent / 100
+    cap = (1 + r) / (1 - r)
+    axes[1].plot(excess_percent, cap, color="#7a3989", lw=2.3)
+    for imbalance, xx in [(1, 199), (5, 39)]:
+        axes[1].scatter(imbalance, xx, color="#7a3989", s=32, zorder=4)
+        axes[1].annotate(f"{imbalance}% → {xx}", (imbalance, xx), xytext=(-8, 12),
+                         textcoords="offset points", ha="right", fontsize=11)
+    axes[1].axhline(200, color="#6f7479", ls="--", lw=1)
+    axes[1].text(0.014, 240, r"Target $X_n=200$", color="#54595f", fontsize=11)
+    axes[1].set(xscale="log", yscale="log", xlim=(0.01, 5.5), ylim=(30, 25000),
+                xlabel=r"Initial group imbalance $100(1-r)$ (%)",
+                ylabel=r"Ceiling $X_n$ at $p=1$",
+                title="Excess B leaves a chain-length ceiling")
+    axes[1].set_xticks([0.01, 0.1, 1, 5], ["0.01", "0.1", "1", "5"])
+    for ax in axes:
+        ax.grid(True, which="major", color="#dddddd", lw=0.7)
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.suptitle("Ideal linear step growth: high conversion AND balanced groups", fontsize=16)
+    fig.text(0.5, 0.015,
+             r"$r=A_0/B_0\leq1$; $p$ counts reacted A groups; $X_n$ counts both feed species. No rings or branching.",
+             ha="center", fontsize=11)
+    fig.tight_layout(rect=(0, 0.07, 1, 0.92), w_pad=2.5)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=120,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

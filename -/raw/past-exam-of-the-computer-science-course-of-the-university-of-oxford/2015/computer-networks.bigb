@@ -1,0 +1,315 @@
+= Computer networks
+{scope}
+{title2=A12068W1}
+
+Solutions to all three questions of the paper dated 13 June 2015.<Computer Networks examination paper of the University of Oxford (2015)>[Cover and printed pages 2–3, A12068W1]{ref}
+
+== 1
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+The <bit rate> counts data <bits> carried per second; the <baud rate> counts transmitted signal elements per second. A signal element need not carry one whole data <bit>. In <Manchester encoding>, each data <bit> occupies two half-bit signal elements, one high and one low. For example, choose low–high for zero and high–low for one. The compulsory transition in the middle provides a timing reference for <clock recovery>.
+
+If one data <bit> lasts $T$ seconds, the <bit rate> is $1/T$, while each half-bit signal element lasts $T/2$. With this binary signal-element convention,
+$$
+\boxed{R_b=1/T\ \text{bits/s},\qquad R_s=2/T=2R_b\ \text{baud}.}
+$$
+Thus a 10 Mbit/s <Manchester encoding> signal uses 20 million half-bit signal elements per second. This is not a count of observed voltage transitions: some <bit> boundaries also contain a transition and others do not. Calling a whole two-element pattern a symbol gives a different symbol-counting convention; the physical fact is two half-bit elements per data <bit>.
+
+\Image[networks-2015-line-codes.png]
+{title=<Manchester encoding> and <differential Manchester encoding> for the same seven <bits>; dotted lines mark <bit> boundaries and dashed lines mark their midpoints}
+
+=== b
+{scope}
+
+==== Solution
+
+In <differential Manchester encoding>, every data <bit> still has a compulsory transition at its midpoint for <clock recovery>. The data value is specified by whether a transition occurs at the beginning of the <bit>, rather than by the direction of the midpoint transition. One convention is beginning transition for zero and no beginning transition for one; interchanging the meanings consistently also works.
+
+Reversing the signal polarity exchanges high and low everywhere, but preserves both the presence and the absence of transitions. A receiver using <differential Manchester encoding> therefore decodes the same data after a polarity reversal, provided it has acquired the timing and boundary reference. Ordinary <Manchester encoding> with a fixed low–high/high–low interpretation would exchange the two data values. The advantage is
+$$
+\boxed{\text{self-clocking transmission insensitive to a global polarity reversal}.}
+$$
+
+=== c
+{scope}
+
+==== Solution
+
+A <block code for line coding> divides the data into five-<bit> groups and assigns each of the $2^5=32$ possible groups a distinct eight-<bit> <codeword>. The receiver reverses that assignment after finding the eight-<bit> boundaries. There are $2^8=256$ candidate <codewords>, so the designer has substantial freedom to select 32 suitable ones and reserve other patterns for control or synchronization.
+
+The choice can limit long runs of equal <bits> to help <clock recovery>, balance high and low levels to reduce a persistent offset, and distinguish control patterns from data. These properties must hold across adjacent <codeword> boundaries too: two individually acceptable words can concatenate into an unacceptable run. The unused patterns can also help <error detection and correction>: an invalid received pattern exposes some errors, and the <Hamming distance> between valid <codewords> determines stronger guarantees. Redundancy alone does not imply that all errors are detected or correctable. Circuit complexity and propagation of a synchronization error also matter.
+
+Before any further <line coding> or <framing> overhead, the useful fraction and expansion are
+$$
+\boxed{\text{useful fraction}=\frac58=62.5\%,\qquad \text{transmitted bits per data bit}=\frac85.}
+$$
+The three extra <bits> per five input <bits> are 60% overhead relative to the input, or 37.5% of the encoded output.
+
+=== d
+{scope}
+
+==== Solution
+
+A physical link can deliver a continuous stream of <bits>; the <data link layer> needs to identify where each separately meaningful unit begins and ends. <Framing> supplies those boundaries, so the receiver can separate the <data-link frame> header, data and checking information, associate an <error detection and correction> result with a particular <data-link frame>, and regain alignment after damaged input.
+
+Timing the individual <bits> is insufficient: knowing where each <bit> begins does not tell the receiver which <bit> starts a new <data-link frame>. Thus
+$$
+\boxed{\text{framing partitions a bit stream into recognizable data-link units}.}
+$$
+
+=== e
+{scope}
+
+==== Solution
+
+Reserve a <frame delimiter> that cannot occur inside encoded <data-link frame> contents. For a concrete <bit stuffing> rule, take the flag `01111110`. Between flags the sender inserts a zero after every run of five consecutive one <bits>, including runs in the checking information. The receiver removes that zero when decoding. The flags themselves are transmitted without <bit stuffing>. For example, the six payload one <bits> `111111` are sent as `1111101`, so they cannot imitate the flag's run of six ones.<PPP in HDLC-like Framing (RFC 1662)>[§§5.1–5.2: flag sequence and bit-stuffed transparency]{ref}
+
+The receiver recognizes the flag before treating input as payload. After five ones, a following zero is a stuffed <bit>; a following one cannot be ordinary stuffed payload and requires the delimiter/error handling rules. Consequently a delimiter remains recognizable even if the unencoded data contained its exact pattern. <Bit stuffing> also applies at the end of the payload, so a run cannot spill into a boundary ambiguously.
+
+The <frame delimiter> should be long and distinctive enough to support reliable synchronization in the presence of errors, but frequent flags and the run constraint cost capacity. For the usual family of flags with a longer run of ones, a longer forbidden run makes stuffing less frequent while making the delimiter itself longer. Valid stuffed data never contains an intact flag; false flags can arise when transmission errors damage that guarantee. Their likelihood depends on the error model, rather than merely on the raw frequency of the unencoded pattern.
+
+The <data-link frame> length balances fixed header/flag/check overhead against <network latency>, receiver storage and the cost of a damaged <data-link frame>. If independent <bit> errors have <probability> $p$, an $N$-<bit> transmission has no such error with <probability> $(1-p)^N$. Longer <data-link frames> amortize fixed overhead, but have more opportunities for corruption and, when <data retransmission> is used, waste more work per failed attempt. They also delay delivery until the whole <data-link frame> is available. A maximum length limits storage requirements and the damage from a lost boundary. The design balance is
+$$
+\boxed{\text{unambiguous flags; low stuffing overhead; bounded delay and error-recovery cost}.}
+$$
+
+=== f
+{scope}
+
+==== Solution
+
+Represent the data <bits>, most significant first, by a <polynomial> $M(x)$ whose <polynomial coefficients> lie in the <field with two elements> $\mathbb F_2$. Here <addition> and <subtraction> are both <exclusive or>, with no carries. Choose a fixed <CRC generator polynomial> $G(x)$ of <polynomial degree> $r$, with leading and constant <polynomial coefficients> one. Both <endpoints> know $G$ and the <bit> ordering.
+
+Multiply $M$ by $x^r$, which appends $r$ zero <bits>. Use <polynomial division> to obtain
+$$
+x^rM(x)=Q(x)G(x)+R(x),\qquad R=0\ \text{or}\ \deg R<r.
+$$
+Replace the appended zeros by the $r$ <bits> of the <polynomial remainder> $R$, retaining leading zeros when necessary. The transmitted <polynomial> is
+$$
+\boxed{T(x)=x^rM(x)+R(x),\qquad T(x)\bmod G(x)=0.}
+$$
+The last equality holds because adding $R$ cancels the existing <polynomial remainder> in the <field with two elements>. It is the simple systematic <cyclic redundancy check> convention used here; practical variants can add agreed initialization and final transformations.
+
+The receiver divides the entire received <polynomial> by $G$. A nonzero <polynomial remainder> detects corruption. If the received word is $T+E$, where the ones in the error <polynomial> $E$ mark flipped <bits>, its <polynomial remainder> is $E\bmod G$. Thus the undetected nonzero errors are exactly the multiples of $G$; a zero result does not prove that transmission was error-free. Operationally, <polynomial long division> repeatedly cancels a leading one using a shifted copy of $G$, implemented with <exclusive or> operations.
+
+=== g
+{scope}
+
+==== Solution
+
+All the following <polynomial coefficients> and sums lie in the <field with two elements>, so $a+a=0$. For the constant <polynomial>,
+$$
+a=(x+1)\cdot0+a.
+$$
+For the linear <polynomial>, subtracting the leading multiple means adding it:
+$$
+ax+b=(x+1)a+(a+b).
+$$
+For the quadratic <polynomial>, first cancel $ax^2$ using $ax(x+1)$, leaving $(a+b)x+c$; then cancel $(a+b)x$ using $(a+b)(x+1)$. Thus
+$$
+ax^2+bx+c=(x+1)\bigl(ax+a+b\bigr)+(a+b+c).
+$$
+The requested <polynomial quotients> and <polynomial remainders> are therefore
+$$
+\boxed{\begin{aligned}
+a &: &&Q=0, &&R=a,\\
+ax+b &: &&Q=a, &&R=a+b,\\
+ax^2+bx+c &: &&Q=ax+a+b, &&R=a+b+c.
+\end{aligned}}
+$$
+For a general <polynomial> $P(x)=\sum_{i=0}^{n}p_i x^i$, write $P=(x+1)Q+R$ with constant $R$. Since $1+1=0$, <polynomial evaluation> at $x=1$ gives $P(1)=R$. This is the <polynomial remainder theorem> with $-1=1$ in the <field with two elements>. Hence
+$$
+\boxed{P(x)\bmod(x+1)=P(1)=p_0+p_1+\cdots+p_n.}
+$$
+The <polynomial remainder> is precisely the <parity bit> obtained by taking the <exclusive or> of all the <polynomial coefficients>.
+
+=== h
+{scope}
+
+==== Solution
+
+Let $M(x)=ax^6+bx^5+cx^4+dx^3+ex^2+fx+g$. With <CRC generator polynomial> $x+1$, the appended check has one <bit>. The preceding <polynomial remainder> rule gives $(xM)(1)=M(1)$, so put $h=a+b+c+d+e+f+g$ in the <field with two elements>. The eight transmitted <bits> are
+$$
+\boxed{\langle a,b,c,d,e,f,g,\ a\mathbin\oplus b\mathbin\oplus c\mathbin\oplus d\mathbin\oplus e\mathbin\oplus f\mathbin\oplus g\rangle.}
+$$
+They have even <Hamming weight>, so this <cyclic redundancy check> is a <single parity-check code>. For a substitution error <polynomial> $E$, detection occurs exactly when $E(1)=1$: an odd number of the eight <bits>, including the check <bit>, have flipped. Therefore
+$$
+\boxed{\text{every odd number of bit flips is detected; every even number is undetected}.}
+$$
+In particular, every single-<bit> error is detected, while flipping any two distinct <bits> passes this check. This conclusion assumes that the eight-<bit> word's boundaries and length are retained; it supplies no general protection against insertions, deletions or lost <framing>.
+
+== 2
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+<Soft state> is information maintained by refreshes and allowed to expire when those refreshes cease. It can be reconstructed from continuing communication with the participants that still need it. <Hard state> instead persists until explicitly changed or removed; a lost deletion or failed participant can therefore leave stale information indefinitely. This distinction concerns the maintenance rules, rather than simply whether the information is in volatile memory.
+
+For example, a <router> can keep <IP multicast> membership information for a local network. Periodic membership queries and reports refresh that information; if no member reports within the prescribed interval, the membership expires. A host that crashes without unsubscribing is eventually forgotten. A lost report need not remove membership immediately, because repeated reports and a suitable expiry interval tolerate occasional loss. If the <router> loses its membership information, subsequent queries and reports rebuild it.<Host Extensions for IP Multicasting (RFC 1112)>[Appendix I, §§I.1–I.3: queries, reports and membership timers]{ref}
+
+This is attractive in <Internet> components because <packet> loss, host crashes and <router> restarts need not be repaired by a perfectly delivered sequence of explicit deletions. Refreshes repair some omissions, and expiry removes abandoned entries and releases resources. Components can recover local state without retaining an indefinitely accurate history of everyone else's actions. <Soft state> does have a cost: refresh traffic, timer storage and temporary stale or missing information, with a tradeoff between rapid expiry and tolerance of delayed refreshes. Its central benefit is
+$$
+\boxed{\text{refresh reconstructs live state; timeout removes abandoned state}.}
+$$
+
+=== b
+{scope}
+
+==== Solution
+
+<Network address translation> lets a <router> join a private <Internet Protocol> address realm to the public <Internet>. On outbound <packets> it replaces the private source <IP address> by a public <IP address>. On returning <packets> it applies the inverse mapping to the destination <IP address>, then forwards to the internal host. Basic <network address translation> changes addresses; the common many-to-one form, <network address and port translation>, also changes the source <transport port> so several internal hosts can share one public <IP address>.<Traditional IP Network Address Translator (Traditional NAT) (RFC 3022)>[§§2.1–2.2 and 3.1–3.3: basic NAT, NAPT and translation phases]{ref}
+
+For example, suppose the public-facing <router> has <IP address> `198.51.100.7`. An internal <TCP> exchange might be translated as follows; the addresses are illustrative:
+$$
+\begin{aligned}
+(10.0.0.2:49152)\longrightarrow(192.0.2.80:80)
+&\quad\mapsto\quad
+(198.51.100.7:62001)\longrightarrow(192.0.2.80:80).
+\end{aligned}
+$$
+An entry records that traffic returning to external <transport port> 62001 belongs to `10.0.0.2:49152` for this <transport protocol>. The destination on the return path is rewritten accordingly. A second internal host using the same private <transport port> can receive a different public <transport port>. The actual lookup may also use the remote <endpoint>, depending on the mapping and filtering policy.
+
+The <router> must update the <IPv4> header <checksum>, and any affected <TCP> or <UDP> <checksum>: transport checking includes the relevant <IP addresses> as well as the transport header. Bindings may be allocated dynamically and removed after inactivity or observed termination. Traffic for a live exchange must traverse a translator that possesses the binding, or equivalent shared information.
+
+An unsolicited incoming <packet> generally has no dynamic inverse mapping, so exposing a private service usually needs a configured mapping or <port forwarding>. Application data that embeds a private <IP address> can also need special handling. Address translation saves public address space, but changes the addressing visible to the two <endpoints> and can disrupt an exchange if its mapping disappears. Its essential mechanism is
+$$
+\boxed{\text{rewrite outbound addresses/ports; remember the binding; invert it on replies}.}
+$$
+
+=== c
+{scope}
+
+==== Solution
+
+Dynamic <network address and port translation> has an important <soft state> aspect: activity refreshes a binding's lifetime, and inactivity eventually expires it without a reliably delivered close message. This is especially useful for <UDP>, which supplies no connection-closing exchange. Even for <TCP>, the <router> cannot assume that it will observe every closing <packet>.
+
+However, an expiring entry is not necessarily harmlessly disposable. Suppose the binding `10.0.0.2:49152` to `198.51.100.7:62001` disappears while the remote <endpoint> is still using it. A reply to port 62001 no longer reveals the private destination. New outbound traffic might obtain a different public <transport port>, which does not reconstruct the old connection as viewed by the remote <endpoint>. Losing the binding can therefore break the exchange even though both <endpoints> remain alive. This conflicts with <fate-sharing> when indispensable connection information resides in a separate <router>.
+
+Static address mappings and configured <port forwarding> are <hard state>; a fixed translation rule need not even require a dynamic per-exchange table. Thus
+$$
+\boxed{\text{dynamic bindings use soft-state expiry, but may hold essential connection state}.}
+$$
+Describing all <network address translation> information as fully reconstructible <soft state> would overlook both this recovery limitation and the static configuration.
+
+=== d
+{scope}
+
+==== Solution
+
+<UDP> fits <IP multicast> because each independent datagram can be delivered to a group without establishing a separate transport connection with every receiver. Ordinary <TCP> defines a reliable ordered byte stream between two <endpoints>, with one peer's <acknowledgements>, <receive window> and connection state. A group has many receivers with different losses and capacities, so that interface cannot simply be assigned to one group address. A reliable group service can be designed, but ordinary <TCP> does not provide it. <UDP> itself adds neither group reliability nor <congestion control>; applications must provide whatever additional behaviour they require.
+
+A virtual <multicast distribution tree> lets one <packet> traverse a shared upstream link and be copied only where branches diverge. Compared with a separate <unicast> copy per receiver, this saves repeated transmission over the common links. A <tree> also supplies a unique parent route and avoids forwarding loops when the routing information is consistent. Branches with no interested receivers can be pruned.
+
+For a source-specific <multicast distribution tree>, a <router> needs the group identifier and source identifier, the expected incoming interface, the set of outgoing interfaces leading to interested receivers, and information about local group membership. Timers and join/prune information maintain those decisions. This is naturally keyed by $(S,G)$ for source $S$ and group $G$; other <multicast routing> designs can use a shared group tree. A <router> needs the relevant local forwarding entries, rather than a complete list of all group members everywhere. The result is
+$$
+\boxed{\text{one upstream copy; replication at branches; per-tree input/output interface state}.}
+$$
+
+=== e
+{scope}
+
+==== Solution
+
+In <reverse path forwarding>, a <router> uses its <unicast> routing information to ask which interface it would use to send a <packet> back towards source $S$. It accepts a <multicast> <packet> from $S$ only when it arrives on that interface, and otherwise discards it. An accepted <packet> can be forwarded on the other eligible interfaces. This needs no globally computed <multicast distribution tree> before the first transmission.<Distance Vector Multicast Routing Protocol (RFC 1075)>[§2: reverse-path broadcasting and truncation]{ref}
+
+With stable, loop-free routes and a consistent choice of parent when routes tie, each non-source <router> selects one upstream parent towards $S$. Following parent links reaches $S$, so the accepted parent links form a source-rooted <tree> over reachable <routers>. A <packet> arriving across a cross-link from a non-parent fails the reverse-path test. Basic flooding can still transmit copies that will be discarded; downstream-neighbour information can suppress such useless transmissions, and a designated forwarder prevents duplicate delivery on a shared local network.
+
+To adapt the forwarding structure to a particular <multicast> group, retain branches with local members or interested descendants and prune the others. Leaf <routers> with no interested receivers initiate pruning; a <router> with no local members and no remaining interested children can propagate that condition upstream. A new subscriber requires a join/graft or later refresh to restore a pruned branch. Thus <reverse path forwarding> gives the source-rooted reachability structure, while membership and pruning restrict it to useful branches.
+
+This <tree> need not minimize total transmission cost. Even if the <unicast> routes are <shortest paths> under symmetric positive link costs, their union minimizes individual distances from the source, rather than the sum of the costs of all used links. For a small example, let $SA$ and $SB$ each cost 2 and let $AB$ cost 1, with receivers at $A$ and $B$. The <shortest-path tree> uses $SA$ and $SB$, costing 4 in total. Using $SA$ and $AB$ costs 3, although the route from $S$ to $B$ then has length 3 instead of 2. Moreover, real <unicast> policies may optimize other criteria, and reverse routes need not be best forward routes when costs are asymmetric. Therefore
+$$
+\boxed{\text{reverse-path acceptance yields a delivery tree, not necessarily a minimum-cost tree}.}
+$$
+
+== 3
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+<Transport sequence numbers> identify the position of data within an exchange. They let a receiver restore order, recognize duplicates, identify missing data and state precisely what has been received in an <acknowledgement>. In <TCP> they count <bytes>, so one <packet> can contain several consecutively numbered <bytes>.
+
+A <send window> is the range of numbered data the sender is currently allowed to have outstanding. It permits several transmissions before their <acknowledgements> return, which keeps the path busy despite <network latency>, while bounding unacknowledged data and the information needed for <data retransmission>. A <receive window> specifies the range the receiver is prepared to accept, limiting buffer use and rejecting data outside the current range; an implementation may retain acceptable out-of-order data until earlier data arrive. As <acknowledgements> and consumption advance, these ranges slide, giving a <sliding window protocol>. Thus
+$$
+\boxed{\text{numbers identify data; send/receive windows bound outstanding/acceptable data}.}
+$$
+
+=== b
+{scope}
+
+==== Solution
+
+<Flow control> prevents a sender from overrunning the receiving <endpoint>'s capacity to buffer and consume data. <Congestion control> prevents the aggregate traffic from overloading the intervening <computer network>, especially shared links and <router> queues. A fast receiver can still sit beyond a congested path; an uncongested path can still lead to a slow receiver. Consequently
+$$
+\boxed{\text{flow control protects the receiver; congestion control protects the network}.}
+$$
+
+=== c
+{scope}
+
+==== Solution
+
+<TCP> implements both restrictions at the sending <endpoint>, using information from different places. For <flow control>, the receiving <TCP> advertises its available <receive window> $\mathrm{rwnd}$ in <TCP> headers. The sending <TCP> tracks that advertised range together with the <acknowledgement> number, and must not send ordinary new data beyond its right edge. As the receiving application consumes data, the receiver can advertise more space. A zero <receive window> stops ordinary new data and invokes the separate probing mechanism.
+
+For <congestion control>, the sender maintains a <congestion window> $\mathrm{cwnd}$ representing its permitted amount of outstanding data given the path's condition. <Acknowledgements>, duplicate <acknowledgements> and <data retransmission> timeouts supply feedback; explicit congestion notifications can also contribute when negotiated. <Routers> supply the underlying evidence through queuing, drops or marks, but ordinary <TCP> <congestion window> management takes place at the <endpoints>, rather than through a per-connection capacity reservation at each <router>.<TCP Congestion Control (RFC 5681)>[§§2–3: cwnd, rwnd, flight size and sender mechanisms]{ref}
+
+Ignoring exceptional probe behaviour, let $F$ be the number of sent but not yet acknowledged <bytes>. The two controls combine approximately as
+$$
+\boxed{F\leq\min(\mathrm{rwnd},\mathrm{cwnd}),\qquad
+\text{new-data allowance}=\max\{0,\min(\mathrm{rwnd},\mathrm{cwnd})-F\}.}
+$$
+The <send window> is anchored by the acknowledged sequence position, rather than authorizing a fresh windowful on every send. <Acknowledgements> release room as old data leave flight. A sudden reduction of a limit can leave already transmitted data above it; the sender then waits instead of recalling those <bytes>. The <receive window> is explicit receiver feedback, whereas the <congestion window> is a local sender variable. No details of their parameter-adjustment algorithms are needed for this distinction.
+
+=== d
+{scope}
+
+==== Solution
+
+For two competing <TCP> connections, each sender's <congestion control> aims to obtain useful throughput while adapting to shared capacity and avoiding persistent overload. For two comparable, continuously backlogged connections at one bottleneck, the usual fairness objective is approximately half the available capacity each, while keeping the bottleneck productively used. The goal is not for both senders independently to seize the whole link. Unequal delays, implementations, application demands and other bottlenecks mean that equal throughput is not guaranteed.
+
+For two <UDP> exchanges, there is no corresponding built-in transport <congestion control> objective: <UDP> sends datagrams without specifying a congestion response. The applications might implement well-behaved <congestion control>, rate limiting or no adaptation at all. Consequently two <UDP> labels alone do not determine either a target share or the resulting allocation. Applications should still manage overload; that responsibility is outside the base <UDP> service.
+
+For a competing <TCP> connection and an unresponsive high-rate <UDP> application sharing an ordinary queue, losses cause the <TCP> sender to reduce its offered load while the <UDP> sender continues. The <UDP> traffic can take much of the bottleneck capacity and severely reduce <TCP> throughput. If the <UDP> rate exceeds capacity, it too loses <packets>; sending more does not guarantee useful delivery. A modest-rate or adaptive <UDP> application, or a <router> enforcing <fair queueing>, gives a different outcome. Thus
+$$
+\boxed{\text{TCP seeks an adaptive fair share; UDP alone supplies no competing control law}.}
+$$
+
+=== e
+{scope}
+
+==== Solution
+
+<Nagle's algorithm> prevents the small-packet problem: an application that writes one or a few <bytes> at a time could generate a separate <TCP> <TCP segment> for each write, with transport/link overhead and <router> work far larger than the useful data. This is a sender-side cause of the <silly window syndrome> family of inefficient tiny transmissions.
+
+When no data are outstanding, send the first small <TCP segment> promptly. While data remain unacknowledged, accumulate further small writes instead of emitting another short <TCP segment>. Release the accumulated data when either enough are available for a full-sized <TCP segment>, subject to the allowed <send window>, or the outstanding data have been acknowledged. This makes the waiting adapt to the <round-trip time>, rather than imposing one fixed batching interval.<RFC 896>[The small-packet problem and the proposed unacknowledged-data rule]{ref}
+
+The penalty is extra <network latency> for later small writes. A short application message split across writes may have its second piece delayed awaiting the <acknowledgement> of the first. If the receiver uses a <delayed acknowledgement> while its application awaits that second piece, progress can wait for the acknowledgement timer. It is a delay interaction, not a permanent deadlock while that timer works. Latency-sensitive applications can request that <Nagle's algorithm> be disabled, accepting the possible extra <packets>. The tradeoff is
+$$
+\boxed{\text{fewer tiny segments, at the cost of waiting to coalesce subsequent small writes}.}
+$$
+
+=== f
+{scope}
+
+==== Solution
+
+The decisive difficulty is that a <TCP> <receive window> update is not itself delivered by a reliable notification channel. The receiver can advertise a newly nonzero <receive window>, but the <packet> carrying that advertisement can be lost. With the sender stopped and the receiver expecting more data, neither side need send anything else. The sender can then wait forever despite available receiver space.
+
+A <TCP> <acknowledgement> containing only an updated <receive window> does not occupy new sequence space that would make its loss trigger normal <data retransmission>. Requiring an <acknowledgement> of every such notification would introduce a separate reliability rule; that new <acknowledgement> can itself be lost. Some participant still needs a timer and retry rule. Reordering can also deliver stale advertisements, so <transport sequence number> and <acknowledgement> checks are needed in addition to merely sending a notification.
+
+The <persist timer> assigns the repeated enquiry to the side that has data waiting: the sender periodically sends a <zero-window probe>, eliciting an <acknowledgement> with the receiver's current <receive window>. If one enquiry or response is lost, a later attempt can succeed. Receiver window updates remain useful for prompt resumption; probes provide recovery when those updates disappear.<Requirements for Internet Hosts - Communication Layers (RFC 1122)>[§4.2.2.17: zero-window probing prevents indefinite hangs when a reopening ACK is lost]{ref}
+
+One could instead specify repeated receiver notifications, a response and suitable timers, but that replaces the recovery mechanism rather than eliminating its purpose. Therefore
+$$
+\boxed{\text{a lost reopening notification can deadlock the exchange; timed retries are needed}.}
+$$

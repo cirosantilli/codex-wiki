@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>dual-basis-skew-coordinates.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="dual-basis-skew-coordinates.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/dual-basis-skew-coordinates.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">dual-basis-skew-coordinates.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/dual-basis-skew-coordinates.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/dual-basis-skew-coordinates.py">dual-basis-skew-coordinates.py</a></b></div></nav></div><div class="p"><b>dual-basis-skew-coordinates.py</b></div><div class="code"><div><pre><code>"""Show how two dual measurements recover a vector's skew-basis coordinates."""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    basis=np.array([[1.,1.],[0.,1.]])
+    dual=np.linalg.inv(basis)
+    v=np.array([3.,1.])
+    coefficients=dual @ v
+    assert np.allclose(dual @ basis,np.eye(2))
+    assert np.allclose(coefficients,[2,1])
+    assert np.allclose(basis @ coefficients,v)
+    old_row=np.array([2.,-1.]);new_row=old_row @ basis
+    assert np.allclose(new_row,[2,1])
+    assert old_row @ v==new_row @ coefficients==5
+    assert np.allclose(basis.T @ v,[3,4])
+    fig,axes=plt.subplots(1,2,figsize=(11,5.8),dpi=120,facecolor='white')
+    x=np.linspace(-.4,3.7,200)
+    for j,ax in enumerate(axes):
+        row=dual[j]
+        for c in [-1,0,1,2,3]:
+            y=(row[0]*x-c)/(-row[1])
+            focus=c==coefficients[j]
+            ax.plot(x,y,color='#2b709f' if focus else '#cbd4dc',
+                    lw=2.3 if focus else 1.1,ls='-' if focus else '--')
+        for vec,label,color in [(basis[:,0],r'$b_1$','#3a7252'),
+                                (basis[:,1],r'$b_2$','#8c5a9d'),(v,r'$v$','#2b709f')]:
+            ax.annotate('',xy=vec,xytext=(0,0),
+                        arrowprops={'arrowstyle':'-&gt;','color':color,'lw':2.3})
+            offset=(-.12,.15) if label==r'$b_1$' else (-.18,.05)
+            ax.text(vec[0]+offset[0],vec[1]+offset[1],label,color=color,fontsize=14)
+        ax.plot([0,2,3],[0,0,1],color='#c67b2f',lw=2,ls=':',zorder=4)
+        ax.scatter(*v,s=60,color='#2b709f',zorder=5)
+        ax.axhline(0,color='#8d9ba7',lw=.7);ax.axvline(0,color='#8d9ba7',lw=.7)
+        ax.set(xlim=(-.4,3.7),ylim=(-.4,3.2),aspect='equal',xlabel='x',ylabel='y')
+        ax.spines[['top','right']].set_visible(False)
+        formula=r'$b_1^*(x,y)=x-y$' if j==0 else r'$b_2^*(x,y)=y$'
+        ax.set_title(formula,fontsize=16,pad=12)
+        ax.text(.5,-.25,rf'$b_{j+1}^*(3,1)={int(coefficients[j])}$',
+                ha='center',transform=ax.transAxes,fontsize=16,color='#2b709f')
+        label=rf'$b_{j+1}^*={int(coefficients[j])}$'
+        ax.text(2.68,.51 if j==0 else 1.1,label,fontsize=12,color='#2b709f',
+                bbox={'facecolor':'white','edgecolor':'none','pad':2})
+    fig.suptitle('Dual measurements recover coefficients, even for a skew basis',fontsize=17,y=.975)
+    fig.text(.5,.03,r'$v=(3,1)=2b_1+b_2$; blue lines are equal-measurement sets.',
+             ha='center',fontsize=14)
+    fig.subplots_adjust(left=.065,right=.965,bottom=.26,top=.83,wspace=.28)
+    fig.savefig(Path.cwd()/Path(__file__).with_suffix('.png').name,
+                facecolor='white',transparent=False)
+    plt.close(fig)
+
+
+if __name__=='__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

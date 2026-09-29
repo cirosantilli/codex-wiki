@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Past exam of the computer science course of the University of Oxford / 2015 / Principles of programming languages / 3 / a / Solution - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="Past exam of the computer science course of the University of Oxford / 2015 / Principles of programming languages / 3 / a / Solution - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="solution"><div class="notnav"><h1><a href="../../../../../past-exam-of-the-computer-science-course-of-the-university-of-oxford">Past exam of the computer science course of the University of Oxford</a><span class="meta"> / </span><a href="../../../../2015">2015</a><span class="meta"> / </span><a href="../../../principles-of-programming-languages">Principles of programming languages</a><span class="meta"> / </span><a href="../../../principles-of-programming-languages#3">3</a><span class="meta"> / </span><a href="../../../principles-of-programming-languages#3/a">a</a><span class="meta"> / </span><a href="">Solution</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a  href="#-/ancestors">&nbsp;...</a><a href="../../../../../university-of-oxford#computer-science-course-of-the-university-of-oxford"> Computer science course of the University of Oxford</a><a href="../../../../../past-exam-of-the-computer-science-course-of-the-university-of-oxford"> Past exam of the computer science course of the University of Oxford</a><a href="../../../../2015"> 2015</a><a href="../../../principles-of-programming-languages"> Principles of programming languages</a><a href="../../../principles-of-programming-languages#3"> 3</a><a href="../../../principles-of-programming-languages#3/a"> a</a></div><div class="nav"><a href="https://ourbigbook.com/codex/past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/principles-of-programming-languages/3/a/solution"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a><a class="nosplit" href="../../../principles-of-programming-languages#3/a/solution"></a><span class="metrics"><span class="wcntr"> Words: 395</span></span></div></nav></div><div class="p" id="-/88">Use <a href="../../../../../programming-language#closure-computer-programming">programming closures</a> that receive evaluated arguments and return a computation in the chosen <a href="../../../../../programming-language#computational-monad">computational monad</a>. A sufficient core of the semantic value domain is:</div><div class="code" id="-/89"><div><pre><code>data Value = IntVal Integer
+           | BoolVal Bool
+           | Function ([Value] -&gt; M Value)</code></pre></div></div><div class="p" id="-/90">Additional constructors may represent the other built-in values. Assume a <a href="../../../../../programming-language#semantic-environment">semantic environment</a> abstract data type with operations <code>lookupEnv :: Env -&gt; Ident -&gt; Value</code> and <code>extend :: Env -&gt; [(Ident,Value)] -&gt; Env</code>. The latter simultaneously adds the listed bindings, shadowing old bindings. Parameter names in one binding list are distinct, and calls have the expected arity.</div><div class="p" id="-/91">Define <a href="../../../../../programming-language#closure-computer-programming">programming closure</a> construction separately; it does not run the body:</div><div class="code" id="-/92"><div><pre><code>close :: Expr -&gt; Env -&gt; Value
+close (Lambda xs body) rho =
+  Function (\args -&gt; eval body (extend rho (zip xs args)))
+
+apply :: Value -&gt; [Value] -&gt; M Value
+apply (Function f) args = f args</code></pre></div></div><div class="p" id="-/93">The four expression forms have the following semantic equations. Function position is evaluated first, followed by argument expressions from left to right:</div><div class="code" id="-/94"><div><pre><code>eval :: Expr -&gt; Env -&gt; M Value
+
+eval (Variable x) rho = result (lookupEnv rho x)
+
+eval (Apply e es) rho =
+  bind (eval e rho) (\f -&gt;
+    bind (evalArgs es rho) (\args -&gt; apply f args))
+
+eval e@(Lambda xs body) rho = result (close e rho)
+
+eval (Let d body) rho =
+  bind (defn d rho) (\rho' -&gt; eval body rho')
+
+evalArgs :: [Expr] -&gt; Env -&gt; M [Value]
+evalArgs [] rho = result []
+evalArgs (e:es) rho =
+  bind (eval e rho) (\v -&gt;
+    bind (evalArgs es rho) (\vs -&gt; result (v:vs)))</code></pre></div></div><div class="p" id="-/95">The two definition forms are:</div><div class="code" id="-/96"><div><pre><code>defn :: Defn -&gt; Env -&gt; M Env
+
+defn (Val x e) rho =
+  bind (eval e rho) (\v -&gt; result (extend rho [(x,v)]))
+
+defn (Rec x e@(Lambda xs body)) rho = result rho'
+  where
+    rho' = extend rho [(x,v)]
+    v = close e rho'</code></pre></div></div><div class="p" id="-/97">The ordinary definition evaluates its right-hand side in the old <a href="../../../../../programming-language#semantic-environment">semantic environment</a>; its own name is not yet bound there. The recursive definition creates a <a href="../../../../../programming-language#recursive-closure">recursive closure</a> in the extended <a href="../../../../../programming-language#semantic-environment">semantic environment</a> containing itself. Because the right-hand side is a <a href="../../../../../computability-theory#lambda-abstraction">lambda abstraction</a>, constructing that <a href="../../../../../programming-language#closure-computer-programming">programming closure</a> does not evaluate its body. <a href="../../../../../programming-language#haskell">Haskell</a>'s <a href="../../../../../programming-language#lazy-evaluation">lazy evaluation</a> can tie this recursive data structure without requiring any extra fixed-point operation from the arbitrary <a href="../../../../../programming-language#computational-monad">computational monad</a>.</div><div class="p" id="-/98"><a href="../../../../../programming-language#lexical-scope">Lexical scope</a> is explicit: calling a <a href="../../../../../programming-language#closure-computer-programming">programming closure</a> extends the defining <a href="../../../../../programming-language#semantic-environment">semantic environment</a>, and its parameters shadow bindings in that <a href="../../../../../programming-language#semantic-environment">semantic environment</a>. The six requested constructs are therefore covered by<div class="math" id="-/99"><div><div class="equation"><div><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.5689em;vertical-align:-0.5344em;"></span><span class="mord"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.0344em;"><span style="top:-3.5689em;"><span class="pstrut" style="height:3.5689em;"></span><span class="boxpad"><span class="mord"><span class="mord"><span class="mop"><span class="mord mathrm">Variable</span></span><span class="mpunct">,</span><span class="mspace"> </span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop"><span class="mord mathrm" style="margin-right:0.01389em;">Apply</span></span><span class="mpunct">,</span><span class="mspace"> </span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop"><span class="mord mathrm">Lambda</span></span><span class="mpunct">,</span><span class="mspace"> </span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop"><span class="mord mathrm">Let</span></span><span class="mpunct">,</span><span class="mspace"> </span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop"><span class="mord mathrm">Val</span></span><span class="mpunct">,</span><span class="mspace"> </span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop"><span class="mord mathrm">Rec</span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">.</span></span></span></span></span><span style="top:-3.0344em;"><span class="pstrut" style="height:3.5689em;"></span><span class="stretchy fbox" style="height:1.5689em;border-style:solid;border-width:0.04em;"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5344em;"><span></span></span></span></span></span></span></span></span></div><div class="number"><a href="#-/99">(20)</a></div></div></div></div></div><h2 id="-/ancestors"><a href="#-/ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(11)</span></a></h2><div class="list"><ol><li><a href="../../../principles-of-programming-languages#3/a">A</a></li><li><a href="../../../principles-of-programming-languages#3">3</a></li><li><a href="../../../principles-of-programming-languages">Principles of programming languages</a></li><li><a href="../../../../2015">2015</a></li><li><a href="../../../../../past-exam-of-the-computer-science-course-of-the-university-of-oxford">Past exam of the computer science course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#computer-science-course-of-the-university-of-oxford">Computer science course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#undergraduate-course-of-the-university-of-oxford">Undergraduate course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#course-of-the-university-of-oxford">Course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford">University of Oxford</a></li><li><a href="../../../../..#list-of-universities">List of universities</a></li><li><a href="../../../../.."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+<div>Source code for this page: <a href="../../../../../-/file/past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/principles-of-programming-languages.bigb">past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/principles-of-programming-languages.bigb</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/principles-of-programming-languages/3/a/";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

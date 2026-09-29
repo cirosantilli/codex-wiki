@@ -1,0 +1,26 @@
+"""Original local adenosine-deaminase proton relay; proposed route, output to cwd."""
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyArrowPatch
+fig,axs=plt.subplots(1,3,figsize=(14,5.6),facecolor='white')
+for a in axs:a.axis('off');a.set(xlim=(-2.2,2.2),ylim=(-2.2,2.2),aspect='equal')
+def text(a,p,s,fs=12,c='k'):a.text(*p,s,fontsize=fs,ha='center',va='center',color=c,bbox=dict(fc='white',ec='none',pad=1),zorder=3)
+def line(a,p,q,ls='-',c='#444'):a.plot([p[0],q[0]],[p[1],q[1]],ls=ls,color=c,lw=1.5,zorder=1)
+def arrow(a,p,q,rad=0):a.add_patch(FancyArrowPatch(p,q,connectionstyle=f'arc3,rad={rad}',arrowstyle='->',mutation_scale=12,lw=1.5,color='#ad5930',zorder=4))
+a=axs[0];a.set_title('1  Water and ring activation',fontsize=12,weight='bold')
+text(a,(-1.3,1.55),'His238');text(a,(.25,1.4),'H–O–H',13);text(a,(1.4,1.4),'Zn²⁺',13);line(a,(.6,1.4),(1.15,1.4),':')
+text(a,(.15,0),'C6(NH₂)',13);text(a,(-1.1,-.8),'N1',13);line(a,(-.9,-.65),(-.1,-.15));line(a,(-.85,-.77),(-.05,-.27));text(a,(-1.2,-1.65),'Glu217–CO₂H',12)
+arrow(a,(-.85,1.45),(-.15,1.45),.15);arrow(a,(.35,1.05),(.2,.28),-.2);arrow(a,(-1.02,-1.0),(-.95,-1.35),.2);arrow(a,(-.45,-.4),(-.94,-.65),-.25);arrow(a,(-.08,1.3),(.24,1.5),-.3)
+text(a,(.4,-1.7),'Coupled acid/base\nassistance is possible',10,'#555')
+a=axs[1];a.set_title('2  Tetrahedral addition intermediate',fontsize=12,weight='bold')
+text(a,(0,0),'C6',14)
+for p,s in [((-1.1,-.65),'N1H'),((1.05,-.65),'NH₂'),((0,1.05),'OH')]:line(a,(0,0),p);text(a,p,s,13)
+line(a,(0,0),(0,-.95));text(a,(0,-1.2),'ring C5',10)
+text(a,(1.25,1.55),'Zn²⁺',13);line(a,(.2,1.1),(1.05,1.45),':');text(a,(-1.15,1.6),'His238H⁺',11);text(a,(-1.1,-1.7),'Glu217–CO₂⁻',11)
+text(a,(.3,-1.9),'Proton relay enables\nleaving-group departure',10,'#555')
+a=axs[2];a.set_title('3  Collapse, product and reset',fontsize=12,weight='bold')
+text(a,(0,0),'C6',14);text(a,(0,1),'O',14);line(a,(-.07,.2),(-.07,.8));line(a,(.07,.2),(.07,.8));text(a,(-1.15,-.65),'N1H',13);line(a,(-.15,-.1),(-.95,-.5));line(a,(0,-.2),(0,-.95));text(a,(0,-1.2),'ring C5',10)
+text(a,(1.1,.15),'+ NH₃',13);text(a,(-.2,1.7),'Zn site binds fresh water',11);text(a,(0,-1.8),'Catalytic groups exchange protons\nwith solvent and return to starting states',10,'#555')
+fig.text(.5,.03,'Local fragments only: the purine framework and N9–ribose bond are retained. His238-as-initial-base is one consistent route, not uniquely proved by mutant kinetics.',ha='center',fontsize=9)
+fig.tight_layout(rect=(0,.08,1,1));fig.savefig('paper-2-enzyme.png',dpi=170,facecolor='white',bbox_inches='tight',pad_inches=.15);plt.close(fig)

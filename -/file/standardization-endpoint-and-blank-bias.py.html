@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>standardization-endpoint-and-blank-bias.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="standardization-endpoint-and-blank-bias.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/standardization-endpoint-and-blank-bias.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">standardization-endpoint-and-blank-bias.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/standardization-endpoint-and-blank-bias.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/standardization-endpoint-and-blank-bias.py">standardization-endpoint-and-blank-bias.py</a></b></div></nav></div><div class="p"><b>standardization-endpoint-and-blank-bias.py</b></div><div class="code"><div><pre><code>"""Original exact additive-volume bias comparison; no experimental data.
+
+Run from _media using Python 3.14, Matplotlib 3.10.7 and NumPy 2.3.5.
+Writes basename.png in the current directory. All parameters are selected.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    ink, blue, orange = "#20364b", "#155e9b", "#b75520"
+    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10})
+    fig = plt.figure(figsize=(10, 5.5), dpi=120, facecolor="white")
+    fig.suptitle("Extra titre volume lowers the standardized concentration",
+                 y=0.975, fontsize=16, weight="bold", color=ink)
+    fig.text(0.5, 0.90, "Original additive-error model • selected inputs • not measured data",
+             ha="center", fontsize=10.5, color=ink)
+
+    ax = fig.add_axes([0.075, 0.23, 0.36, 0.56])
+    delta = np.linspace(0, 0.2, 401)
+    for reference, color in [(24.8, blue), (5.0, orange)]:
+        bias = -100 * delta / (reference + delta)
+        ax.plot(delta, bias, color=color, lw=2.4,
+                label=f"Reference titre {reference:.2f} mL")
+        point = -100 * 0.05 / (reference + 0.05)
+        ax.plot(0.05, point, "o", color=color)
+        ax.annotate(f"{point:.4f}%", xy=(0.05, point),
+                    xytext=(0.077, point + (0.28 if reference &gt; 5 else -0.48)),
+                    color=color, fontsize=10,
+                    arrowprops={"arrowstyle": "-", "color": color})
+    ax.axhline(0, color="#8393a2", lw=0.8)
+    ax.axvline(0.05, color="#8393a2", ls="--", lw=0.9)
+    ax.set(xlim=(0, 0.2), ylim=(-4.1, 0.25),
+           xlabel=r"Extra denominator volume $\delta V$ (mL)",
+           ylabel="Relative concentration error (%)")
+    ax.set_xticks(np.arange(0, 0.201, 0.05))
+    ax.grid(alpha=0.2)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.legend(loc="lower left", fontsize=9, frameon=False)
+    ax.set_title("A small titre magnifies a fixed volume error", fontsize=11, pad=14)
+
+    table_ax = fig.add_axes([0.48, 0.23, 0.50, 0.56])
+    table_ax.axis("off")
+    table_ax.set_title("Same 0.002500 mol inventory in every row", fontsize=11, pad=14)
+    amount_mol, reference_ml = 0.0025, 24.8
+    labels = ["Corrected reference", "+0.05 mL overshoot",
+              "0.05 mL blank left in", "Both errors"]
+    extras = [0.0, 0.05, 0.05, 0.10]
+    rows = []
+    for label, extra in zip(labels, extras):
+        denominator = reference_ml + extra
+        concentration = amount_mol / (denominator / 1000)
+        error = -100 * extra / denominator
+        rows.append([label, f"{denominator:.2f}", f"{concentration:.8f}",
+                     "0" if extra == 0 else f"{error:.4f}"])
+    table = table_ax.table(cellText=rows,
+                          colLabels=["Case", "V (mL)", "c (mol/L)", "Error (%)"],
+                          colWidths=[0.40, 0.16, 0.25, 0.19],
+                          cellLoc="center", bbox=[0, 0.16, 1, 0.80])
+    table.auto_set_font_size(False)
+    table.set_fontsize(8.7)
+    for (row, col), cell in table.get_celld().items():
+        cell.set_edgecolor("#d4dfe8")
+        cell.set_linewidth(0.6)
+        cell.set_text_props(color=ink)
+        if row == 0:
+            cell.set_facecolor("#e6f0f7")
+            cell.set_text_props(weight="bold")
+        elif row in (2, 3):
+            cell.set_facecolor("#fff4e9")
+        else:
+            cell.set_facecolor("white")
+    table_ax.text(0.5, 0.02, "Equal extra denominators give equal bias.",
+                  ha="center", fontsize=10, color=orange, weight="bold")
+    fig.text(0.5, 0.115,
+             r"$\widehat{c}=n_s/(V+\delta V)$"
+             r"     $\Longrightarrow$     $(\widehat{c}-c)/c=-\delta V/(V+\delta V)$",
+             ha="center", fontsize=15, color=blue)
+    fig.text(0.5, 0.04,
+             "Overshoot and unremoved blank are separate causes; their volume offsets add in this model.",
+             ha="center", fontsize=9.5, color=ink)
+    fig.savefig(Path(__file__).stem + ".png", facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

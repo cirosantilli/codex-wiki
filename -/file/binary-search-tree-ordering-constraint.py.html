@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>binary-search-tree-ordering-constraint.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="binary-search-tree-ordering-constraint.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/binary-search-tree-ordering-constraint.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">binary-search-tree-ordering-constraint.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/binary-search-tree-ordering-constraint.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/binary-search-tree-ordering-constraint.py">binary-search-tree-ordering-constraint.py</a></b></div></nav></div><div class="p"><b>binary-search-tree-ordering-constraint.py</b></div><div class="code"><div><pre><code>"""Show why binary search tree bounds apply to all descendants.
+
+Tested with Python 3.14.4, NumPy 2.3.5 and Matplotlib 3.10.7.
+Run from _media; write the matching opaque white PNG to the current directory.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, FancyArrowPatch, FancyBboxPatch
+import numpy as np
+
+
+INK = "#243746"
+GREEN = "#177458"
+RED = "#b43132"
+BLUE = "#236b95"
+
+
+def draw(ax, lower_key, valid):
+    color = GREEN if valid else RED
+    ax.set(xlim=(-2.3, 2.15), ylim=(-0.25, 4.95), aspect="equal")
+    ax.axis("off")
+    ax.text(0, 4.65, "Valid search tree" if valid else "Invalid search tree",
+            fontsize=15, weight="bold", ha="center", color=color)
+    ax.add_patch(FancyBboxPatch((-1.85, 0.9), 1.8, 2.3,
+                                boxstyle="round,pad=0.1", facecolor="#edf5fa",
+                                edgecolor=BLUE, linewidth=1.4, linestyle="--"))
+    positions = {"root": (0, 3.85), "left": (-1.3, 2.75),
+                 "right": (1.3, 2.75), "lower": (-0.4, 1.45)}
+    labels = {"root": 4, "left": 2, "right": 6, "lower": lower_key}
+    edges = [("root", "left", "L"), ("root", "right", "R"),
+             ("left", "lower", "R")]
+    radius = 0.25
+    for parent, child, side in edges:
+        start = np.asarray(positions[parent], dtype=float)
+        end = np.asarray(positions[child], dtype=float)
+        direction = (end - start) / np.linalg.norm(end - start)
+        ax.add_patch(FancyArrowPatch(start + radius * direction,
+                                    end - radius * direction,
+                                    arrowstyle="-|&gt;", mutation_scale=13,
+                                    color=INK, linewidth=1.6))
+        middle = (start + end) / 2
+        ax.text(middle[0] + (0.15 if side == "R" else -0.15), middle[1],
+                side, color=INK, ha="center", va="center", fontsize=10,
+                bbox={"facecolor": "white", "edgecolor": "none", "pad": 0.4})
+    for name, (x, y) in positions.items():
+        focus = name == "lower"
+        ax.add_patch(Circle((x, y), radius,
+                            facecolor=("#e2f3eb" if valid else "#ffe7e7") if focus else "white",
+                            edgecolor=color if focus else INK, linewidth=2 if focus else 1.5))
+        ax.text(x, y, str(labels[name]), fontsize=14, weight="bold",
+                color=INK, ha="center", va="center")
+    ax.text(-1.02, 0.63, "Entire left subtree: keys &lt; 4", color=BLUE, fontsize=10, ha="center")
+    ax.text(0, 0.1, "2 &lt; 3 &lt; 4: both bounds hold" if valid else "2 &lt; 5 holds, but 5 &lt; 4 fails",
+            color=color, fontsize=12, ha="center", weight="bold")
+
+
+def main():
+    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 11})
+    fig, axes = plt.subplots(1, 2, figsize=(10.2, 5.8), dpi=110)
+    fig.patch.set_facecolor("white")
+    draw(axes[0], 3, True)
+    draw(axes[1], 5, False)
+    fig.suptitle("A child's key must respect every ancestor bound", fontsize=17, color=INK)
+    fig.text(0.5, 0.035, "Both diagrams pass immediate parent-child comparisons. Only the left satisfies the full rule.",
+             ha="center", color=INK, fontsize=10.5)
+    fig.subplots_adjust(left=0.035, right=0.975, top=0.9, bottom=0.09, wspace=0.17)
+    fig.savefig(Path.cwd() / "binary-search-tree-ordering-constraint.png",
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

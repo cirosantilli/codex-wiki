@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Past exam of the year 1 of the computer science course of the University of Oxford / 2022 / Imperative programming (resit) / 8 / a / Solution - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="Past exam of the year 1 of the computer science course of the University of Oxford / 2022 / Imperative programming (resit) / 8 / a / Solution - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="solution"><div class="notnav"><h1><a href="../../../../../past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford">Past exam of the year 1 of the computer science course of the University of Oxford</a><span class="meta"> / </span><a href="../../../../2022">2022</a><span class="meta"> / </span><a href="../../../imperative-programming-resit">Imperative programming (resit)</a><span class="meta"> / </span><a href="../../../imperative-programming-resit#8">8</a><span class="meta"> / </span><a href="../../../imperative-programming-resit#8/a">a</a><span class="meta"> / </span><a href="">Solution</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a  href="#-/ancestors">&nbsp;...</a><a href="../../../../../university-of-oxford#year-1-of-the-computer-science-course-of-the-university-of-oxford"> Year 1 of the computer science course of the University of Oxford</a><a href="../../../../../past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford"> Past exam of the year 1 of the computer science course of the University of Oxford</a><a href="../../../../2022"> 2022</a><a href="../../../imperative-programming-resit"> Imperative programming (resit)</a><a href="../../../imperative-programming-resit#8"> 8</a><a href="../../../imperative-programming-resit#8/a"> a</a></div><div class="nav"><a href="https://ourbigbook.com/codex/past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2022/imperative-programming-resit/8/a/solution"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a><a class="nosplit" href="../../../imperative-programming-resit#8/a/solution"></a><span class="metrics"><span class="wcntr"> Words: 405</span></span></div></nav></div><div class="p" id="-/136">A <a href="../../../../../set#signed-multiset">complete multiset</a> is a finite-support signed count function. An absent key has count zero; negative counts are allowed. One simple default implementation uses a protected immutable association list with unique keys and nonzero values. Its default is empty, and optimized subclasses may override the public queries.</div><div class="code" id="-/137"><div><pre><code>trait CompleteMultiSet[T] {
+  // Representation contract: finite, immutable, unique keys, nonzero counts.
+  protected def entries: List[(T, Int)] = Nil
+
+  def count(t: T): Int =
+    entries.find { case (key, _) =&gt; key == t }.map(_._2).getOrElse(0)
+
+  lazy val present: Seq[T] = entries.map(_._1)
+
+  private def combine(other: CompleteMultiSet[T],
+                      op: (Int, Int) =&gt; Int): CompleteMultiSet[T] = {
+    val keys = (present.toList ++ other.present.toList).distinct
+    val resultRows = keys.flatMap { t =&gt;
+      val n = op(count(t), other.count(t))
+      if (n == 0) Nil else List((t, n))
+    }
+    new CompleteMultiSet[T] {
+      override protected val entries: List[(T, Int)] = resultRows
+    }
+  }
+
+  def +(other: CompleteMultiSet[T]): CompleteMultiSet[T] =
+    combine(other, (a, b) =&gt; java.lang.Math.addExact(a, b))
+
+  def -(other: CompleteMultiSet[T]): CompleteMultiSet[T] =
+    combine(other, (a, b) =&gt; java.lang.Math.subtractExact(a, b))
+
+  def max(other: CompleteMultiSet[T]): CompleteMultiSet[T] =
+    combine(other, (a, b) =&gt; math.max(a, b))
+
+  def min(other: CompleteMultiSet[T]): CompleteMultiSet[T] =
+    combine(other, (a, b) =&gt; math.min(a, b))
+
+  def &lt;=(other: CompleteMultiSet[T]): Boolean =
+    (present.toList ++ other.present.toList).distinct.forall { t =&gt;
+      count(t) &lt;= other.count(t)
+    }
+
+  override def toString: String =
+    present.distinct.filter(t =&gt; count(t) != 0)
+      .map(t =&gt; s"$t:${count(t)}").mkString("{", ", ", "}")
+}</code></pre></div></div><div class="p" id="-/138">The <a href="../../../../../computer-science#representation-invariant">representation invariant</a> and <a href="../../../../../computer-science#abstraction-function">abstraction function</a> assign the association-list value at a stored key and zero elsewhere. Every operation preserves both operands and returns a fresh immutable value. The <a href="../../../../../function#finite-support-pointwise-operations">finite-support pointwise operations</a> principle makes the support union sufficient because every operation sends <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord">0</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord">0</span><span class="mclose">)</span></span></span></span> to zero. It is necessary for signed counts: <b>the empty value is not at most a value having count <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7278em;vertical-align:-0.0833em;"></span><span class="mord">−</span><span class="mord">1</span></span></span></span> at one key</b>, although the empty left support alone would give a vacuous true comparison. Likewise, pointwise minimum can retain a negative count appearing only in the other operand.</div><div class="p" id="-/139"><b><code>present == List()</code> represents the all-zero, empty <a href="../../../../../set#signed-multiset">complete multiset</a>.</b> The list-backed default <code>count</code> takes <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">Θ</span><span class="mopen">(</span><span class="mord">1</span><span class="mclose">)</span></span></span></span> time for a first-entry hit or an empty list, and <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">Θ</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.10903em;">N</span><span class="mclose">)</span></span></span></span> in the worst case for a missing or final key, assuming constant-cost key equality. The default binary operations can consequently take quadratic time; they are deliberately simple defaults, not optimized implementations. The lazy <code>present</code> avoids an early call to a subclass's representation during initialization.</div><div class="p" id="-/140">Counts use <code>Int</code>, so addition and subtraction explicitly throw <code>ArithmeticException</code> when the mathematical result is unrepresentable instead of silently wrapping. Equivalently, their mathematical <a href="../../../../../algorithm#precondition">precondition</a> requires representable result counts. This machine-size restriction is separate from permitting negative counts.</div><h2 id="-/ancestors"><a href="#-/ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(12)</span></a></h2><div class="list"><ol><li><a href="../../../imperative-programming-resit#8/a">A</a></li><li><a href="../../../imperative-programming-resit#8">8</a></li><li><a href="../../../imperative-programming-resit">Imperative programming (resit)</a></li><li><a href="../../../../2022">2022</a></li><li><a href="../../../../../past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford">Past exam of the year 1 of the computer science course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#year-1-of-the-computer-science-course-of-the-university-of-oxford">Year 1 of the computer science course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#computer-science-course-of-the-university-of-oxford">Computer science course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#undergraduate-course-of-the-university-of-oxford">Undergraduate course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#course-of-the-university-of-oxford">Course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford">University of Oxford</a></li><li><a href="../../../../..#list-of-universities">List of universities</a></li><li><a href="../../../../.."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+<div>Source code for this page: <a href="../../../../../-/file/past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2022/imperative-programming-resit.bigb">past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2022/imperative-programming-resit.bigb</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2022/imperative-programming-resit/8/a/";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

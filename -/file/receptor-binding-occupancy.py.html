@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>receptor-binding-occupancy.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="receptor-binding-occupancy.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/receptor-binding-occupancy.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">receptor-binding-occupancy.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/receptor-binding-occupancy.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/receptor-binding-occupancy.py">receptor-binding-occupancy.py</a></b></div></nav></div><div class="p"><b>receptor-binding-occupancy.py</b></div><div class="code"><div><pre><code>"""Plot independent-site equilibrium occupancy; write basename.png in cwd.
+
+Tested with Python 3.14.4, NumPy 2.3.5 and Matplotlib 3.10.7.
+The 10 nM dissociation constant is illustrative, not fitted experimental data.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    kd = 10.0  # nM; all concentrations below refer to free ligand.
+    points = np.array([1.0, 10.0, 100.0])
+    occupied = points / (kd + points)
+    np.testing.assert_allclose(occupied, [1 / 11, 0.5, 10 / 11])
+    fig, axes = plt.subplots(1, 2, figsize=(9.6, 4.9), sharey=True)
+    fig.subplots_adjust(left=0.085, right=0.97, bottom=0.23, top=0.80, wspace=0.13)
+    fig.patch.set_facecolor("white")
+    for ax, logarithmic in zip(axes, (False, True)):
+        ligand = np.geomspace(0.1, 1000, 500) if logarithmic else np.linspace(0, 120, 500)
+        ax.plot(ligand, ligand / (kd + ligand), color="#236d99", lw=2.5)
+        ax.scatter(points, occupied, color="#b6531f", s=42, zorder=5)
+        ax.axhline(0.5, color="#777777", ls="--", lw=1)
+        ax.axvline(kd, color="#777777", ls="--", lw=1)
+        ax.set_ylim(0, 1.02)
+        ax.set_yticks([0, 0.25, 0.5, 0.75, 1])
+        ax.set_xlabel("Free ligand concentration [L] (nM)", fontsize=11)
+        ax.set_title("Logarithmic concentration axis" if logarithmic else "Linear concentration axis", fontsize=12)
+        ax.grid(alpha=0.15)
+        ax.spines[["top", "right"]].set_visible(False)
+        if logarithmic:
+            ax.set_xscale("log")
+            ax.set_xlim(0.1, 1000)
+            ax.set_xticks([0.1, 1, 10, 100, 1000], labels=["0.1", "1", "10", "100", "1000"])
+            labels = ["1 nM: 1/11", "10 nM: 1/2", "100 nM: 10/11"]
+            for x, y, label, offset in zip(points, occupied, labels, [(8, 14), (8, -28), (-75, -28)]):
+                ax.annotate(label, (x, y), xytext=offset, textcoords="offset points", fontsize=10,
+                            color="#8b421b", bbox={"facecolor": "white", "edgecolor": "none", "pad": 2})
+        else:
+            ax.set_xlim(0, 120)
+    axes[0].set_ylabel(r"Fraction of sites occupied, $\theta$", fontsize=11)
+    fig.suptitle(r"Reversible independent-site binding: $\theta=[L]/(K_d+[L])$", fontsize=15, y=0.97)
+    fig.text(0.5, 0.86, r"Toy $K_d=10$ nM; homogeneous sites, equilibrium, negligible ligand depletion", ha="center", fontsize=11)
+    fig.text(0.5, 0.10, "Half occupancy at 10 nM; approaching saturation at high free ligand concentration.", ha="center", fontsize=11)
+    fig.text(0.5, 0.045, "Fraction occupied does not by itself specify the cellular response.", ha="center", fontsize=11, color="#444444")
+    output = Path.cwd() / (Path(__file__).stem + ".png")
+    fig.savefig(output, dpi=120, facecolor="white", transparent=False)
+    plt.close(fig)
+    print(f"Wrote {output.name}; occupancies: {occupied.tolist()}")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

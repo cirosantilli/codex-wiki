@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>fabry-perot-normalized-transmission-peaks.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="fabry-perot-normalized-transmission-peaks.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/fabry-perot-normalized-transmission-peaks.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">fabry-perot-normalized-transmission-peaks.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/fabry-perot-normalized-transmission-peaks.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/fabry-perot-normalized-transmission-peaks.py">fabry-perot-normalized-transmission-peaks.py</a></b></div></nav></div><div class="p"><b>fabry-perot-normalized-transmission-peaks.py</b></div><div class="code"><div><pre><code>"""Original dimensionless Fabry–Pérot profiles; Python 3.14, matplotlib 3.10.7, numpy 2.3.5.
+
+Run from _media to emit this script's matching opaque PNG into the working directory.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def transmission(x, r):
+    return (1-r)**2/((1-r)**2+4*r*np.sin(np.pi*x)**2)
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                         "axes.spines.right": False, "savefig.facecolor": "white"})
+    fig, axes = plt.subplots(1, 2, figsize=(11, 6), facecolor="white")
+    colors = ["#1565a8", "#b45309", "#15805d"]
+    reflectivities = [.25, .75, .95]
+    for r, color in zip(reflectivities, colors):
+        x = np.linspace(-1.25, 1.25, 20001)
+        z = np.linspace(-.30, .30, 12001)
+        axes[0].plot(x, transmission(x, r), color=color, lw=2, label=rf"$R={r:.2f}$")
+        axes[1].plot(z, transmission(z, r), color=color, lw=2)
+        width = 2/np.pi*np.arcsin((1-r)/(2*np.sqrt(r)))
+        axes[1].plot([-width/2, width/2], [.5, .5], color=color, lw=3,
+                     marker="|", markersize=14, markeredgewidth=2, zorder=5)
+    for ax in axes:
+        ax.set(ylim=(0, 1.06), xlabel=r"Normalized frequency $x=(\nu-\nu_m)/\Delta\nu_{\rm FSR}$")
+        ax.grid(alpha=.18)
+    axes[0].set(xlim=(-1.25, 1.25), xticks=[-1, -.5, 0, .5, 1], ylabel="Intensity transmission T")
+    axes[1].set(xlim=(-.3, .3), xticks=[-.3, -.15, 0, .15, .3])
+    axes[1].axhline(.5, color="#555555", ls="--", lw=.9)
+    axes[1].text(.285, .535, "Half maximum", ha="right", color="#555555", fontsize=10)
+    axes[0].set_title("Repeated orders: spacing Δx = 1", weight="bold", fontsize=12)
+    axes[1].set_title("Central peak: exact widths at T = ½", weight="bold", fontsize=12)
+    axes[0].legend(loc="upper center", framealpha=.96, fontsize=10)
+    inset = axes[0].inset_axes([.055, .52, .27, .37])
+    rs = np.linspace(.18, .95, 500)
+    exact = np.pi/(2*np.arcsin((1-rs)/(2*np.sqrt(rs))))
+    approximate = np.pi*np.sqrt(rs)/(1-rs)
+    inset.plot(rs, approximate, "--", color="#9c4055", lw=1.5, label="Approx.")
+    inset.plot(rs, exact, color="#252525", lw=1.5, label="Exact")
+    inset.set(xlim=(.18, .97), ylim=(0, 65), xticks=[.25, .75, .95], yticks=[0, 30, 60])
+    inset.tick_params(labelsize=8)
+    inset.set_title("Finesse", fontsize=9)
+    inset.set_xlabel("R", fontsize=9, labelpad=1)
+    inset.legend(loc="upper left", fontsize=7, frameon=False, handlelength=1.4)
+    fig.subplots_adjust(left=.07, right=.98, bottom=.23, top=.84, wspace=.22)
+    fig.suptitle("Higher reflectivity preserves the peak but narrows the passband", fontsize=15, y=.96)
+    fig.text(.5, .115, r"$T(x)=[1+4R(1-R)^{-2}\sin^2(\pi x)]^{-1}$", ha="center", fontsize=13)
+    fig.text(.5, .050, "Exact normalized FWHM:  R = 0.25 → 0.53989     R = 0.75 → 0.09221     R = 0.95 → 0.01633",
+             ha="center", fontsize=10)
+    fig.savefig(Path.cwd()/(Path(__file__).stem+".png"), dpi=100, transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

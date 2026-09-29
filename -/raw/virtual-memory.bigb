@@ -1,0 +1,656 @@
+= Virtual memory
+{wiki}
+
+<Virtual memory> gives an <operating-system process> an <address space> whose <virtual addresses> are translated to <physical addresses> under <operating system> control. In a system using <paging>, each resident <memory page> maps to a <page frame>; <page tables> describe the mappings and access permissions, while the <memory management unit> enforces them. The same <virtual address> in two <operating-system processes> can refer to different <page frames>. A deliberate shared mapping can instead make different <virtual addresses> refer to the same <page frame>. https://pages.cs.wisc.edu/~remzi/OSTEP/vm-intro.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 13: Address Spaces]{ref}
+
+For example, with 256-<byte> <memory pages>, let process A map virtual page `0x12` to <page frame> `0x07`, and process B map virtual page `0x12` to <page frame> `0x09`. Their identical <virtual address> `0x1234` then denotes <physical address> `0x0734` in A and `0x0934` in B. The address acquires meaning from the current <address space>, not just its numerical value. See <paging> for the calculation.
+
+This separation makes programs easier to place in <computer memory>: consecutive <virtual addresses> need not occupy consecutive <page frames>. It also provides isolation and controlled sharing. <Virtual memory> does not require secondary storage: a system can translate and protect <virtual addresses> while keeping every allocated <memory page> resident in <computer memory>. <Demand paging> adds allocation or loading on first use, and can support an <address space> larger than available <computer memory>; the amount that can be used at once is still limited. Keeping a <working set> resident avoids <memory thrashing>.
+
+An early concrete implementation was Manchester's Atlas. Kilburn, Edwards, Lanigan and Sumner's April 1962 paper describes automatically combining fast core storage with drum storage, transferring 512-word blocks and translating their addresses through page address registers. Its attraction was to spare programmers explicit transfers between these storage levels. This historical use of secondary storage is one application of <virtual memory>, rather than a requirement of every <virtual memory> system. The accessible text below is a reprint of the paper. https://www.dcs.gla.ac.uk/~wpc/grcs/kilburn.pdf[Kilburn et al., One-Level Storage System, 1962, sections 1 and 3]{ref}
+
+= Address space
+{parent=Virtual memory}
+{wiki}
+
+The collection of addresses interpreted in a particular context. An <operating-system process>'s <address space> includes addresses that may be unmapped or inaccessible; belonging to its numerical range does not imply permission to access them.
+
+= Virtual address
+{parent=Address space}
+
+An address interpreted within an <address space>, before <address translation> determines the corresponding <physical address>.
+
+= Address translation
+{parent=Virtual memory}
+
+Converting a <virtual address> to a <physical address> using the current <address space>'s mapping, with access checks. In <paging>, the <memory page> number changes while the offset within it stays fixed.
+
+<Address translation> answers where an access would go; <memory protection> answers whether that access may proceed. Neither answer is the stored value. Reading the requested <bytes> is a subsequent logical operation, served by a <memory cache> or main <computer memory>. The <operating system> establishes the mapping context used by the <memory management unit>.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Mechanism: Address Translation>[Operating Systems: Three Easy Pieces, chapter 15, Mechanism: Address Translation, printed pp. 1–2: hardware mechanism and operating-system control]{ref}
+
+Consider an original toy model with unsigned 12-<bit> <virtual addresses>, <byte> addressing, and 64-<byte> <memory pages> and <page frames>. Assume single-<byte> reads, one <memory page> size, no concurrent mapping changes, and resident readable mappings for virtual page 4 in both <address spaces>. The <virtual address> $v=\mathtt{0x12D}=301$ has six page-number <bits> and six offset <bits>, rather than a split between <hexadecimal> digits. By <Euclidean division>,
+$$
+301=4\cdot64+45,\qquad q=4,\qquad d=45=\mathtt{0x2D}.
+$$
+Process A maps virtual page 4 to <page frame> 13; process B maps it to <page frame> 9. Thus the identical <virtual address> denotes
+$$
+a_A=13\cdot64+45=877=\mathtt{0x36D},\qquad a_B=9\cdot64+45=621=\mathtt{0x26D}.
+$$
+These are addresses, not the <bytes> read there. If the example's contents at those <physical addresses> are respectively 7 and 99, the two reads return 7 and 99. The mapping calculation alone cannot determine either value.
+
+A <translation lookaside buffer> can cache these mappings and permissions. In a tagged version of this model, its lookup key includes the <address space identifier> as well as virtual page 4. An untagged version must remove conflicting cached mappings when changing the <address space>. Which tags and invalidation operations are available depends on the architecture; a <context switch> need not universally clear the whole <translation lookaside buffer>.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Paging: Faster Translations (TLBs)>[Operating Systems: Three Easy Pieces, chapter 19, Paging: Faster Translations (TLBs), section 19.5, printed pp. 9–10: flushing and address-space identifiers]{ref}
+
+The arithmetic explains the beauty of <paging>: a mapping can move an entire <memory page> without changing its internal positions. Indeed, for two offsets $d_1,d_2$ in the same mapped <memory page>,
+$$
+(fP+d_2)-(fP+d_1)=d_2-d_1.
+$$
+For process A, virtual page 4 spans `0x100`–`0x13F` and maps to `0x340`–`0x37F`. Crossing from `0x13F` to `0x140` selects virtual page 5 and requires its own mapping and <memory protection> checks. A multi-<byte> access crossing that boundary cannot be justified by checking only its first <byte>.
+
+= Memory management unit
+{parent=Virtual memory}
+{wiki}
+{title2=MMU}
+
+The hardware that performs <address translation> and access checks. Whether a <TLB miss> is resolved entirely by hardware or with <operating system> assistance depends on the architecture.
+
+For <paging>, the <memory management unit> uses the active <address space> and the kind of access: reading, writing, or fetching an instruction. <Processor privilege level> can also affect permission. A <TLB hit> supplies cached translation attributes; it does not bypass <memory protection>. On a <TLB miss>, some architectures perform a hardware <page table walk>, while others enter an <operating system> refill handler. Both can resolve a resident mapping without a nonresident <page fault>.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Paging: Faster Translations (TLBs)>[Operating Systems: Three Easy Pieces, chapter 19, Paging: Faster Translations (TLBs), sections 19.1, 19.3–19.4, printed pp. 2, 6, 8: permission checks, refill ownership, and cached attributes]{ref}
+
+\Image[address-translation-tlb-control-path.png]
+{title=Logical <address translation> control path: a cached mapping, refill, permission check, and separate data read}
+
+This diagram is a logical dependency model for the toy single-<byte> read, rather than a timing diagram for a particular <CPU>. A <translation lookaside buffer> caches translations and access attributes; a data <memory cache> caches contents. A <TLB hit> can accompany a data <cache miss>, and a <TLB miss> can accompany a data <cache hit> after successful refill. Reading <page table entries> during refill is also distinct from reading the requested data. Actual implementations may overlap steps.
+
+Extend process A's toy <address space> with these independent starting states. Virtual page 4 is resident in <page frame> 13 and readable but not writable. Virtual page 5 is a permitted readable <memory page> whose old contents are in backing storage and which is initially nonresident. Virtual page 6 has no mapping authorized by the <operating system>. Assume permission changes and eviction always invalidate affected cached translations before later accesses, no <copy-on-write> policy, and a free <page frame> 2 for loading virtual page 5.
+
+* Read `0x12D` with an empty <translation lookaside buffer>: a <TLB miss> discovers resident virtual page 4, caches its attributes, and reads <physical address> `0x36D`. There is no nonresident <page fault>.
+* Write `0x12D` with that translation already cached: a <TLB hit> finds the mapping, but <memory protection> denies the write. The target <byte> remains unchanged even though its <page frame> is resident.
+* Read `0x16D`: virtual page 5 and offset 45 are permitted but nonresident. A <page fault> lets the <operating system> load the contents into <page frame> 2, update the <page table>, and retry. Successful <address translation> then gives $2\cdot64+45=173=\mathtt{0x0AD}$; the requested read occurs only after the contents are ready.
+* Read `0x1AD`: virtual page 6 and offset 45 have no authorized mapping. The <operating system> rejects the access in this model; finding a free <page frame> would not supply authorization.
+
+\Image[memory-access-permission-residency-traces.png]
+{title=Four original access traces distinguish <TLB misses>, denied writes, nonresident <memory pages>, and unauthorized addresses}
+
+A nonresident <memory page> and a forbidden access therefore require different decisions: supplying contents can repair the former, while the latter needs authorization. Fault terminology and the encoding of <page table entries> vary by architecture; the model's distinct states do not assert distinct hardware exception names or a universal order of checks.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Beyond Physical Memory: Mechanisms>[Operating Systems: Three Easy Pieces, chapter 21, Beyond Physical Memory: Mechanisms, sections 21.2–21.5, printed pp. 3–7, especially the terminology aside and Figures 21.2–21.3]{ref}
+
+The separation makes <virtual memory> useful: ordinary accesses can reuse cached mappings while the <operating system> intervenes when policy or residency requires work. It also makes failures easier to diagnose. A lost cached translation, unavailable contents, and denied permission are three different obstacles, even when all interrupt the same requested read.
+
+= Memory protection
+{parent=Virtual memory}
+{wiki}
+
+Rules controlling access to <computer memory>. In <paging>, <page table entries> and the <memory management unit> enforce permissions; <copy-on-write> temporarily denies writes to logically writable private <memory pages> so a write enters <copy-on-write fault handling>.
+
+= Copy-on-write
+{parent=Virtual memory}
+{wiki}
+
+<Copy-on-write> defers copying until a modification needs private storage. With <paging>, separate <address spaces> can map their <memory pages> to the same <page frames>, using <memory protection> to prevent writes to the common contents. Reads need no copy. A permitted write to a shared <page frame> first separates the writer's storage, so the other <operating-system process> keeps the old contents. Sharing is safe because the common contents remain unchanged while shared; the logical private copies can still evolve independently.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Complete Virtual Memory Systems>[pp. 7–8: protected sharing, copying on a write, and fork/exec motivation]{ref}
+
+Consider a <fork (system call)>-like model with parent A and child B. Each has a separate <page table>, with three inherited private, logically writable <memory pages>. Both initially map virtual page numbers `0x12`, `0x13`, `0x14` to <page frames> F0, F1, F2. The <page table entries> temporarily deny writes for <copy-on-write>; a read of `x` at offset `0x34` in virtual page `0x12` returns 7 in either <address space>. Separate <page tables> do not imply separate stored <bytes>.
+
+\Image[copy-on-write-shared-page-mappings.png]
+{title=Before a write: two <page tables> map six <memory pages> to three shared <page frames>}
+
+Now B writes `x = 42`. In this model, <copy-on-write fault handling> allocates F3, copies all of F0's contents into F3, redirects only B's <page table entry>, enables its write, and retries the store. A still reads 7 through F0; B reads 42 through F3 at the same <virtual address>. F1 and F2 remain shared. The <reference counting> labels count mappings in this example: F0 drops from two to one, while F3 starts at one. Updating one <byte> can therefore copy a whole <memory page>.
+
+\Image[copy-on-write-private-page-after-write.png]
+{title=After B writes: one new <page frame>, one whole-page copy, and independent contents at the same <virtual address>}
+
+The attraction is avoiding work that may never be needed. If B only reads, this model makes no data copies; if B replaces its program and discards these mappings, copying them beforehand would have been wasted. <Copy-on-write> trades eager copying for protected sharing and later <page faults>. The <page tables>, <reference counting>, and <operating-system process> records still cost time and <computer memory>.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Complete Virtual Memory Systems>[pp. 7–8: a subsequent exec can discard most of the inherited address space]{ref}
+
+For a concrete <operating system> contract, the `fork(2)` manual for the <Linux kernel> documents <copy-on-write>, while its `mmap(2)` manual distinguishes `MAP_PRIVATE` from `MAP_SHARED`. Writes through `MAP_PRIVATE` are not propagated to other mappings or the underlying <file>; writes through `MAP_SHARED` are visible to other <operating-system processes> mapping that region. An inherited shared mapping therefore retains shared-write behavior. For a private <memory-mapped file>, visibility of later changes to the underlying <file> is unspecified: private writes alone do not guarantee a frozen snapshot of the <file>. <fork(2) — Linux manual page>{ref}<mmap(2) — Linux manual page>{ref}
+
+Nor does <fork (system call)> make every resource independent. With the <Linux kernel>, inherited <file descriptors> refer to the same <open file descriptions>, including shared file positions. Special mapping policies can omit a region from inheritance or zero it in the child. Thus the diagrams describe ordinary inherited private <memory pages>, not every resource reachable by a parent. <fork(2) — Linux manual page>{ref}
+
+= Copy-on-write fault handling
+{parent=Copy-on-write}
+
+The <operating-system kernel> must distinguish a temporarily protected <copy-on-write> mapping from one whose writes are forbidden. The teaching procedure in MIT's xv6 lab protects both <page tables>, copies the shared <page frame> on a valid write <page fault>, and installs a writable <page table entry>. Originally read-only code remains read-only. Its <reference counting> increments on sharing and decrements on removal; storage is freed only after the last reference disappears. The lab also requires kernel writes into user storage to respect <copy-on-write>, and specifies failure if no free storage remains. <6.1810  and  Fall 2022/Lab: Copy-on-Write Fork for xv6>{ref}
+
+Every write must respect the sharing policy, but every write need not copy. Repeated writes to B's already private writable F3 need no further <copy-on-write> <page fault>. If A later writes F0, an implementation can reuse F0 when it establishes exclusive, writable ownership; A's remaining read-only <page table entry> may still need a <page fault> to enable the write. This exclusive-reuse rule is an assumption of <copy-on-write page accounting> below, not a promise that every <operating system> uses that path. A count of one alone is not a universal permission to alter storage belonging to a <memory-mapped file> or another owner.
+
+Changing mappings or permissions must also make cached <address translations> consistent. <Cache and TLB Flushing Under Linux by David S. Miller>{ref} Concurrent <software threads> require <synchronization> around ownership checks, copying, and installation to prevent a <race condition>; neither diagrams nor counts specify a production <operating-system kernel>'s locking or hardware invalidation protocol.
+
+= Copy-on-write page accounting
+{parent=Copy-on-write}
+
+Assume exactly two <operating-system processes>, $N$ initially resident private <memory pages> of $P$ <bytes> each, initially distinct <page frames> shared by A and B. Neither unmaps, exits, forks again, or encounters <page replacement>; no other owner exists, allocation succeeds, and a first write copies one whole shared <memory page>. Once a <page frame> is exclusively owned it is reused on writes, without another copy; writable mappings remain writable. Count data storage only, excluding <page tables> and other bookkeeping. With B as the only writer, writing $k$ distinct <memory pages> gives
+$$
+\text{new allocations}=\text{whole-page copies}=k,\qquad \text{resident data bytes}=(N+k)P.
+$$
+This depends on distinct written <memory pages>, not the number of store instructions or reads. For the diagrams, take $N=3$ and an illustrative $P=4096$ <bytes>:
+
+\Table[
+\Tr[\Th[Access pattern]\Th[New <page frames>]\Th[Whole-page copies]\Th[Resident data <bytes>]]
+\Tr[\Td[Both only read]\Td[0]\Td[0]\Td[12288]]
+\Tr[\Td[B writes <memory page> `0x12` once]\Td[1]\Td[1]\Td[16384]]
+\Tr[\Td[B writes <memory page> `0x12` one hundred times]\Td[1]\Td[1]\Td[16384]]
+\Tr[\Td[B writes <memory pages> `0x12` and `0x14`]\Td[2]\Td[2]\Td[20480]]
+\Tr[\Td[B writes all three <memory pages>]\Td[3]\Td[3]\Td[24576]]
+\Tr[\Td[B then A each write <memory page> `0x12`]\Td[1]\Td[1]\Td[16384]]
+]
+
+For both writers, let $S_A,S_B$ be the <sets> of initial <memory page> numbers written by A and B. Under these assumptions, new allocations and copies both equal $|S_A\cup S_B|$, the <cardinality> of their <set union>, while resident data storage is $(N+|S_A\cup S_B|)P$. Each initially shared <page frame> needs at most one split: after the first writer copies it, the other owns the original exclusively. Both writing the same <memory page> therefore produces two versions with one copy, even if the final values happen to match. The last row can incur two protection <page faults>, one for each writer, while making only one copy. A handler that always allocates on a protected write can make a second copy and free the now-unreferenced original: allocation counts and final resident storage are different observables.
+
+These are model counts, not measured Linux costs or a guaranteed bound on total <computer memory>. More descendants, other owners, <demand paging>, <page replacement>, different <memory page> sizes, and different exclusive-ownership rules change the accounting. The useful claim is conditional: deferred data copying can cost in proportion to the distinct shared <memory pages> that are written, while creating separate <page tables> has its own cost.
+
+// Target: computer-science.bigb
+
+= Thrashing
+{parent=Virtual memory}
+{wiki}
+{disambiguate=computer science}
+
+= Memory thrashing
+{synonym}
+
+<Memory thrashing> is repeated costly cycling of <memory pages> out of and back into <computer memory>, leaving little useful computation between <page faults>. Active demand can exceed the available <page frames>, especially when <multiprogramming> admits too many <operating-system processes>. A high <page fault rate> during initial loading alone does not establish <memory thrashing>. <Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Beyond Physical Memory: Policies>[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 22, section 22.11: Thrashing]{ref}
+
+Consider one <operating-system process> making the 20 <memory references> $1,2,3,4,1,2,3,4,\ldots,1,2,3,4$: five repetitions of four <memory pages>. Start with an empty <resident set>, use <demand paging> and exact <LRU replacement>, and assume no prefetching or competing <operating-system processes>. A hit finds the requested <memory page> resident; a miss requires a nonresident <page fault>. With three <page frames>, references 1–3 load pages 1–3. Reference 4 evicts page 1, reference 5 reloads page 1 and evicts page 2, and the cycle continues: every return finds its <memory page> evicted. With four <page frames>, only the first four references miss; all four <memory pages> then remain resident.
+
+|| Available <page frames>
+|| Misses in all 20 <memory references>
+|| Overall <page fault rate>
+|| Misses in references 5–20
+|| <Page fault rate> in references 5–20
+| 3
+| 20
+| 100%
+| 16
+| 100%
+| 4
+| 4
+| 20%
+| 0
+| 0%
+
+The four initial misses with four <page frames> are compulsory first-use misses from the empty <resident set>. They are startup work; the three-<page frame> case keeps faulting after startup. This makes the difference between <memory thrashing> and loading a new <working set> visible. For the three-<page frame> trace, each reused <memory page> has three distinct intervening <memory pages>, so <LRU replacement> has already evicted it before its next use.
+
+\Image[memory-thrashing-lru-capacity.png]
+{title=The same 20 memory references under <LRU replacement>: three <page frames> miss every time, four miss only during startup}
+
+To quantify the cost, assume each hit takes 100 nanoseconds and each miss incurs an additional 1 millisecond of <page fault> service, followed by the same 100-nanosecond memory access. These are toy latencies, not measurements. With miss <probability> $p$, the <expected value> of access time is
+$$
+E[T]=100\,\mathrm{ns}+p\,(1\,\mathrm{ms}).
+$$
+The service cost is additional: it does not include the final 100 nanoseconds. Thus $p=1$ gives $1{,}000{,}100\,\mathrm{ns}$ and $p=0.2$ gives $200{,}100\,\mathrm{ns}$, approximately a fivefold ratio over the complete trace. Over references 5–20, the corresponding ratio is $1{,}000{,}100/100=10{,}001$: repeated <page faults> dominate the useful accesses. The <expected value> model follows the additive miss-penalty convention of OSTEP chapter 22, section 22.1. <Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Beyond Physical Memory: Policies>[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 22, equation 22.1: average memory access time]{ref}
+
+Not every <page fault> performs disk <input-output>: <demand paging> can allocate zero-filled <memory pages>, and <copy-on-write> can copy an existing <page frame>. The toy service cost models expensive misses; the miss trace alone establishes residency behavior, while <memory thrashing> additionally concerns repeated costly cycling. https://pages.cs.wisc.edu/~remzi/OSTEP/vm-complete.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 23, section 23.1, Other Neat Tricks: demand zeroing and copy-on-write]{ref}
+
+Possible remedies are more resident <page frames>, less <multiprogramming>, or reorganizing accesses to improve <temporal locality>. For this toy <sequence>, one extra <page frame> suffices under <LRU replacement>; that is not a universal threshold or policy. <Page replacement> alone cannot make every simultaneously needed <memory page> fit.
+
+// Target: computer-science.bigb
+
+= Working set
+{parent=Virtual memory}
+{wiki}
+{title2=$W(t,\Delta)$}
+
+An <operating-system process>'s <working set> is the <set> of distinct <memory pages> used in a declared recent window. Here the window counts <memory references>, not clock time: let $r_i$ identify the <memory page> accessed by the $i$th <memory reference>, and let the positive <integer> $\Delta$ be the window length. Immediately after reference $t$,
+$$
+W(t,\Delta)=\{r_i:\max(1,t-\Delta+1)\leq i\leq t\},\qquad W(0,\Delta)=\varnothing.
+$$
+Repeated <memory references> to the same <memory page> contribute only one <set element>. The <working set size> is the <cardinality> $|W(t,\Delta)|$. This recent footprint estimates current demand; it cannot guarantee which <memory pages> future <memory references> will need. The <resident set> instead records which <memory pages> are actually present in <computer memory>.
+
+For the 20-reference <sequence> in <memory thrashing> and $\Delta=4$, the successive <working sets> begin $\{1\}$, $\{1,2\}$, $\{1,2,3\}$ and $\{1,2,3,4\}$. At $t=5$, the window is references 2–5, namely $2,3,4,1$, so $W(5,4)=\{1,2,3,4\}$ again. Every later four-reference window contains all four <memory pages>. Under three-<page frame> <LRU replacement>, however, the <resident set> at $t=5$ is $\{1,3,4\}$: page 2 was evicted. Consequently the <working set size> is four even though only three <memory pages> are resident. Under four-<page frame> <LRU replacement>, the <resident set> contains the complete <working set> after reference 4.
+
+\Image[working-set-reference-window.png]
+{title=A four-reference <working set> remains four pages while a three-frame <resident set> contains only three}
+
+Window choice matters: on this same <sequence>, $\Delta=2$ reports only two distinct <memory pages> after reference 2, despite the recurring four-page cycle. A short window forgets useful <memory pages> sooner; a long window retains evidence from older phases. Enlarging the window can only enlarge or preserve the <working set> at fixed $t$, because the shorter window is contained in the longer one. No single window is best for every workload.
+
+For a concrete <multiprogramming> budget, suppose three <operating-system processes> each have a four-page <working set>, no shared <page frames>, and only eight <page frames> are available for their data. Their combined demand is 12 <page frames>; all three <working sets> cannot be resident together. Letting two <operating-system processes> run while the third waits makes their eight-page demand fit in this simplified model. Real budgets also reserve <computer memory> for the <operating system> and other uses; shared <memory pages> must not be counted repeatedly as different physical copies.
+
+Peter J. Denning's https://denninginstitute.com/pjd/PUBS/WSModel_1968.pdf[The Working Set Model for Program Behavior, Communications of the ACM, May 1968, sections 3–4]{ref} formalized the <working set> using recent process execution time, rather than this article's reference count. Its central insight connected memory demand to <process scheduling>: deciding which <operating-system processes> run also decides which <working sets> need room. <Temporal locality> makes recent use informative, without making it a promise about the future. The beautiful distinction is between a large possible <address space> and the smaller footprint of the current activity.
+
+= Working set size
+{parent=Working set}
+{title2=$|W(t,\Delta)|$}
+
+The number of distinct <memory pages> in a <working set>, measured by its <cardinality>. It depends on both the current <memory reference> index $t$ and the declared window $\Delta$, not just on the <resident set> capacity.
+
+= Resident set
+{parent=Virtual memory}
+
+The <set> of an <operating-system process>'s <memory pages> currently present in main <computer memory>. A <resident set> may omit recently used <memory pages> after <page replacement>, or retain <memory pages> that have left the chosen <working set> window.
+
+// Target: computer-science.bigb
+
+= Memory-mapped file
+{parent=Virtual memory}
+{wiki}
+
+A <memory-mapped file> makes a range of a <file> accessible through an <operating-system process>'s <virtual memory> <address space>. Once the mapping exists, ordinary loads and stores address its contents instead of explicitly reading them into a separate application buffer. This is attractive for jumping between records in a large <file>: an offset becomes an address calculation, and <demand paging> can supply the needed <memory pages>. It removes the application's explicit read-and-copy step; it does not promise that every access avoids copying, <input-output>, <page faults> or overhead, or that mapping is universally faster.
+
+The <backing file>, <page cache> contents and each <operating-system process>'s <page table> play different roles. For ordinary buffered <Linux kernel> mappings, the <page cache> holds reusable <file> contents; normal reads and writes also use it. A valid mapping can exist before this <operating-system process> has a usable <page table entry>. A first load can therefore trigger a <page fault> even when another reader has already brought the contents into <computer memory>. If the contents are absent, servicing the <page fault> can require <input-output>; if present, the handler can install an <address translation> without that read. Special paths that bypass the <page cache> are outside this explanation.<Page Cache by The kernel development community>[Page Cache, opening paragraph: normal reads, writes and mmaps go through the page cache; bypass paths exist]{ref}
+
+The following example and diagrams are an original toy model, not an actual benchmark or a trace of a running <operating system>. They assume ordinary buffered <file> mappings, successful accesses, two cooperating <operating-system processes>, no concurrent resizing, and explicitly ordered actions. <Memory-mapped file offset translation> explains where the accesses land; <shared file mappings> and <private file mappings> explain whose contents change; <memory-mapped file synchronization> explains the separate persistence boundary.
+
+= Backing file
+{parent=Memory-mapped file}
+
+The <file> supplying a <memory-mapped file>'s initial contents. Its logical <file offsets> identify data independently of the <virtual addresses> chosen by different <operating-system processes>. Modified <private file mapping> contents have private storage; they are not updates waiting to be written to the <backing file>.
+
+= mmap
+{parent=Memory-mapped file}
+{c}
+
+The <POSIX> mapping interface. Ordinary <Linux kernel> <file> mappings require a positive length and an aligned <file offset>. A null address lets the <operating-system kernel> choose an aligned base; length need not be aligned. Check for `MAP_FAILED`. After success the <file descriptor> may be closed without invalidating the mapping; <munmap> or process termination removes it.<mmap(2) — Linux manual page>[DESCRIPTION: address, length, offset and descriptor lifetime; munmap; RETURN VALUE]{ref}
+
+Mapping does not extend the <backing file>. Under <POSIX>, for an initially partial last <memory page>, the tail beyond the <file>'s end is zero-filled and is not written back as <file> data; accesses to whole mapped <memory pages> beyond the end raise `SIGBUS`. <POSIX> leaves access to portions added or removed by later resizing unspecified. Establish the required <file> size first and coordinate resizing with readers; a mapping's length is not proof that those <bytes> exist in the <file>.<The Open Group Base Specifications Issue 8, IEEE Std 1003.1-2024 by IEEE and others/mmap — POSIX.1-2024>[POSIX.1-2024, DESCRIPTION: partial end page, whole pages beyond the object, and changed file size; RATIONALE: references beyond the end do not extend the object]{ref}
+
+The <Linux kernel> documents a tail-cache exception: modified beyond-end <bytes> can survive in the <page cache> and appear in later mappings, although never written to the <file>. Do not use that tail as reliable storage.<mmap(2) — Linux manual page>[BUGS: modified contents beyond the object end can remain in the page cache]{ref}
+
+= munmap
+{parent=mmap}
+{c}
+
+Removes a mapping from an <operating-system process>'s <address space>. Mapping lifetime is separate from <file descriptor> lifetime; removal also does not supply the completed writeback promised by <memory-mapped file synchronization>.
+
+= Memory-mapped file offset translation
+{parent=Memory-mapped file}
+{title2=$o=O+(v-B)$}
+
+Let $P$ be the <memory page> size, $O$ the aligned starting <file offset>, $L$ the mapping length and $B$ its base <virtual address>. A valid displacement $r=v-B$ with $0\leq r<L$ corresponds to <file offset>
+$$
+o=O+r,\qquad j=\left\lfloor\frac{r}{P}\right\rfloor,\qquad d=r\bmod P.
+$$
+Here $j$ is the relative <memory page> index, the <floor function> selects its <integer> part, and <Euclidean division> gives the within-page displacement $d$. The backing page begins at $O+jP$. This identifies <file> contents; the <page table> separately selects a resident <page frame> and enforces permissions.
+
+Take $P=4096$, $O=4096$ and $L=8192$ <bytes> in a <file> of at least 12288 <bytes>. A has a <shared file mapping> at $B_A=\mathtt{0x10000000}$. B has a <shared file mapping> at $B_B=\mathtt{0x20000000}$ and a <private file mapping> at $B_C=\mathtt{0x30000000}$. These bases are illustrative chosen results, not requested fixed addresses. All three mappings cover the same two backing pages: <file offsets> 4096–8191 and 8192–12287. Displacement $r=4133=4096+37$ selects relative page 1, within-page displacement 37 and <file offset> $o=8229=\mathtt{0x2025}$. Thus A's `0x10001025`, B's shared `0x20001025` and B's private `0x30001025` initially identify the same <byte>. The adjacent displacement 4134 identifies <file offset> 8230. Different <virtual addresses> can reach the same backing contents.
+
+\Image[memory-mapped-file-offset-page-mapping.png]
+{title=Two <operating-system processes> map two backing pages at different <virtual addresses>; displacement 4133 identifies <file offset> 8229}
+
+To access a requested <file offset> $q$ that is not aligned, choose $O=P\lfloor q/P\rfloor$ and displacement $q-O$. Mapping enough <bytes> to cover that displacement plus the requested length makes the desired data start inside the aligned mapping. Do not pass the unaligned $q$ directly as the <Linux kernel> `mmap` offset. For example, $q=8229$ uses $O=8192$ and displacement 37; that one-page start differs from our two-page mapping's $O=4096$.
+
+= Shared file mapping
+{parent=Memory-mapped file}
+{title2=MAP_SHARED}
+
+With `MAP_SHARED`, updates are visible to other <operating-system processes> mapping the same region and are carried through to the <backing file>. With `MAP_PRIVATE`, updates instead stay private, and later <backing file> changes have unspecified visibility in that mapping.<mmap(2) — Linux manual page>[DESCRIPTION, The flags argument: MAP_SHARED and MAP_PRIVATE]{ref}
+
+In the toy model, both <shared file mappings> initially read backing <bytes> $x=7,y=8$ at <file offsets> 8229 and 8230. Both <memory pages> have been accessed, so their translations are installed. A shared store changes the common <page cache> contents and creates a <dirty memory page> eligible for <page writeback>. That change can be observed before it reaches persistent storage. Cooperating readers need <synchronization (computing)> to know when an update is ready; `MAP_SHARED` alone supplies no <mutual exclusion> or indivisible multi-field update.
+
+= Private file mapping
+{parent=Memory-mapped file}
+{title2=MAP_PRIVATE}
+
+With `MAP_PRIVATE`, <copy-on-write> initially reuses backing <page cache> contents. In our model, a private store raises a protection <page fault>, copies the affected <memory page> to a private <page frame>, installs a writable <page table entry> and retries. The other <memory page> can remain shared. This <page fault> needs no storage read.
+
+In B's <private file mapping>, storing $x=99$ copies relative page 1, including its neighbor $y=8$. Next, A stores $x=11,y=12$ through its <shared file mapping>. After coordination outside the mapped data, B's shared reads give $(11,12)$, while its detached private page gives $(99,8)$. The untouched first <memory page> remains backed by the <file>; this is not a frozen snapshot of the whole <file>. Neither <page writeback> of shared contents nor <msync> publishes B's private 99. To save those private contents, the application needs a separate explicit <file> update.
+
+\Image[memory-mapped-file-sharing-private-write-timeline.png]
+{title=Toy <shared file mapping> and <copy-on-write> timeline: visible shared changes precede the chosen durable completion; private changes remain separate}
+
+= Memory-mapped file synchronization
+{parent=Memory-mapped file}
+
+There are two distinct questions: whether another <operating-system process> can observe shared contents, and whether those contents survive a crash. In the timeline, persistent storage deliberately remains $(7,8)$ while the shared <page cache> contains $(11,12)$. No background <page writeback> occurs in this toy interval. Real <page writeback> may persist some contents earlier; shared visibility alone cannot tell the reader which contents are durable.
+
+For the covered shared range, `msync(base, length, MS_SYNC)` requests <page writeback> and waits for completion; check its return value. `MS_ASYNC` is not a durable completion acknowledgment, and on modern <Linux kernel> versions it is a no-op because dirty contents are already tracked. The address must be aligned, so synchronizing our changed second page uses `base + 4096`, length 4096, rather than `base + 4133`. Unmapping alone is not a guarantee of completed writeback.<msync(2) — Linux manual page by Linux man-pages project>[DESCRIPTION, RETURN VALUE, ERRORS and VERSIONS: covered range, MS_SYNC versus MS_ASYNC, page-aligned address, and Linux MS_ASYNC behavior since 2.6.19]{ref}
+
+For persistence of the <file> and associated <file metadata>, <fsync> on an open <file descriptor> is a broader interface; a new <directory entry> needs separate synchronization of its <file-system directory>. Retain a suitable <file descriptor> if the persistence protocol needs it after mapping. Successful storage completion still relies on the <file system> and device honoring their persistence contracts.<fsync(2) — Linux manual page by Linux man-pages project>[DESCRIPTION, RETURN VALUE and ERRORS: file data and metadata, directory entry, completion and reported failures]{ref}
+
+Neither <fsync> nor <msync> supplies <mutual exclusion>, an <atomic storage write> for several <memory pages>, or an application-wide <file-system transaction>. Stop or coordinate writers before deciding which update a completion acknowledges. A crash during <page writeback> can leave a mixture of old and new contents unless a separate recovery protocol provides <file-system crash consistency>. The last timeline row assumes successful synchronous completion, honored <storage flush> semantics and no subsequent writer; it illustrates a persistence boundary, not a promise about arbitrary hardware failures.
+
+= msync
+{parent=Memory-mapped file synchronization}
+{c}
+
+A mapping-range synchronization interface used by <memory-mapped file synchronization>. Its `MS_SYNC` mode concerns completed updates to a <backing file>; it does not merge <private file mapping> changes into that <file> or coordinate competing readers and writers.
+
+// Target: computer-science.bigb
+
+= Memory segmentation
+{parent=Virtual memory}
+{wiki}
+
+// Target: computer-science.bigb
+
+= Paging
+{parent=Virtual memory}
+{wiki}
+
+<Paging> divides an <address space> into fixed-size <memory pages> and main <computer memory> into equally sized <page frames>. Here assume <byte> addressing, one <memory page> size $P=2^b$ <bytes>, and an unsigned <virtual address> $v$. Its virtual page number $q$ and offset $d$ are
+$$
+q=\left\lfloor\frac{v}{P}\right\rfloor,\qquad d=v\bmod P,\qquad 0\leq d<P.
+$$
+The brackets denote the <floor function>, and $\bmod$ gives the <remainder> in <Euclidean division>. If the <page table> maps $q$ to physical frame number $f$ and permits the access, the <physical address> is
+$$
+a=fP+d.
+$$
+The low $b$ <bits> are unchanged; the other <bits> select the <memory page> or <page frame>. A <bit shift> and <bit mask> can extract these fields. https://pages.cs.wisc.edu/~remzi/OSTEP/vm-paging.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 18: Paging, Introduction, sections 18.1–18.2]{ref}
+
+For a 16-<bit> <virtual address> and $P=256=2^8$ <bytes>, take $v=\mathtt{0x1234}=4660$ in <hexadecimal>. Then $q=18=\mathtt{0x12}$ and $d=52=\mathtt{0x34}$. A mapping to $f=7=\mathtt{0x07}$ gives
+$$
+a=7\cdot256+52=1844=\mathtt{0x0734}.
+$$
+Thus the eight high <bits> choose a mapping; the eight low <bits> choose the same position in the resulting <page frame>. The 256-<byte> size is for illustration, not a claim about an actual architecture's supported <memory page> sizes.
+
+\Image[virtual-memory-address-translation.png]
+{title=Translating 0x1234 through an illustrative page table, with a separate offset and access check}
+
+The useful freedom is that adjacent <memory pages> can occupy unrelated <page frames>. In the diagram, virtual pages `0x12` and `0x13` occupy <page frames> `0x07` and `0x02`; <virtual addresses> `0x12ff` and `0x1300` are consecutive, but translate to <physical addresses> `0x07ff` and `0x0200`. Uniform units simplify placement and <page replacement>, at the cost of <page table> storage and unused <bytes> within partly filled <memory pages>. For example, placing 300 <bytes> in exclusive 256-<byte> <page frames> requires two <page frames>, leaving $512-300=212$ <bytes> unused.
+
+= Memory page
+{parent=Paging}
+{wiki=Page_(computer_memory)}
+
+A contiguous unit of an <address space> used for <paging>. In the example, virtual page `0x12` consists of <virtual addresses> `0x1200` through `0x12ff`.
+
+= Page frame
+{parent=Paging}
+
+A slot in main <computer memory> that can hold one <memory page> of the selected size. Physical frame number `0x07` with 256-<byte> <page frames> starts at <physical address> `0x0700`.
+
+= Demand paging
+{parent=Paging}
+{wiki}
+
+Making a <memory page> resident when it is first accessed, using a <page fault> to request the work. It can involve loading stored contents or allocating newly initialized contents.
+
+// Target: computer-science.bigb
+
+= Page replacement
+{parent=Paging}
+
+Choosing a resident <memory page> to evict when another <memory page> needs an occupied <page frame>. An unused <page frame> needs no eviction. A <dirty memory page> requires preservation before reuse, accounted for separately as <page writeback>. A <page replacement> policy balances likely future reuse against the overhead of tracking past <memory references>.
+
+The opportunity comes from <temporal locality>: retaining a recently accessed <memory page> can spare a later nonresident <page fault>. <Spatial locality> helps consecutive accesses reuse the same <memory page> until they cross its boundary. A <working set> describes recent demand, while the <resident set> describes what is actually present. A small active footprint can fit in the available <page frames> even when the whole <address space> cannot. These are useful workload tendencies, not guarantees about future <memory references>.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Beyond Physical Memory: Policies>[Section 22.5, pp. 7–8, and the Types of Locality aside on p. 8: recent use motivates retention, but locality is a heuristic]{ref}
+
+The <page-reference trace> below uses the counterexample discussed in <Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others> (chapter 22, p. 5) and makes the decisions explicit. <FIFO page replacement> ranks arrival time, <LRU replacement> ranks last access, <CLOCK page replacement> samples recent use, and <optimal page replacement> knows the remaining <sequence> in advance. Count misses first; <page-replacement cost accounting> separately counts <page writeback> and explains why fewer misses need not mean less total service time.
+
+// Destination: computer-science.bigb
+
+= CLOCK page replacement
+{parent=Page replacement}
+{c}
+
+Keep <page frames> in a circular list with a reference <bit> and a scanning hand. Clear set reference <bits> while scanning; choose the first eligible <page frame> with a clear reference <bit>. This second chance approximates <LRU replacement> with cheaper tracking. When hardware reference flags are absent, revoking a mapping and handling its first later <page fault> can supply a software reference observation.
+
+For the <page-reference trace>, number the three <page frames> 1–3 and initially point the hand at 1. Every access sets the referenced <page frame>'s reference <bit> to 1. On a miss, scan from the hand: stop at an empty <page frame> or a resident one with reference <bit> 0; otherwise clear its reference <bit> and advance cyclically. Install the requested <memory page> with reference <bit> 1 and advance the hand to the next <page frame>. Hits leave the hand where it is. This fixes a particular variant; clean-victim preference is excluded.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Beyond Physical Memory: Policies>[Section 22.8, p. 12: reference bits and the circular-hand algorithm; section 22.9, p. 13: dirty-page preference is an additional modification]{ref}
+
+After the first three accesses, all reference <bits> are 1 and the hand is back at <page frame> 1. Access 4 clears all three reference <bits>, returns to <page frame> 1, evicts <memory page> 1, installs <memory page> 4, and leaves the hand at <page frame> 2 with reference <bits> $(1,0,0)$. This variant gives nine misses for three <page frames> and ten for four on the displayed <sequence>. Approximating <LRU replacement> therefore does not inherit the <LRU stack property>.
+
+// Destination: computer-science.bigb
+
+= LRU replacement
+{parent=Page replacement}
+{c}
+
+= Least recently used replacement
+{synonym}
+
+= LRU
+{synonym}
+{c}
+
+Evict the least recently accessed eligible item. Exact recency tracking on every <memory reference> can be expensive, whereas accesses to a <buffer cache> already pass through software. Recency captures <temporal locality> but a long scan can evict frequently reused items before their next use.
+
+For <page replacement>, update recency on hits as well as misses; evict only when a miss requires a <page frame> and all eligible <page frames> are occupied. The four-page cycle in <memory thrashing> shows how exact <LRU replacement> behaves at capacities three and four.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Beyond Physical Memory: Policies>[Chapter 22, section 22.5, pp. 7–8: least-recently-used eviction; section 22.7, p. 11: update recency on every access]{ref}
+
+The <LRU stack property> compares different capacities on one fixed <page-reference trace>; it does not say that <LRU replacement> always beats <FIFO page replacement>. On the displayed <sequence>, three-<page frame> <LRU replacement> has ten misses, versus nine for <FIFO page replacement>, while four-<page frame> <LRU replacement> has only eight.
+
+= LRU cache
+{c}
+{parent=LRU replacement}
+
+A finite-capacity cache using <LRU replacement>: accessing an item makes it most recent, and a miss evicts the least recently used item when the cache is full.
+
+= LRU stack property
+{parent=LRU replacement}
+{c}
+{title2=$R_k(t)\subseteq R_{k+1}(t)$}
+
+For exact <LRU replacement>, let $R_k(t)$ be the <resident set> after the first $t$ accesses of a fixed <page-reference trace> with capacity $k$. With empty starts, identical access order, freely placeable <memory pages>, and all resident <memory pages> eligible for eviction,
+$$
+R_k(t)\subseteq R_{k+1}(t)\qquad\text{for every }t\geq0.
+$$
+Here $\subseteq$ means <subset>. At every time, form one capacity-independent ordered list of distinct <memory pages>, most recently accessed first. An access moves its <memory page> to the front, preserving the order of the others. Exact <LRU replacement> with $k$ <page frames> retains the first $k$ entries, or all entries if fewer than $k$ have appeared. The first $k$ entries are contained in the first $k+1$, proving the property. This recency list is not the push/pop interface of a <LIFO stack>.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Beyond Physical Memory: Policies>[Belady's Anomaly aside, p. 5: stack-property inclusion and its consequence for LRU; section 22.7, p. 11: exact recency must be updated on every access]{ref}
+
+Apply inclusion immediately before an access: a hit with $k$ <page frames> must also hit with $k+1$. Thus cumulative misses with $k+1$ cannot exceed those with $k$, at any prefix of the same <page-reference trace>. On the displayed <sequence>, the counts decrease from ten to eight when capacity increases from three to four. Arbitrary initial contents, different access orders, protected victims, or clean-victim preference fall outside the proof. Nor does it prove monotonic <page writeback> costs, or apply automatically to <CLOCK page replacement> just because that policy approximates <LRU replacement>.
+
+// Destination: computer-science.bigb
+
+= FIFO page replacement
+{parent=Page replacement}
+{c}
+
+Evict the <memory page> loaded earliest among currently resident <memory pages>, without refreshing its position on access. It is simple but ignores <temporal locality> and can evict a frequently accessed <memory page>.
+
+Implement this ranking with a <FIFO queue> of resident <memory pages>: append on loading, remove the oldest on eviction, and leave the queue unchanged on a hit. <Belady anomaly> shows why preserving arrival order can give more misses with more <page frames>. The comparison uses the same <page-reference trace> and empty initial <resident sets> in both runs.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Beyond Physical Memory: Policies>[Section 22.3, pp. 4–5: FIFO ordering; Belady's Anomaly aside, p. 5: the twelve-reference counterexample and contrast with stack policies]{ref}
+
+= FIFO cache
+{c}
+{parent=FIFO page replacement}
+
+A finite-capacity cache that evicts the oldest inserted item when full. A hit leaves the insertion order unchanged, so its behavior differs from an <LRU cache>.
+
+= Page-reference trace
+{parent=Page replacement}
+{title2=$(r_1,\ldots,r_n)$}
+
+A <memory access trace> reduced to the ordered <sequence> of accessed <memory page> identities, retaining repetitions. An address-only reduction loses read/write information, so annotate writes when studying <dirty memory pages>. Use the following classic <Belady anomaly> <sequence>, where the numbers label <memory pages>, not <physical addresses>:
+$$
+1,2,3,4,1,2,5,1,2,3,4,5.
+$$
+Start with three empty, equal-sized <page frames> allocated to one <operating-system process>. Every <memory page> can occupy any <page frame>, and every resident <memory page> is eligible for eviction. Use <demand paging>: a hit finds the requested <memory page> in the <resident set>; a miss causes exactly one nonresident <page fault> and loads it before the next access. Fill the lowest-numbered empty <page frame>, then reuse the victim's <page frame>. Assume only reads, no fetching ahead of requests, no competing <operating-system processes>, and no external removal of <memory pages>. <CLOCK page replacement> uses its declared hand rule, which fills the same initial <page frames> here. The <memory page> labels alone do not determine the result without these assumptions.
+
+\Image[page-replacement-three-frame-trace.png]
+{title=All twelve accesses with three <page frames>: <FIFO page replacement>, exact <LRU replacement>, offline <optimal page replacement> and the stated <CLOCK page replacement> variant}
+
+Each column shows the state after servicing that access. Rows keep physical <page frame> positions fixed, rather than silently sorting the <resident set>. The <CLOCK page replacement> entries also show reference <bits> and the next hand position. The independently computed totals are:
+
+\Table[
+\Tr[\Th[Policy]\Th[Miss indices, counted from 1]\Th[Misses]\Th[Hits]]
+\Tr[\Td[<FIFO page replacement>]\Td[1, 2, 3, 4, 5, 6, 7, 10, 11]\Td[9]\Td[3]]
+\Tr[\Td[<LRU replacement>]\Td[1, 2, 3, 4, 5, 6, 7, 10, 11, 12]\Td[10]\Td[2]]
+\Tr[\Td[<Optimal page replacement>]\Td[1, 2, 3, 4, 7, 10, 11]\Td[7]\Td[5]]
+\Tr[\Td[<CLOCK page replacement>]\Td[1, 2, 3, 4, 5, 6, 7, 10, 11]\Td[9]\Td[3]]
+]
+
+The first three misses fill unused <page frames>; the fourth miss needs eviction. At access 4, <FIFO page replacement> and <LRU replacement> evict <memory page> 1. <Optimal page replacement> instead evicts <memory page> 3: the next uses of resident <memory pages> 1, 2 and 3 are at indices 5, 6 and 10. At access 10, <FIFO page replacement> evicts <memory page> 1 while <LRU replacement> evicts <memory page> 5. Consequently the last access to <memory page> 5 hits under <FIFO page replacement> but misses under <LRU replacement>. Matching totals for <FIFO page replacement> and <CLOCK page replacement> on this <sequence> do not make the policies equivalent. The generators compute every displayed state; a separate search over all legal victims confirms the seven-miss <optimal page replacement> bound for three <page frames>.
+
+= Optimal page replacement
+{parent=Page replacement}
+
+On a miss with all <page frames> occupied, evict the resident <memory page> whose next access is farthest in the remaining <page-reference trace>. Treat no further access as farther than any finite next-use index; in the diagram, ties choose the lowest-numbered <page frame>. This is an offline, clairvoyant benchmark: a general <operating system> cannot know its future <memory references>. It minimizes miss count in the stated fixed-capacity <demand paging> model, rather than predicting the future from <temporal locality>.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Beyond Physical Memory: Policies>[Section 22.2, pp. 2–4: farthest-future MIN policy, minimum misses, and the unavailable-future limitation]{ref}
+
+In the <page-reference trace>, seven misses with three <page frames> is therefore a lower bound for any policy using the same assumptions; with four <page frames> the corresponding minimum is six. The benchmark is useful for judging how much improvement is possible on a recorded workload. Its objective counts each miss equally. Different <page writeback> costs or unequal loading costs require a different objective; minimum misses alone does not prove minimum elapsed time.
+
+= Bélády's anomaly
+{parent=Page replacement}
+{c}
+{wiki}
+
+= Belady anomaly
+{c}
+{synonym}
+
+Increasing the number of <page frames> can increase misses under a given <page replacement> policy on the same <page-reference trace>. For <FIFO page replacement> on the displayed twelve-reference <sequence>, an empty start with three <page frames> gives nine misses, while an empty start with four gives ten. The larger run hits only at indices 5 and 6; it misses at 1–4 and 7–12. These are miss counts, not observed running times.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Beyond Physical Memory: Policies>[Belady's Anomaly aside, p. 5: the reference sequence and increasing capacity from three to four]{ref}
+
+\Image[fifo-belady-anomaly-frame-comparison.png]
+{title=<FIFO page replacement> queue states and cumulative misses: four <page frames> give ten misses versus nine with three}
+
+The explanation is visible before the final count. After access 6, the three-<page frame> queue is $(4,1,2)$ and the four-<page frame> queue is $(1,2,3,4)$, both oldest first. Loading <memory page> 5 at access 7 removes <memory page> 4 in the smaller run but <memory page> 1 in the larger. Their resulting <resident sets> are $\{1,2,5\}$ and $\{2,3,4,5\}$. The smaller <resident set> is not a <subset> of the larger: its next access to <memory page> 1 hits while the larger run misses. Different earlier evictions create different histories; an extra <page frame> is not simply an extra unchanged slot. <FIFO page replacement> can improve on other <sequences>; the anomaly is an existence claim, not a claim that more <page frames> usually hurt.
+
+= Dirty memory page
+{parent=Page replacement}
+
+A resident <memory page> with modifications that must be preserved in its backing storage before its <page frame> can be reused. In the simple model here, a write sets its dirty flag, and successful <page writeback> clears it. A clean <memory page> with a recoverable backing copy can be discarded without an outgoing data write.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Beyond Physical Memory: Policies>[Section 22.9, p. 13: modified/dirty bit and the outgoing I/O difference between dirty and clean eviction]{ref}
+
+= Page writeback
+{parent=Dirty memory page}
+
+Preserving the modified contents of a <dirty memory page> in its backing storage. The reference model waits for successful <page writeback> before reusing the victim's <page frame>; failure cannot authorize losing its modifications. A reference <bit> records recent access, while the dirty flag records a write obligation: reading can set the first without setting the second. <Buffer cache writeback> concerns the analogous obligation for a <buffered device block>.
+
+= Page-replacement cost accounting
+{parent=Page replacement}
+{title2=$T=nh+Mr+Dw$}
+
+Let $n$ be the number of accesses, $M$ the miss count and $D$ the number of dirty-victim <page writebacks>. Assume every requested <memory page> has a backing copy, every miss reads it, writes modify only part of its contents, transfers succeed and occur serially, and there is no background or final flushing. With common access cost $h$, additional load cost $r$ per miss, and additional outgoing write cost $w$ per dirty victim, an illustrative total service time is
+$$
+T=nh+Mr+Dw.
+$$
+Bookkeeping and other <operating system> costs are omitted. The two transfer directions are separate: a miss can require a read with no write, or both a victim write and a requested-page read. A retained <dirty memory page> contributes no outgoing write to this finite-<page-reference trace> count until evicted. Future flushing would need its own accounting boundary.
+
+For three-<page frame> <FIFO page replacement> on the displayed <page-reference trace>, all reads give $(n,M,D)=(12,9,0)$. Change only access 1 to a partial write of <memory page> 1. Its initial miss still loads the old contents, the write marks it dirty, and eviction at access 4 adds exactly one <page writeback>. Later loads of <memory page> 1 are clean because the remaining accesses read. The result is $(12,9,1)$: identical residency and nine misses, but one extra outgoing write. With illustrative $h=100$ nanoseconds, $r=1$ millisecond and $w=2$ milliseconds, total service time changes from $9.0012$ to $11.0012$ milliseconds. These are model costs, not hardware measurements.
+
+Preferring a clean victim can save an immediate <page writeback>, but evicting a soon-needed clean <memory page> can add later misses. This tradeoff is why a miss-minimizing <optimal page replacement> benchmark and a minimum-cost policy are different questions. Real <page faults> can also initialize a new <memory page> or perform <copy-on-write> without reading backing storage; those cases require different load costs.
+
+// Destination: computer-science.bigb
+
+= Page fault
+{parent=Paging}
+{wiki}
+
+A <page fault> transfers control to the <operating system> when an access cannot proceed under the current <paging> translation or protection rules. The term includes both unavailable translations and forbidden accesses on <x86>. Intel's manual distinguishes these causes; AMD's error code likewise distinguishes ordinary not-present faults from protection violations. Other architectural causes, including malformed <page table entries>, also exist. https://cdrdv2-public.intel.com/671200/325462-sdm-vol-1-2abcd-3abcd.pdf[Intel SDM, volume 3A, section 4.7: Page-Fault Exceptions]{ref}https://docs.amd.com/api/khub/documents/sD1_QL~h4Afq2_tvzxqqSQ/content[AMD64 Architecture Programmer's Manual, volume 2, revision 3.44, section 8.4.2: Page-Fault Error Code]{ref}
+
+The illustrative <page table> in <paging> separates three situations:
+* A read at <virtual address> `0x1434` targets a permitted but nonresident <memory page>. The <operating system> may supply it and retry the access.
+* A write at <virtual address> `0x1234` targets a resident, read-only <memory page>. The <page fault> is caused by missing write permission, not by missing contents.
+* A read at <virtual address> `0x1534` targets an unmapped part of the <address space>. The <operating system> must reject it unless its policy authorizes creating a mapping.
+
+A <page fault> is not necessarily a program error or a storage-device read. <Demand paging> can allocate a zero-filled <page frame> without reading secondary storage. A <copy-on-write> write deliberately encounters read-only permissions; the <operating system> supplies a private copy and enables the write. A truly forbidden access may instead terminate the <operating-system process>. The handler interprets the fault using both architectural fault information and its own mapping policy. https://pages.cs.wisc.edu/~remzi/OSTEP/vm-complete.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 23: demand zeroing and copy-on-write]{ref}
+
+For a nonresident <memory page> whose contents must be loaded, the handler obtains a <page frame>, possibly invokes <page replacement>, supplies the contents, updates the <page table>, arranges any necessary <translation lookaside buffer> invalidation, and resumes the operation. If no mapping or permission can legally be supplied, it reports failure. This mechanism lets ordinary accesses request work only when it becomes necessary. <Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Beyond Physical Memory: Mechanisms>[Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others; Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 21: Beyond Physical Memory, Mechanisms, sections 21.3–21.5]{ref}
+
+// Target: computer-science.bigb
+
+= Page fault rate
+{parent=Page fault}
+{title2=$p$}
+
+For a specified interval of <memory references>, the number causing a <page fault> divided by the total number of <memory references>. In the nonresident-only toy model in <memory thrashing>, this equals the miss fraction used as <probability> $p$ in the <expected value> calculation. Startup and later intervals can have very different <page fault rates>.
+
+= Translation lookaside buffer
+{parent=Paging}
+{wiki}
+{title2=TLB}
+
+A <translation lookaside buffer> is a small hardware <memory cache> of <virtual address> to <physical address> mappings and their access attributes. A <TLB hit> finds a usable cached mapping for the current <address space>; access permissions still apply. A <TLB miss> means that mapping is absent from the <translation lookaside buffer>. It says nothing by itself about whether the <memory page> is resident. Evicting a <translation lookaside buffer> entry removes a cached translation, not the <memory page>'s contents. https://docs.amd.com/api/khub/documents/sD1_QL~h4Afq2_tvzxqqSQ/content[AMD64 Architecture Programmer's Manual, volume 2, revision 3.44, section 5.5: Translation-Lookaside Buffer]{ref}
+
+For the 256-<byte> example, a cached virtual page `0x12` to physical frame `0x07` mapping covers every offset from `0x00` to `0xff`. Reads at <virtual addresses> `0x1234` and `0x1235` can reuse it to reach <physical addresses> `0x0734` and `0x0735`. If the <translation lookaside buffer> is initially empty, the first read instead requires a <page table walk>; with a resident, readable mapping, it completes without a <page fault>. A write can fault even on a <TLB hit> because cached permissions deny it.
+
+\Image[tlb-miss-versus-page-fault.png]
+{title=A TLB miss can refill a resident translation without a page fault; permission failures can fault on a TLB hit}
+
+The diagrams show an ordinary <x86> model with hardware <page table walks>. Some architectures use an <operating system> handler to refill the <translation lookaside buffer> after a <TLB miss>; that refill event alone is not a nonresident <page fault>. <Temporal locality> helps a small <translation lookaside buffer> serve repeated accesses, and one entry can cover many <bytes>. <Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Paging: Faster Translations (TLBs)>[Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others; Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 19: Paging, Faster Translations, sections 19.1 and 19.3]{ref}
+
+A <context switch> does not universally flush the whole <translation lookaside buffer>. An <address space identifier> can distinguish translations with the same virtual page number in different <address spaces>; Intel's PCIDs support retaining translations across appropriate switches. The <operating system> must still invalidate stale translations when mappings or permissions change, following the architecture's rules, including coordination with other processors that could use them. https://cdrdv2-public.intel.com/825743/325462-sdm-vol-1-2abcd-3abcd-4.pdf[Intel SDM, volume 3A, sections 4.10.1 and 4.10.4–4.10.5: PCIDs and translation invalidation]{ref}
+
+= TLB hit
+{parent=Translation lookaside buffer}
+{c}
+
+A lookup that finds a valid cached <address translation> for the relevant <address space>. The access can still cause a <page fault> if the cached permissions forbid it.
+
+For the 64-<byte> toy model in <address translation>, a cached process A page-4 mapping covers reads at both `0x12D` and `0x12E`, yielding <physical addresses> `0x36D` and `0x36E`. The <TLB hit> reuses the mapping; it does not guarantee that either requested <byte> is in a data <memory cache>.
+
+= TLB miss
+{parent=Translation lookaside buffer}
+{c}
+
+A lookup that fails to find the required cached <address translation>. A successful refill can leave the <memory page> resident throughout and cause no <page fault>.
+
+For process A's resident virtual page 4 in <address translation>, discarding only its <translation lookaside buffer> entry makes the next read a <TLB miss> while its contents remain in <page frame> 13. <Page replacement> would instead remove the resident <memory page>; these operations invalidate different kinds of cached information.
+
+= Address space identifier
+{parent=Translation lookaside buffer}
+{wiki}
+{title2=ASID}
+
+A tag distinguishing cached <address translations> belonging to different <address spaces>. Tags can be reused, but reusing a tag for a different mapping context requires appropriate invalidation.
+
+// Target: computer-science.bigb
+
+= Page table
+{parent=Paging}
+{wiki}
+
+A <page table> is the <data structure> describing an <address space>'s mappings from virtual page numbers to <page frames>, together with access and status information. A <page table entry> can describe a resident <memory page> and its permissions. Nonresident or unmapped <memory pages> require a representation that lets the <operating system> distinguish them; a hardware not-present flag alone need not make that distinction. On <x86>, additional <operating system> information determines whether a not-present mapping is legitimate. https://pages.cs.wisc.edu/~remzi/OSTEP/vm-paging.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 18, section 18.3: page-table contents and the x86 present bit]{ref}
+
+The four rows drawn under <paging> are an illustrative model, combining <page table> and <operating system> information: virtual page `0x12` is resident in physical frame `0x07` with read-only permission; `0x13` is resident in `0x02` with read/write permission; `0x14` is mapped read/write but nonresident; `0x15` is unmapped. The labels deliberately separate mapping policy, residency and permission. They are not a literal <x86> entry layout. A <translation lookaside buffer> valid flag is a fourth, independent notion: it says that a cached translation can be considered, not that every resident <memory page> has a cached translation.
+
+A flat <array> with one <page table entry> per virtual page would have $2^{16}/256=256$ entries in this example. At an assumed four <bytes> per entry, it occupies $256\cdot4=1024$ <bytes>, whether one <memory page> or all 256 <memory pages> are mapped. A <multi-level page table> saves space in sparse <address spaces> by allocating lower-level tables only for the regions that need them. The tradeoff is extra dependent lookups during a <page table walk>; a <translation lookaside buffer> avoids repeating those lookups on a hit. https://pages.cs.wisc.edu/~remzi/OSTEP/vm-smalltables.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 20: Paging, Smaller Tables, section 20.3]{ref}
+
+= Page table entry
+{parent=Page table}
+{title2=PTE}
+
+One record in a <page table>, holding a <page frame> number or a next-level table reference together with architecture-dependent flags. Effective permissions in a <multi-level page table> can depend on several entries, not just the final one.
+
+= Multi-level page table
+{parent=Page table}
+
+A hierarchy of <page tables> indexed by successive groups of virtual page number <bits>. Unused regions can omit lower-level tables.
+
+The useful omission is an entire lower-level <array>, not merely an invalid <page table entry>. One absent upper-level entry can represent a large unmapped interval of the <address space>. The <Linux kernel>'s documented hierarchy uses this idea to avoid allocating tables for unused regions; its software levels can also be folded to match the hardware. <Page Tables by The kernel development community>[Page Tables: opening hierarchy discussion, paragraph beginning "One could of course imagine"; Page Table Folding]{ref}
+
+= Two-level address translation
+{parent=Multi-level page table}
+
+Choose an original teaching model with 16-<bit> <virtual addresses>, 16-<bit> <physical addresses>, and 256-<byte> <memory pages> and <page frames>. The eight high <bits> identify a virtual <memory page>; divide these into two four-<bit> indices. The eight low <bits> are the offset within the <memory page>. Thus each <page table> has 16 entries: the root selects a lower-level <page table>, and that table selects a data <page frame>. Every <page table entry> is four <bytes>, including its reference and flags. These are chosen model parameters, not a hardware entry encoding.
+
+For a <virtual address> $v$, extract the root index $i$, lower-level index $j$, and offset $d$ by <Euclidean division>:
+$$
+i=\left\lfloor\frac{v}{4096}\right\rfloor,\qquad
+j=\left\lfloor\frac{v}{256}\right\rfloor\bmod16,\qquad
+d=v\bmod256,\qquad
+v=4096i+256j+d.
+$$
+Here $\lfloor\cdot\rfloor$ is the <floor function> and $\bmod$ denotes the remainder in <Euclidean division>. Each index ranges from 0 to 15, and $d$ ranges from 0 to 255. In <hexadecimal>, <virtual address> `0x1234` splits into $i=1$, $j=2$, and $d=\mathtt{0x34}=52$; its <binary numeral system> representation is `0001 | 0010 | 00110100`.
+
+Fix the requested operation to be a one-<byte> user read. Assume both table nodes and the data <page frame> are resident, table reads are allowed, and no mapping changes during the <page table walk>. The model requires presence at both levels and takes the <set intersection> of the two entries' read, write, execute, and user-access permissions. This is an explicit <memory protection> rule for this model; <Sv39 page tables> use different rules. The root's <physical address> is `0x8000`; the relevant entries are:
+
+\Table[
+\Tr[\Th[Record]\Th[<Physical address> of record]\Th[Reference held in the <page table entry>]\Th[Presence and permissions]]
+\Tr[\Td[Root entry 1]\Td[`0x8000 + 1*4 = 0x8004`]\Td[Lower-level table at `0x9000`]\Td[Present; user; read/write; no execute]]
+\Tr[\Td[Lower-level entry 2]\Td[`0x9000 + 2*4 = 0x9008`]\Td[Data <page frame> `0x07`, base `0x0700`]\Td[Present; user; read-only; no execute]]
+]
+
+The first lookup obtains a table reference, not the final data <physical address>. The second lookup obtains <page frame> number 7. Both entries permit a user read, so the original offset is added to the data <page frame> base:
+$$
+a=7\cdot256+52=1844=\mathtt{0x0734}.
+$$
+The <page table walk> therefore reads records at `0x8004` and `0x9008`, then the requested read accesses data at `0x0734`. All three are distinct <physical addresses>. These are two dependent table lookups followed by one data access, not a claim of three accesses to main <computer memory>: a <memory cache> can satisfy table lookups, and cached intermediate translations can skip them.
+
+\Image[two-level-page-table-address-walk.png]
+{title=The model's 4+4+8-bit address split and complete read translation from 0x1234 to 0x0734}
+
+Under the same <memory protection> rule, a user write at `0x1234` fails because lower-level entry 2 denies writes, even though root entry 1 allows them. Clearing either entry's presence flag also prevents the access. An absent root entry stops the <page table walk> before any lower-level lookup. A <page fault> then requires the <operating system> to determine whether a permitted mapping needs storage or the access is invalid; absence alone does not establish <demand paging> eligibility.
+
+With an empty <translation lookaside buffer>, the permitted read causes a <TLB miss> and this successful <page table walk>, with no <page fault>. If the resulting mapping and permissions are cached for the current <address space>, a later read at `0x1235` can use a <TLB hit> to reach `0x0735`. A later write can cause a protection <page fault> on a <TLB hit> because the cached mapping remains read-only. Assume cached permissions are current; changing them requires the architecture's prescribed invalidation. A <TLB miss> describes a missing cached translation, while a <page fault> describes an access that cannot proceed under the translation or protection rules. <Page Tables by The kernel development community>[MMU, TLB, and Page Faults: translation caches, page walks, and faults for missing or forbidden mappings]{ref}
+
+= Sparse page table allocation
+{parent=Multi-level page table}
+
+Use the <two-level address translation> model and map exactly four resident virtual <memory pages>, numbered `0x12`, `0x13`, `0xa0`, and `0xa1`. Assign their data <page frames> to `0x07`, `0x02`, `0x05`, and `0x06`, respectively. Only two root indices occur: 1 and 10. Allocate exactly three table nodes: the root at `0x8000`, the lower-level table for root index 1 at `0x9000`, and the lower-level table for root index 10 at `0xa000`. Root entries 1 and 10 reference those tables; all other root entries are absent. Lower-level entries 2 and 3 in the first table and entries 0 and 1 in the second table hold the four mappings; every other lower-level entry is absent. Use the read-only permissions already specified for virtual <memory page> `0x12`; let the other three mappings permit user reads and writes, with no execution, and let both populated root entries permit user reads and writes.
+
+Each root index covers 16 virtual <memory pages>, hence $16\cdot256=4096$ <bytes> of the <address space>. A compact table node occupies $16\cdot4=64$ <bytes>. The three nodes therefore require $3\cdot64=192$ <bytes> of table storage, including the root and all absent entry slots in the allocated nodes. A single-level <array> requires $256\cdot4=1024$ <bytes> for the same <address space>, saving $1024-192=832$ <bytes> in the compact model. Four data <page frames> occupy another $4\cdot256=1024$ <bytes>; those contents are separate from table storage.
+
+If instead the allocator dedicates a whole 256-<byte> <page frame> to every table node, the three nodes consume 768 <bytes>, leaving $3(256-64)=576$ <bytes> unused within those allocations. The single-level table fills four such <page frames> and still consumes 1024 <bytes>. Thus this example saves 256 <bytes> of allocated table storage under that alternative policy. Neither accounting includes allocator metadata, <operating-system process> records, or <translation lookaside buffer> storage; data allocations are the same in both designs.
+
+\Image[sparse-page-table-node-footprint.png]
+{title=All table nodes for four mapped pages, and the footprint change when the same four pages occupy four root regions}
+
+Placement matters as well as mapping count. Four virtual <memory pages> `0x12`, `0x42`, `0x72`, and `0xa2` require the root plus four lower-level tables: five nodes, 320 compact <bytes>, or 1280 <bytes> with a dedicated <page frame> per node. Only four data <page frames> are still required. Let $g$ be the number of distinct root indices represented by the mappings. With no retained empty lower-level tables, table storage is $64(1+g)$ compact <bytes> or $256(1+g)$ allocated <bytes> under the dedicated-<page frame> policy. Even an empty <address space> retains the root in this accounting, so $g=0$ costs 64 or 256 <bytes>.
+
+For a fully populated <address space>, $g=16$: 17 nodes cost 1088 compact <bytes> or 4352 allocated <bytes>. The single-level table remains 1024 <bytes>. Sparse allocation is therefore a conditional space benefit; scattered mappings, node allocation granularity, and the root's overhead can reverse it. Additional dependent lookups on a <TLB miss> also have a cost, but node counts alone establish no universal execution-time ordering.
+
+= Sv39 page table
+{parent=Multi-level page table}
+{c}
+
+The actual <Sv39 page table> geometry uses three nine-<bit> indices and a twelve-<bit> offset for base 4096-<byte> <memory pages>. Each table contains 512 eight-<byte> <page table entries>, exactly one 4096-<byte> <memory page>; the `satp` <processor register> identifies the root. A 64-<bit> <virtual address> must repeat bit 38 in bits 63 through 39. Higher-level terminal entries can also map aligned larger <memory pages>, shortening the <page table walk>. These rules differ from the 16-<bit>, four-<byte>-entry <two-level address translation> model. <The RISC-V Instruction Set Manual, Volume II: Privileged Architecture by RISC-V International>[Version 20260120, section 12.4.1, printed pp. 136–137, Figures 68–70: address fields, entry sizes, root, and larger pages]{ref}
+
+For ordinary <Sv39 page tables>, valid nonterminal <page table entries> reference the next table with read, write, and execute flags clear; those clear flags do not prohibit reading the eventual data. The terminal entry supplies access permissions, with additional <processor privilege level> and status checks. An invalid entry, malformed encoding, or denied access can cause a <page fault>. Thus the model's <set intersection> of read/write permissions at both levels must not be applied mechanically to <Sv39 page tables>. <The RISC-V Instruction Set Manual, Volume II: Privileged Architecture by RISC-V International>[Version 20260120, section 12.3.2, printed p. 134, steps 2–8; section 12.4.1, printed p. 137: Sv39 uses the same algorithm with LEVELS=3 and PTESIZE=8]{ref}
+
+In <xv6 RISC-V source code>, root allocation is separate from lower-level allocation: `uvmcreate()` allocates and clears a root <page table>, while `walk()` with allocation enabled allocates and clears missing lower-level tables and installs valid references to them. With allocation disabled, a missing table makes `walk()` return failure. This software routine finds a <page table entry> for the <operating system>; it is not the hardware's complete permission-checking <page table walk>. <xv6 RISC-V source code/vm.c>[walk(): three-level index comment and alloc-controlled creation; uvmcreate(): root allocation and initialization]{ref}
+
+= Page table walk
+{parent=Page table}
+
+Looking up <page table entries> to obtain a <page frame> number and effective access attributes. On ordinary <x86> hardware <paging>, a <TLB miss> can initiate this lookup without entering the <operating system>.
+
+// Target: computer-science.bigb

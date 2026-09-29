@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>green-theorem-annulus-boundary-cancellation.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="green-theorem-annulus-boundary-cancellation.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/green-theorem-annulus-boundary-cancellation.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">green-theorem-annulus-boundary-cancellation.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/green-theorem-annulus-boundary-cancellation.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/green-theorem-annulus-boundary-cancellation.py">green-theorem-annulus-boundary-cancellation.py</a></b></div></nav></div><div class="p"><b>green-theorem-annulus-boundary-cancellation.py</b></div><div class="code"><div><pre><code>"""Show induced boundary orientation and cut cancellation on an annulus.
+
+Run from _media; requires Python 3.14, matplotlib 3.10.7, numpy 2.3.5.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, FancyArrowPatch, Wedge
+import numpy as np
+
+
+OUTER = "#175a9e"
+INNER = "#bb4e12"
+
+
+def arrow(ax, start, end, color):
+    ax.add_patch(FancyArrowPatch(start, end, arrowstyle="-|&gt;", color=color,
+                                mutation_scale=17, linewidth=2.2, zorder=5))
+
+
+def boundary(ax):
+    for radius, direction, color in [(2, 1, OUTER), (1, -1, INNER)]:
+        ax.add_patch(Circle((0, 0), radius, fill=False, edgecolor=color, lw=2.2))
+        for t in [0.6, 2.2, 3.8, 5.4]:
+            ts = np.linspace(t, t+direction*0.45, 30)
+            ax.plot(radius*np.cos(ts), radius*np.sin(ts), color=color, lw=2.3)
+            arrow(ax, (radius*np.cos(ts[-2]), radius*np.sin(ts[-2])),
+                  (radius*np.cos(ts[-1]), radius*np.sin(ts[-1])), color)
+    ax.plot(0, 0, "x", color="#a52727", ms=8, mew=2)
+    ax.text(0, -0.27, "origin excluded", ha="center", color="#a52727", fontsize=11)
+    ax.set(aspect="equal", xlim=(-2.65, 2.65), ylim=(-2.6, 2.6))
+    ax.axis("off")
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "figure.facecolor": "white",
+                         "axes.facecolor": "white"})
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5.1), dpi=120)
+    fig.suptitle(r"$G=(-y,x)/(x^2+y^2)$: zero curl throughout the annulus", fontsize=17)
+    ax = axes[0]
+    ax.add_patch(Wedge((0, 0), 2, 0, 360, width=1, facecolor="#e9f3fb"))
+    gx, gy = np.meshgrid(np.linspace(-1.8, 1.8, 11), np.linspace(-1.8, 1.8, 11))
+    r2 = gx*gx+gy*gy
+    mask = (r2 &gt; 1.15) &amp; (r2 &lt; 3.7)
+    ax.quiver(gx[mask], gy[mask], -gy[mask]/r2[mask], gx[mask]/r2[mask],
+              color="#768477", angles="xy", scale_units="xy", scale=2.7, width=0.006)
+    boundary(ax)
+    ax.set_title("Keep the annulus on the left", fontsize=14)
+    ax.text(0.5, -0.04, r"Outer CCW: $+2\pi$     Inner CW: $-2\pi$",
+            ha="center", transform=ax.transAxes, fontsize=12)
+    ax.text(0.5, -0.14, r"Complete boundary: $2\pi-2\pi=0$",
+            ha="center", transform=ax.transAxes, fontsize=13)
+
+    ax = axes[1]
+    ax.add_patch(Wedge((0, 0), 2, 0, 180, width=1, facecolor="#e9f3fb"))
+    ax.add_patch(Wedge((0, 0), 2, 180, 360, width=1, facecolor="#fff0df"))
+    boundary(ax)
+    for sign in [-1, 1]:
+        ax.plot([sign, 2*sign], [0, 0], color="#666666", lw=1, ls="--")
+    # The upper piece goes right on its right cut and left on its left cut;
+    # the lower piece goes in the opposite direction on each shared cut.
+    for a, b, y in [(1.1, 1.9, 0.06), (1.9, 1.1, -0.06),
+                     (-1.1, -1.9, 0.06), (-1.9, -1.1, -0.06)]:
+        arrow(ax, (a, y), (b, y), "#333333")
+    ax.text(0, 1.48, "upper piece", ha="center", fontsize=11)
+    ax.text(0, -1.48, "lower piece", ha="center", fontsize=11)
+    ax.set_title("Two cuts give two simple boundaries", fontsize=14)
+    ax.text(0.5, -0.04, "Opposite directions on each shared cut",
+            ha="center", transform=ax.transAxes, fontsize=12)
+    ax.text(0.5, -0.14, "Cut integrals cancel when the pieces are added",
+            ha="center", transform=ax.transAxes, fontsize=12)
+    fig.subplots_adjust(left=0.03, right=0.98, top=0.8, bottom=0.2, wspace=0.08)
+    fig.savefig(Path(__file__).stem + ".png", facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

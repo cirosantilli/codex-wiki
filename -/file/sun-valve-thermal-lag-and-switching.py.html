@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>sun-valve-thermal-lag-and-switching.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="sun-valve-thermal-lag-and-switching.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/sun-valve-thermal-lag-and-switching.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">sun-valve-thermal-lag-and-switching.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/sun-valve-thermal-lag-and-switching.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/sun-valve-thermal-lag-and-switching.py">sun-valve-thermal-lag-and-switching.py</a></b></div></nav></div><div class="p"><b>sun-valve-thermal-lag-and-switching.py</b></div><div class="code"><div><pre><code>"""Chosen matched-rod thermal model, no historical data; PNG to CWD."""
+from pathlib import Path
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({'font.size':12,'font.family':'DejaVu Sans'})
+    length,alpha,area,ab,ar,capacity,conductance,irradiance=.2,20e-6,.002,.9,.1,5.,.2,600.
+    tau=capacity/conductance
+    steady=alpha*length*area*(ab-ar)*irradiance/conductance
+    threshold=10e-6; stop=180.
+    close=-tau*np.log1p(-threshold/steady)
+    at_stop=steady*(-np.expm1(-stop/tau))
+    reopen=stop+tau*np.log(at_stop/threshold)
+    t=np.linspace(0,300,2001)
+    displacement=np.where(t&lt;=stop,steady*(-np.expm1(-t/tau)),at_stop*np.exp(-(t-stop)/tau))
+    permission=(displacement&lt;threshold).astype(float)
+    fig,(ax,bx)=plt.subplots(2,1,figsize=(13,6.5),dpi=120,sharex=True,facecolor='white',gridspec_kw={'height_ratios':[2.2,1]})
+    fig.subplots_adjust(left=.085,right=.98,bottom=.18,top=.87,hspace=.27)
+    for panel in [ax,bx]:
+        panel.axvspan(0,stop,color='#f5e4ab',alpha=.5)
+        panel.grid(alpha=.2)
+    ax.plot(t,displacement*1e6,color='#246898',linewidth=2.5,label='Relative rod extension')
+    ax.axhline(threshold*1e6,color='#a44737',linestyle='--',label='Chosen 10 µm switching threshold')
+    ax.set(ylabel='Relative extension (µm)',ylim=(0,22),xlim=(0,300))
+    ax.legend(loc='lower right',fontsize=11)
+    ax.text(90,20.5,'Illuminated',ha='center',fontsize=12)
+    ax.text(240,20.5,'Dark',ha='center',fontsize=12)
+    bx.step(t,permission,where='post',color='#397c50',linewidth=2.5)
+    bx.set(yticks=[0,1],yticklabels=['Closed','Open'],ylim=(-.2,1.25),xlabel='Time (s)',ylabel='Main supply\npermission')
+    for when,label in [(close,f'Closes at {close:.1f} s'),(reopen,f'Reopens at {reopen:.1f} s')]:
+        ax.axvline(when,color='#777',linestyle=':',linewidth=1)
+        bx.axvline(when,color='#777',linestyle=':',linewidth=1)
+        bx.annotate(label,xy=(when,.5),xytext=(when+12,.8),fontsize=11,arrowprops={'arrowstyle':'-&gt;','color':'#555'})
+    fig.suptitle('Differential heating gives a delayed mechanical switching signal',fontsize=17,y=.97)
+    fig.text(.5,.07,'Chosen illumination: 600 W/m² for 180 s; matched thermal time constant: 25 s; steady extension: 19.2 µm.',ha='center',fontsize=11)
+    fig.text(.5,.025,'Model calculation, not historical measurements. The lower trace gives permission, not a measured gas-flow rate.',ha='center',fontsize=11)
+    fig.savefig(Path.cwd()/(Path(__file__).stem+'.png'),facecolor='white')
+    plt.close(fig)
+
+
+if __name__=='__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

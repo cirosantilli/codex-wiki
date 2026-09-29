@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>composite-simpson-exponential-convergence.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="composite-simpson-exponential-convergence.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/composite-simpson-exponential-convergence.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">composite-simpson-exponential-convergence.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/composite-simpson-exponential-convergence.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/composite-simpson-exponential-convergence.py">composite-simpson-exponential-convergence.py</a></b></div></nav></div><div class="p"><b>composite-simpson-exponential-convergence.py</b></div><div class="code"><div><pre><code>"""Compute and plot original composite Simpson convergence data.
+
+Run from _media; tested with Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7.
+Decimal arithmetic prevents floating-point cancellation in the plotted errors.
+"""
+
+from decimal import Decimal, localcontext
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def convergence_data():
+    with localcontext() as context:
+        context.prec = 80
+        counts = [2, 4, 8, 16, 32, 64, 128]
+        exact = Decimal(1).exp() - 1
+        errors = []
+        for n in counts:
+            h = Decimal(1) / n
+            samples = [(Decimal(j)*h).exp() for j in range(n+1)]
+            weights = [1 if j in (0, n) else 4 if j % 2 else 2 for j in range(n+1)]
+            estimate = h * sum(w*y for w, y in zip(weights, samples)) / 3
+            errors.append(estimate - exact)
+        ratios = [None] + [errors[j-1]/errors[j] for j in range(1, len(errors))]
+        return counts, errors, ratios
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "axes.spines.top": False,
+                         "axes.spines.right": False, "figure.facecolor": "white",
+                         "axes.facecolor": "white", "savefig.facecolor": "white"})
+    counts, errors, ratios = convergence_data()
+    n = np.array(counts, dtype=float)
+    fig, (ax, tab) = plt.subplots(1, 2, figsize=(9, 4.5), dpi=120,
+                                gridspec_kw={"width_ratios": [1.25, 1]},
+                                layout="constrained")
+    fig.suptitle(r"Composite Simpson: $f(x)=e^x$ on $[0,1]$", fontsize=16)
+    ax.loglog(n, np.e/(180*n**4), "--", color="#777777", lw=1.8,
+              label=r"Bound $e/(180n^4)$")
+    ax.loglog(n, [float(e) for e in errors], "o-", color="#176b9b", lw=2,
+              label=r"Computed $S_n-(e-1)$")
+    ax.set_xlabel(r"Even subinterval count $n$")
+    ax.set_ylabel("Absolute error")
+    ax.set_xticks(n, labels=[str(k) for k in counts])
+    ax.minorticks_off()
+    ax.grid(alpha=0.2)
+    ax.legend(loc="upper right", fontsize=10, framealpha=1)
+    ax.text(0.08, 0.09, "Doubling n divides error\nby nearly 16 (slope −4)",
+            transform=ax.transAxes, fontsize=11,
+            bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.9})
+    tab.axis("off")
+    cells = [[str(k), f"{float(e):.4e}", "—" if r is None else f"{float(r):.5f}"]
+             for k, e, r in zip(counts, errors, ratios)]
+    table = tab.table(cellText=cells,
+                      colLabels=["n", "Absolute error", "Previous / current"],
+                      colWidths=[0.13, 0.39, 0.48], cellLoc="center",
+                      bbox=[0.01, 0.20, 0.98, 0.72])
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    for (row, column), cell in table.get_celld().items():
+        cell.set_edgecolor("#cccccc")
+        if row == 0:
+            cell.set_facecolor("#e7eff4")
+            cell.set_text_props(weight="bold")
+    tab.text(0.5, 0.08, r"Exact integral: $e-1$" + "\nAll errors are positive: Simpson overestimates.",
+             ha="center", va="center", transform=tab.transAxes, fontsize=10)
+    fig.savefig(Path(__file__).stem + ".png", dpi=120, transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

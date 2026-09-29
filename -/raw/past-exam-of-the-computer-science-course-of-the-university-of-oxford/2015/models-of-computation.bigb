@@ -1,0 +1,479 @@
+= Models of computation
+{scope}
+{title2=A10406W1}
+
+Solutions to all three questions of the <University of Oxford> <computer science> finals paper held on 12 June 2015, Trinity Term 2015. The printed cover gives the date and paper code. All numbered subparts are treated.<Models of computation examination paper of the University of Oxford (2015)>[Cover, p. 1; questions, pp. 2–3]{ref}
+
+== 1
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+A <nondeterministic finite automaton>, allowing the <epsilon transitions> used in this paper, is a <tuple>
+$$
+M=(Q,\Sigma,\delta,q_0,F),\qquad
+\delta:Q\times(\Sigma\cup\{\varepsilon\})\longrightarrow\mathcal P(Q).
+$$
+Here $Q$ is a nonempty <finite set> of <automaton states>, $\Sigma$ is a finite <alphabet>, $\mathcal P(Q)$ is the <power set> of $Q$, $q_0\in Q$ is the initial <automaton state>, and $F\subseteq Q$ is the <set> of accepting <automaton states>. The symbol $\varepsilon\notin\Sigma$ denotes the <empty word>. Membership $r\in\delta(q,a)$ permits an <automaton transition> from $q$ to $r$ consuming $a$ when $a\in\Sigma$, or consuming nothing when $a=\varepsilon$.
+
+The recognized <formal language> is
+$$
+\boxed{L(M)=\{w\in\Sigma^*: \text{some finite path from }q_0\text{ to a state in }F\text{ has label }w\}.}
+$$
+The label of a <graph path> is the <concatenation> of its labels with all occurrences of $\varepsilon$ omitted. Thus acceptance requires consuming the entire input <word>; a single successful choice of <automaton transitions> suffices. A path of length zero is allowed, so the <empty word> is accepted whenever $q_0\in F$, or an accepting <automaton state> is reachable by <epsilon transitions>. If <epsilon transitions> are excluded from the definition of a <nondeterministic finite automaton>, the displayed version is called an <epsilon-NFA>.
+
+=== b
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+For $x$, there is an accepting <graph path>
+$$
+q_0\xrightarrow{1}q_1\xrightarrow{1}q_2
+\xrightarrow{0}q_0\xrightarrow{0}q_0
+\xrightarrow{1}q_1\xrightarrow{1}q_2
+\xrightarrow{0}q_0\xrightarrow{\varepsilon}q_2.
+$$
+Its nonempty labels spell $1100110$, and its last <automaton state> is accepting. **Therefore $x$ is accepted.** The last <epsilon transition> matters: finishing the consumed input at $q_0$ does not prevent a subsequent move to $q_2$.
+
+For $y$, track all possible <automaton states>, including their <epsilon closure>, after each input prefix:
+
+|| Input prefix
+|| Possible <automaton states> after <epsilon closure>
+
+| $\varepsilon$
+| $\{q_0,q_2\}$
+
+| $1$
+| $\{q_1\}$
+
+| $11$
+| $\{q_2\}$
+
+| $110$
+| $\{q_0,q_2\}$
+
+| $1100$
+| $\{q_0,q_2\}$
+
+| $11001$
+| $\{q_1\}$
+
+The final <set> contains no accepting <automaton state>, and $q_1$ has no outgoing <epsilon transition>. **Therefore $y$ is rejected.**
+$$
+\boxed{x\in L(M),\qquad y\notin L(M).}
+$$
+
+==== ii
+{scope}
+
+===== Solution
+
+Use <state elimination for finite automata>, with <regular expression> labels on a <generalized finite automaton>. Add a fresh initial <automaton state> $s$ with $s\xrightarrow{\varepsilon}q_0$, and a fresh final <automaton state> $f$ with $q_2\xrightarrow{\varepsilon}f$. Only $f$ is now accepting. Missing labels represent the <empty language>, and parallel alternatives are combined by <union>.
+
+When eliminating an internal <automaton state> $k$, update every surviving label by
+$$
+R_{ij}\longleftarrow R_{ij}\cup R_{ik}(R_{kk})^*R_{kj}.
+$$
+The added <regular expression> describes entering $k$, traversing its loop zero or more times by <Kleene star>, and leaving it. This accounts for exactly the <graph paths> newly bypassing $k$.
+
+First eliminate $q_1$. Its only incoming and outgoing labels are both $1$, and it has no loop. The <graph path> through it contributes $11$, so the label from $q_0$ to $q_2$ becomes
+$$
+R_{02}=\varepsilon\cup11.
+$$
+The other relevant labels are still $R_{00}=0$, $R_{20}=0$, and $R_{2f}=\varepsilon$.
+
+Next eliminate $q_2$. It has no loop, so the new loop at $q_0$ and the new label to $f$ are
+$$
+\begin{aligned}
+R_{00}&=0\cup(\varepsilon\cup11)0=0\cup110,\\
+R_{0f}&=(\varepsilon\cup11)\varepsilon=\varepsilon\cup11.
+\end{aligned}
+$$
+Finally eliminate $q_0$. The label from $s$ to $f$ is
+$$
+\varepsilon(0\cup110)^*(\varepsilon\cup11).
+$$
+Thus an equivalent <regular expression> is
+$$
+\boxed{(0\cup110)^*(\varepsilon\cup11).}
+$$
+For an independent interpretation, every completed return to $q_0$ consumes either $0$ or $110$: the latter traverses $q_1,q_2$ before returning. The last visit to $q_2$ consumes either nothing or $11$. Consequently every run of ones has length exactly two, and successive such runs require at least one zero between them. In particular, consecutive copies of $11$ without a separating zero are not accepted.
+
+=== c
+{scope}
+
+==== Solution
+
+Let $A=(Q,\{0,1\},\delta,q_0,F)$ be a <deterministic finite automaton> recognizing $L$. Construct a <nondeterministic finite automaton> $B$ with <automaton state> <set> $Q\times\{0,1\}$. Its second coordinate records whether the extra zero has already been consumed. Start at $(q_0,0)$ and make exactly the <automaton states> in $F\times\{1\}$ accepting.
+
+For each $q\in Q$, $i\in\{0,1\}$, and $a\in\{0,1\}$, include the ordinary <automaton transition>
+$$
+(q,i)\xrightarrow{a}(\delta(q,a),i).
+$$
+Also include the extra <automaton transition>
+$$
+\boxed{(q,0)\xrightarrow{0}(q,1)\qquad(q\in Q).}
+$$
+This consumes the inserted zero without changing the simulated <automaton state> of $A$. At a zero in layer zero, both the ordinary and extra choices are available. There are no <automaton transitions> from layer one back to layer zero.
+
+If $xy\in L$, run $A$ on $x$ in layer zero, consume the extra zero by the displayed <automaton transition>, and run $A$ on $y$ in layer one. The resulting run accepts $x0y$ in $B$.
+
+Conversely, every accepting run of $B$ starts in layer zero and finishes in layer one, so it uses exactly one extra <automaton transition>. Split its input as $x0y$ at that move. Removing that consumed zero leaves precisely a run of $A$ on $xy$, ending in $F$. Hence $xy\in L$. The construction also permits an insertion at either end, including insertion into the <empty word>.
+
+Therefore $L(B)=L'$. Since $B$ has $2|Q|$ <automaton states>, **$L'$ is a <regular language>**. This is a <single-symbol insertion into a regular language>.
+$$
+\boxed{L'=L(B)\text{ is regular}.}
+$$
+
+=== d
+{scope}
+
+==== Solution
+
+**No: <regular languages> are not closed under countably infinite <intersection>.** Let $\Sigma=\{0,1\}$ and put
+$$
+K=\{0^n1^n:n\geq0\},\qquad
+L_i=\{w\in\Sigma^*:|w|\geq i\}\cup\{0^n1^n:2n<i\},\quad i\geq1.
+$$
+The first term in $L_i$ has <regular expression> $(0\cup1)^i(0\cup1)^*$, where the fixed power $i$ means $i$ copies. The second term is a <finite language>, a finite <union> of single <words>. Their <union> is therefore a <regular language>.
+
+If $w\in K$, then for each $i$ either $|w|\geq i$ or $w$ belongs to the second term, so $w\in L_i$. If $w\notin K$, choose $i>|w|$. It belongs to neither term of $L_i$. Consequently
+$$
+\boxed{\bigcap_{i=1}^{\infty}L_i=K.}
+$$
+The <formal language> $K$ is not a <regular language>. Indeed, for a proposed <pumping length> $p\geq1$, the <pumping lemma for regular languages> applied to $0^p1^p$ must pump a nonempty block consisting only of zeros. Repeating that block increases the number of zeros without increasing the number of ones, leaving $K$. This contradiction proves the counterexample. Finite <intersection> closure does not extend to this <infinite intersection of regular languages>.
+
+== 2
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+A <nondeterministic pushdown automaton> is a <tuple>
+$$
+M=(Q,\Sigma,\Gamma,\delta,q_0,Z_0,F),\qquad
+\delta:Q\times(\Sigma\cup\{\varepsilon\})\times\Gamma
+\longrightarrow\mathcal P_{\mathrm{fin}}(Q\times\Gamma^*).
+$$
+Here $Q$ is a nonempty <finite set> of control states, $\Sigma$ a finite input <alphabet>, $\Gamma$ a finite <stack alphabet>, $q_0\in Q$ the initial control state, $Z_0\in\Gamma$ the initial <stack> symbol, and $F\subseteq Q$ the final control states. The notation $\mathcal P_{\mathrm{fin}}$ requires each transition to have only finitely many choices. Since the domain is finite, the whole transition specification is finite.
+
+A <pushdown automaton configuration> is $(q,w,\alpha)\in Q\times\Sigma^*\times\Gamma^*$, recording the control state, unread input <word>, and <stack> contents. Write the top of the <stack> on the left. For $a\in\Sigma$, the one-step relation is
+$$
+(q,aw,X\beta)\vdash_M(r,w,\gamma\beta)
+\quad\text{if }(r,\gamma)\in\delta(q,a,X).
+$$
+An <epsilon transition> instead has
+$$
+(q,w,X\beta)\vdash_M(r,w,\gamma\beta)
+\quad\text{if }(r,\gamma)\in\delta(q,\varepsilon,X).
+$$
+Thus a move replaces the top <stack> symbol $X$ by the <word> $\gamma$, whose leftmost symbol becomes the new top. It consumes one input symbol or no input symbol. Under this convention there is no move from an empty <stack>.
+
+For <acceptance by final state>, the recognized <formal language> is
+$$
+\boxed{L(M)=\{w\in\Sigma^*: (q_0,w,Z_0)\vdash_M^*(f,\varepsilon,\alpha)
+\text{ for some }f\in F,\ \alpha\in\Gamma^*\}.}
+$$
+Here $\vdash_M^*$ allows any finite number of moves, including zero. The entire input must have been consumed; the final <stack> need not be empty. Acceptance requires at least one such run of the <nondeterministic pushdown automaton>.
+
+=== b
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+A <context-free grammar> is **an <ambiguous grammar> if some <word> in its generated <formal language> has two distinct <parse trees>**. Equivalently, that <word> has two distinct <leftmost derivations> from the start <nonterminal symbol>. A <leftmost derivation> always expands the leftmost remaining <nonterminal symbol>.
+
+Two arbitrary <grammar derivations> of the same <word> do not by themselves prove ambiguity: expanding independent <nonterminal symbols> in a different order can describe the same <parse tree>. Requiring distinct <parse trees>, or distinct <leftmost derivations>, avoids that issue.
+$$
+\boxed{\text{Ambiguity means two distinct parse trees for at least one word}.}
+$$
+
+==== ii
+{scope}
+
+===== Solution
+
+The <word> $abb$ has these two <leftmost derivations>:
+$$
+\begin{aligned}
+S&\Rightarrow UST\Rightarrow aTST\Rightarrow abST
+\Rightarrow abT\Rightarrow abb,\\
+S&\Rightarrow UST\Rightarrow aST\Rightarrow aSTT
+\Rightarrow aTT\Rightarrow abT\Rightarrow abb.
+\end{aligned}
+$$
+In the first <grammar derivation>, $U\to aT$ supplies an extra $b$; the remaining $S$ goes directly to the <empty word>. In the second <grammar derivation>, $U\to a$ is used, and the remaining $S$ uses $S\to ST$ before disappearing. Every step expands the leftmost <nonterminal symbol>, so these are genuinely different <leftmost derivations>, with different <parse trees> already distinguished by the <production rule> at the $U$ node.
+
+**Therefore $G$ is an <ambiguous grammar>, witnessed by $abb$.**
+$$
+\boxed{abb\text{ has two distinct leftmost derivations in }G.}
+$$
+
+==== iii
+{scope}
+
+===== Solution
+
+Use the standard <conversion of a context-free grammar to a pushdown automaton>, implementing a <leftmost derivation> on a <stack>. Take control states $q_s,q,q_f$, input <alphabet> $\{a,b\}$, <stack alphabet> $\{S,T,U,a,b,\bot\}$, initial control state $q_s$, initial <stack> symbol $\bot$, and sole final control state $q_f$. The symbol $\bot$ is a fresh <stack bottom marker>. As in part (a), the top of the <stack> is written on the left.
+
+Initialize with
+$$
+\delta(q_s,\varepsilon,\bot)=\{(q,S\bot)\}.
+$$
+In control state $q$, replace a top <nonterminal symbol> by one of its <production rule> right-hand sides:
+$$
+\begin{aligned}
+\delta(q,\varepsilon,S)&=\{(q,UST),(q,ST),(q,\varepsilon)\},\\
+\delta(q,\varepsilon,U)&=\{(q,a),(q,aT)\},\\
+\delta(q,\varepsilon,T)&=\{(q,b)\}.
+\end{aligned}
+$$
+The replacements are written in the order in which they are to be processed. For example, replacing $S$ by $UST$ leaves $U$ on top; an implementation using individual push operations pushes $T$, then $S$, then $U$.
+
+Match and pop top <terminal symbols> by
+$$
+\delta(q,a,a)=\{(q,\varepsilon)\},\qquad
+\delta(q,b,b)=\{(q,\varepsilon)\}.
+$$
+Finally include
+$$
+\delta(q,\varepsilon,\bot)=\{(q_f,\bot)\}.
+$$
+All unlisted transitions have no choices; $q_f$ has no outgoing transitions. This is <acceptance by final state>, leaving the bottom marker on the <stack>. Taking the last transition too early cannot cause false acceptance, because an unread input suffix remains and $q_f$ cannot consume it.
+
+For correctness, after initialization the <stack> contains the unprocessed part of a sentential form. Expanding a top <nonterminal symbol> simulates one step of a <leftmost derivation>, and popping a matching <terminal symbol> transfers it to the already-read input prefix. Thus if the input prefix consumed so far is $u$ and the <stack> above $\bot$ is $\alpha$, then $S\Rightarrow_G^*u\alpha$. Acceptance gives $S\Rightarrow_G^*w$ for the entire input $w$.
+
+Conversely, any <leftmost derivation> of $w$ specifies choices of these transitions: expand the next <nonterminal symbol>, and read each resulting leading <terminal symbol> when it reaches the top. After all symbols of $w$ are consumed, only $\bot$ remains, enabling the move to $q_f$. **The <nondeterministic pushdown automaton> therefore recognizes exactly $L(G)$.** The <empty word> is accepted by choosing $S\to\varepsilon$ after initialization.
+$$
+\boxed{L(M)=L(G),\qquad F=\{q_f\}.}
+$$
+
+==== iv
+{scope}
+
+===== Solution
+
+Every generated <word> satisfies
+$$
+\#_b(w)\geq\#_a(w),
+$$
+where $\#_a,\#_b$ count occurrences of the indicated <terminal symbols>. To see this, follow the unique chain of $S$ occurrences in a <parse tree>. Each use of $S\to UST$ introduces one $a$ from $U$, at least one $b$ from its rightmost $T$, and possibly one further $b$ from $U\to aT$. Each use of $S\to ST$ adds one $b$ and no $a$. The terminating $S\to\varepsilon$ contributes neither. Hence no generated <word> has more $a$ symbols than $b$ symbols.
+
+Also, for every $n\geq0$, the <word> $a^nb^n$ is generated: apply $S\to UST$ exactly $n$ times, choose $U\to a$ each time, then use $S\to\varepsilon$ and all remaining $T\to b$.
+
+Suppose $L(G)$ were a <regular language>, and let $p\geq1$ be a <pumping length> from the <pumping lemma for regular languages>. Apply it to $w=a^pb^p$. Every allowed decomposition $w=xyz$ with $|xy|\leq p$ and $|y|>0$ has $y=a^r$ for some $r\geq1$. Pumping twice gives
+$$
+xy^2z=a^{p+r}b^p,
+$$
+which violates the proved counting inequality and hence is not generated. This contradicts the <pumping lemma for regular languages>. **Therefore $L(G)$ is not a <regular language>.** Ambiguity was not used: the obstruction is the unbounded constraint on symbol counts.
+$$
+\boxed{L(G)\text{ is not regular}.}
+$$
+
+=== c
+{scope}
+
+==== Solution
+
+**$P$ is a <co-recursively enumerable language>, is not a <recursively enumerable language>, and is not a <decidable language>.** The stipulated order on halting times includes $\infty\geq\infty$.
+
+First, failure has a finite witness. For valid machine descriptions,
+$$
+\langle N_1,N_2\rangle\notin P
+\quad\Longleftrightarrow\quad
+\exists x\ \exists t\in\mathbb N:
+\bigl[N_1(x)\text{ halts after exactly }t\text{ transitions}\bigr]
+\land
+\bigl[N_2(x)\text{ has not halted by }t\bigr].
+$$
+Indeed, a strict inequality $t(N_1,x)<t(N_2,x)$ forces the first halting time to be finite. The second can be either a larger finite time or infinity. Whether the displayed condition holds for fixed $x,t$ is decidable by a finite simulation, including the initial configurations when $t=0$.
+
+Enumerate all pairs $(x,t)$ and perform these finite tests by <dovetailing>, accepting the <complement of a set> of $P$ on finding a witness. Equivalently, at stage $s$, inspect all inputs of length at most $s$ through $s$ transitions. A genuine violation eventually appears; if there is no violation, the procedure never accepts. Malformed descriptions or differing input <alphabets> can be recognized and accepted as nonmembers immediately. Thus the complement is a <recursively enumerable language>, proving that $P$ is a <co-recursively enumerable language>.
+
+For non-enumerability, use the standard result that the <complement of a set> of the <halting problem>
+$$
+H=\{\langle M,w\rangle:M\text{ halts on }w\}
+$$
+is not a <recursively enumerable language>. Given $\langle M,w\rangle$, effectively construct two <Turing machines> over the same fixed input <alphabet>. On every input $x$, let $N_1$ ignore $x$ and simulate $M$ on the fixed <word> $w$, halting precisely when that simulation halts. Let $N_2$ loop forever on every input.
+
+If $M$ does not halt on $w$, both halting times are infinity for every $x$, so the pair belongs to $P$. If $M$ halts on $w$, the first halting time is finite while the second is infinity, so the pair does not belong to $P$. Therefore
+$$
+\boxed{\langle M,w\rangle\notin H
+\quad\Longleftrightarrow\quad
+\langle N_1,N_2\rangle\in P.}
+$$
+This is a <many-one reduction> from non-halting to the <pointwise running-time domination problem>. Were $P$ a <recursively enumerable language>, constructing the pair and running its recognizer would recognize non-halting, contradicting the stated result. Hence $P$ is not a <recursively enumerable language>. Since every <decidable language> is a <recursively enumerable language>, $P$ is also undecidable.
+$$
+\boxed{P\text{ is co-R.E., not R.E., and undecidable}.}
+$$
+
+== 3
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Fix a deterministic, single-tape <Turing machine> with tape cells indexed by the <integers>. A precise definition is the <tuple>
+$$
+M=(Q,\Sigma,\Gamma,\delta,q_0,q_{\mathrm{acc}},q_{\mathrm{rej}}),\qquad
+\delta:(Q\setminus\{q_{\mathrm{acc}},q_{\mathrm{rej}}\})\times\Gamma
+\longrightarrow Q\times\Gamma\times\{L,R\}.
+$$
+Here $Q$ is a nonempty <finite set> of control states, $\Gamma$ a finite tape <alphabet> with a designated <blank symbol> $\square$, $\Sigma\subseteq\Gamma\setminus\{\square\}$ the input <alphabet>, $q_0\in Q$ the initial control state, and $q_{\mathrm{acc}},q_{\mathrm{rej}}\in Q$ distinct halting control states. The transition <function> is total on the displayed domain. The <Turing machine instruction> $\delta(q,a)=(r,b,D)$ means to write $b$ over the scanned $a$, enter control state $r$, and move the head one cell in direction $D$.
+
+A <Turing machine configuration> is $(q,\tau,h)$, where $q\in Q$, $h\in\mathbb Z$ is the head position, and $\tau:\mathbb Z\to\Gamma$ is the tape-content <function>, equal to $\square$ outside a <finite set>. Its <next-configuration relation> is
+$$
+(q,\tau,h)\vdash_M(r,\tau',h+d)
+$$
+if $\delta(q,\tau(h))=(r,b,D)$, with $d=-1$ for $D=L$ and $d=1$ for $D=R$, and
+$$
+\tau'(j)=\begin{cases}b&j=h,\\\tau(j)&j\ne h.\end{cases}
+$$
+There is no successor to either halting <Turing machine configuration>.
+
+For input $w=a_0\cdots a_{n-1}$, the initial <Turing machine configuration> is $C_0(w)=(q_0,\tau_w,0)$, where $\tau_w(j)=a_j$ for $0\leq j<n$ and is blank elsewhere. In particular, the initial tape for the <empty word> is entirely blank. The recognized <formal language> is
+$$
+\boxed{L(M)=\{w\in\Sigma^*:C_0(w)\vdash_M^*(q_{\mathrm{acc}},\tau,h)
+\text{ for some }\tau,h\}.}
+$$
+The relation $\vdash_M^*$ permits any finite number of transitions. An input outside $L(M)$ may reach the rejecting control state or run forever; recognition does not require halting on every input.
+
+=== b
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+**The <formal language> is a <regular language>.** A <regular expression> for it is
+$$
+\boxed{(ab)^*(bc)^*.}
+$$
+The first <Kleene star> independently chooses $m$ copies of the <word> $ab$, and the second independently chooses $n$ copies of $bc$. Their <concatenation> produces exactly the required <words>. Either count may be zero, including both counts zero, which gives the <empty word>. By <Kleene theorem>, the <regular expression> establishes regularity.
+
+==== ii
+{scope}
+
+===== Solution
+
+**The <formal language> is not a <regular language>.** Let $K$ denote it and consider the infinitely many prefixes
+$$
+u_i=(ab)^i,\qquad i\geq0.
+$$
+For any $i\ne j$, append the <word> $z_i=(bc)^i$. Then $u_iz_i\in K$, whereas $u_jz_i\notin K$: the latter <word> has $j$ occurrences of $a$ and $i$ occurrences of $c$, and every <word> of $K$ has equal numbers of those two symbols.
+
+Thus $u_i$ and $u_j$ are not <Myhill-Nerode equivalent>. There are infinitely many <Myhill-Nerode equivalence> classes, so the <Myhill-Nerode theorem> rules out a <finite-state automaton> recognizing $K$. Equivalently, if two such prefixes left a <deterministic finite automaton> in the same <automaton state>, appending $z_i$ could not distinguish their acceptance, giving the same contradiction.
+$$
+\boxed{K\text{ is not regular}.}
+$$
+
+=== c
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+**The <formal language> is a <context-free language>.** A <context-free grammar> with start <nonterminal symbol> $S$ is
+$$
+\boxed{S\to AB,\qquad A\to aAb\mid\varepsilon,\qquad B\to bBc\mid\varepsilon.}
+$$
+The <production rule> for $A$ nests one $a$ on the left and one $b$ on the right on each recursive use, so $A$ generates exactly $a^mb^m$ for $m\geq0$. Similarly, $B$ generates exactly $b^nc^n$ for $n\geq0$. The start <production rule> concatenates these <words>, yielding
+$$
+a^mb^m b^nc^n=a^mb^{m+n}c^n.
+$$
+Conversely, every choice of nonnegative <integers> $m,n$ is achieved by using the recursive <production rules> exactly $m,n$ times before their <epsilon productions>. Hence this <context-free grammar> generates precisely the required <formal language>, including all cases where either count is zero.
+
+==== ii
+{scope}
+
+===== Solution
+
+**The <formal language> is not a <context-free language>.** Suppose otherwise, and let $p\geq1$ be a <pumping length> from the <pumping lemma for context-free languages>. Choose
+$$
+w=a^p b^{p^2}c^p.
+$$
+This <word> belongs to the <formal language>, since its middle exponent is the product of the two outer exponents. The <pumping lemma for context-free languages> would give
+$$
+w=uvxyz,\qquad |vxy|\leq p,\qquad |vy|>0,
+$$
+with $uv^ixy^iz$ in the <formal language> for every <integer> $i\geq0$.
+
+Let $\alpha,\beta,\gamma$ be the respective numbers of $a,b,c$ symbols in the two pumped pieces $v,y$ together. The window $vxy$ cannot contain both an $a$ and a $c$: it would have to contain the entire middle block of length $p^2$, plus at least those two outer symbols, exceeding $p$. Hence
+$$
+\alpha\gamma=0,\qquad 1\leq\alpha+\beta+\gamma\leq p.
+$$
+Pump once extra, taking $i=2$. The resulting symbol counts are $p+\alpha$, $p^2+\beta$, and $p+\gamma$. A necessary condition for membership, regardless of whether the block order survives, is
+$$
+p^2+\beta=(p+\alpha)(p+\gamma),
+\quad\text{or equivalently}\quad
+\beta=p(\alpha+\gamma),
+$$
+where $\alpha\gamma=0$ was used.
+
+If $\alpha+\gamma=0$, then $\beta>0$, contradicting that equality. If $\alpha+\gamma\geq1$, then
+$$
+\beta\leq p-(\alpha+\gamma)<p\leq p(\alpha+\gamma),
+$$
+again contradicting it. Thus every permissible decomposition fails at $i=2$. This contradicts the <pumping lemma for context-free languages> and proves the claim. The obstruction is the <multiplicative block-count language>: a bounded local change cannot preserve the product constraint.
+$$
+\boxed{\{a^m b^{mn}c^n:m,n\geq0\}\text{ is not context-free}.}
+$$
+
+=== d
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+**The problem is decidable.** We need exactly one accepted <word>, even if that <word> has several accepting runs in the <nondeterministic finite automaton>.
+
+First convert the input <nondeterministic finite automaton> to an equivalent <deterministic finite automaton> $D$ using the <subset construction>, taking <epsilon closure> where necessary. In the finite transition <directed graph> of $D$, test whether an accepting <automaton state> is reachable from the initial <automaton state>. This is the standard <finite automaton emptiness test>. If none is reachable, the recognized <formal language> is empty, so answer no.
+
+Otherwise retain a <graph path> to an accepting <automaton state> and read its labels to obtain one accepted <word> $w$. If the initial <automaton state> is accepting, $w$ may be the <empty word>. Build a complete <deterministic finite automaton> for the <singleton> <formal language> $\{w\}$: it tracks the matching prefix of $w$, accepts only after exactly its full length, and enters a rejecting sink on a mismatch or any extra input symbol.
+
+Complement that complete <deterministic finite automaton> by exchanging accepting and rejecting <automaton states>. Form its product with $D$, accepting exactly when the $D$ coordinate accepts and the other coordinate accepts. This product recognizes
+$$
+L(D)\cap(\Sigma^*\setminus\{w\})=L(D)\setminus\{w\}.
+$$
+Apply the <finite automaton emptiness test> again. **Answer yes if and only if this difference is empty.** The first test guarantees that $w$ belongs to $L(D)$; the second guarantees there is no different accepted <word>. All constructions have finitely many <automaton states> and all reachability tests terminate. This gives a <singleton-language test for finite automata>.
+$$
+\boxed{\text{Decidable: test }L(D)\ne\varnothing\text{ and }L(D)\setminus\{w\}=\varnothing.}
+$$
+
+==== ii
+{scope}
+
+===== Solution
+
+**The problem is undecidable.** Reduce the <halting problem> to it. Given a <Turing machine> $M$ and input <word> $w$, construct a <Turing machine> $T$ over $\{a,b,c\}$ with the following behavior on input $x$:
+
+* If $x\ne\varepsilon$, reject.
+* If $x=\varepsilon$, simulate $M$ on the fixed <word> $w$. If that simulation ever halts, whether accepting or rejecting, accept $x$; otherwise continue the simulation forever.
+
+This is an effective construction: $M,w$ are fixed data stored in the description of $T$. Its recognized <formal language> is
+$$
+\boxed{L(T)=\begin{cases}\{\varepsilon\}&M\text{ halts on }w,\\\varnothing&M\text{ does not halt on }w.\end{cases}}
+$$
+Therefore $T$ accepts exactly one input <word> if and only if $M$ halts on $w$. A supposed decision procedure for the <singleton-language problem for Turing machines>, applied to the constructed $T$, would decide the <halting problem>. The standard undecidability of the <halting problem> excludes that possibility.
+$$
+\boxed{\text{The singleton-language problem for Turing machines is undecidable}.}
+$$

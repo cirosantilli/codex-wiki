@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2019/discrete-mathematics-continuous-mathematics-and-probability-simpson-error.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2019/discrete-mathematics-continuous-mathematics-and-probability-simpson-error.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../-/raw/main.css">
+<link rel="icon" href="../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../" class="brand"><img class="openai-logo" src="../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2019/discrete-mathematics-continuous-mathematics-and-probability-simpson-error.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2019/discrete-mathematics-continuous-mathematics-and-probability-simpson-error.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2019/discrete-mathematics-continuous-mathematics-and-probability-simpson-error.py"><img src="../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../-/dir">(root)</a> / <a href="../../../../-/dir/past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford">past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford</a> / <a href="../../../../-/dir/past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2019">2019</a> / <a href="../../../../-/raw/past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2019/discrete-mathematics-continuous-mathematics-and-probability-simpson-error.py">discrete-mathematics-continuous-mathematics-and-probability-simpson-error.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2019/discrete-mathematics-continuous-mathematics-and-probability-simpson-error.py</b></div><div class="code"><div><pre><code>"""Compute original Simpson-error evidence; write the opaque PNG to the CWD.
+
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7 (+dfsg1 build).
+Dependencies are the existing root pyproject dependencies; no SciPy is used.
+The integral and every quadrature value are computed with Decimal precision 80.
+"""
+
+from decimal import Decimal, localcontext
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def computed_errors(strip_counts):
+    """Return the exact-integral comparison and the two proved upper bounds."""
+    with localcontext() as context:
+        context.prec = 80
+        one = Decimal(1)
+        e = one.exp()
+        integral = e - one - e / Decimal(720)
+        rows = []
+        for count in strip_counts:
+            n = int(count)
+            if n &lt; 2 or n % 2:
+                raise ValueError("Simpson strip counts must be positive and even")
+            dn = Decimal(n)
+            spacing = one / dn
+
+            def integrand(x):
+                return x.exp() - e * x**5 / Decimal(120)
+
+            weighted_sum = integrand(Decimal(0)) + integrand(one)
+            weighted_sum += sum(
+                (4 if j % 2 else 2) * integrand(Decimal(j) * spacing)
+                for j in range(1, n)
+            )
+            actual = spacing * weighted_sum / 3 - integral
+            global_bound = one / (180 * dn**4)
+            panel_bound = (
+                (e - one) / ((2 / dn).exp() - one) - e * dn / 4 + e / 2
+            ) / (90 * dn**5)
+            if not (0 &lt; actual &lt;= panel_bound &lt;= global_bound):
+                raise ArithmeticError("Computed error violates a proved bound")
+            rows.append((n, actual, global_bound, panel_bound))
+        return rows
+
+
+def main():
+    counts = np.arange(8, 130, 2, dtype=int)
+    rows = computed_errors(counts)
+    actual = np.array([float(row[1]) for row in rows])
+    global_bound = np.array([float(row[2]) for row in rows])
+    panel_bound = np.array([float(row[3]) for row in rows])
+    plt.rcParams.update(
+        {
+            "font.family": "DejaVu Sans",
+            "font.size": 11,
+            "axes.spines.top": False,
+            "axes.spines.right": False,
+            "figure.facecolor": "white",
+            "axes.facecolor": "white",
+            "savefig.facecolor": "white",
+        }
+    )
+    fig, ax = plt.subplots(figsize=(8.4, 5.2), layout="constrained")
+    ax.loglog(counts, global_bound, "--", color="#b45f06", lw=2,
+              label="Global derivative bound")
+    ax.loglog(counts, panel_bound, "-.", color="#215a9c", lw=2,
+              label="Panelwise derivative bound")
+    ax.loglog(counts, actual, "-", color="#247047", lw=2,
+              label="Computed Simpson error (80-digit arithmetic)")
+    ax.axhline(1e-10, color="#555555", lw=1)
+    ax.text(8.4, 1.18e-10, "Required error: less than 10⁻¹⁰",
+            color="#333333", fontsize=10)
+    for n, colour, label, height in [
+        (68, "#215a9c", "68 strips\npanelwise guarantee", 1.9e-8),
+        (88, "#b45f06", "88 strips\nglobal guarantee", 2.0e-9),
+    ]:
+        ax.axvline(n, color=colour, lw=1, alpha=0.65)
+        ax.annotate(label, xy=(n, 1e-10), xytext=(n, height),
+                    ha="center", va="bottom", fontsize=9, color=colour,
+                    arrowprops={"arrowstyle": "-", "color": colour, "lw": 0.8})
+    ax.set(
+        xlabel="Number of strips n (even)",
+        ylabel="Absolute error or certified upper bound",
+        title="Simpson quadrature: uniform and panelwise guarantees",
+        xlim=(8, 130),
+        ylim=(5e-12, 2e-6),
+    )
+    ax.set_xticks([8, 16, 32, 64, 128], labels=["8", "16", "32", "64", "128"])
+    ax.grid(which="major", color="#dedede", linewidth=0.6)
+    ax.legend(loc="lower left", fontsize=9, framealpha=1, facecolor="white")
+    output = Path(Path(__file__).stem + ".png")
+    temporary = output.with_suffix(".png.tmp")
+    fig.savefig(temporary, format="png", dpi=150, transparent=False,
+                metadata={"Software": "Original Decimal/Matplotlib quadrature calculation"})
+    temporary.replace(output)
+    plt.close(fig)
+    print(output.name)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

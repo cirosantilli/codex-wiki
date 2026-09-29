@@ -1,0 +1,52 @@
+"""Original meridional schematic; writes an opaque PNG to CWD.
+Tested with Python 3.14, matplotlib 3.10.7 and numpy 2.3.5.
+"""
+import os
+from pathlib import Path
+os.environ.setdefault('MPLCONFIGDIR',str(Path(__file__).resolve().parents[3]/'_out'/'matplotlib'))
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon,Ellipse,PathPatch
+from matplotlib.path import Path as MPath
+plt.rcParams.update({'font.family':'DejaVu Sans','font.size':12})
+fig,ax=plt.subplots(figsize=(12,7),facecolor='white')
+# Anterior at left. The lens is below and internal to the ciliary muscle.
+ax.add_patch(Polygon([(2.2,6.6),(11,6.6),(11,6.0),(3.5,6.0),(2.6,5.8),(1.3,4.7),(.9,3.6),(.7,3.8),(1.0,5.0)],closed=True,facecolor='#e6e1d9',edgecolor='#6d655c',lw=2))
+ax.plot([6.5,11],[5.85,5.85],color='#955c42',lw=8,solid_capstyle='butt')
+ax.add_patch(Polygon([(3.2,6.0),(6.9,5.8),(6.2,4.7),(4.0,4.7),(3.5,5.2)],closed=True,facecolor='#dfb276',edgecolor='#86602f',lw=2))
+# Ciliary processes and root of iris; process outline is a schematic fold.
+ax.add_patch(Polygon([(4,4.7),(4.2,4.25),(4.55,4.6),(4.8,4.15),(5.15,4.55),(5.45,4.15),(5.8,4.6),(6.2,4.7)],closed=True,facecolor='#a76b58',edgecolor='#774439',lw=1.5))
+ax.add_patch(Polygon([(3.55,5.0),(3.75,4.65),(2.7,2.5),(2.42,2.6)],closed=True,facecolor='#a8b7a2',edgecolor='#586d52',lw=2))
+ax.add_patch(Polygon([(3.2,6.0),(2.85,5.8),(3.45,5.6)],closed=True,facecolor='#999084',edgecolor='#635d55'))
+# Longitudinal, radial and circular muscle markings.
+for i in range(4):ax.plot([3.5,6.5],[5.85-.13*i,5.65-.16*i],color='#975d29',lw=1.2)
+for x in (3.8,4.2,4.6):ax.plot([3.4,x+.7],[5.75,4.85],color='#975d29',lw=1.1)
+for x in (4.0,4.25,4.5):ax.add_patch(Ellipse((x,4.95),.15,.25,fill=False,edgecolor='#975d29',lw=1.2))
+# Biconvex lens profile, capsule and zonular insertions near equator.
+lens=[(6.0,3.5),(4.6,3.3),(4.0,1.5),(6.0,.9),(8.1,1.5),(7.4,3.3),(6.0,3.5)]
+ax.add_patch(PathPatch(MPath(lens,[MPath.MOVETO]+[MPath.CURVE4]*6),facecolor='#d8eaf5',edgecolor='#44728e',lw=2))
+for x in (4.5,4.85,5.2,5.6):ax.plot([x,5.8],[4.25,3.45],color='#597f9a',lw=1.3)
+ax.text(5.9,2.1,'Crystalline lens',ha='center',color='#335c77')
+ax.text(1.5,4.0,'Anterior\nchamber',ha='center',fontsize=11)
+ax.text(3.55,3.6,'Posterior\nchamber',ha='center',fontsize=10)
+ax.text(9.4,2.7,'Vitreous body\n(internal / posterior)',ha='center',fontsize=11)
+ax.text(8.4,6.23,'Sclera',ha='center',fontsize=12)
+ax.text(9.3,5.45,'Choroid',ha='center',color='#774439')
+def lab(text,xy,xytext,ha='left'):
+ ax.annotate(text,xy,xytext=xytext,va='center',ha=ha,fontsize=11,arrowprops={'arrowstyle':'-','color':'#444','lw':1.2},bbox={'facecolor':'white','edgecolor':'none','pad':1.5})
+lab('Cornea',(1.05,4.65),(.1,6.15))
+lab('Scleral spur',(3.15,5.8),(2.4,7.1))
+lab('Ciliary muscle\n(longitudinal, radial, circular)',(5.2,5.3),(6.3,7.2))
+lab('Ciliary processes',(4.8,4.2),(7.5,4.5))
+lab('Zonular fibres',(5.25,3.9),(8.4,3.75))
+lab('Iris',(2.9,3.3),(.3,2.2))
+lab('Lens capsule',(7.35,2.6),(8.5,1.15))
+ax.text(.25,7.7,'ANTERIOR',fontsize=10,fontweight='bold');ax.text(10.0,7.7,'POSTERIOR',fontsize=10,fontweight='bold')
+ax.annotate('Ciliary ring contracts',xy=(4.4,4.75),xytext=(2.1,.15),fontsize=11,color='#86602f',arrowprops={'arrowstyle':'->','color':'#86602f','lw':1.5})
+ax.text(6.6,-.1,'Less zonular flattening force → rounder lens for near focus',ha='center',fontsize=11,color='#335c77')
+ax.set(xlim=(0,11.5),ylim=(-.6,8.1));ax.set_aspect('equal');ax.axis('off')
+fig.suptitle('Ciliary muscle: meridional relations',fontsize=19,y=.97)
+fig.text(.5,.025,'Schematic anterior segment, not to scale; muscle lies within the ciliary body, outside the lens.',ha='center',fontsize=10)
+fig.subplots_adjust(left=.02,right=.98,top=.91,bottom=.08)
+fig.savefig('anatomy-1864-ciliary-muscle.png',dpi=150,facecolor='white',metadata={'Software':'codex-wiki anatomical generator'})

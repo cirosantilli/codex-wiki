@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematical-physiology-course-of-the-university-of-oxford/2023-excitable-pulse.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematical-physiology-course-of-the-university-of-oxford/2023-excitable-pulse.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../-/raw/main.css">
+<link rel="icon" href="../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../" class="brand"><img class="openai-logo" src="../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematical-physiology-course-of-the-university-of-oxford/2023-excitable-pulse.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematical-physiology-course-of-the-university-of-oxford/2023-excitable-pulse.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematical-physiology-course-of-the-university-of-oxford/2023-excitable-pulse.py"><img src="../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../-/dir">(root)</a> / <a href="../../../-/dir/past-exam-of-the-mathematical-physiology-course-of-the-university-of-oxford">past-exam-of-the-mathematical-physiology-course-of-the-university-of-oxford</a> / <a href="../../../-/raw/past-exam-of-the-mathematical-physiology-course-of-the-university-of-oxford/2023-excitable-pulse.py">2023-excitable-pulse.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematical-physiology-course-of-the-university-of-oxford/2023-excitable-pulse.py</b></div><div class="code"><div><pre><code>"""Generate 2023-excitable-pulse.png in the working directory.
+
+Tested with Python 3.14.4, NumPy 2.3.5 and Matplotlib 3.10.7.
+The curves solve the stated equations by fourth-order Runge--Kutta.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def simulate(a=0.25, gamma=0.3, epsilon=0.003, step=0.00015, end=9.0):
+    time = np.arange(round(end / step) + 1) * step
+    state = np.zeros((len(time), 2, 2))
+    state[0, :, 0] = [0.15, 0.4]
+
+    def rhs(y):
+        v, w = y[:, 0], y[:, 1]
+        return np.column_stack((
+            (v * (a - v) * (v - 1) - w) / epsilon,
+            gamma * v - w,
+        ))
+
+    for i in range(len(time) - 1):
+        y = state[i]
+        k1 = rhs(y)
+        k2 = rhs(y + 0.5 * step * k1)
+        k3 = rhs(y + 0.5 * step * k2)
+        k4 = rhs(y + step * k3)
+        state[i + 1] = y + step * (k1 + 2*k2 + 2*k3 + k4) / 6
+    return time, state
+
+
+def main():
+    a, gamma, epsilon = 0.25, 0.3, 0.003
+    time, state = simulate(a, gamma, epsilon)
+    d = np.sqrt(1 - a + a*a)
+    right = (1 + a + d) / 3
+    landing = 1 + a - 2*right
+    f = lambda v: v * (a-v) * (v-1)
+    fig, (plane, trace) = plt.subplots(1, 2, figsize=(10.4, 4.0), layout="constrained")
+    fig.set_facecolor("white")
+    vv = np.linspace(-0.27, 1.08, 700)
+    plane.plot(vv, f(vv), color="black", lw=1.5, label=r"$w=f(v)$")
+    plane.plot(vv, gamma*vv, color="0.5", ls="--", lw=1.2, label=r"$w=\gamma v$")
+    colors = ("#2274a5", "#c85a17")
+    for j, color in enumerate(colors):
+        v, w = state[:, j, 0], state[:, j, 1]
+        plane.plot(v[::5], w[::5], color=color, lw=1.8,
+                   label=rf"$v(0)={v[0]:g}$")
+        plane.scatter(v[0], w[0], color=color, s=24, zorder=4)
+        trace.plot(time[::5], v[::5], color=color, lw=1.8)
+    plane.scatter([0, a, 1, right, landing], [0, 0, 0, f(right), f(right)],
+                  s=20, color="black", zorder=5)
+    plane.annotate(r"$a$", (a, 0), xytext=(0, -14), textcoords="offset points", ha="center")
+    plane.annotate(r"$v_R$", (right, f(right)), xytext=(7, 6), textcoords="offset points")
+    plane.annotate(r"$v_J$", (landing, f(right)), xytext=(-17, 7), textcoords="offset points")
+    for t0 in (0.008, 0.18, 0.8, 1.8):
+        i = np.searchsorted(time, t0)
+        jump = 12 if t0 &lt; 0.02 else 120
+        plane.annotate("", xy=state[i+jump, 1], xytext=state[i, 1],
+                       arrowprops={"arrowstyle": "-&gt;", "color": colors[1], "lw": 1.7})
+    plane.axhline(0, color="0.8", lw=0.6)
+    plane.set(xlim=(-0.27, 1.08), ylim=(-0.025, 0.12), xlabel=r"activation $v$",
+              ylabel=r"recovery $w$", title="Threshold and phase-plane excursion")
+    plane.legend(fontsize=8, loc="upper center", bbox_to_anchor=(0.5, -0.17), ncol=2)
+
+    pulse = state[:, 1, 0]
+    peak = int(np.argmax(pulse))
+    falling = np.flatnonzero((np.arange(len(pulse)) &gt; peak) &amp; (pulse &lt; right))[0]
+    trough = int(np.argmin(pulse))
+    markers = [(0.007, 0.58, "1: fast activation"),
+               (float(time[falling])*0.45, 1.04, "2: slow plateau"),
+               (float(time[falling])+0.04, 0.45, "3: fast fall"),
+               (float(time[trough])+1.1, -0.24, "4: slow recovery")]
+    for x, y, label in markers:
+        trace.text(x, y, label, fontsize=8, rotation=90 if label.startswith(("1:", "3:")) else 0,
+                   va="center" if label.startswith(("1:", "3:")) else "bottom")
+    trace.axhline(0, color="0.65", lw=0.8)
+    trace.set(xlim=(0, 5), ylim=(-0.3, 1.15), xlabel=r"time $t$", ylabel=r"activation $v(t)$",
+              title="A pulse and a subthreshold response")
+    fig.suptitle(r"$a=0.25,\quad \gamma=0.30,\quad \varepsilon=0.003,\quad w(0)=0$", fontsize=12)
+    fig.savefig(Path.cwd() / "2023-excitable-pulse.png", dpi=145, facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

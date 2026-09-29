@@ -1,0 +1,645 @@
+= Digital systems, linear algebra, introduction to formal proof
+{scope}
+{title2=A10101W1}
+
+Worked solutions to the paper dated 16 June 2022. The released archive files it under `2021/T/a10101w1.pdf`; the printed date identifies the examination. Source release: https://www.whatdotheyknow.com/request/ba_computer_science_past_papers/response/2577745/attach/2/202402%20183%20CS%20Papers.zip?cookie_passthrough=1[Oxford computer science examination release]. All eight questions are covered, including those beyond the examination's choice requirement.
+
+== 1
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+For <bits> $a,b$, use two <negation> <logic gates> and two <AND gates>:
+$$
+\boxed{L=(\neg a)\land b,\qquad G=a\land(\neg b).}
+$$
+The two unequal <bit> pairs activate their respective output; the equal pairs activate neither. In particular, a <digital comparator> never produces $L=G=1$.
+
+=== b
+{scope}
+
+==== Solution
+
+Split each input into its more and less significant $n$-<bit> halves: $a=2^na_H+a_L$ and $b=2^nb_H+b_L$. Let the two <digital comparators> produce $(L_H,G_H)$ and $(L_L,G_L)$. The more significant halves are equal exactly when $E_H=\neg(L_H\lor G_H)$. The <comparator composition> is therefore
+$$
+\boxed{L=L_H\lor(E_H\land L_L),\qquad G=G_H\lor(E_H\land G_L).}
+$$
+Implement $E_H$ with a <logical disjunction> followed by a <negation>, then use two <AND gates> and two more <logical disjunction> <logic gates>. If $a_H\ne b_H$, the difference $2^n(a_H-b_H)$ has magnitude at least $2^n$, whereas $|a_L-b_L|\le2^n-1$; hence the more significant comparison decides the result. If $a_H=b_H$, the lower comparison decides it. This proves correctness in every case using a constant number of extra <logic gates>.
+
+=== c
+{scope}
+
+==== Solution
+
+Apply <comparator composition> recursively in a <balanced binary tree>, with one-<bit> <digital comparators> at its leaves. For a <power of two> $n$, the <circuit size> and <circuit depth> satisfy
+$$
+S(n)=2S(n/2)+O(1),\qquad D(n)=D(n/2)+O(1).
+$$
+There are $n$ leaves and $n-1$ internal nodes, so **the <circuit size> is $O(n)$ and the combinational delay is $O(\log n)$**. Here each fixed-fan-in <logic gate> has bounded delay. For arbitrary $n$, pad both inputs with leading zero <bits> to the next <power of two>, which is less than $2n$; this preserves their <unsigned interpretation> and both bounds.
+
+=== d
+{scope}
+
+==== Solution
+
+Use a <hierarchical leading-zero counter>. A block of $2^j$ <bits> returns a zero flag $z$ and $j$ low count <bits> $r$: its <count leading zeros> result is the concatenation $(z,r)$. Thus $z=1$ means that the block is entirely zero and $r=0$; otherwise $z=0$ and $r$ is its leading-zero count. A one-<bit> block needs just $z=\neg x$ and no low count <bits>.
+
+For a block of $n=2^k$ <bits>, run two such <Boolean circuits> on the upper and lower halves in parallel. Write their flags as $z_H,z_L$ and their $k-1$ low count <bits> as $h_i,\ell_i$. Set
+$$
+\boxed{z=z_H\land z_L,\quad r_{k-1}=z_H\land\neg z_L,\quad r_i=(\neg z_H\land h_i)\lor(z_H\land\ell_i)\quad(0\le i<k-1).}
+$$
+The last expression is a two-input <multiplexer>. When the upper half is nonzero, its count is already the answer and $r_{k-1}=0$. When only the upper half is zero, $r_{k-1}=1$ supplies the contribution $n/2$ while the <multiplexers> supply the lower half's count. When both halves are zero, the answer is $(1,0,\ldots,0)$, representing $n$. This special encoding avoids an <adder> on the critical path.
+
+Each node adds constant <circuit depth>, even though it uses $O(k)$ <logic gates> for its parallel <multiplexers>. Hence
+$$
+D(2^k)=D(2^{k-1})+O(1)=O(k),\qquad S(2^k)=2S(2^{k-1})+O(k)=O(2^k).
+$$
+Indeed the internal-node work is bounded by a constant times $\sum_{j=1}^k(n/2^j)j<2n$, and the $n$ leaves add $O(n)$. **Delay is $O(\log n)$ and size is $O(n)$**, counting fixed-fan-in <logic gates> and the usual wire fan-out model.
+
+\Image[digital-systems-linear-algebra-introduction-to-formal-proof-leading-zero-tree.png]
+{title=Leading-zero summaries combine in parallel: the input $00000101$ gives the four-bit count $0101$}
+{description=Internal nodes display their block length and encoded leading-zero count; leaves display the one-bit count. A count's first <bit> is the shared all-zero flag. The highlighted branch supplies the low count at the root.}
+
+== 2
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Use the <AAPCS32> convention: `r0` holds the input address, `r1` the length, and `r0` receives the result. The following <Thumb instruction set> <assembly language> uses only scratch <processor registers>, so no <callee-saved registers> need saving. Assume the <array> is valid, halfword-aligned, and has nonnegative length; for the mathematical <sum> assume it fits a signed 32-<bit> <two's complement> <integer>.
+
+```
+.syntax unified
+.thumb
+.thumb_func
+sum16:
+    movs r2, #0             @ accumulated sum
+    cmp  r1, #0
+    ble  .Ldone             @ empty array; also returns 0 if n < 0
+.Lloop:
+    movs r3, #0             @ Thumb signed load needs a register offset
+    ldrsh r3, [r0, r3]      @ signed halfword at a; offset read before r3 changes
+    adds r2, r2, r3         @ include this signed value
+    adds r0, r0, #2         @ advance by one short, not one byte
+    subs r1, r1, #1         @ one fewer element remains
+    bne  .Lloop
+.Ldone:
+    movs r0, r2             @ result register
+    bx   lr                 @ leaf routine: lr was not overwritten
+```
+
+After $j$ iterations, the <loop invariant> is that `r2` contains the first $j$ elements' <sum>, `r0` points to element $j$, and `r1` is $n-j$. The <sign extension> in `ldrsh` supplies the correct signed addend. One iteration preserves this <loop invariant>, and the decreasing remaining length proves <algorithm termination>. For the seven-element calls, the <sum> lies between $-229376$ and $229369$, so it fits. For longer <arrays> that overflow, these instructions compute the <sum> modulo $2^{32}$; that is not a claim about defined signed <C programming language> overflow behavior. The operand forms are those of the paper's reference sheet.<Thumb 16-bit instruction set quick reference by Arm>[Load: signed halfword; Add/Subtract; Branch]{ref}
+
+=== b
+{scope}
+
+==== Solution
+
+Let the stored <bits> be $b_{15},\ldots,b_0$ and let $s=b_{15}$. The <sign extension> performed by `ldrsh` keeps output <bit> $i$ equal to $b_i$ for $0\le i\le15$, and sets every output <bit> $16\le i\le31$ to $s$. Thus a nonnegative halfword gets sixteen leading zero <bits>, while a negative halfword gets sixteen leading one <bits>.
+
+Its signed 32-<bit> <two's complement> value is
+$$
+-s2^{31}+s\sum_{i=16}^{30}2^i+\sum_{i=0}^{15}b_i2^i
+=-s2^{16}+s2^{15}+\sum_{i=0}^{14}b_i2^i
+=\boxed{-s2^{15}+\sum_{i=0}^{14}b_i2^i}.
+$$
+The last expression is exactly the original signed 16-<bit> value. The equality uses the finite <geometric series> $\sum_{i=16}^{30}2^i=2^{31}-2^{16}$. In particular, simply inserting zero <bits> would be wrong for a negative halfword: its <unsigned interpretation> differs from its signed value by $2^{16}$.
+
+=== c
+{scope}
+
+==== Solution
+
+Keep `total` in the <callee-saved register> `r4`, and the first returned <sum> in the <callee-saved register> `r5`. Suppose the surrounding function has made an aligned <stack frame> with the local seven-halfword <array> at the current `sp`, occupying fourteen bytes in a sixteen-byte slot. One possible frame setup is `push {r4,r5,r6,lr}` followed by `sub sp,sp,#16`; the earlier code initializes `total`, `regular`, and `special` before this fragment.
+
+```
+    ldr  r0, =regular       @ assembler literal load of the global array address
+    movs r1, #7
+    bl   sum16
+    movs r5, r0             @ first sum must survive the next call
+
+    add  r0, sp, #0         @ current frame's local special array
+    movs r1, #7
+    bl   sum16
+    muls r0, r5, r0         @ second sum times first sum
+    adds r4, r4, r0         @ update total
+```
+
+The <AAPCS32> permits each call to overwrite `r0`–`r3`, `r12`, and condition flags, but requires preservation of `r4`–`r8`, `r10`, `r11`, and `sp`. Thus both `r4` and `r5` remain valid even if `sum16` is replaced by another conforming implementation. `bl` changes the link <processor register> `lr`, so the enclosing function saves its own return address in its prologue. Its epilogue can use `add sp,sp,#16` and `pop {r4,r5,r6,pc}`. The frame uses thirty-two bytes in total, preserving the required eight-byte <stack pointer> alignment at both calls.<Procedure Call Standard for the Arm Architecture by ARM Limited>[Sections 6.1.1, 6.2.1.2 and 6.4: scratch/preserved registers, public-interface alignment and word return]{ref}
+
+The two calls may be evaluated in this order. Assume the product and final addition fit the signed 32-<bit> result expected by the source program; unlike each individual seven-element <sum>, their product need not fit. The <assembly language> operations retain their low 32 <bits> if this assumption fails, whereas signed <integer overflow> in the <C programming language> has different semantics.
+
+== 3
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Maintain the latest five <temperature> readings in a <circular buffer>, together with their running <sum>. The following <C programming language> code spells out the <message passing> interface rather than assuming a particular library: `send(dst,&m)` is a blocking <synchronous message passing> send; `receive(src,&m)` receives from the specified sender or `ANY` and returns the sender's identity; `sendrec(dst,&m)` atomically sends the request and waits for that sender's reply in the same message object. Successful, reliable operations are assumed. Message contents are copied by the interface.
+
+```
+enum { ANY = -1, TIMER = 1, TEMP = 2 };
+enum { PULSE, PING, REQUEST, REPLY };
+typedef struct {
+    int type;
+    int period_ms;
+    double value;
+} Message;
+
+extern void send(int dst, const Message *m);
+extern int receive(int src, Message *m);
+extern void sendrec(int dst, Message *m);
+
+void smooth(void) {
+    double history[5] = {0};
+    double sum = 0;
+    int count = 0, next = 0;
+    Message m = { .type = PULSE, .period_ms = 1000 };
+    send(TIMER, &m);                 /* subscribe once */
+
+    for (;;) {
+        int sender = receive(count < 5 ? TIMER : ANY, &m);
+        if (sender == TIMER && m.type == PING) {
+            Message t = { .type = REQUEST };
+            sendrec(TEMP, &t);       /* matching REPLY contains t.value */
+            if (count == 5)
+                sum -= history[next];
+            else
+                ++count;
+            history[next] = t.value;
+            sum += t.value;
+            next = (next + 1) % 5;
+        } else if (count == 5 && m.type == REQUEST) {
+            Message answer = { .type = REPLY, .value = sum / 5.0 };
+            send(sender, &answer);
+        }
+    }
+}
+```
+
+Before the fifth reading, selective reception from `TIMER` prevents premature client requests from being accepted. Such clients wait at their synchronous sends; they are not given a partial <arithmetic mean>. Thereafter the <operating-system process> receives both timer messages and client requests. Each accepted `PING` initiates one measurement; each accepted client request returns the <arithmetic mean> of the five most recently completed measurements, without initiating another measurement or changing the <circular buffer>.
+
+The <loop invariant> is that `count` is the number of valid readings, capped at five, `sum` is their <sum>, and `next` is the next unused slot during startup or the oldest slot afterwards. Removing the overwritten reading and adding the new one preserves this <loop invariant>. Each update and reply uses $O(1)$ <time complexity> and $O(1)$ storage, since the window length is fixed. Under timely sensor replies, timer delivery and <process scheduling>, measurements are initiated once per second. The next parts explain failures of these timing assumptions; the code does not promise one-second sampling when the <sensor> itself cannot sustain it.
+
+=== b
+{scope}
+
+==== Solution
+
+With <synchronous message passing>, the smoothing <operating-system process> can still be waiting for `TEMP` when its next `PING` is due. If the timer service sends to subscribers serially, it blocks on this unready recipient and cannot deliver the other subscribers' ticks: **one slow sensor can delay every timer client through <head-of-line blocking>**. Once it resumes, implementations may deliver late ticks, drift from their schedule, or accumulate overdue work.
+
+The consequence depends on the delivery model. With buffered sends the timer need not block immediately, but its <queue> can grow or overflow; the smoothing <operating-system process> still cannot process readings at a sustained rate faster than the <sensor>. A nonblocking notification mechanism or separate timer-delivery workers can isolate other subscribers, while coalescing missed ticks prevents an unlimited backlog. These changes do not make an over-slow <sensor> meet the original sampling rate.
+
+=== c
+{scope}
+
+==== Solution
+
+With a synchronous reply, `send(client,&answer)` blocks until the client receives. An indefinitely unready client therefore stalls the smoothing <operating-system process>, which may in turn stall the timer service and its other clients as in the preceding part. If the client is merely delayed, this is blocking and delayed service; a <deadlock> requires a circular wait or a client that will never receive.
+
+**Requiring correctly used <synchronous send-and-receive> helps.** A client calling `sendrec(SMOOTH,&m)` is committed to waiting for the matching reply as soon as its request has been accepted. This closes the scheduling window between a separate send and receive and prevents unrelated client computation from postponing that receive. It does not by itself fix slow measurements, arbitrary failures, circular dependencies between other services, or lack of CPU scheduling. With buffered replies the initial effect may instead be queue growth, depending on the <message passing> contract.
+
+=== d
+{scope}
+
+==== Solution
+
+In a cooperative scheduler, a permanently runnable background <operating-system process> that never yields can monopolize the <CPU>. The timer service, smoothing <operating-system process>, and display may then fail to run even when their messages are ready. Correct <message passing> alone does not supply <process scheduling>.
+
+Use **timer-driven <scheduling preemption>**, so an <interrupt> can force a <context switch> without cooperation. To give the measurement and display work bounded response despite background computation, use <priority scheduling> with the background <operating-system process> below the responsive services, or an explicit reservation policy. <Round-robin scheduling> gives CPU access among a fixed finite runnable set, but meeting a particular deadline additionally requires bounded service execution and sufficient CPU capacity.
+
+== 4
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Write $\widehat A=\operatorname{diag}(\lambda_1,\ldots,\lambda_n)$ and $v_i=P^{-1}e_i$, where $e_i$ are the <standard basis> <vectors>. Since $AP^{-1}=P^{-1}\widehat A$,
+$$
+Av_i=P^{-1}\widehat Ae_i=\lambda_iv_i.
+$$
+Thus **the columns of $P^{-1}$ form an <eigenbasis>**, and the requested <ordered basis> is $D=(P^{-1}e_1,\ldots,P^{-1}e_n)$. Its <basis matrix> is $P^{-1}$, giving $[t]_D=PAP^{-1}=\widehat A$. More completely, for each distinct <eigenvalue> $\lambda$, its <eigenspace> is
+$$
+E_\lambda(A)=\operatorname{span}\{P^{-1}e_i:\lambda_i=\lambda\}.
+$$
+All nonzero <vectors> in these <eigenspaces> are <eigenvectors>; when an <eigenvalue> repeats, they need not be individual columns of $P^{-1}$.
+
+=== b
+{scope}
+
+==== Solution
+
+Let $PAP^{-1}=\operatorname{diag}(\alpha_1,\ldots,\alpha_n)$ and $PBP^{-1}=\operatorname{diag}(\beta_1,\ldots,\beta_n)$. Then
+$$
+P(A+B)P^{-1}=\operatorname{diag}(\alpha_1+\beta_1,\ldots,\alpha_n+\beta_n).
+$$
+By <matrix similarity>, **every <eigenvalue> of $A+B$ is $\alpha_i+\beta_i$ for some $i$**. These are corresponding <eigenvalues> on the common <eigenbasis>, rather than every possible pairwise sum. This is <eigenvalue addition in a common eigenbasis>.
+
+=== c
+{scope}
+
+==== Solution
+
+With the two <diagonal matrices> from the preceding part, write $D_A=PAP^{-1}$ and $D_B=PBP^{-1}$. Their diagonal products agree entry by entry, so $D_AD_B=D_BD_A$. Therefore
+$$
+AB=P^{-1}D_AD_BP=P^{-1}D_BD_AP=BA.
+$$
+Hence <simultaneous diagonalization> implies that $A,B$ are **<commuting operators>**.
+
+=== d
+{scope}
+
+==== Solution
+
+Using $BA=AB$ and <linearity>,
+$$
+\boxed{B(Av)=A(Bv)=A(\lambda v)=\lambda Av.}
+$$
+This establishes that <commuting maps preserve eigenspaces>. The <vector> $Av$ can be zero, so this step alone does not assert that $Av$ is an <eigenvector>.
+
+=== e
+{scope}
+
+==== Solution
+
+Work over the <field> containing the stated $n$ distinct <eigenvalues> of $B$; in a real formulation these must be real to obtain real <eigenvectors>. Choose one <eigenvector> for each distinct <eigenvalue>. By <independence of eigenvectors for distinct eigenvalues>, these $n$ <vectors> are a <basis>. Consequently each <eigenspace> $E_\lambda(B)$ has <dimension> one: in an expansion in this <eigenbasis>, $Bw=\lambda w$ forces every coefficient with a different <eigenvalue> to vanish.
+
+Now let $v\ne0$ be any <eigenvector> of $B$. By part (d), $Av$ belongs to its one-dimensional <eigenspace>, so $Av=\mu v$ for some <scalar> $\mu$. This proves that **$v$ is an <eigenvector> of $A$**, including the case $Av=0$, where $\mu=0$. This is the crucial one-dimensional step in <simple spectrum gives simultaneous diagonalization>.
+
+=== f
+{scope}
+
+==== Solution
+
+The $n$ independent <eigenvectors> $v_1,\ldots,v_n$ of $B$ from part (e) are also <eigenvectors> of $A$. Put $S=(v_1\ \cdots\ v_n)$ and $P=S^{-1}$. Then
+$$
+\boxed{PAP^{-1}=\operatorname{diag}(\mu_1,\ldots,\mu_n),\qquad PBP^{-1}=\operatorname{diag}(\lambda_1,\ldots,\lambda_n).}
+$$
+This supplies the required <simultaneous diagonalization> over the same <field> as in part (e).
+
+=== g
+{scope}
+
+==== Solution
+
+For $n=2$, take
+$$
+A=\begin{pmatrix}0&1\\0&0\end{pmatrix},\qquad B=I_2.
+$$
+They are <commuting operators> because every <matrix> commutes with the <identity matrix>. However $A$ has only the <eigenvalue> zero, and $\ker A=\operatorname{span}\{(1,0)^T\}$ has <dimension> one. It has no <eigenbasis>, so it cannot appear in any <simultaneous diagonalization>. Equivalently, a <diagonal matrix> similar to this nonzero <nilpotent matrix> would have to be zero, an impossibility. For any prescribed $n\ge2$, use $A=E_{12}$ and $B=I_n$; its zero <eigenspace> has <dimension> $n-1$. For $n=1$ no such example exists.
+
+== 5
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+The zero <matrix> has the required pattern, and <matrix addition> and <scalar multiplication> preserve every prescribed zero entry. This proves the <vector subspace> condition. A <basis> consists of the <matrix units>
+$$
+\{E_{ii}:1\le i\le n\}\ \cup\ \{E_{i,i+1},E_{i+1,i}:1\le i<n\}.
+$$
+They independently select every permitted entry of a <tridiagonal matrix>, so **the <dimension> is $n+2(n-1)=3n-2$** for $n\ge1$.
+
+=== b
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+For $D=\operatorname{diag}(d_1,d_2,d_3)$, the upper entry of $D^{-1}AD$ in positions $i,i+1$ is $b_id_{i+1}/d_i$, and the corresponding lower entry is $c_id_i/d_{i+1}$. They are equal when $(d_{i+1}/d_i)^2=c_i/b_i$. All coefficients used here are positive, so choose
+$$
+\boxed{D=\operatorname{diag}\left(1,\sqrt{c_1/b_1},\sqrt{c_1c_2/(b_1b_2)}\right).}
+$$
+Direct <matrix multiplication> gives the <symmetric matrix>
+$$
+D^{-1}AD=\begin{pmatrix}
+a_1&\sqrt{b_1c_1}&0\\
+\sqrt{b_1c_1}&a_2&\sqrt{b_2c_2}\\
+0&\sqrt{b_2c_2}&a_3
+\end{pmatrix}.
+$$
+Its pattern remains <tridiagonal>. This is <positive diagonal symmetrization of a tridiagonal matrix>.
+
+==== ii
+{scope}
+
+===== Solution
+
+For the analogous positive off-diagonal entries in size $n$, take
+$$
+\boxed{d_1=1,\qquad d_i=\sqrt{\prod_{j=1}^{i-1}\frac{c_j}{b_j}}\quad(2\le i\le n),\qquad D=\operatorname{diag}(d_1,\ldots,d_n).}
+$$
+The same entrywise computation gives $(D^{-1}AD)_{ii}=a_i$ and $(D^{-1}AD)_{i,i+1}=(D^{-1}AD)_{i+1,i}=\sqrt{b_ic_i}$, with every other entry zero. Thus the result is a <symmetric matrix> with a <tridiagonal> pattern. Positivity of the diagonal entries $a_i$ is not needed for this <positive diagonal symmetrization of a tridiagonal matrix>; positivity of $b_i,c_i$ ensures the displayed positive, invertible $D$. In particular, the assertion is not an arbitrary-real-coefficient symmetrization claim when the off-diagonal signs differ.
+
+==== iii
+{scope}
+
+===== Solution
+
+They are <similar matrices>, so **their <eigenvalues>, with <algebraic multiplicities>, are identical**. Explicitly,
+$$
+\det(tI-D^{-1}AD)=\det\bigl(D^{-1}(tI-A)D\bigr)=\det(tI-A).
+$$
+Moreover their <eigenvectors> correspond by $Av=\lambda v\Longleftrightarrow(D^{-1}AD)(D^{-1}v)=\lambda D^{-1}v$. Since the transformed <matrix> is a real <symmetric matrix>, the <spectral theorem for real symmetric matrices> also shows that $A$ has real <eigenvalues> and is a <diagonalizable matrix>.
+
+=== c
+{scope}
+
+==== Solution
+
+Use banded <Gaussian elimination> followed by <back substitution>. To distinguish the right-hand side from the upper-diagonal coefficients $b_i$, write it as $r_i$. If the modified <pivot elements> are nonzero, the <tridiagonal elimination recurrences> are
+$$
+p_1=a_1,\quad q_1=r_1,\qquad m_i=\frac{c_{i-1}}{p_{i-1}},\quad p_i=a_i-m_ib_{i-1},\quad q_i=r_i-m_iq_{i-1}\quad(2\le i\le n).
+$$
+They eliminate just the one entry below each <pivot element>. Solve the resulting upper <bidiagonal matrix> system by
+$$
+x_n=q_n/p_n,\qquad x_i=(q_i-b_ix_{i+1})/p_i\quad(i=n-1,\ldots,1).
+$$
+There is a bounded number of <arithmetic operations> per row in each sweep, giving **$O(n)$ <arithmetic operations> and $O(n)$ storage**. The unpivoted recurrences cost $8n-7$ <arithmetic operations> under the usual scalar-operation count.
+
+For a general <tridiagonal matrix>, nonsingularity alone does not guarantee these <pivot elements>. If a zero or unsafe <pivot element> occurs, use <partial pivoting> between the current row and the next row. These are the only possible nonzero candidates in the current column; adjacent row swaps introduce at most a second upper diagonal. Tracking that <fill-in> keeps both <Gaussian elimination> and <back substitution> at $O(n)$ <arithmetic operations>. For example, $\begin{pmatrix}0&1\\1&0\end{pmatrix}$ is invertible but requires a row swap. If the input is singular, report a zero final <pivot element>; a unique solution cannot be promised, and compatibility or free-variable analysis is a separate issue. No nonsingularity or safe-pivot assumption is silently inferred from the word <tridiagonal>.
+
+=== d
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+Let $f_j$ be the <determinant> of the leading $j\times j$ <principal submatrix>. Expansion along the last row gives an $a_jf_{j-1}$ term and a $c_{j-1}$ term with negative <cofactor> sign. In the latter minor, the final column has only $b_{j-1}$ nonzero, and deleting that row and column leaves the leading $(j-2)\times(j-2)$ <principal submatrix>. Thus the <tridiagonal determinant recurrence> is
+$$
+\boxed{f_0=1,\qquad f_1=a_1,\qquad f_j=a_jf_{j-1}-c_{j-1}b_{j-1}f_{j-2}\quad(j\ge2).}
+$$
+Here $f_0=1$ is the empty <determinant> convention, needed to include $f_2=a_1a_2-b_1c_1$. The derivation uses <cofactor expansion>, so the <recurrence relation> remains valid when coefficients or intermediate <determinants> vanish; it never divides by a <pivot element>.
+
+==== ii
+{scope}
+
+===== Solution
+
+Evaluate the <recurrence relation> successively, retaining only the preceding two values. Each of the $n-1$ updates uses three <multiplications> and one <subtraction>. Hence **$4(n-1)=O(n)$ <arithmetic operations> and $O(1)$ auxiliary storage** suffice, excluding the stored input. Naively branching into two recursive calls would repeat work; the sequential computation is essential. This is an arithmetic-operation bound, not a bit-complexity bound for arbitrarily large exact <integers>.
+
+== 6
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Writing the given <bases> as $(u_1,\ldots,u_p)$ and $(v_1,\ldots,v_q)$, a <basis> of the <Cartesian product> with its componentwise <vector space> operations is
+$$
+\boxed{\bigl((u_1,0),\ldots,(u_p,0),(0,v_1),\ldots,(0,v_q)\bigr).}
+$$
+This is the <direct sum basis>. Therefore **$\dim(W_1\times W_2)=p+q=\dim W_1+\dim W_2$**. The construction includes zero-dimensional factors, whose corresponding portion of the <basis> is empty.
+
+=== b
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+The <intersection of vector subspaces> $W_1\cap W_2$ contains zero, so $(0,0)\in U$. If $(u,-u),(v,-v)\in U$ and $a,b$ are <scalars>, then
+$$
+a(u,-u)+b(v,-v)=(au+bv,-(au+bv))\in U,
+$$
+because $au+bv\in W_1\cap W_2$ by the <vector subspace> conditions. These pairs belong to $W_1\times W_2$, since both $u$ and $-u$ belong to the required factors. Thus **$U$ is a <vector subspace> of $W_1\times W_2$**.
+
+==== ii
+{scope}
+
+===== Solution
+
+Define $f:W_1\cap W_2\to U$ by $f(u)=(u,-u)$. It is well-defined by the definition of $U$, and
+$$
+f(au+bv)=(au+bv,-au-bv)=af(u)+bf(v).
+$$
+Thus $f$ is a <linear map>. If $f(u)=f(v)$, comparing first components gives $u=v$, proving <injectivity>. Every element of $U$ has the form $(u,-u)=f(u)$, proving <surjectivity>. Hence **$f$ is a <linear isomorphism>**, with inverse $(u,-u)\mapsto u$, and $\dim U=\dim(W_1\cap W_2)$.
+
+=== c
+{scope}
+
+==== Solution
+
+Every output $u_1+u_2$ lies in the <sum of subspaces> $W_1+W_2$, since it is a <linear combination> of members of the two <vector subspaces>. For $u=(u_1,u_2)$, $v=(v_1,v_2)$ and <scalars> $a,b$,
+$$
+g(au+bv)=(au_1+bv_1)+(au_2+bv_2)=a(u_1+u_2)+b(v_1+v_2)=ag(u)+bg(v).
+$$
+Therefore **$g$ is a <linear map>**. Every <vector> in $W_1+W_2$ is such an output: group the terms of any <linear combination> from $W_1\cup W_2$ according to their originating <vector subspace>. Thus the <addition map of subspaces> is also <surjective>.
+
+=== d
+{scope}
+
+==== Solution
+
+The <kernel of a linear map> $g$ is precisely $U$, since
+$$
+g(u_1,u_2)=0\quad\Longleftrightarrow\quad u_2=-u_1\quad\Longleftrightarrow\quad (u_1,u_2)=(u,-u),\ u\in W_1\cap W_2.
+$$
+Part (c) gives $\operatorname{im}g=W_1+W_2$. Apply the <rank-nullity theorem> to the <finite-dimensional vector space> $W_1\times W_2$, and then parts (a) and (b):
+$$
+\dim W_1+\dim W_2=\dim(W_1\times W_2)=\dim\ker g+\dim\operatorname{im}g=\dim(W_1\cap W_2)+\dim(W_1+W_2).
+$$
+This proves the <dimension formula for a sum of subspaces>. The <kernel of a linear map> records exactly the freedom to transfer a shared <vector> from one summand to the other without changing their <sum>.
+
+== 7
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Eliminating <logical implications> gives
+$$
+(A\to C)\to(B\to C)\equiv\neg(\neg A\lor C)\lor\neg B\lor C\equiv(A\land\neg C)\lor\neg B\lor C.
+$$
+An absorption step simplifies this to the <disjunctive normal form>
+$$
+\boxed{A\lor\neg B\lor C.}
+$$
+Each one-<literal> term is a permitted <logical conjunction> in a <disjunctive normal form>.
+
+=== b
+{scope}
+
+==== Solution
+
+The given <logical implication> is false exactly when $A=B$ and $C\ne D$. For every <literal> on $A,B,C,D$, there is such a false <Boolean valuation> making that <literal> true. For a prescribed value of $A$ or $B$, give the other the same value and choose $C\ne D$. For a prescribed value of $C$ or $D$, give the other the opposite value and choose $A=B$.
+
+Consequently no <literal> implies the whole <propositional formula>: **there is no one-<literal> <implicant>**. If an equivalent <disjunctive normal form> contained a one-<literal> conjunction term $\ell$, then every <Boolean valuation> satisfying $\ell$ would satisfy that <disjunctive normal form>, contradicting its equivalence to the given <propositional formula>. This proves the claim. Even if auxiliary <Boolean variables> are allowed in the equivalent expression, a one-<literal> term on one of them fails too: fix any false <Boolean valuation> of the original four and set the auxiliary <literal> true. The word “conjunct” here refers to a conjunction term in the <disjunctive normal form>, not a factor in a <conjunctive normal form>.
+
+=== c
+{scope}
+
+==== Solution
+
+Use <structural induction> on the <propositional formula>. The induction claim is that its <truth value> under the all-one <Boolean valuation> is one. A variable has this <truth value> by definition. For the induction step, suppose the immediate subformulas $\alpha,\beta$ each have <truth value> one. Then
+$$
+\llbracket\alpha\lor\beta\rrbracket=1\lor1=1,\qquad
+\llbracket\alpha\land\beta\rrbracket=1\land1=1,\qquad
+\llbracket\alpha\to\beta\rrbracket=1\to1=1.
+$$
+These are all permitted construction cases. Thus every such <propositional formula> evaluates to one. Equivalently, the three <logical connectives> define <one-preserving Boolean functions>, and composition preserves this property. The variable-only base grammar matters: admitting a constant false formula would invalidate the claim.
+
+=== d
+{scope}
+
+==== Solution
+
+Let $F=(A\to C)\lor(B\to C)$ and $H=(A\lor B)\to C$, so the two displayed <propositional formulas> are $\varphi=F\to H$ and $\psi=H\to F$. Their complete <truth tables> are
+$$
+\begin{array}{ccc|cc|cc|cc}
+A&B&C&A\to C&B\to C&F&H&\varphi&\psi\\\hline
+0&0&0&1&1&1&1&1&1\\
+0&0&1&1&1&1&1&1&1\\
+0&1&0&1&0&1&0&0&1\\
+0&1&1&1&1&1&1&1&1\\
+1&0&0&0&1&1&0&0&1\\
+1&0&1&1&1&1&1&1&1\\
+1&1&0&0&0&0&0&1&1\\
+1&1&1&1&1&1&1&1&1
+\end{array}
+$$
+Therefore **$\psi$ is a <tautology>; $\varphi$ is not**. For example $(A,B,C)=(0,1,0)$ makes the antecedent $F$ true via $A\to C$, while $H$ is false because $B$ is true and $C$ is false. This explains why having just one of the two <logical implications> is insufficient for the forward direction.
+
+=== e
+{scope}
+
+==== Solution
+
+Only $\psi$ requires a <natural deduction> proof. Assume $h:(A\lor B)\to C$. Within that assumption, temporarily assume $a:A$. By disjunction introduction, obtain $A\lor B$; applying $h$ by the <implication elimination rule> gives $C$. Discharge $a$ by the <implication introduction rule> to derive $A\to C$. Disjunction introduction now gives $(A\to C)\lor(B\to C)$. Finally discharge $h$ by the <implication introduction rule>:
+$$
+\frac{
+\begin{array}{c}
+[(A\lor B)\to C]^1\qquad
+\dfrac{[A]^2}{A\lor B}\ {\lor I_L}\\[3pt]
+\dfrac{(A\lor B)\to C\qquad A\lor B}{C}\ {\to E}\\[5pt]
+\dfrac{C}{A\to C}\ {\to I}^{,2}\\[5pt]
+\dfrac{A\to C}{(A\to C)\lor(B\to C)}\ {\lor I_L}
+\end{array}}
+{\bigl((A\lor B)\to C\bigr)\to\bigl((A\to C)\lor(B\to C)\bigr)}\ {\to I}^{,1}.
+$$
+All temporary assumptions are discharged. No classical rule is needed; the same proof works in <intuitionistic propositional logic>. The false <propositional formula> $\varphi$ has no proof in this sound <natural deduction> system.
+
+== 8
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Express existence of a <minimum> using only the given strict-order relation:
+$$
+\boxed{\varphi=\exists m\,\forall x\,\neg(x<m).}
+$$
+In the closed <interval> $[0,1]$, the witness is $m=0$. In the open <interval> $(0,1)$, every possible witness $m$ has the smaller member $m/2$, so the <first-order sentence> is false. These witnesses are explanations in the ambient <real numbers>, not additional symbols in the <first-order signature>.
+
+=== b
+{scope}
+
+==== Solution
+
+Express that the order is a <dense order>:
+$$
+\boxed{\psi=\forall x\,\forall y\,\bigl(x<y\to\exists z\,(x<z\land z<y)\bigr).}
+$$
+In either real <interval>, $(x+y)/2$ lies strictly between any two distinct ordered elements and remains in the domain. In the <integers>, $x=0,y=1$ have no intervening <integer>, so this <first-order sentence> is false. The endpoints of a closed <interval> do not prevent a <dense order>.
+
+=== c
+{scope}
+
+==== Solution
+
+Combine a <minimum> with an <adjacent pair in a linear order>:
+$$
+\boxed{\xi=\bigl(\exists m\,\forall x\,\neg(x<m)\bigr)\land\exists u\,\exists v\,\bigl(u<v\land\neg\exists w\,(u<w\land w<v)\bigr).}
+$$
+In $[0,1]\cup[2,3]$, choose $m=0,u=1,v=2$. The <minimum> and the <adjacent pair in a linear order> both exist. In $[0,1]$, the <dense order> property rules out such an adjacent pair. In $\mathbb Z$, adjacent pairs exist, but no <minimum> exists: for any $m$, the <integer> $m-1$ is smaller. Thus this <first-order sentence> has precisely the required three <truth values>. Neither the endpoints nor the numerical witnesses occur as constant symbols in the <first-order sentence>.
+
+\Image[digital-systems-linear-algebra-introduction-to-formal-proof-ordered-structures.png]
+{title=A minimum and an adjacent pair distinguish the two-interval order from a closed interval and the integers}
+{description=Orange highlights the consecutive domain members $1$ and $2$ in the two-interval order. The dotted arrow crosses points absent from that domain. A closed real <interval> has intervening domain members; the <integers> have adjacent pairs but no <minimum>.}
+
+=== d
+{scope}
+
+==== Solution
+
+Use the intended <first-order structure> of real arithmetic, with `Int` selecting the <integers>; $z$ is the parameter in $\phi_z$. A suitable <first-order formula> is
+$$
+\boxed{\phi_z=\exists r\left(r*r=(1+1)*z\ \land\ \neg\exists p\,\exists q\left(\operatorname{Int}(p)\land\operatorname{Int}(q)\land\neg(q=0)\land q*r=p\right)\right).}
+$$
+The first condition requires a real <square root> of $2z$. The second excludes every representation as a <rational number> $p/q$ with a nonzero <integer> denominator. This uses only the listed function and constant symbols, the `Int` predicate and <logical equality>; in particular, $2$ is written $1+1$ and there is no extra division symbol. A <square root> exists exactly when $z\ge0$, and either sign of a root is a <rational number> exactly when the other sign is a <rational number>, so the absence of a positivity condition on $r$ does not affect the claim about the principal <square root>. At $z=0$ the formula is false; for $z<0$ there is no real witness. The meanings of $+$ and $*$ as real arithmetic, not just the meaning of `Int`, are part of this interpretation.
+
+=== e
+{scope}
+
+==== Solution
+
+Two unary predicates suffice. Require all four <unary predicate types> to be inhabited:
+$$
+\boxed{
+\exists x\,(P(x)\land Q(x))\ \land\
+\exists x\,(P(x)\land\neg Q(x))\ \land\
+\exists x\,(\neg P(x)\land Q(x))\ \land\
+\exists x\,(\neg P(x)\land\neg Q(x)).}
+$$
+There are no constants, no <logical equality> and no nonunary predicates. Any two of these conditions disagree on at least one predicate, so one domain element cannot witness both. Hence every satisfying <first-order structure> has at least four elements, by <distinct witnesses from incompatible unary predicates>. Conversely take domain $\{a,b,c,d\}$, $P=\{a,b\}$ and $Q=\{a,c\}$: the four elements realize the four displayed <unary predicate types>, respectively. These element names describe the example; they are not constants in the <first-order sentence>.
+
+=== f
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+**The term $x+z$ is not <free for substitution> for $y$.** The occurrence of $y$ in $x<y$ is under $\exists x$, which would capture the inserted $x$. The other occurrence, in the outside disjunct $y<z$, has no enclosing <quantifier>. The inner $\forall z$ does not bind the occurrence of $y$ in its antecedent, so it creates no additional capture at that substitution site.
+
+Rename the bound $x$ to a fresh $u$, then carry out <capture-avoiding first-order substitution>. The result is
+$$
+\boxed{\varphi[x+z/y]=\bigl(\exists u\,(u<x+z\to\forall z\,(u<z+2))\bigr)\lor(x+z<z).}
+$$
+The inserted $z$ in $u<x+z$ remains free because it lies outside the scope of $\forall z$. One may additionally rename that bound $z$ for readability, but it is not necessary for correctness.
+
+==== ii
+{scope}
+
+===== Solution
+
+**The term $x+z$ is <free for substitution> for $z$.** The only free occurrence of the target $z$ is in the outside disjunct $y<z$, beyond both <quantifier> scopes. The occurrences under $\forall z$ are <bound variables> and are not replaced. Therefore no renaming is required, and
+$$
+\boxed{\varphi[x+z/z]=\bigl(\exists x\,(x<y\to\forall z\,(x<z+2))\bigr)\lor\bigl(y<x+z\bigr).}
+$$
+The new $x$ and $z$ in the last disjunct are free. <First-order substitution> replaces the original free occurrences once; it does not recursively substitute into the inserted term.
+
+=== g
+{scope}
+
+==== Solution
+
+The printed expression has one unmatched closing parenthesis. Remove that final surplus parenthesis and read the first disjunct as $\exists x\,P(x)$; the other disjunct has outer <universal quantification> over the displayed implication. To distinguish the two independent bound uses of $x$, rename the first to $u$.
+
+Push the outer <negation> through the <logical disjunction> and through the <quantifiers>. Negating the implication preserves its existential antecedent and negates its consequent. Applying <De Morgan's laws> and the <quantifier> negation rules gives the <negation normal form>
+$$
+\boxed{\bigl(\forall u\,\neg P(u)\bigr)\land\exists x\left[\bigl(\exists y\,Q(x,y)\bigr)\land\bigl(\forall z\,\neg R(z)\bigr)\land\bigl(\exists t\,\neg T(x,t)\bigr)\right].}
+$$
+Each <negation> is now directly before an <atomic formula>. No <bound variable> has been captured, and no original <existential quantification> in the antecedent has accidentally been negated twice.

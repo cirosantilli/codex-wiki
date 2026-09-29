@@ -1,0 +1,62 @@
+"""Original orbital-element geometry. Python 3.14; root NumPy/Matplotlib deps.
+Emits opaque PNG basename to caller CWD and honors caller MPLCONFIGDIR.
+"""
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+fig=plt.figure(figsize=(10,5.2),layout='constrained',facecolor='white')
+left=fig.add_subplot(121)
+a=1.8;e=.45;b=a*np.sqrt(1-e*e);E=np.linspace(0,2*np.pi,500)
+left.plot(a*(np.cos(E)-e),b*np.sin(E),color='#222222',lw=1.7)
+left.plot([-a*(1+e),a*(1-e)],[0,0],color='#777777',ls=':',lw=1)
+left.plot(0,0,'*',color='#d95f02',ms=12)
+left.text(.03,-.24,'Focus (central mass)',ha='left',fontsize=9)
+left.plot(-a*e,0,'o',color='#444444',ms=4)
+left.text(-a*e,.2,'Centre',ha='center',fontsize=9)
+left.text(a*(1-e)+.07,.05,'Periapsis',ha='left',fontsize=9)
+left.text(-a*(1+e)-.04,.15,'Apoapsis',ha='left',fontsize=9)
+left.annotate('',xy=(0,.55),xytext=(-a*e,.55),arrowprops={'arrowstyle':'<->','color':'#2166ac'})
+left.text(-a*e/2,.62,r'$ae$',ha='center',color='#2166ac',fontsize=11)
+for x in [-a*e,a*(1-e)]:left.plot([x,x],[-b-.32,0],color='#999999',ls=':',lw=.7)
+left.annotate('',xy=(a*(1-e),-b-.27),xytext=(-a*e,-b-.27),arrowprops={'arrowstyle':'<->','color':'#2166ac'})
+left.text(a*(.5-e),-b-.22,r'$a$',ha='center',color='#2166ac',fontsize=12)
+left.text(-a*e,-b-.6,r'$r_p=a(1-e),\quad r_a=a(1+e)$',ha='center',fontsize=10)
+left.set_xlim(-2.9,2.15);left.set_ylim(-2.3,2.1)
+left.set_aspect('equal');left.axis('off');left.set_title('Size and shape in the orbital plane',fontsize=12)
+
+ax=fig.add_subplot(122,projection='3d')
+Om=np.deg2rad(35);inc=np.deg2rad(40);omega=np.deg2rad(45)
+node=np.array([np.cos(Om),np.sin(Om),0.]);side=np.array([-np.sin(Om)*np.cos(inc),np.cos(Om)*np.cos(inc),np.sin(inc)])
+normal=np.cross(node,side);peri=np.cos(omega)*node+np.sin(omega)*side;other=-np.sin(omega)*node+np.cos(omega)*side
+X,Y=np.meshgrid(np.linspace(-1.5,1.5,2),np.linspace(-1.5,1.5,2));ax.plot_surface(X,Y,np.zeros_like(X),color='#bbbbbb',alpha=.13,shade=False)
+f=np.linspace(0,2*np.pi,700);ecc=.25;aa=1.1;r=aa*(1-ecc*ecc)/(1+ecc*np.cos(f));points=r[:,None]*(np.cos(f)[:,None]*peri+np.sin(f)[:,None]*other)
+ax.plot(*points.T,color='#222222',lw=1.7)
+ax.scatter(0,0,0,color='#d95f02',marker='*',s=70)
+ax.plot(*np.array([-1.5*node,1.5*node]).T,color='#2166ac',ls='--',lw=1)
+asc=aa*(1-ecc*ecc)/(1+ecc*np.cos(omega))*node;ax.scatter(*asc,color='#2166ac',s=22)
+ax.text(*(1.5*node), 'Ascending-node\ndirection',fontsize=8)
+ax.quiver(0,0,0,*np.array([1.6,0,0]),color='#777777',arrow_length_ratio=.07)
+ax.text(1.52,0,-.20,'Reference x',fontsize=8)
+ax.quiver(0,0,0,*np.array([0,0,1.45]),color='#999999',arrow_length_ratio=.07)
+ax.text(0,0,1.5,r'$z$',fontsize=10)
+ax.quiver(0,0,0,*(1.4*normal),color='#4d9221',arrow_length_ratio=.07)
+ax.text(*(1.47*normal),r'$\mathbf{L}$',color='#4d9221',fontsize=11)
+ax.plot(*np.array([np.zeros(3),1.1*peri]).T,color='#b2182b',lw=1.3)
+ax.text(*(1.2*peri),'Periapsis\ndirection',fontsize=8,color='#b2182b')
+# Omega in the reference plane, omega in the orbital plane, i between normals.
+ang=np.linspace(0,Om,70);arc=.5*np.c_[np.cos(ang),np.sin(ang),np.zeros_like(ang)];ax.plot(*arc.T,color='#2166ac',lw=1.4)
+ax.text(.63*np.cos(Om/2),.63*np.sin(Om/2),-.06,r'$\Omega$',color='#2166ac',fontsize=13)
+ang=np.linspace(0,omega,70);arc=.65*(np.cos(ang)[:,None]*node+np.sin(ang)[:,None]*side);ax.plot(*arc.T,color='#b2182b',lw=1.4)
+ax.text(*(.77*(np.cos(omega/2)*node+np.sin(omega/2)*side)),r'$\omega$',color='#b2182b',fontsize=13)
+ang=np.linspace(0,inc,70);tangent=np.array([-np.sin(Om),np.cos(Om),0]);arc=1.05*(np.cos(ang)[:,None]*np.array([0,0,1])-np.sin(ang)[:,None]*tangent);ax.plot(*arc.T,color='#4d9221',lw=1.4)
+ax.text(*(1.13*(np.cos(inc/2)*np.array([0,0,1])-np.sin(inc/2)*tangent)),r'$i$',color='#4d9221',fontsize=13)
+# Actual prograde tangent at the ascending node points to positive z.
+def orbit_position(ff):return aa*(1-ecc*ecc)/(1+ecc*np.cos(ff))*(np.cos(ff)*peri+np.sin(ff)*other)
+start=orbit_position(-omega-.10);end=orbit_position(-omega+.12);ax.quiver(*start,*(end-start),color='#222222',arrow_length_ratio=.35)
+ax.set_xlim(-1.65,1.9);ax.set_ylim(-1.65,1.9);ax.set_zlim(-1.3,1.65);ax.set_box_aspect((1,1,.8),zoom=1.22);ax.view_init(elev=26,azim=-85);ax.set_axis_off()
+ax.set_title('Orientation angles in the reference frame',fontsize=12)
+fig.supxlabel('Angles are measured in their own planes; inclination is the angle between plane normals.\nThe ascending node is crossed toward positive z in the direction of motion.',fontsize=9)
+fig.savefig('paper-69-orbital-elements.png',dpi=150,facecolor='white',transparent=False)
+plt.close(fig)

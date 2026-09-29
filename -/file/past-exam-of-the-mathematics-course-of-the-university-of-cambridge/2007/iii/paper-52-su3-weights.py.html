@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2007/iii/paper-52-su3-weights.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2007/iii/paper-52-su3-weights.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2007/iii/paper-52-su3-weights.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2007/iii/paper-52-su3-weights.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2007/iii/paper-52-su3-weights.py"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../../-/dir">(root)</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge">past-exam-of-the-mathematics-course-of-the-university-of-cambridge</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2007">2007</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2007/iii">iii</a> / <a href="../../../../../-/raw/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2007/iii/paper-52-su3-weights.py">paper-52-su3-weights.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2007/iii/paper-52-su3-weights.py</b></div><div class="code"><div><pre><code>"""Original SU(3) weight diagrams; writes its same-basename PNG to caller CWD."""
+from collections import Counter
+from pathlib import Path
+import math
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+
+def weights(p, q):
+    """Exact Gelfand--Tsetlin counts, keyed by (2 H1, 2 sqrt(3) H2)."""
+    counts = Counter()
+    for a in range(q, p + q + 1):
+        for b in range(q + 1):
+            for c in range(b, a + 1):
+                n1, n2, n3 = c, a + b - c, p + 2 * q - a - b
+                counts[n1 - n2, n1 + n2 - 2 * n3] += 1
+    assert sum(counts.values()) == (p + 1) * (q + 1) * (p + q + 2) // 2
+    return counts
+
+
+def draw(ax, p, q, name):
+    points = weights(p, q)
+    coords = {w: (w[0] / 2, w[1] / (2 * math.sqrt(3))) for w in points}
+    for w, (x, y) in coords.items():
+        for v, (xx, yy) in coords.items():
+            if w &lt; v and abs((x - xx) ** 2 + (y - yy) ** 2 - 1) &lt; 1e-9:
+                ax.plot([x, xx], [y, yy], color="#c8cdd2", lw=1, zorder=1)
+    for w, (x, y) in coords.items():
+        m = points[w]
+        ax.scatter([x], [y], s=190, color={1: "#d5e9f7", 2: "#fbd59d", 3: "#c9dfb9"}[m], edgecolors="#31485d", linewidths=.8, zorder=2)
+        ax.text(x, y, str(m), ha="center", va="center", fontsize=10, zorder=3)
+    ax.set_title(f"{name}   (p,q)=({p},{q})", fontsize=12)
+    ax.set_xlabel(r"$H_1$", labelpad=1)
+    ax.set_ylabel(r"$H_2$", labelpad=1)
+    ax.set_aspect("equal")
+    ax.margins(.22)
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.tick_params(labelsize=8)
+
+
+def main():
+    fig, axes = plt.subplots(2, 3, figsize=(10.5, 6.8), facecolor="white", constrained_layout=True)
+    for ax, data in zip(axes.flat, [(1, 0, "3"), (0, 1, "3 bar"), (2, 0, "6"), (1, 1, "8"), (2, 1, "15"), (2, 2, "27")]):
+        draw(ax, *data)
+    fig.suptitle("SU(3): triangular and hexagonal weight diagrams\nNumbers at points are weight-space dimensions", fontsize=14)
+    fig.savefig(Path(__file__).with_suffix(".png").name, dpi=120, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

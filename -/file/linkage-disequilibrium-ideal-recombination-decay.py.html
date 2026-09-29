@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>linkage-disequilibrium-ideal-recombination-decay.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="linkage-disequilibrium-ideal-recombination-decay.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/linkage-disequilibrium-ideal-recombination-decay.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">linkage-disequilibrium-ideal-recombination-decay.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/linkage-disequilibrium-ideal-recombination-decay.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/linkage-disequilibrium-ideal-recombination-decay.py">linkage-disequilibrium-ideal-recombination-decay.py</a></b></div></nav></div><div class="p"><b>linkage-disequilibrium-ideal-recombination-decay.py</b></div><div class="code"><div><pre><code>"""Draw deterministic recombination decay, not measured population data.
+
+Tested with Python 3.14, matplotlib 3.10.7 and numpy 2.3.5.
+Run from _media; the matching opaque PNG is written to the working directory.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    generations = np.arange(61)
+    fig, axes = plt.subplots(1, 2, figsize=(10.2, 4.6), facecolor="white")
+    fig.subplots_adjust(left=0.085, right=0.98, top=0.77, bottom=0.22, wspace=0.27)
+    colors = ["#555555", "#0072b2", "#d55e00", "#009e73"]
+    for recombination, color in zip([0.0, 0.01, 0.1, 0.5], colors):
+        normalized_d = (1-recombination)**generations
+        # Recursively update all four frequencies as a separate check of the curves.
+        f = np.array([0.36, 0.24, 0.04, 0.36])  # p = 0.60, q = 0.40, D0 = 0.12
+        for t in generations:
+            d = f[0]*f[3] - f[1]*f[2]
+            np.testing.assert_allclose(d, 0.12*normalized_d[t], atol=2e-15)
+            np.testing.assert_allclose([f[0]+f[1], f[0]+f[2]], [0.60, 0.40])
+            assert np.min(f) &gt;= 0
+            f += recombination*d*np.array([-1, 1, 1, -1])
+        for ax, power in zip(axes, [1, 2]):
+            ax.plot(generations, normalized_d**power, color=color, linewidth=2,
+                    marker="o", markersize=3, markevery=5, label=f"r = {recombination:g}")
+    for ax in axes:
+        ax.set_xlim(0, 60)
+        ax.set_ylim(-0.025, 1.04)
+        ax.set_xlabel("Generation t", fontsize=12)
+        ax.set_yticks(np.linspace(0, 1, 6))
+        ax.tick_params(labelsize=10)
+        ax.grid(color="#dddddd", linewidth=0.65)
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.axhline(0.5, color="#999999", linestyle=":", linewidth=1)
+    axes[0].set_title(r"Signed association: $D_t/D_0=(1-r)^t$", fontsize=12)
+    axes[0].set_ylabel("Fraction of initial D", fontsize=12)
+    axes[1].set_title(r"Squared correlation: $r_{\rm LD,t}^2/r_{\rm LD,0}^2=(1-r)^{2t}$", fontsize=12)
+    axes[1].set_ylabel("Fraction of initial squared correlation", fontsize=11)
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.52, 0.9),
+               ncol=4, frameon=False, fontsize=11)
+    fig.suptitle("Ideal recombination decay at fixed allele frequencies", fontsize=16, y=0.98)
+    fig.text(0.5, 0.065, "Random mating; constant r; no selection, mutation, migration or drift\n"
+             "D₀ ≠ 0; normalization applies to either sign. Points are model generations.",
+             ha="center", fontsize=10.5, color="#444444")
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=110,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

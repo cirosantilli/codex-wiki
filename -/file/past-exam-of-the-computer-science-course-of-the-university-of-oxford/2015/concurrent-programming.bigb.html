@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/concurrent-programming.bigb - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/concurrent-programming.bigb - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../-/raw/main.css">
+<link rel="icon" href="../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../" class="brand"><img class="openai-logo" src="../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/concurrent-programming.bigb"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/concurrent-programming.bigb</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/concurrent-programming.bigb"><img src="../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../-/dir">(root)</a> / <a href="../../../../-/dir/past-exam-of-the-computer-science-course-of-the-university-of-oxford">past-exam-of-the-computer-science-course-of-the-university-of-oxford</a> / <a href="../../../../-/dir/past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015">2015</a> / <a href="../../../../-/raw/past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/concurrent-programming.bigb">concurrent-programming.bigb</a></b></div></nav></div><div class="p"><b>past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/concurrent-programming.bigb</b></div><div class="code"><div><pre><code>= Concurrent programming
+{scope}
+{title2=A12069W1}
+
+Solutions to all three questions of the paper dated 2 June 2015.&lt;Oxford Concurrent Programming examination paper (2015)&gt;[Cover and pp. 2–6, A12069W1]{ref} The &lt;Scala&gt; fragments use &lt;Communicating Scala Objects&gt; notation: `proc` constructs a process, `p()` runs it, and `||` runs its components concurrently and waits for all of them. Inputs and outputs below are reliable and ordered; timing and scheduling assumptions are stated where needed.
+
+== 1
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Store the accepted but undelivered values in an ordinary &lt;FIFO queue&gt;, owned exclusively by the &lt;Communicating Scala Objects&gt; process. An input event is enabled precisely when the &lt;FIFO queue&gt; is not full, and an output event precisely when it is not empty. An output event's expression is evaluated only after that event is selected; its epilogue runs after the output completes. The following uses no buffered communication &lt;message-passing channels&gt;.
+
+```
+def strictBuffer[T](capacity: Int, in: ?[T], out: ![T]): PROC = proc {
+  require(capacity &gt; 0)
+  val q = scala.collection.mutable.Queue[T]()
+  val poll = 1000000L                     // nanoseconds
+  try {
+    while (out.canOutput &amp;&amp; (in.canInput || q.nonEmpty)) {
+      alt(
+        (q.size &lt; capacity &amp;&amp; in) =?=&gt; { x =&gt; q.enqueue(x) }
+        | (q.nonEmpty &amp;&amp; out) =!=&gt; { q.front } ==&gt; { q.dequeue(); () }
+        | after(poll) ==&gt; { () }
+      )
+    }
+  } catch { case _: io.threadcso.process.Stopped =&gt; () }
+  finally { in.closeIn; out.closeOut }
+}
+```
+
+Here `canInput` and `canOutput` mean that the port has not become permanently unable to communicate; they are not instantaneous readiness tests. A closed input event is disabled by the &lt;Communicating Scala Objects&gt; &lt;guarded alternation&gt;. The timer periodically rechecks closure even when the affected port's data event is disabled, for example when the &lt;FIFO queue&gt; is empty and the downstream port closes. It neither transfers data nor imposes a deadline on a healthy producer. This avoids silently assuming that closure of a disabled event wakes an &lt;alternation&gt;. The relevant output-event and closure conventions are documented in &lt;Communicating Scala Objects by Bernard Sufrin&gt;[2017 revision, §§4 and 5.2]{ref}.
+
+Write $I$ and $O$ for the input and output &lt;sequences&gt;. The &lt;loop invariant&gt; is that $I$ is $O$ followed by the contents of the &lt;FIFO queue&gt;. An input appends one value to its rear; an output removes exactly its front. Consequently,
+$$
+\boxed{O\text{ is a prefix of }I,\qquad 0\leq |I|-|O|=|q|\leq\mathrm{capacity}.}
+$$
+The two data events remain offered whenever their respective size conditions hold. Under a fair choice policy, an endlessly ready event is eventually selected. The timer requires the usual assumption that expiry cannot starve a ready communication forever.
+
+When the input closes, no more values are accepted, but all remaining values stay eligible for output. Once the &lt;FIFO queue&gt; empties, the process closes its output and terminates. If the output closes first, there is no recipient for those remaining values: the process abandons them, closes the input to release the producer, and terminates. Draining after upstream closure requires a consumer that continues receiving. The positive-capacity precondition is deliberate: two separate &lt;synchronous message passing&gt; events cannot provide a capacity-zero buffer with zero discrepancy after every event; that would require a simultaneous three-party transfer.
+
+=== b
+{scope}
+
+==== Solution
+
+A cyclic &lt;Communicating Scala Objects&gt; component has a communication loop followed by a close-down phase. `repeat { ... }` catches the library's normal `Stopped` family of exceptions, including closure, and leaves the loop; ordinary `while` code instead needs the explicit handler used above. In either case, cleanup closes every owned input port with `closeIn` and every owned output port with `closeOut`, preferably in `finally`. Reclosing a one-to-one port is harmless. A parallel composition completes only when every component has completed; one component returning does not automatically cancel all the others.
+
+The producer closes `left` on return. The &lt;strict buffer&gt; observes this, drains its &lt;FIFO queue&gt; into a cooperating consumer, and closes `right`; the consumer's next read detects closure and enters its own cleanup. Conversely, the consumer closes `right` on return; the &lt;strict buffer&gt; then closes `left`, releasing a blocked producer write or causing its next write to stop. Thus,
+$$
+\boxed{\text{upstream closure drains forward; downstream closure cancels backward}.}
+$$
+Eventual termination assumes that surviving components reach their next communication or closure check, and that the consumer keeps accepting a finite outstanding backlog after producer termination. A component stuck forever in unrelated computation cannot be stopped by closing a port alone.
+
+=== c
+{scope}
+
+==== Solution
+
+Use a &lt;tagged union&gt; so that an idle indication cannot be confused with an actual value of type `T`. &lt;Heartbeat messages&gt; are transport messages only and never reach the consumer.
+
+```
+sealed trait InterPeer[+T]
+final case class Data[T](value: T) extends InterPeer[T]
+case object Idle extends InterPeer[Nothing]
+case object EndPeer extends RuntimeException
+case object PeerTimeout extends RuntimeException
+```
+
+Here are two small &lt;Communicating Scala Objects&gt; helpers. A timer expiring after a port has closed denotes orderly end-of-stream, rather than evidence of a silent peer. Closure can instead make the &lt;alternation&gt; throw `Stopped` directly. `sendWithin` completes exactly one send, or throws; `receiveWithin` completes exactly one receive, or throws. Time arguments are positive nanosecond intervals.
+
+```
+def sendWithin[A](p: ![A], value: A, t: Long): Unit = {
+  if (!p.canOutput) throw EndPeer
+  alt(
+    p =!=&gt; { value }
+    | after(t) ==&gt; {
+        if (!p.canOutput) throw EndPeer else throw PeerTimeout
+      }
+  )
+}
+def receiveWithin[A](p: ?[A], t: Long): A = {
+  if (!p.canInput) throw EndPeer
+  var result: Option[A] = None
+  alt(
+    p =?=&gt; { x =&gt; result = Some(x) }
+    | after(t) ==&gt; {
+        if (!p.canInput) throw EndPeer else throw PeerTimeout
+      }
+  )
+  result.get
+}
+```
+
+The sender waits only half the agreed interval before preparing an idle indication, leaving some scheduling allowance before the receiver's deadline. A pending data or idle send has its own deadline, so a failed receiver cannot strand the sender forever. An application with a guaranteed network-delay bound should subtract that bound, plus scheduling allowance, when choosing the heartbeat period.
+
+```
+def iPr[T](timeout: Long, in: ?[T], out: ![InterPeer[T]],
+           fail: ![Unit]): PROC = proc {
+  require(timeout &gt;= 2)
+  var failed = false
+  try {
+    while (in.canInput &amp;&amp; out.canOutput) {
+      var packet: InterPeer[T] = Idle
+      alt(
+        in =?=&gt; { x =&gt; packet = Data(x) }
+        | after(timeout / 2) ==&gt; { () }
+      )
+      // A just-accepted Data must survive a simultaneous upstream close.
+      if (packet != Idle || in.canInput) sendWithin(out, packet, timeout)
+    }
+  } catch {
+    case PeerTimeout =&gt; failed = out.canOutput
+    case EndPeer =&gt; ()
+    case _: io.threadcso.process.Stopped =&gt; ()
+  } finally { in.closeIn; out.closeOut }
+  try { if (failed) fail ! (()) }
+  catch { case _: io.threadcso.process.Stopped =&gt; () }
+  finally { fail.closeOut }
+}
+
+def iCon[T](timeout: Long, in: ?[InterPeer[T]], out: ![T],
+            fail: ![Unit]): PROC = proc {
+  require(timeout &gt; 0)
+  var failed = false
+  try {
+    while (out.canOutput) {
+      receiveWithin(in, timeout) match {
+        case Idle =&gt; ()
+        case Data(x) =&gt; sendWithin(out, x, timeout)
+      }
+    }
+  } catch {
+    case PeerTimeout =&gt; failed = out.canOutput
+    case EndPeer =&gt; ()
+    case _: io.threadcso.process.Stopped =&gt; ()
+  } finally { in.closeIn; out.closeOut }
+  try { if (failed) fail ! (()) }
+  catch { case _: io.threadcso.process.Stopped =&gt; () }
+  finally { fail.closeOut }
+}
+```
+
+Each failure port has a supervising receiver that accepts its single notification; data-port cleanup occurs before that potentially blocking notification. The sender reports an interpeer send taking too long. The receiver reports an excessive interpeer receive delay or an excessive delay delivering a value to the consumer. Producer idleness alone is healthy and causes &lt;heartbeat messages&gt;, not a failure. A sufficiently slow consumer can ultimately cause both detectors to fire, since its &lt;backpressure&gt; reaches the sender.
+
+Ignoring &lt;heartbeat messages&gt;, at most one genuine value is held by each intermediary with a synchronous interpeer &lt;message-passing channel&gt;; no value overtakes another. Normal upstream closure propagates after the last accepted genuine value is delivered, provided its delivery meets the deadline. The pair is not ready for another input while its sender is blocked sending, so it has the specified prefix and bounded-storage properties without every readiness property of an ideal &lt;strict buffer&gt;. Its useful guarantee is
+$$
+\boxed{\text{ordered genuine data, at most two pending values, and timed failure indications}.}
+$$
+A timeout establishes suspicion, not proof of a crash: a live but delayed peer or an excessive network delay gives the same observation. There is no promise of bounded detection when the detector itself is never scheduled, nor of exact agreement between the two failure indications. A sender-side deadline measures completion of its own send: a network adapter that merely accepts values into local storage cannot confirm remote receipt. Detecting that remote failure at the sender would require confirmations over a return &lt;message-passing channel&gt;.
+
+=== d
+{scope}
+
+==== Solution
+
+A &lt;channel multiplexer&gt; adds a stream identity; a &lt;channel demultiplexer&gt; removes it and selects the corresponding output. Add an explicit per-stream end marker, since closing the shared &lt;message-passing channel&gt; cannot identify which producer has finished. `End(i)` is represented by `None`; `Some(x)` represents a genuine value, including a `null` value if the application permits one.
+
+```
+final case class MUX[T](stream: Int, item: Option[T])
+```
+
+The following &lt;Communicating Scala Objects&gt; implementation uses a synchronous one-to-one `mid`. As in part (a), a short timer detects closure even when no communication is enabled. Only the &lt;channel multiplexer&gt; owns the input ports, and only the &lt;channel demultiplexer&gt; owns the output ports. The &lt;channel multiplexer&gt; takes at most one input value before its corresponding `mid` write; it never accepts a second input while that write is pending.
+
+```
+def iMux[T](ins: Seq[?[T]], mid: ![MUX[T]]): PROC = proc {
+  val ended = Array.fill(ins.length)(false)
+  val poll = 1000000L
+  try {
+    while (mid.canOutput &amp;&amp; ended.contains(false)) {
+      for (i &lt;- ins.indices if !ended(i) &amp;&amp; !ins(i).canInput) {
+        mid ! MUX[T](i, None)
+        ended(i) = true
+      }
+      if (ended.contains(false)) {
+        alt(
+          (| (for (i &lt;- ins.indices) yield
+            (!ended(i) &amp;&amp; ins(i)) =?=&gt; { x =&gt; mid ! MUX(i, Some(x)) }))
+          | after(poll) ==&gt; { () }
+        )
+      }
+    }
+  } catch { case _: io.threadcso.process.Stopped =&gt; () }
+  finally { ins.foreach(_.closeIn); mid.closeOut }
+}
+
+def iDemux[T](mid: ?[MUX[T]], outs: Seq[![T]]): PROC = proc {
+  val ended = Array.fill(outs.length)(false)
+  val poll = 1000000L
+  try {
+    while (mid.canInput &amp;&amp; ended.contains(false) &amp;&amp;
+           outs.indices.forall(i =&gt; ended(i) || outs(i).canOutput)) {
+      alt(
+        mid =?=&gt; { packet =&gt;
+          val i = packet.stream
+          require(i &gt;= 0 &amp;&amp; i &lt; outs.length &amp;&amp; !ended(i))
+          packet.item match {
+            case Some(x) =&gt; outs(i) ! x
+            case None =&gt; ended(i) = true; outs(i).closeOut
+          }
+        }
+        | after(poll) ==&gt; { () }
+      )
+    }
+  } catch { case _: io.threadcso.process.Stopped =&gt; () }
+  finally { mid.closeIn; outs.foreach(_.closeOut) }
+}
+```
+
+For each stream, the output &lt;sequence&gt; remains a prefix of its accepted input &lt;sequence&gt;. One value can be pending in the &lt;channel demultiplexer&gt;, and one in the &lt;channel multiplexer&gt;, possibly from the same stream. Hence its discrepancy is at most two:
+$$
+\boxed{N=2\text{ is a valid per-stream storage bound for this implementation}.}
+$$
+There is a shared total of two pending values, so these processes do not supply the independent readiness of a parallel collection of capacity-two &lt;strict buffers&gt;. An unready consumer blocks the &lt;channel demultiplexer&gt;'s ordinary send; the &lt;channel multiplexer&gt; can accept one further value and then blocks too. This is &lt;head-of-line blocking&gt;.
+
+The &lt;alternation&gt; may choose an input unfairly; replacing its selection policy by round-robin selection helps among simultaneously ready producers. Even fair input choice cannot compensate for a consumer that blocks the entire &lt;channel demultiplexer&gt;. Closed-input scanning does allow a producer's end marker eventually to reach its consumer, but only after the shared transport and any earlier delivery become serviceable. Its own accepted values precede its end marker, so that consumer drains cleanly.
+
+Consumer-driven closure is more restrictive. With no return &lt;message-passing channel&gt;, the sender cannot promptly learn which producer should stop. This implementation deliberately shuts down the whole &lt;multiplexed channel&gt; when it detects any unfinished consumer closing, thereby cancelling the other pairs too. If the &lt;channel demultiplexer&gt; is already blocked on some other consumer, even that detection waits for the blocked send. Thus producer-driven ends can be represented separately but need not be delivered promptly; consumer-driven cancellation is global and need not be detected promptly. Merely adding an end marker does not solve either delay.
+
+=== e
+{scope}
+
+==== Solution
+
+Use a return &lt;control channel&gt; to carry both cancellation and one-slot &lt;flow control&gt;. The latter is what prevents a silent consumer from obstructing other streams. Keep the preceding `MUX` type and add
+
+```
+sealed trait CTRL
+final case class Grant(stream: Int) extends CTRL
+final case class Cancel(stream: Int) extends CTRL
+```
+
+Here is a precise event-loop specification of the modified generators. `choose` means a fair &lt;Communicating Scala Objects&gt; &lt;guarded alternation&gt; over the listed input events, output events and a short closure-poll timer; every selected transition below is finite and contains no further blocking communication. An output transition commits its state change only after its selected send succeeds. The notation is operational pseudocode, with the requested signatures; it does not introduce an assumed nonblocking send primitive.
+
+```
+def iMux[T](ins: Seq[?[T]], ctrl: ?[CTRL], mid: ![MUX[T]]): PROC
+  for each stream i:
+    credit[i] = true; inputOpen[i] = true; terminal[i] = false
+    pending[i] = None                     // Option[MUX[T]]
+  until every terminal[i]:
+    poll closures:
+      if !ins[i].canInput: inputOpen[i] = false
+      if !terminal[i] &amp;&amp; !inputOpen[i] &amp;&amp; pending[i].isEmpty:
+        pending[i] = Some(MUX(i, None))   // end follows earlier data
+    choose:
+      ctrl ? Grant(i):
+        if !terminal[i]: credit[i] = true
+      ctrl ? Cancel(i):
+        terminal[i] = true; pending[i] = None; ins[i].closeIn
+      ins[i] ? x, enabled when inputOpen[i] &amp;&amp; !terminal[i]
+                              &amp;&amp; credit[i] &amp;&amp; pending[i].isEmpty:
+        credit[i] = false; pending[i] = Some(MUX(i, Some(x)))
+      mid ! pending[i].get, enabled when pending[i].nonEmpty:
+        if pending[i].get.item.isEmpty: terminal[i] = true
+        pending[i] = None
+      poll timer: no action
+  finally: close every ins[i] input; close mid output and ctrl input
+
+def iDemux[T](ctrl: ![CTRL], mid: ?[MUX[T]], outs: Seq[![T]]): PROC
+  for each stream i:
+    slot[i] = None; ended[i] = false; cancelled[i] = false
+  replies = empty FIFO queue of CTRL
+  until every (cancelled[i] || (ended[i] &amp;&amp; slot[i].isEmpty)):
+    poll closures:
+      if !cancelled[i] &amp;&amp; !ended[i] &amp;&amp; !outs[i].canOutput:
+        cancelled[i] = true; slot[i] = None
+        delete any queued Grant(i); append Cancel(i) to replies
+      if !cancelled[i] &amp;&amp; ended[i] &amp;&amp; slot[i].nonEmpty
+                                      &amp;&amp; !outs[i].canOutput:
+        cancelled[i] = true; slot[i] = None
+      if ended[i] &amp;&amp; slot[i].isEmpty: outs[i].closeOut
+    choose:
+      mid ? MUX(i, Some(x)):
+        if !cancelled[i]: assert slot[i].isEmpty; slot[i] = Some(x)
+      mid ? MUX(i, None):
+        ended[i] = true
+      outs[i] ! slot[i].get, enabled when !cancelled[i] &amp;&amp; slot[i].nonEmpty:
+        slot[i] = None
+        if !ended[i]: append Grant(i) to replies
+      ctrl ! replies.front, enabled when replies.nonEmpty:
+        remove replies.front
+      poll timer: no action
+  finally: close mid input, every output, and ctrl output
+```
+
+There is one receive event on `mid`, with the two packet forms dispatched in its body, and one send event on `mid`, offering a fairly chosen pending stream. There is likewise one send event on `ctrl`. If `mid` becomes exhausted, the &lt;channel demultiplexer&gt; marks any remaining streams ended, discards queued replies, and drains or cancels their slots; the sender has then finished and needs no more grants. If the control input closes, the &lt;channel multiplexer&gt; enters cleanup. If the receiver finds its control output closed, it discards queued replies and disables further control sends, but continues receiving end markers and draining its slots; sender completion must not discard already accepted values. A channel closing during an individual guarded operation is handled locally: a failed `outs(i)` send cancels that stream and queues `Cancel(i)` unless it had already ended; exhaustion of a shared port uses the cleanup rules just stated. Ports that closed while their data events were disabled are found by the poll. These rules specify closure handling as well as normal transitions.
+
+The credit starts at one and is consumed when an input is accepted. It is returned only after the corresponding output finishes. Thus the one permitted outstanding value for stream $i$ is either pending at the sender or stored at the receiver, never both. An end marker needs no credit and follows that stream's last data packet on the ordered shared &lt;message-passing channel&gt;. It can arrive while that value is still waiting for its consumer; the receiver then delays closing the output until its slot empties. The invariant is
+$$
+\boxed{0\leq |I_i|-|O_i|\leq 1\quad\text{until stream }i\text{ is cancelled}.}
+$$
+As in a &lt;strict buffer&gt;, cancellation can discard the last outstanding value. A cancelled receiver ignores a data packet already in flight; a later grant cannot resurrect a cancelled sender. No selected data delivery blocks the event loop, and control replies are queued rather than sent inside a receive handler. In particular, there is no cycle in which the sender blocks sending data while the receiver blocks sending cancellation. Closing the control output at final receiver termination also releases the sender if a last cancellation was still queued.
+
+Under fair event selection and eventual scheduling, an individual cancellation reaches its producer without waiting for any unrelated consumer. Producer closure similarly delivers its own end marker without waiting for another stream to drain. This gives finite &lt;flow control&gt; equivalent in ordering and termination to capacity-one &lt;strict buffers&gt;, with finite protocol delays. A physical shared &lt;message-passing channel&gt; necessarily serializes transfers, so instantaneous readiness and absolute real-time delay bounds are not identical to physically separate buffers.
+
+== 2
+{scope}
+
+=== a
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+A &lt;directed graph&gt; needs an explicit termination argument. After assigning its &lt;parent in a rooted tree&gt;, a &lt;vertex&gt; must still receive later traffic: having no new &lt;graph neighbours&gt; to discover is not proof that other senders have finished. Use a discovery wave together with duplicate-suppressed announcements of activated &lt;vertices&gt;. Both kinds of message identify their immediate sender, who has already activated.
+
+```
+sealed trait Msg { def from: NodeId }
+final case class Discover(from: NodeId) extends Msg
+final case class Active(from: NodeId, origin: NodeId) extends Msg
+```
+
+Let `adj = neighbours.distinct`. The actual communication objects must expose both input and output ports: the paper's `Seq[![Msg]]` annotation supplies only output capabilities, although the following sentence also requires receiving. Set up one shared-writer, single-reader buffered &lt;message-passing channel&gt; per &lt;vertex&gt;, publish its output in `toNode`, and keep its input in `fromNode`. Only node `i` reads `fromNode(i)`. These are the two ports of the same underlying mailbox, not additional &lt;graph edges&gt;. The question's prohibition on buffered &lt;message-passing channels&gt; applies to Question 1(a), not to this question.
+
+Take $N\geq1$, reliable delivery, eventual scheduling, finite `adj`, and mailbox capacity $B=N(N+1)$. Every node has at most $N$ distinct incoming neighbours, including itself if there is a self-loop. The bound below ensures that no send blocks merely because a mailbox's receiver is not currently reading. Do not close these shared mailboxes on local process termination: late, redundant traffic is harmless and bounded. Their creator can release them after the parallel composition has joined. For example, the concrete setup can use
+
+```
+val mailbox = Vector.fill(N)(N2NBuf[Msg](B, 0, 1))
+val toNode: Seq[![Msg]] = mailbox
+val fromNode: Seq[?[Msg]] = mailbox
+```
+
+Here the zero writer count makes the shared output independent of individual writer departures; processes do not call its `closeOut` during the search.
+
+```
+def span: PROC = proc {
+  val adj = neighbours.distinct
+  var started = false
+  val known = scala.collection.mutable.Set[NodeId]()
+
+  def announce(origin: NodeId): Unit = {
+    if (!known(origin)) {
+      known += origin
+      for (w &lt;- adj) toNode(w) ! Active(me, origin)
+    }
+  }
+  def activate(sender: NodeId): Unit = {
+    started = true
+    parent = if (me == 0) 0 else sender
+    for (w &lt;- adj if me == 0 || w != parent)
+      toNode(w) ! Discover(me)
+    announce(me)
+  }
+
+  if (me == 0) activate(0)
+  while (known.size &lt; N) {
+    val message = fromNode(me) ? ()
+    if (!started) activate(message.from)
+    message match {
+      case Discover(_) =&gt; ()
+      case Active(_, origin) =&gt; announce(origin)
+    }
+  }
+}
+```
+
+An announcement may be a &lt;vertex&gt;'s first incoming message. It then serves as a discovery message too: its immediate sender is already active, and the receiving &lt;vertex&gt; adopts that sender as its &lt;parent in a rooted tree&gt; before forwarding anything. This preserves the required first-message rule. In particular, an inactive &lt;vertex&gt; never forwards announcements while remaining inactive, which could invalidate the parent-order argument.
+
+For each nonroot &lt;vertex&gt;, its &lt;parent in a rooted tree&gt; activated strictly earlier. Repeated parent-following therefore cannot make a &lt;graph cycle&gt; and eventually reaches the unique initially active &lt;vertex&gt;, zero. Each parent assignment uses an actual incoming &lt;directed edge&gt;. &lt;Strong connectivity&gt; ensures eventual activation of every &lt;vertex&gt;: if an activated set were proper, a &lt;directed path&gt; from zero to an inactive &lt;vertex&gt; would have a first edge leaving that set. Its sender sends a discovery message along that edge; excluding its own parent does not exclude an inactive neighbour.
+
+Each activation sends at most one `Discover` on each outgoing &lt;directed edge&gt;. For each of the $N$ origins, each &lt;vertex&gt; forwards `Active` at most once on each outgoing &lt;directed edge&gt;. Therefore a mailbox receives at most $N(N+1)$ messages over the whole run, proving the chosen nonblocking storage bound. Each origin's announcement eventually reaches every &lt;vertex&gt;, since every first receipt forwards it on all outgoing &lt;directed edges&gt;. Thus every `known` set reaches size $N$ and every process terminates, even if redundant messages remain unread:
+$$
+\boxed{\mathrm{parent}(0)=0;\quad \mathrm{parent}(v)\text{ is the sender of }v\text{'s first message},\ v\ne0.}
+$$
+No timeout is used to conclude that the distributed work has finished. This uses larger finite mailboxes to make the termination proof simple, rather than assuming that simultaneous synchronous broadcasts cannot &lt;deadlock&gt;.
+
+==== ii
+{scope}
+
+===== Solution
+
+Use one logical traversal token carrying the discovered &lt;vertex set&gt; and the active &lt;LIFO stack&gt; of &lt;vertices&gt;. The current &lt;vertex&gt; either discovers its first still-unvisited outgoing &lt;graph neighbour&gt;, or returns to its preceding &lt;stack&gt; entry. The former records both the child's &lt;parent in a rooted tree&gt; and the parent's child. Unlike concurrent flooding discovery, this visits one entire branch before the next, giving an actual &lt;depth-first search&gt;.
+
+The important directed-graph detail is that a child's parent need not be an outgoing &lt;graph neighbour&gt;. Return the token by routing it through the original &lt;directed graph&gt;; a routing hop does not count as a traversal visit. The following duplicate-suppressed flooding route requires no previously known topology and sends only to immediate outgoing &lt;graph neighbours&gt;.
+
+```
+final case class Token(visited: Set[NodeId], stack: List[NodeId], serial: Int)
+sealed trait Msg
+final case class Route(serial: Int, target: NodeId, token: Token) extends Msg
+case object Finished extends Msg
+```
+
+Here `stack.head` is the current &lt;vertex&gt;. Use the same paired `toNode` and `fromNode` ports as in (i), now with the new `Msg` type. Set mailbox capacity to $B=N(2N+1)$, normalize neighbours with `distinct`, and again leave the mailboxes open until all processes have joined. The following helpers are local functions inside each node's generated process.
+
+```
+def span: PROC = proc {
+  val adj = neighbours.distinct
+  val routed = scala.collection.mutable.Set[Int]()
+  var entered = false
+  var done = false
+
+  def flood(message: Msg): Unit =
+    for (w &lt;- adj) toNode(w) ! message
+
+  def move(target: NodeId, state: Token): Unit = {
+    val s = state.serial + 1
+    routed += s
+    flood(Route(s, target, state.copy(serial = s)))
+  }
+
+  def step(t: Token): Unit = {
+    assert(t.stack.head == me)
+    if (!entered) {
+      entered = true
+      parent = if (t.stack.tail.isEmpty) me else t.stack.tail.head
+      children = Nil
+    }
+    adj.find(w =&gt; !t.visited(w)) match {
+      case Some(w) =&gt;
+        children = children :+ w
+        move(w, Token(t.visited + w, w :: t.stack, t.serial))
+      case None =&gt;
+        t.stack.tail match {
+          case p :: rest =&gt; move(p, t.copy(stack = p :: rest))
+          case Nil =&gt; flood(Finished); done = true
+        }
+    }
+  }
+
+  if (me == 0) step(Token(Set(0), List(0), 0))
+  while (!done) {
+    fromNode(me) ? () match {
+      case r @ Route(s, target, t) =&gt;
+        if (!routed(s)) {
+          routed += s
+          if (target == me) step(t) else flood(r)
+        }
+      case Finished =&gt; flood(Finished); done = true
+    }
+  }
+}
+```
+
+Every route number is globally unique: there is one logical token, and its serial increases at every move. The sender inserts that serial in its own `routed` set before flooding; this stops a returning copy from circulating again. Intermediate &lt;vertices&gt; forward the first copy of an envelope and ignore later copies. Its target consumes exactly one copy without forwarding it. Because the &lt;directed graph&gt; is strongly connected, a simple &lt;directed path&gt; from sender to target exists; its intermediate &lt;vertices&gt; eventually relay the envelope. Thus each move eventually finishes.
+
+A routed return can pass through a &lt;vertex&gt; not yet discovered by the &lt;depth-first search&gt;. That &lt;vertex&gt; only forwards the envelope: it does not run `step`, change `entered`, or assign a parent. This distinction is essential. For the directed cycle $0\to1\to2\to0$, returning from two to one uses $2\to0\to1$, while the logical traversal &lt;stack&gt; changes from $(2,1,0)$ to $(1,0)$.
+
+\Image[concurrent-programming-2015-directed-return.png]
+{title=A &lt;depth-first search&gt; return follows a routed &lt;directed path&gt; when the child has no reverse &lt;directed edge&gt;}
+
+The discovered &lt;vertex set&gt; only grows. Each newly discovered &lt;vertex&gt; is pushed once and later popped once; an exhausted &lt;vertex&gt; can never acquire a new unvisited neighbour as this set grows. Consequently there are exactly $N-1$ downward moves and $N-1$ return moves. When the root exhausts its outgoing &lt;graph neighbours&gt;, every &lt;vertex&gt; has been visited, by the standard &lt;reachability&gt; argument for &lt;depth-first search&gt;. Each nonroot parent was recorded along the actual downward &lt;directed edge&gt;, and `children` records exactly those assignments in discovery order.
+
+There are $2(N-1)$ route envelopes, each forwarded at most once per outgoing &lt;directed edge&gt;, and one final `Finished` flood. Each node forwards `Finished` before exiting; &lt;strong connectivity&gt; therefore delivers it everywhere. There are at most $N(2N-1)$ total messages into any mailbox, below the proposed capacity. Even a mailbox whose process has already exited cannot block later sends. All processes terminate with
+$$
+\boxed{\text{the parent and ordered children of a depth-first spanning tree rooted at }0.}
+$$
+This deliberately trades communication efficiency for a simple valid solution on a genuinely &lt;directed graph&gt;. A direct parent acknowledgement would instead require an additional bidirectional-edge assumption, which the question does not supply.
+
+=== b
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+Use the recorded child &lt;list&gt; as the &lt;depth-first traversal&gt; order. A &lt;leaf of a tree&gt; has no children, so it contributes its own identity once. Closure cancels the remaining traversal; a normal completion closes the output so that a consumer can detect end-of-fringe.
+
+```
+def dfFringe(node: Array[Node], root: NodeId, fringe: ![NodeId]): PROC = proc {
+  def walk(v: NodeId): Unit = {
+    val cs = node(v).children
+    if (cs.isEmpty) fringe ! v
+    else cs.foreach(walk)
+  }
+  try { walk(root) }
+  catch { case _: io.threadcso.process.Stopped =&gt; () }
+  finally { fringe.closeOut }
+}
+```
+
+A completed finite &lt;spanning tree&gt; has no recursive child &lt;graph cycle&gt;, so this visits a finite number of &lt;vertices&gt;. A blocked leaf send is released if its output closes. A singleton root is itself a &lt;leaf of a tree&gt; and is output once. With sufficient call-stack space,
+$$
+\boxed{\text{emit each leaf once in child-list depth-first order; catch closure and close the port}.}
+$$
+
+==== ii
+{scope}
+
+===== Solution
+
+Run two `dfFringe` producers on synchronous one-to-one &lt;message-passing channels&gt;, and compare one received leaf from each. Catch closure separately on each input: otherwise the first closure could hide an extra value in the other fringe. An extra value or unequal pair is enough to stop immediately.
+
+```
+def sameFringe(node1: Array[Node], root1: NodeId,
+               node2: Array[Node], root2: NodeId): Boolean = {
+  val a = OneOne[NodeId]
+  val b = OneOne[NodeId]
+  var equal = true
+
+  def next(p: ?[NodeId]): Option[NodeId] =
+    try { Some(p ? ()) }
+    catch { case _: io.threadcso.process.Stopped =&gt; None }
+
+  val compare = proc {
+    var done = false
+    try {
+      while (!done) {
+        val x = next(a)
+        val y = next(b)
+        (x, y) match {
+          case (None, None) =&gt; done = true
+          case (Some(u), Some(v)) if u == v =&gt; ()
+          case _ =&gt; equal = false; done = true
+        }
+      }
+    } finally { a.closeIn; b.closeIn }
+  }
+  (dfFringe(node1, root1, a) || dfFringe(node2, root2, b) || compare)()
+  equal
+}
+```
+
+After $k$ successful comparisons, the first $k$ identities in the two leaf &lt;sequences&gt; agree. The first differing pair disproves &lt;equality&gt; of &lt;sequences&gt;; simultaneous exhaustion proves it; exhaustion on exactly one side disproves it. Therefore,
+$$
+\boxed{\mathrm{sameFringe}=\mathrm{true}\iff\text{the ordered leaf sequences agree, including length}.}
+$$
+Closing both inputs on every comparator exit releases either producer if it is waiting in an output. The closure handler in `dfFringe` then returns normally, and the parallel composition joins before `equal` is read. For finite &lt;trees&gt; and eventual scheduling, the comparator's next read either obtains a leaf or observes completion, so there is no &lt;deadlock&gt; caused by reading the two inputs in a fixed order.
+
+Only a constant amount of leaf data is stored. After an early mismatch, each producer may already have traversed toward its next leaf and be blocked offering it; cancellation prevents unbounded speculation or deliberate construction of the remaining fringe. Occasionally a short unequal fringe is already completely traversed when its final distinguishing value is compared. The streaming guarantee is that neither complete fringe needs to be materialized in advance, and work stops as soon as inequality is established.
+
+== 3
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+A &lt;counting semaphore&gt; holds a nonnegative number of permits. `down` waits until a permit is available and consumes one; `up` returns a permit and can release a waiting caller. A &lt;binary semaphore&gt; restricts the number available to zero or one. Unlike a &lt;mutex&gt;, a &lt;semaphore&gt; need not be released by the same &lt;software thread&gt; that acquired it; this permits producer-to-consumer signalling.
+
+Interpret `maxCount` as the initial number of permits and, for this bounded implementation, the maximum permitted number of unmatched releases. An `up` beyond that capacity is a programming error, rather than a blocking operation. Clients obey this release discipline. If an unbounded &lt;counting semaphore&gt; is desired instead, remove the upper-bound requirement and use a sufficiently wide counter; a capacity-one instance is binary only under the corresponding balanced-use discipline.
+
+```
+class CountingSemaphore(maxCount: Int) extends Semaphore {
+  require(maxCount &gt; 0)
+  private var count = maxCount
+  def down: Unit = synchronized {
+    while (count == 0) wait()
+    count -= 1
+  }
+  def up: Unit = synchronized {
+    require(count &lt; maxCount, "unmatched semaphore release")
+    count += 1
+    notify()
+  }
+}
+```
+
+All accesses to `count` occur under the same &lt;monitor&gt;. `wait` atomically releases that &lt;monitor&gt; while sleeping, then reacquires it before returning. The `while` is needed because of &lt;spurious wakeups&gt; and because another caller can consume the returned permit before the notified caller reacquires the &lt;monitor&gt;. Only `down` callers wait here, and they all wait on the same predicate; hence waking one with `notify` is sufficient. A later `up` notifies another waiter if necessary. This use of `notify` will not be safe for the mixed predicates in the next part.&lt;Java 8 Object API documentation&gt;[notify and wait: arbitrary notification choice, monitor reacquisition and spurious wakeups]{ref}
+
+A &lt;binary semaphore&gt; initially available is `new CountingSemaphore(1)`. To initialize it unavailable, call its `down` once during construction, before publishing it to other &lt;software threads&gt;. Its state obeys
+$$
+\boxed{0\leq\mathrm{count}\leq\mathrm{maxCount};\quad\mathrm{down}:c\mapsto c-1\ (c&gt;0),\quad\mathrm{up}:c\mapsto c+1.}
+$$
+This implementation provides no first-come-first-served guarantee: a new caller can acquire the &lt;monitor&gt; before a notified waiter. The following examples assume ordinary successful execution without cancellation or interruption of a partially completed buffer operation.
+
+=== b
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+Use one &lt;monitor&gt; to protect both the occupied flag and the slot. `Option` supplies an empty marker without confusing an empty slot with a valid `null` payload.
+
+```
+class MonitorMemory[T] extends Memory[T] {
+  private var slot: Option[T] = None
+  def write(msg: T): Unit = synchronized {
+    while (slot.nonEmpty) wait()
+    slot = Some(msg)
+    notifyAll()
+  }
+  def read: T = synchronized {
+    while (slot.isEmpty) wait()
+    val result = slot.get
+    slot = None
+    notifyAll()
+    result
+  }
+}
+```
+
+A writer changes empty to full while holding the &lt;monitor&gt;; a reader changes full to empty while holding the same &lt;monitor&gt;. The corresponding successful assignment or removal is its &lt;linearization point&gt;. No second writer can overwrite a full slot, and no two readers can remove one value. Rechecking in a `while` handles &lt;spurious wakeups&gt; and competition after notification.
+
+There are two different waiting predicates on the same &lt;monitor&gt;: writers need empty, readers need full. A single arbitrary `notify` could wake a caller of the wrong kind. For example, after a reader empties the slot, waking another reader leaves it waiting again while a writer remains asleep, potentially stranding the computation. `notifyAll` prevents that &lt;lost wake-up&gt; pattern by allowing every waiter to recheck. Thus,
+$$
+\boxed{\text{one protected slot, two while-guarded waits, and notifyAll after either state change}.}
+$$
+With many users, each change wakes numerous &lt;software threads&gt; even though at most one can use that new slot state. Most reacquire the &lt;monitor&gt;, find their predicate false and sleep again. This &lt;thundering herd&gt; wastes &lt;context switches&gt; and lock acquisitions. It also supplies no fairness or arrival-order guarantee.
+
+==== ii
+{scope}
+
+===== Solution
+
+Give the two waiting predicates different &lt;semaphores&gt;. `empty` has one permit initially; `full` has zero. A writer takes the empty permit before touching the slot and transfers permission to a reader by releasing `full`. A reader does the reverse.
+
+```
+class SemaphoreMemory[T] extends Memory[T] {
+  private val empty: Semaphore = new CountingSemaphore(1)
+  private val full: Semaphore = {
+    val s = new CountingSemaphore(1)
+    s.down
+    s
+  }
+  private var slot: Option[T] = None
+
+  def write(msg: T): Unit = {
+    empty.down
+    slot = Some(msg)
+    full.up
+  }
+  def read: T = {
+    full.down
+    val result = slot.get
+    slot = None
+    empty.up
+    result
+  }
+}
+```
+
+For a single slot, a separate &lt;mutex&gt; around `slot` is unnecessary. There is a unique circulating permission: either an empty permit is available, a writer holds it, a full permit is available, or a reader holds it. During the transition the sum of available permits can be zero; it is never necessary to assert that it is always one. In particular, the next writer cannot start until the preceding reader has finished reading, cleared the slot and released `empty`.
+
+The &lt;monitor&gt; operations inside each &lt;semaphore&gt; also establish the required &lt;happens-before&gt; relation: the write precedes `full.up`, and a successful subsequent `full.down` makes it visible to the reader. Likewise, the reader's clearing precedes the next writer's successful `empty.down`. Slot accesses therefore need no unsynchronized visibility assumption. The invariant is
+$$
+\boxed{\text{exactly one slot-access permission, alternating writer then reader}.}
+$$
+Only writers wait on `empty`, and only readers wait on `full`. With the single-notification &lt;semaphore&gt; implementation in part (a), a state change wakes at most one waiter of the appropriate kind, avoiding the &lt;thundering herd&gt; of part (i). This is an efficiency improvement, not yet a first-come-first-served guarantee.
+
+If one or more readers arrive before the first writer, they block on the initially unavailable `full` &lt;semaphore&gt;. Their waits release its &lt;monitor&gt;, so they do not prevent a writer from obtaining the independent `empty` permit. The first write releases `full` and permits exactly one reader to take that value. Remaining readers wait for later writes; they never see uninitialized storage.
+
+==== iii
+{scope}
+
+===== Solution
+
+A &lt;FIFO semaphore&gt; must reserve a released permit for the oldest waiter. Merely waking the oldest caller is insufficient if a newcomer can consume the permit first. Keep an explicit &lt;FIFO queue&gt; of private wait records, and transfer the permit directly to the oldest record. Each record has its own &lt;monitor&gt;, so releasing a permit wakes exactly its chosen recipient.
+
+```
+class FifoBinarySemaphore(initiallyAvailable: Boolean) extends Semaphore {
+  private final class Waiter { var granted = false }
+  private val queue = scala.collection.mutable.Queue[Waiter]()
+  private var available = initiallyAvailable
+
+  def down: Unit = {
+    val mine: Option[Waiter] = synchronized {
+      if (available) {
+        assert(queue.isEmpty)
+        available = false
+        None
+      } else {
+        val w = new Waiter
+        queue.enqueue(w)
+        Some(w)
+      }
+    }
+    mine.foreach { w =&gt;
+      var interrupted = false
+      w.synchronized {
+        while (!w.granted) {
+          try { w.wait() }
+          catch { case _: InterruptedException =&gt; interrupted = true }
+        }
+      }
+      if (interrupted) Thread.currentThread().interrupt()
+    }
+  }
+
+  def up: Unit = synchronized {
+    if (queue.nonEmpty) {
+      val w = queue.dequeue()
+      // available stays false: this permit is reserved for w.
+      w.synchronized {
+        w.granted = true
+        w.notify()
+      }
+    } else {
+      require(!available, "unmatched binary-semaphore release")
+      available = true
+    }
+  }
+}
+```
+
+The wait loop is deliberately uninterruptible with interruption status restored after acquisition: abandoning a queued wait record would otherwise strand its reserved permit. A caller that acquires must still complete the buffer operation. `granted` is read and written under the wait record's own &lt;monitor&gt;. The persistent flag prevents a &lt;lost wake-up&gt; if `up` runs after registration but before the caller begins waiting. &lt;Spurious wakeups&gt; simply repeat the loop.
+
+The outer &lt;monitor&gt; serializes registration and the &lt;FIFO queue&gt;. A caller either consumes a genuinely free permit when nobody is queued, or appends one record. `up` removes exactly the front record and leaves `available` false, even if its owner has not yet resumed. A newcomer must queue behind existing records instead of stealing the handoff. The outer-to-inner &lt;lock ordering&gt; in `up` is safe because waiting callers release the outer &lt;monitor&gt; before acquiring their private &lt;monitors&gt;; no caller holds a private &lt;monitor&gt; while trying to reacquire the outer one.
+
+Now use the same buffer body as in (ii), replacing only the initialization of its two fields:
+
+```
+private val empty: Semaphore = new FifoBinarySemaphore(true)
+private val full: Semaphore = new FifoBinarySemaphore(false)
+```
+
+This is a complete implementation when inserted in `SemaphoreMemory`: its `write` and `read` methods remain exactly the displayed methods. Pending writers obtain empty-slot permissions in registration order on `empty`; pending readers obtain full-slot permissions in registration order on `full`. Each handoff permits just one caller to access the slot, so
+$$
+\boxed{\text{writers are FIFO among writers, and readers are FIFO among readers}.}
+$$
+First-come-first-served means the order in which concurrent calls register under the &lt;monitor&gt;; two overlapping calls have no externally determined order. The guarantee is separate for the two kinds of caller. A global order combining reads and writes cannot be required: an initial read must wait while a later write supplies its value. Subject to eventual scheduling and the arrival of matching operations of the opposite kind, no registered caller is overtaken by a later caller of its own kind. The design avoids broadcast wakeups as well as barging.
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Past exam of the year 1 of the computer science course of the University of Oxford / 2022 / Digital systems, linear algebra, introduction to formal proof resit / 2 / a / Solution - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="Past exam of the year 1 of the computer science course of the University of Oxford / 2022 / Digital systems, linear algebra, introduction to formal proof resit / 2 / a / Solution - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="solution"><div class="notnav"><h1><a href="../../../../../past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford">Past exam of the year 1 of the computer science course of the University of Oxford</a><span class="meta"> / </span><a href="../../../../2022">2022</a><span class="meta"> / </span><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof-resit">Digital systems, linear algebra, introduction to formal proof resit</a><span class="meta"> / </span><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof-resit#2">2</a><span class="meta"> / </span><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof-resit#2/a">a</a><span class="meta"> / </span><a href="">Solution</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a  href="#-/ancestors">&nbsp;...</a><a href="../../../../../university-of-oxford#year-1-of-the-computer-science-course-of-the-university-of-oxford"> Year 1 of the computer science course of the University of Oxford</a><a href="../../../../../past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford"> Past exam of the year 1 of the computer science course of the University of Oxford</a><a href="../../../../2022"> 2022</a><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof-resit"> Digital systems, linear algebra, introduction to formal proof resit</a><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof-resit#2"> 2</a><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof-resit#2/a"> a</a></div><div class="nav"><a href="https://ourbigbook.com/codex/past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2022/digital-systems-linear-algebra-introduction-to-formal-proof-resit/2/a/solution"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a><a class="nosplit" href="../../../digital-systems-linear-algebra-introduction-to-formal-proof-resit#2/a/solution"></a><span class="metrics"><span class="wcntr"> Words: 562</span></span></div></nav></div><div class="p" id="-/16">Keep successive timestamps in raw unsigned ticks, and convert their modular difference to milliseconds only after subtraction. The first pulse establishes a timestamp; it does not create a fictitious interval from startup. Store valid intervals in a five-element <a href="../../../../../data-structure#circular-buffer">ring buffer</a>. During startup, average the one to four intervals actually available; return zero until there is at least one valid interval. Here zero is explicitly an unavailable-data sentinel.</div><div class="p" id="-/17">The following <a href="../../../../../programming-language#c-programming-language">C programming language</a> code uses the supplied register names through an abstract <a href="../../../../../computer-science#memory-mapped-input-output">memory-mapped input-output</a> register interface. The board port supplies the actual register mapping and interrupt vector; no undocumented addresses are assumed. The two interrupt-mask hooks have the exact semantics described below and are interface requirements, not names asserted to exist in an unspecified device library.</div><div class="code" id="-/18"><div><pre><code>#include &lt;stdint.h&gt;
+#include &lt;stdbool.h&gt;
+
+struct gpio_registers { volatile uint32_t EVENT; };
+struct timer_registers { volatile uint32_t COUNT; };
+extern struct gpio_registers GPIO;
+extern struct timer_registers TIMER;
+
+uint32_t irq_save_disable(void);
+void irq_restore(uint32_t old_mask);
+
+static volatile uint32_t interval_ms[5];
+static volatile uint32_t next_slot = 0;
+static volatile uint32_t valid = 0;
+static volatile uint32_t previous_tick = 0;
+static volatile bool have_previous = false;
+
+void gpio_handler(void)
+{
+    if (GPIO.EVENT == 0)
+        return;
+    uint32_t now = TIMER.COUNT;
+    GPIO.EVENT = 0;                 /* acknowledge with the specified write */
+    if (have_previous) {
+        uint32_t ticks = now - previous_tick;
+        interval_ms[next_slot] = ticks / UINT32_C(16000);
+        next_slot = (next_slot + 1) % 5;
+        if (valid &lt; 5)
+            ++valid;
+    } else {
+        have_previous = true;
+    }
+    previous_tick = now;
+}
+
+uint32_t get_pulse(void)
+{
+    uint32_t local[5];
+    uint32_t mask = irq_save_disable();
+    uint32_t n = valid;
+    for (uint32_t i = 0; i &lt; n; ++i)
+        local[i] = interval_ms[i];
+    irq_restore(mask);             /* restore the earlier mask, not just enable */
+
+    if (n == 0)
+        return 0;
+    uint64_t total = 0;
+    for (uint32_t i = 0; i &lt; n; ++i)
+        total += local[i];
+    if (total == 0)
+        return 0;
+    /* Mean duration is total/n milliseconds; round bpm to nearest integer. */
+    return (uint32_t)((UINT64_C(60000) * n + total / 2) / total);
+}</code></pre></div></div><div class="p" id="-/19">Before the buffer fills, its valid entries occupy positions <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em;"></span><span class="mord">0</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">n</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">1</span></span></span></span>. Once full, all five positions are valid, so their order is irrelevant to their sum. The conversion uses 16,000 ticks per millisecond. Truncating each interval introduces less than one millisecond of error per interval. The desired conversion is <b><span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0497em;vertical-align:-0.2997em;"></span><span class="mord">60000</span><span class="mord mathnormal">n</span><span class="mord">/</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mop"><span class="mop op-symbol small-op" style="position:relative;top:0em;">∑</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.162em;"><span style="top:-2.4003em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2997em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord">Δ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> beats per minute</b>, the reciprocal of the mean interval; averaging the individual values <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord">60000/</span><span class="mord"><span class="mord">Δ</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span> is generally different.</div><div class="p" id="-/20"><code>irq_save_disable</code> saves the previous interrupt mask and prevents the GPIO handler from running until <code>irq_restore</code> restores that mask. Both hooks must include compiler memory barriers. On an appropriate privileged Cortex-M target, the implementation can use <code>MRS PRIMASK</code>, <code>CPSID i</code> and <code>MSR PRIMASK</code>, with a compiler memory clobber. These target operations implement <a href="../../../../../operating-system#interrupt-masking">interrupt masking</a>; they are not expressible as portable ISO C alone. One concrete GCC/Clang-compatible privileged Cortex-M port for those hooks is:</div><div class="code" id="-/21"><div><pre><code>uint32_t irq_save_disable(void)
+{
+    uint32_t old_mask;
+    __asm__ volatile ("mrs %0, primask\n\tcpsid i"
+                      : "=r" (old_mask) : : "memory");
+    return old_mask;
+}
+
+void irq_restore(uint32_t old_mask)
+{
+    __asm__ volatile ("msr primask, %0"
+                      : : "r" (old_mask) : "memory");
+}</code></pre></div></div><div class="p" id="-/22">The compiler memory clobbers prevent access motion across the mask changes. Saving and restoring the entire prior mask is intentional; an unconditional enable would break an enclosing <a href="../../../../../operating-system#critical-section">critical section</a>.<a href="../../../../../computer-science-bibliography#cmsis-core-register-access-documentation-by-arm" class="ref-trigger"><sup class="ref">[ref]</sup></a><template class="ref-content"><div class="ref-popover" popover="auto" role="dialog" aria-label="Reference" tabindex="-1"><a href="../../../../../computer-science-bibliography#cmsis-core-register-access-documentation-by-arm">CMSIS-Core register access documentation by Arm</a>. PRIMASK, __get_PRIMASK, __disable_irq and __set_PRIMASK</div></template></div><div class="p" id="-/23">All state is initialized before enabling the peripheral interrupt. Assume the timer read is coherent, the handler is not reentered, and the device follows the stated write-zero acknowledgment semantics.</div><h2 id="-/ancestors"><a href="#-/ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(12)</span></a></h2><div class="list"><ol><li><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof-resit#2/a">A</a></li><li><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof-resit#2">2</a></li><li><a href="../../../digital-systems-linear-algebra-introduction-to-formal-proof-resit">Digital systems, linear algebra, introduction to formal proof resit</a></li><li><a href="../../../../2022">2022</a></li><li><a href="../../../../../past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford">Past exam of the year 1 of the computer science course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#year-1-of-the-computer-science-course-of-the-university-of-oxford">Year 1 of the computer science course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#computer-science-course-of-the-university-of-oxford">Computer science course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#undergraduate-course-of-the-university-of-oxford">Undergraduate course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford#course-of-the-university-of-oxford">Course of the University of Oxford</a></li><li><a href="../../../../../university-of-oxford">University of Oxford</a></li><li><a href="../../../../..#list-of-universities">List of universities</a></li><li><a href="../../../../.."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+<div>Source code for this page: <a href="../../../../../-/file/past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2022/digital-systems-linear-algebra-introduction-to-formal-proof-resit.bigb">past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2022/digital-systems-linear-algebra-introduction-to-formal-proof-resit.bigb</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2022/digital-systems-linear-algebra-introduction-to-formal-proof-resit/2/a/";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

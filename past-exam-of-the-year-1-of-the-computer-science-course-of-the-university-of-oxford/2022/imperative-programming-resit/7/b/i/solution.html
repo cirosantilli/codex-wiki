@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Past exam of the year 1 of the computer science course of the University of Oxford / 2022 / Imperative programming (resit) / 7 / b / i / Solution - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="Past exam of the year 1 of the computer science course of the University of Oxford / 2022 / Imperative programming (resit) / 7 / b / i / Solution - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../../" class="brand"><img class="openai-logo" src="../../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="solution"><div class="notnav"><h1><a href="../../../../../../past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford">Past exam of the year 1 of the computer science course of the University of Oxford</a><span class="meta"> / </span><a href="../../../../../2022">2022</a><span class="meta"> / </span><a href="../../../../imperative-programming-resit">Imperative programming (resit)</a><span class="meta"> / </span><a href="../../../../imperative-programming-resit#7">7</a><span class="meta"> / </span><a href="../../../../imperative-programming-resit#7/b">b</a><span class="meta"> / </span><a href="../../../../imperative-programming-resit#7/b/i">i</a><span class="meta"> / </span><a href="">Solution</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a  href="#-/ancestors">&nbsp;...</a><a href="../../../../../../past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford"> Past exam of the year 1 of the computer science course of the University of Oxford</a><a href="../../../../../2022"> 2022</a><a href="../../../../imperative-programming-resit"> Imperative programming (resit)</a><a href="../../../../imperative-programming-resit#7"> 7</a><a href="../../../../imperative-programming-resit#7/b"> b</a><a href="../../../../imperative-programming-resit#7/b/i"> i</a></div><div class="nav"><a href="https://ourbigbook.com/codex/past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2022/imperative-programming-resit/7/b/i/solution"><img src="../../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a><a class="nosplit" href="../../../../imperative-programming-resit#7/b/i/solution"></a><span class="metrics"><span class="wcntr"> Words: 280</span></span></div></nav></div><div class="p" id="-/128">Keep a <a href="../../../../../../data-structure#fifo-queue">FIFO queue</a> of pending child <a href="../../../../../../data-structure#iterator">iterators</a>, ordered by the breadth-first order of their parents. Defer even the call creating a node's children until that <a href="../../../../../../data-structure#iterator">iterator</a> reaches the front and is needed:</div><div class="code" id="-/129"><div><pre><code>def breadthFirst[T](node: Node[T]): Iter[Node[T]] = {
+  def childrenLater(n: Node[T]): Iter[Node[T]] = new Iter[Node[T]] {
+    private lazy val children = n.children()
+    def hasNext: Boolean = children.hasNext
+    def next(): Node[T] = {
+      require(children.hasNext, "empty child iterator")
+      children.next()
+    }
+  }
+
+  val pending = scala.collection.mutable.Queue.empty[Iter[Node[T]]]
+  pending.enqueue(childrenLater(node))
+
+  new Iter[Node[T]] {
+    private def normalize(): Unit = {
+      while (pending.nonEmpty &amp;&amp; !pending.head.hasNext) pending.dequeue()
+    }
+    def hasNext: Boolean = {
+      normalize()
+      pending.nonEmpty
+    }
+    def next(): Node[T] = {
+      normalize()
+      require(pending.nonEmpty, "no more descendants")
+      val answer = pending.head.next()
+      pending.enqueue(childrenLater(answer))
+      answer
+    }
+  }
+}</code></pre></div></div><div class="p" id="-/130">Here <b>“descendants” excludes the supplied root</b>: the first output is its first child. A self-inclusive convention can prepend <code>unitIter(node)</code> without changing the traversal logic. The queue invariant says its <a href="../../../../../../data-structure#iterator">iterators</a> enumerate the still-unreported children of already encountered parents, in parent breadth-first order. Consuming one child appends that child's deferred <a href="../../../../../../data-structure#iterator">iterator</a> after all earlier parents' pending children. Exhausted child <a href="../../../../../../data-structure#iterator">iterators</a> contribute nothing and can be discarded. This proves increasing depth and sibling order without constructing a complete level in advance.</div><div class="p" id="-/131">This <a href="../../../../../../tree-graph-theory#lazy-breadth-first-traversal-with-child-iterators">lazy breadth-first traversal with child iterators</a> never eagerly materializes all children or the whole tree. A finite prefix can therefore be traversed on a genuinely infinite tree. As with any strict breadth-first ordering, an infinite earlier level prevents reaching a deeper level; no algorithm can place a deeper node after every member of an infinite earlier level at a finite output position. For a <a href="../../../../../../graph-theory#locally-finite-tree">locally finite tree</a>, every finite-depth level is finite and each descendant is eventually reached, assuming the underlying <a href="../../../../../../data-structure#iterator">iterator</a> operations terminate. Fresh child <a href="../../../../../../data-structure#iterator">iterators</a> and exclusive ownership of consumed <a href="../../../../../../data-structure#iterator">iterator</a> states are essential to this argument.</div><h2 id="-/ancestors"><a href="#-/ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(13)</span></a></h2><div class="list"><ol><li><a href="../../../../imperative-programming-resit#7/b/i">I</a></li><li><a href="../../../../imperative-programming-resit#7/b">B</a></li><li><a href="../../../../imperative-programming-resit#7">7</a></li><li><a href="../../../../imperative-programming-resit">Imperative programming (resit)</a></li><li><a href="../../../../../2022">2022</a></li><li><a href="../../../../../../past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford">Past exam of the year 1 of the computer science course of the University of Oxford</a></li><li><a href="../../../../../../university-of-oxford#year-1-of-the-computer-science-course-of-the-university-of-oxford">Year 1 of the computer science course of the University of Oxford</a></li><li><a href="../../../../../../university-of-oxford#computer-science-course-of-the-university-of-oxford">Computer science course of the University of Oxford</a></li><li><a href="../../../../../../university-of-oxford#undergraduate-course-of-the-university-of-oxford">Undergraduate course of the University of Oxford</a></li><li><a href="../../../../../../university-of-oxford#course-of-the-university-of-oxford">Course of the University of Oxford</a></li><li><a href="../../../../../../university-of-oxford">University of Oxford</a></li><li><a href="../../../../../..#list-of-universities">List of universities</a></li><li><a href="../../../../../.."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+<div>Source code for this page: <a href="../../../../../../-/file/past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2022/imperative-programming-resit.bigb">past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2022/imperative-programming-resit.bigb</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "past-exam-of-the-year-1-of-the-computer-science-course-of-the-university-of-oxford/2022/imperative-programming-resit/7/b/i/";
+</script>
+<script src="../../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

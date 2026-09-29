@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>stellar-gamow-window-s-factor.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="stellar-gamow-window-s-factor.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/stellar-gamow-window-s-factor.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">stellar-gamow-window-s-factor.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/stellar-gamow-window-s-factor.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/stellar-gamow-window-s-factor.py">stellar-gamow-window-s-factor.py</a></b></div></nav></div><div class="p"><b>stellar-gamow-window-s-factor.py</b></div><div class="code"><div><pre><code>"""Original reaction-window example; Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7.
+
+Run from _media; writes stellar-gamow-window-s-factor.png to the current directory.
+All shapes are analytic toy curves, not measured energy distributions.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def model():
+    kt = 8.617333262e-8 * 15e6  # keV
+    eg = 493.0  # chosen rounded proton-proton Gamow energy, keV
+    e0 = (eg * kt**2 / 4) ** (1 / 3)
+    sigma = np.sqrt(2 * e0 * kt / 3)
+    energy = np.linspace(0.002, 18, 16000)
+    phi = energy / kt + np.sqrt(eg / energy)
+    kernel = np.exp(-phi + 3 * e0 / kt)
+    maxwell = np.sqrt(energy) * np.exp(-energy / kt)
+    maxwell /= np.sqrt(kt / 2) * np.exp(-0.5)
+    s_ratio = 1 + 5 * np.exp(-0.5 * ((energy - 10) / 0.7) ** 2)
+    return kt, e0, sigma, energy, kernel, maxwell, s_ratio
+
+
+def main():
+    kt, e0, sigma, energy, kernel, maxwell, s_ratio = model()
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                         "axes.spines.right": False, "figure.facecolor": "white"})
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.8), layout="constrained")
+    blue, orange, green = "#1768a2", "#c55a11", "#16806a"
+    ax = axes[0]
+    ax.plot(energy, maxwell, color=blue, label=r"Maxwell energy density: $\sqrt{E}e^{-E/kT}$")
+    ax.plot(energy, kernel, color=orange, label=r"Constant-$S$ reaction kernel")
+    ax.axvspan(e0 - np.sqrt(2) * sigma, e0 + np.sqrt(2) * sigma,
+               color=orange, alpha=0.12, label=r"Gaussian full $e^{-1}$ window")
+    ax.axvline(e0, color=orange, ls=":", lw=1.4)
+    ax.text(e0 - 2.7, 1.07, rf"$E_0={e0:.2f}$ keV", color=orange)
+    ax.set(title="Most particles are below the reaction window",
+           xlabel="Relative kinetic energy E (keV)", ylabel="Each curve divided by its own peak",
+           xlim=(0, 16), ylim=(0, 1.18))
+    ax.legend(loc="upper right", fontsize=9, frameon=False)
+    ax = axes[1]
+    ax.plot(energy, kernel, color=orange, label=r"Constant $S=S_0$")
+    ax.plot(energy, s_ratio * kernel, color=green, label=r"Toy localized $S(E)$ enhancement")
+    ax.axvline(10, color=green, ls=":", lw=1.3)
+    ax.text(10.35, 2.32, "Chosen feature\nat 10 keV", color=green, fontsize=10)
+    ax.set(title="Nuclear structure can change which energies matter",
+           xlabel="Relative kinetic energy E (keV)",
+           ylabel="Integrand / constant-S peak", xlim=(0, 16), ylim=(0, 2.7))
+    ax.legend(loc="upper left", fontsize=9, frameon=False)
+    for ax in axes:
+        ax.grid(alpha=0.18)
+    fig.suptitle(r"A Gamow window is a weighting kernel, not a particle histogram", fontsize=15)
+    fig.supxlabel(r"Chosen p+p barrier, T = 15 MK; $S/S_0=1+5\exp[-(E-10)^2/(2\times0.7^2)]$ (E in keV)", fontsize=11)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=110, facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

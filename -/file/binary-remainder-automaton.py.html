@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>binary-remainder-automaton.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="binary-remainder-automaton.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/binary-remainder-automaton.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">binary-remainder-automaton.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/binary-remainder-automaton.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/binary-remainder-automaton.py">binary-remainder-automaton.py</a></b></div></nav></div><div class="p"><b>binary-remainder-automaton.py</b></div><div class="code"><div><pre><code>"""Draw the divisibility-by-three DFA; write the basename PNG to cwd.
+
+Tested with Python 3.14 and matplotlib 3.10; uses only stdlib/matplotlib.
+"""
+
+from itertools import product
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, FancyArrowPatch
+
+
+def trace(word):
+    states = [0]
+    for digit in word:
+        states.append((2 * states[-1] + int(digit)) % 3)
+    return states
+
+
+def verify():
+    rows = []
+    for length in range(9):
+        accepted = 0
+        for digits in product("01", repeat=length):
+            word = "".join(digits)
+            value = int(word, 2) if word else 0
+            states = trace(word)
+            assert states[-1] == value % 3, (word, states, value)
+            accepted += states[-1] == 0
+        rows.append((length, 2**length, accepted))
+    assert trace("110") == [0, 1, 0, 0]
+    assert trace("101") == [0, 1, 2, 2]
+    print("length, words, accepted:", rows)
+    print("Verified all 511 binary words of lengths 0 through 8.")
+
+
+def main():
+    verify()
+    ink, blue, green, red = "#233546", "#2166ac", "#19734b", "#a53b36"
+    fig = plt.figure(figsize=(8.3, 5.5), dpi=130, facecolor="white")
+    ax = fig.add_axes((0.04, 0.36, 0.92, 0.50))
+    ax.set(xlim=(-0.8, 8.0), ylim=(-1.1, 1.45), aspect="equal")
+    ax.axis("off")
+    centers = [(0.8, 0), (3.7, 0), (6.6, 0)]
+    for source, target, digit in [(0, 1, "1"), (1, 0, "1"),
+                                   (1, 2, "0"), (2, 1, "0")]:
+        start, end = centers[source], centers[target]
+        ax.add_patch(FancyArrowPatch(
+            start, end, arrowstyle="-|&gt;", mutation_scale=17,
+            shrinkA=30, shrinkB=30, connectionstyle="arc3,rad=0.35",
+            linewidth=1.8, color=blue))
+        ax.text((start[0] + end[0]) / 2,
+                -0.67 if source &lt; target else 0.67, digit,
+                ha="center", va="center", fontsize=16, color=blue,
+                bbox={"facecolor": "white", "edgecolor": "none", "pad": 1})
+    for state, digit in [(0, "0"), (2, "1")]:
+        x, y = centers[state]
+        ax.add_patch(FancyArrowPatch(
+            (x - 0.23, y + 0.27), (x + 0.23, y + 0.27),
+            arrowstyle="-|&gt;", mutation_scale=15,
+            connectionstyle="arc3,rad=-2.4", linewidth=1.8, color=blue))
+        ax.text(x, 1.06, digit, fontsize=16, ha="center", color=blue)
+    ax.add_patch(FancyArrowPatch((-0.65, 0), (0.38, 0),
+                               arrowstyle="-|&gt;", mutation_scale=17,
+                               linewidth=1.8, color=ink))
+    ax.text(-0.35, 0.20, "start", ha="center", fontsize=11, color=ink)
+    for state, (x, y) in enumerate(centers):
+        ax.add_patch(Circle((x, y), 0.36, facecolor="white",
+                            edgecolor=green if state == 0 else ink,
+                            linewidth=2, zorder=3))
+        if state == 0:
+            ax.add_patch(Circle((x, y), 0.29, fill=False,
+                                edgecolor=green, linewidth=1.4, zorder=4))
+        ax.text(x, y, str(state), fontsize=19, ha="center", va="center", zorder=5)
+    fig.text(0.5, 0.95, "Binary integers divisible by 3", ha="center",
+             fontsize=19, color=ink)
+    fig.text(0.5, 0.90, r"State = remainder     $\delta(r,b)=(2r+b)\;\mathrm{mod}\;3$",
+             ha="center", fontsize=13, color=ink)
+    fig.text(0.5, 0.34, "Arrow labels are input bits; double circle means accepting.",
+             ha="center", fontsize=11, color=ink)
+    for word, y, color, outcome in [("110", 0.24, green, "accept"),
+                                     ("101", 0.15, red, "reject")]:
+        states = trace(word)
+        fig.text(0.10, y, rf"${word}_2={int(word, 2)}$", fontsize=15, color=ink)
+        for k, state in enumerate(states):
+            fig.text(0.36 + 0.12 * k, y, str(state), fontsize=16,
+                     color=color, ha="center")
+            if k:
+                x = 0.30 + 0.12 * k
+                fig.text(x, y, "→", fontsize=17, ha="center", color=color)
+                fig.text(x, y + 0.033, word[k - 1], fontsize=10,
+                         ha="center", color=blue)
+        fig.text(0.84, y, outcome, fontsize=13, color=color, ha="center")
+    fig.text(0.5, 0.05, "Leading zeros allowed; the empty word stays at 0 and is accepted.",
+             ha="center", fontsize=11, color=ink)
+    fig.savefig(Path.cwd() / "binary-remainder-automaton.png",
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

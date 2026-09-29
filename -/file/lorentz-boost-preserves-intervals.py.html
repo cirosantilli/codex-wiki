@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>lorentz-boost-preserves-intervals.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="lorentz-boost-preserves-intervals.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/lorentz-boost-preserves-intervals.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">lorentz-boost-preserves-intervals.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/lorentz-boost-preserves-intervals.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/lorentz-boost-preserves-intervals.py">lorentz-boost-preserves-intervals.py</a></b></div></nav></div><div class="p"><b>lorentz-boost-preserves-intervals.py</b></div><div class="code"><div><pre><code>"""Three events under an exact beta=4/5 Lorentz boost.
+
+The same event labels are used in minkowski-light-cone-events.py.
+Outputs an opaque matching PNG to CWD; Python 3.14, NumPy 2.3.5,
+Matplotlib 3.10.7.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 12})
+    beta, gamma = 4/5, 5/3
+    # Columns are x and ct, in light-seconds.
+    original = np.array([[3, 4], [3, 3], [3, 2]], dtype=float)
+    transformed = np.column_stack([
+        gamma*(original[:, 0]-beta*original[:, 1]),
+        gamma*(original[:, 1]-beta*original[:, 0]),
+    ])
+    colors = ["#275aa0", "#29795c", "#bb6430"]
+    fig, axes = plt.subplots(1, 2, figsize=(11.8, 6.8), dpi=100,
+                             facecolor="white")
+    fig.subplots_adjust(left=0.07, right=0.97, bottom=0.19, top=0.81, wspace=0.24)
+    labels = [
+        ["A: (3, 4)", "N: (3, 3)", "B: (3, 2)"],
+        ["A: (−1/3, 8/3)", "N: (1, 1)", "B: (7/3, −2/3)"],
+    ]
+    label_positions = [
+        [(0.7, 4.45), (3.22, 3.0), (3.22, 1.62)],
+        [(-3.85, 3.38), (1.45, 1.04), (0.75, -1.6)],
+    ]
+    for panel, (ax, data) in enumerate(zip(axes, [original, transformed])):
+        x = np.linspace(-4.2, 4.7, 401)
+        ax.fill_between(x, np.abs(x), 5.0, color="#eef4fc", zorder=0)
+        ax.fill_between(x, -np.abs(x), -2.1,
+                        where=np.abs(x)&lt;2.1, color="#f1f4f8", zorder=0)
+        ax.plot(x, x, color="#85ae98", linewidth=1.4)
+        ax.plot(x, -x, color="#85ae98", linewidth=1.4)
+        ax.axhline(0, color="#727d89", linewidth=0.8)
+        ax.axvline(0, color="#727d89", linewidth=0.8)
+        for index, ((ex, et), color) in enumerate(zip(data, colors)):
+            ax.scatter([ex], [et], color=color, s=65, edgecolor="white", zorder=5)
+            ax.annotate(labels[panel][index], xy=(ex, et),
+                        xytext=label_positions[panel][index], color=color,
+                        fontsize=11, arrowprops={"arrowstyle": "-", "color": color})
+        ax.scatter([0], [0], color="#273643", s=40, zorder=5)
+        ax.text(-0.4, -0.5, "O")
+        ax.set(xlim=(-4.2, 4.7), ylim=(-2.1, 5.0), aspect="equal",
+               xlabel=("x" if panel == 0 else "x′") + "  [light-seconds]",
+               ylabel=("ct" if panel == 0 else "ct′") + "  [light-seconds]")
+        ax.grid(alpha=0.15)
+        ax.set_title("Frame S" if panel == 0 else "Frame S′, moving at +0.8c",
+                     fontsize=13, pad=12)
+    fig.suptitle("Coordinates change; the Minkowski intervals stay fixed",
+                 fontsize=16, y=0.965)
+    fig.text(0.5, 0.885, "ct′ = (5/3)(ct − 0.8x)     x′ = (5/3)(x − 0.8ct)",
+             ha="center", fontsize=12)
+    fig.text(0.5, 0.06,
+             "A: s² = −7     N: s² = 0     B: s² = 5   [light-seconds squared]\n"
+             "B is later than O in S and earlier in S′.  It remains spacelike in both.",
+             ha="center", fontsize=11, linespacing=1.5)
+    fig.savefig(Path.cwd() / "lorentz-boost-preserves-intervals.png",
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

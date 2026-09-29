@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>controllability-pulse-span.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="controllability-pulse-span.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/controllability-pulse-span.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">controllability-pulse-span.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/controllability-pulse-span.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/controllability-pulse-span.py">controllability-pulse-span.py</a></b></div></nav></div><div class="p"><b>controllability-pulse-span.py</b></div><div class="code"><div><pre><code>"""Analytic double-integrator timing diagram; no measured data.
+
+Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-matplotlib python3 ../controllability-pulse-span.py
+Outputs controllability-pulse-span.png to CWD.
+Tested: Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7+dfsg1.
+All coordinates are dimensionless. Only NumPy and Matplotlib are required.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def trajectory(t):
+    """Exact p,v for u=+1 on [0,1), then -1 on [1,2]."""
+    q = np.maximum(t - 1, 0)
+    return t**2 / 2 - q**2, t - 2 * q
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "axes.titlesize": 12})
+    fig, axs = plt.subplots(1, 3, figsize=(10.6, 3.9), layout="constrained")
+    fig.set_facecolor("white")
+    blue, orange = "#176b9a", "#cc7024"
+    fig.suptitle("One input, two endpoint directions: double integrator at T = 2", fontsize=15)
+    left, middle, right = axs
+    left.plot([0, 1, 1, 2], [1, 1, -1, -1], color=blue, lw=3)
+    left.axhline(0, color="#999999", lw=0.8)
+    left.set(xlim=(-0.06, 2.06), ylim=(-1.45, 1.55), xlabel="Time t", ylabel="Acceleration input u", title="Accelerate, then brake")
+    left.set_xticks([0, 1, 2])
+    left.set_yticks([-1, 0, 1])
+    left.text(0.5, 1.18, "+1", ha="center", color=blue)
+    left.text(1.5, -1.25, "−1", ha="center", color=blue)
+
+    t = np.linspace(0, 2, 801)
+    p, v = trajectory(t)
+    middle.plot(p[t &lt;= 1], v[t &lt;= 1], color=blue, lw=3)
+    middle.plot(p[t &gt;= 1], v[t &gt;= 1], color=orange, lw=3)
+    middle.scatter([0, 0.5, 1], [0, 1, 0], c=["#333333", blue, orange], s=35, zorder=4)
+    middle.annotate("Start (0, 0)", (0, 0), xytext=(0.04, -0.16), fontsize=10)
+    middle.annotate("Switch (½, 1)", (0.5, 1), xytext=(0.15, 1.16), fontsize=10)
+    middle.annotate("Rest again\n(1, 0)", (1, 0), xytext=(0.64, 0.16), fontsize=10)
+    for j, color in [(240, blue), (560, orange)]:
+        middle.annotate("", (p[j + 20], v[j + 20]), (p[j], v[j]), arrowprops={"arrowstyle": "-&gt;", "color": color, "lw": 2})
+    middle.set(xlim=(-0.09, 1.14), ylim=(-0.26, 1.4), xlabel="Position p", ylabel="Velocity v", title="Analytic state path")
+    middle.set_xticks([0, 0.5, 1])
+
+    # Endpoint contributions of unit-amplitude inputs on the two halves.
+    endpoint_map = np.array([[1.5, 0.5], [1, 1]])
+    assert np.isclose(np.linalg.det(endpoint_map), 1)
+    assert np.allclose(endpoint_map @ [1, -1], [1, 0])
+    for column, color in zip(endpoint_map.T, [blue, orange]):
+        right.annotate("", column, (0, 0), arrowprops={"arrowstyle": "-&gt;", "color": color, "lw": 3})
+    right.annotate("First half\n(3/2, 1)", (1.5, 1), xytext=(1.34, 1.2), ha="center", fontsize=10, color=blue)
+    right.annotate("Second half\n(1/2, 1)", (0.5, 1), xytext=(0.28, 1.2), ha="center", fontsize=10, color=orange)
+    right.plot([1.5, 1], [1, 0], ls="--", color=orange, lw=1.7)
+    right.scatter([0, 1], [0, 0], color="#333333", s=30, zorder=4)
+    right.text(0.96, -0.16, "Difference = (1, 0)", ha="center", fontsize=10)
+    right.text(0.85, -0.54, "det = 1 → rank 2\nReal amplitudes span the plane", ha="center", fontsize=10, bbox={"facecolor": "white", "edgecolor": "#cccccc", "boxstyle": "round,pad=0.3"})
+    right.set(xlim=(-0.26, 1.96), ylim=(-0.76, 1.68), xlabel="Final position p(2)", ylabel="Final velocity v(2)", title="Two independent contributions")
+    right.set_aspect("equal", adjustable="box")
+    for ax in axs:
+        ax.set_facecolor("white")
+        ax.grid(alpha=0.18)
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.text(0.5, -0.005, "Analytic mathematical example • dimensionless coordinates • no measurements", ha="center", fontsize=10)
+    fig.savefig(Path.cwd() / "controllability-pulse-span.png", dpi=120, facecolor="white", transparent=False, bbox_inches="tight")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

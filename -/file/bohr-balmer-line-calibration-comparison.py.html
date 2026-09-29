@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>bohr-balmer-line-calibration-comparison.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="bohr-balmer-line-calibration-comparison.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/bohr-balmer-line-calibration-comparison.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">bohr-balmer-line-calibration-comparison.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/bohr-balmer-line-calibration-comparison.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/bohr-balmer-line-calibration-comparison.py">bohr-balmer-line-calibration-comparison.py</a></b></div></nav></div><div class="p"><b>bohr-balmer-line-calibration-comparison.py</b></div><div class="code"><div><pre><code>"""Original synthetic line calibration exercise; Python 3.14, matplotlib 3.10, numpy 2.3."""
+
+from pathlib import Path
+import math
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    e, h, c = 1.602176634e-19, 6.62607015e-34, 299792458.0
+    epsilon = 8.8541878128e-12
+    electron, proton = 9.1093837015e-31, 1.67262192369e-27
+    mu = electron * proton / (electron + proton)
+    hbar = h / (2 * math.pi)
+    kappa = e**2 / (4 * math.pi * epsilon)
+    binding = mu * kappa**2 / (2 * hbar**2)
+    upper = np.arange(3, 7)
+    finite = h * c / (binding * (1 / 4 - 1 / upper**2)) * 1e9
+    fixed = finite * mu / electron
+    chosen_offset = 0.200
+    synthetic = finite + chosen_offset
+    fitted_finite = synthetic[0] - finite[0]
+    fitted_fixed = synthetic[0] - fixed[0]
+    residual_fixed = synthetic - fitted_fixed - fixed
+    residual_finite = synthetic - fitted_finite - finite
+    assert np.allclose(residual_finite, 0, atol=1e-10)
+    assert np.allclose(residual_fixed, (1 - mu / electron) * (finite - finite[0]), atol=1e-10)
+
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                         "axes.spines.right": False, "figure.facecolor": "white"})
+    fig, axes = plt.subplots(1, 2, figsize=(11, 5.8), dpi=110,
+                             gridspec_kw={"width_ratios": [1.10, 1]})
+    fig.subplots_adjust(left=0.19, right=0.98, bottom=0.23, top=0.77, wspace=0.32)
+    fig.suptitle("One calibration line does not test the whole series", fontsize=17, y=0.97)
+    fig.text(0.5, 0.885, "Chosen synthetic example · additive wavelength offset b = +0.200 nm",
+             ha="center", color="#444444")
+
+    local, residual = axes
+    rows = np.arange(4)
+    local.axvline(0, color="#999999", linewidth=1)
+    for row in rows:
+        local.hlines(row, -0.42, 0.28, color="#eeeeee", zorder=0)
+    local.scatter(fixed - finite, rows, marker="s", color="#ad512f", s=50,
+                  label="Fixed nucleus prediction", zorder=3)
+    local.scatter(np.zeros(4), rows, marker="o", facecolors="white", edgecolors="#235b88",
+                  linewidths=2, s=65, label="Finite mass prediction", zorder=4)
+    local.scatter(synthetic - finite, rows, marker="x", color="#333333", s=65,
+                  label="Synthetic position", zorder=4)
+    local.set_yticks(rows, [f"{n} → 2\nλ = {value:.3f} nm" for n, value in zip(upper, finite)])
+    local.set_ylim(3.5, -0.5)
+    local.set_xlim(-0.43, 0.29)
+    local.set_xlabel("Local offset from each finite mass λ (nm)")
+    local.set_title("Predictions before calibration", pad=17)
+    handles, labels = local.get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, 0.075),
+               ncols=3, fontsize=10, frameon=False)
+
+    residual.axhline(0, color="#888888", linewidth=1)
+    residual.plot(upper, residual_fixed, "s--", color="#ad512f", label="Fixed nucleus")
+    residual.plot(upper, residual_finite, "o-", color="#235b88", label="Finite mass")
+    for n, value in zip(upper[1:], residual_fixed[1:]):
+        residual.annotate(f"{value:.5f}", (n, value), xytext=(0, -17),
+                          textcoords="offset points", ha="center", fontsize=9, color="#ad512f")
+    residual.set_xticks(upper, [f"{n} → 2" for n in upper])
+    residual.set_xlim(2.7, 6.3)
+    residual.set_ylim(-0.18, 0.055)
+    residual.set_xlabel("Transition (3 → 2 is the calibration anchor)")
+    residual.set_ylabel("Synthetic − calibrated prediction (nm)")
+    residual.set_title("Test the other three lines", pad=17)
+    residual.legend(loc="lower left", bbox_to_anchor=(0, 1.0), ncols=2, fontsize=9,
+                    frameon=False, borderaxespad=0)
+    fig.text(0.5, 0.035, "No measured spectrum or intensity trace. Dispersion scale is assumed known; only the offset is fitted.",
+             ha="center", fontsize=10, color="#444444")
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

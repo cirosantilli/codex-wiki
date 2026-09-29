@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>simple-random-sampling-variance-and-population-coverage.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="simple-random-sampling-variance-and-population-coverage.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/simple-random-sampling-variance-and-population-coverage.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">simple-random-sampling-variance-and-population-coverage.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/simple-random-sampling-variance-and-population-coverage.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/simple-random-sampling-variance-and-population-coverage.py">simple-random-sampling-variance-and-population-coverage.py</a></b></div></nav></div><div class="p"><b>simple-random-sampling-variance-and-population-coverage.py</b></div><div class="code"><div><pre><code>"""Exact finite-population variance and distinct-label coverage; Python 3.14."""
+from itertools import combinations, product
+from pathlib import Path
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    values = np.arange(2, 13, 2)
+    population_size = len(values)
+    sizes = np.arange(1, population_size + 1)
+    variance_wor, variance_wr, coverage_wr = [], [], []
+    for n in sizes:
+        wor = np.array(list(combinations(values, int(n))))
+        wr = np.array(list(product(values, repeat=int(n))))
+        variance_wor.append(np.var(wor.mean(axis=1)))
+        variance_wr.append(np.var(wr.mean(axis=1)))
+        coverage_wr.append(np.mean([len(set(row)) / population_size for row in wr]))
+    S2 = np.var(values, ddof=1)
+    assert np.allclose(variance_wor, (1 - sizes / population_size) * S2 / sizes)
+    assert np.allclose(variance_wr, np.var(values) / sizes)
+    assert np.allclose(coverage_wr, 1 - (1 - 1 / population_size) ** sizes)
+    plt.rcParams.update({'font.size': 11, 'axes.spines.top': False,
+                         'axes.spines.right': False, 'figure.facecolor': 'white'})
+    fig, axes = plt.subplots(1, 2, figsize=(11, 5.3))
+    fig.suptitle('The same fixed population: 2, 4, 6, 8, 10, 12', fontsize=15, y=.97)
+    blue, orange = '#146b8c', '#c05b15'
+    ax = axes[0]
+    ax.plot(sizes, variance_wr, 's--', color=orange, label='Independent draws with replacement', lw=2)
+    ax.plot(sizes, variance_wor, 'o-', color=blue, label='Simple random sampling without replacement', lw=2)
+    ax.set(title='Exact variance of the sample mean', xlabel='Number of draws n',
+           ylabel='Variance', xticks=sizes, ylim=(-.35, 13))
+    ax.annotate('n = 2: 35/6', (2, 35 / 6), xytext=(2.7, 7.5), color=orange,
+                arrowprops={'arrowstyle': '-', 'color': orange})
+    ax.annotate('n = 2: 14/3', (2, 14 / 3), xytext=(2.8, 4.8), color=blue,
+                arrowprops={'arrowstyle': '-', 'color': blue})
+    ax.annotate('All six distinct labels:\nvariance = 0', (6, 0), xytext=(3.4, 9.5), color=blue,
+                arrowprops={'arrowstyle': '-&gt;', 'color': blue})
+    ax = axes[1]
+    ax.plot(sizes, sizes / population_size, 'o-', color=blue, lw=2)
+    ax.plot(sizes, coverage_wr, 's--', color=orange, lw=2)
+    ax.set(title='Expected fraction of distinct labels seen', xlabel='Number of draws n',
+           ylabel='Population coverage', xticks=sizes, ylim=(0, 1.08), yticks=np.arange(0, 1.01, .2))
+    ax.annotate('n/6: no duplicates', (4, 4 / 6), xytext=(1.1, .84), color=blue,
+                arrowprops={'arrowstyle': '-', 'color': blue})
+    ax.annotate('1 − (5/6)ⁿ\nSix draws: about 66.5%', (6, coverage_wr[-1]),
+                xytext=(2.4, .22), color=orange,
+                arrowprops={'arrowstyle': '-&gt;', 'color': orange})
+    for ax in axes:
+        ax.grid(alpha=.2)
+    fig.legend(*axes[0].get_legend_handles_labels(), loc='lower center', bbox_to_anchor=(.5, .095),
+               frameon=False, ncol=1, fontsize=10)
+    fig.text(.5, .035, 'Without replacement: dependent draws, Cov(Xᵣ, Xₛ) = −7/3 for r ≠ s.\n'
+             'Coverage here counts observed population labels; it is not confidence-interval coverage.',
+             ha='center', fontsize=10)
+    fig.subplots_adjust(left=.075, right=.97, bottom=.29, top=.81, wspace=.28)
+    fig.savefig(Path(__file__).stem + '.png', dpi=120, facecolor='white')
+    plt.close(fig)
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->
