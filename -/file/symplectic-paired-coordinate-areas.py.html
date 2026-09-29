@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>symplectic-paired-coordinate-areas.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="symplectic-paired-coordinate-areas.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/symplectic-paired-coordinate-areas.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">symplectic-paired-coordinate-areas.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/symplectic-paired-coordinate-areas.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/symplectic-paired-coordinate-areas.py">symplectic-paired-coordinate-areas.py</a></b></div></nav></div><div class="p"><b>symplectic-paired-coordinate-areas.py</b></div><div class="code"><div><pre><code>"""Draw symplectic coordinate pairs; output the matching PNG in the CWD.
+
+Tested with Python 3.14, matplotlib 3.10.7, numpy 2.3.5.
+Run from _media with MPLBACKEND=Agg MPLCONFIGDIR=/tmp/codex-wiki-matplotlib.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap, BoundaryNorm
+from matplotlib.patches import Polygon
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "axes.titlesize": 13})
+    a = np.array([2, 1, 1, 1])
+    b = np.array([1, 1, 0, 2])
+    j = np.block([[np.zeros((2, 2), dtype=int), np.eye(2, dtype=int)],
+                  [-np.eye(2, dtype=int), np.zeros((2, 2), dtype=int)]])
+    areas = [int(a[i] * b[i + 2] - a[i + 2] * b[i]) for i in range(2)]
+    assert areas == [-1, 1] and a @ j @ b == sum(areas) == 0
+    fig, axes = plt.subplots(1, 3, figsize=(11.2, 4.8),
+                             gridspec_kw={"width_ratios": [1, 1, 1.05]})
+    fig.set_facecolor("white")
+    for i, ax in enumerate(axes[:2]):
+        x, y = a[[i, i + 2]], b[[i, i + 2]]
+        ax.add_patch(Polygon([np.zeros(2), x, x + y, y],
+                             facecolor="#e7d8eb" if areas[i] &lt; 0 else "#d3e9df",
+                             edgecolor="#555555", linewidth=1.2))
+        for v, color, label, offset in [(x, "#176397", "$a$", (6, -16)),
+                                        (y, "#b74a28", "$b$", (7, 6))]:
+            ax.annotate("", v, (0, 0), arrowprops={"arrowstyle": "-&gt;", "color": color, "lw": 2.5})
+            ax.annotate(label, v, xytext=offset, textcoords="offset points", color=color, fontsize=13)
+        ax.set(xlim=(-.35, 3.6), ylim=(-.35, 3.6), aspect="equal",
+               xlabel=rf"$q_{i + 1}$ (along $e_{i + 1}$)",
+               ylabel=rf"$p_{i + 1}$ (along $f_{i + 1}$)",
+               title=f"Pair {i + 1}: signed area {areas[i]:+d}")
+        ax.set_xticks(range(4)); ax.set_yticks(range(4))
+        ax.grid(alpha=.17)
+        ax.spines[["top", "right"]].set_visible(False)
+    ax = axes[2]
+    cmap = ListedColormap(["#d9bcdf", "#ffffff", "#b8dfce"])
+    ax.imshow(j, cmap=cmap, norm=BoundaryNorm([-1.5, -.5, .5, 1.5], 3))
+    names = ["$e_1$", "$e_2$", "$f_1$", "$f_2$"]
+    ax.set_xticks(range(4), names); ax.set_yticks(range(4), names)
+    for row in range(4):
+        for col in range(4):
+            ax.text(col, row, str(j[row, col]), ha="center", va="center", fontsize=14)
+    ax.set_title("Pairing matrix $J$")
+    ax.set_xlabel("Second input"); ax.set_ylabel("First input")
+    ax.set_xticks(np.arange(-.5, 4, 1), minor=True)
+    ax.set_yticks(np.arange(-.5, 4, 1), minor=True)
+    ax.grid(which="minor", color="#888888", linewidth=.6)
+    ax.tick_params(which="minor", length=0)
+    fig.suptitle("Four-dimensional symplectic coordinates: two paired planes", fontsize=16, y=.97)
+    fig.text(.5, .035, r"$a=(2,1,1,1)^T,\quad b=(1,1,0,2)^T,\quad \omega(a,b)=-1+1=0$",
+             ha="center", fontsize=13)
+    fig.subplots_adjust(left=.065, right=.985, bottom=.2, top=.78, wspace=.42)
+    fig.savefig(Path(Path(__file__).stem + ".png"), dpi=100, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

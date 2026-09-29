@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>s3-two-coset-action-kernel.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="s3-two-coset-action-kernel.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/s3-two-coset-action-kernel.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">s3-two-coset-action-kernel.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/s3-two-coset-action-kernel.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/s3-two-coset-action-kernel.py">s3-two-coset-action-kernel.py</a></b></div></nav></div><div class="p"><b>s3-two-coset-action-kernel.py</b></div><div class="code"><div><pre><code>"""Draw the transitive, nonfaithful S3 action on two left cosets; PNG to cwd."""
+
+from itertools import permutations
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyBboxPatch
+
+
+def compose(p, q):
+    return tuple(p[j - 1] for j in q)
+
+
+def main():
+    group = list(permutations((1, 2, 3)))
+    e, t, r = (1, 2, 3), (2, 1, 3), (2, 3, 1)
+    n = {e, r, compose(r, r)}
+    cosets = [frozenset(n), frozenset(compose(t, a) for a in n)]
+    assert cosets[0].isdisjoint(cosets[1])
+    assert set.union(*(set(c) for c in cosets)) == set(group)
+    actions = {g: tuple(cosets.index(frozenset(compose(g, a) for a in c))
+                       for c in cosets) for g in group}
+    assert {g for g in group if actions[g] == (0, 1)} == n
+    assert set(actions.values()) == {(0, 1), (1, 0)}
+    assert actions[r] == (0, 1) and actions[t] == (1, 0)
+    assert [{g for g in group if actions[g][i] == i} for i in range(2)] == [n, n]
+    for a in group:
+        for b in group:
+            assert actions[compose(a, b)] == tuple(actions[a][j] for j in actions[b])
+
+    ink, blue, orange, gray = "#243344", "#166b99", "#a55719", "#d7dfe6"
+    fig = plt.figure(figsize=(10, 6.4), dpi=110, facecolor="white")
+    ax = fig.add_axes((0, 0, 1, 1))
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    ax.axis("off")
+    ax.text(.5, .953, r"$S_3$ on two left cosets: transitive, with a hidden kernel",
+            ha="center", fontsize=18, color=ink)
+    ax.text(.5, .9, r"$N=A_3=\{e,(123),(132)\}$ is normal",
+            ha="center", fontsize=13, color=ink)
+    for x, color, label, members, explanation in (
+        (.265, blue, r"$E=N$", r"$\{e,(123),(132)\}$", "Even permutations"),
+        (.735, orange, r"$O=(12)N$", r"$\{(12),(13),(23)\}$", "Odd permutations")):
+        ax.add_patch(FancyBboxPatch((x - .21, .696), .42, .15,
+                     boxstyle="round,pad=.006", facecolor="white", edgecolor=color, lw=1.8))
+        ax.text(x, .802, label, ha="center", fontsize=17, color=color)
+        ax.text(x, .755, members, ha="center", fontsize=15, color=ink)
+        ax.text(x, .711, explanation, ha="center", fontsize=11, color=color)
+    for left, g, label in ((.065, r, r"$(123)$ fixes both labels"),
+                            (.565, t, r"$(12)$ exchanges the labels")):
+        ax.text(left + .18, .641, label, ha="center", fontsize=13, color=ink)
+        xs = (left + .045, left + .305)
+        for i, x in enumerate(xs):
+            color = (blue, orange)[i]
+            ax.annotate("", xy=(xs[actions[g][i]], .413), xytext=(x, .552),
+                        arrowprops={"arrowstyle": "-|&gt;", "lw": 2.5,
+                                    "color": color, "mutation_scale": 17})
+            for y in (.584, .381):
+                ax.text(x, y, (r"$E$", r"$O$")[i], ha="center", va="center",
+                        fontsize=16, color=color, bbox={"facecolor": "white",
+                        "edgecolor": color, "boxstyle": "round,pad=.3"})
+    ax.plot([.035, .965], [.315, .315], color=gray, lw=1.5)
+    ax.text(.095, .262, r"$e,\ (123),\ (132)$", color=blue, fontsize=15)
+    ax.text(.535, .262, "all induce the identity", color=ink, fontsize=13)
+    ax.text(.095, .207, r"$(12),\ (13),\ (23)$", color=orange, fontsize=15)
+    ax.text(.535, .207, "all induce the exchange", color=ink, fontsize=13)
+    ax.text(.5, .124, r"$\ker\rho=N,\qquad S_3/N\cong C_2$",
+            ha="center", fontsize=18, color=ink)
+    ax.text(.5, .05, "2 cosets • 2 distinct induced permutations • 3 invisible elements",
+            ha="center", fontsize=13, color=ink)
+    out = Path.cwd() / (Path(__file__).stem + ".png")
+    fig.savefig(out, facecolor="white", transparent=False)
+    plt.close(fig)
+    print("Checked 12 coset images, 36 composition identities, transitivity and kernel A3.")
+    print(out)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

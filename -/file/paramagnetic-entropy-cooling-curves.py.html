@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>paramagnetic-entropy-cooling-curves.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="paramagnetic-entropy-cooling-curves.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/paramagnetic-entropy-cooling-curves.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">paramagnetic-entropy-cooling-curves.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/paramagnetic-entropy-cooling-curves.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/paramagnetic-entropy-cooling-curves.py">paramagnetic-entropy-cooling-curves.py</a></b></div></nav></div><div class="p"><b>paramagnetic-entropy-cooling-curves.py</b></div><div class="code"><div><pre><code>"""Plot an original ideal two-level refrigerator; Python 3.14 / mpl 3.10.7 / numpy 2.3.5.
+
+Run from _media; writes only basename.png to the current directory.
+The stipulated magnetic moment obeys mu/k_B = 1 K/T; no measured data.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def entropy(x):
+    # Stable evaluation, including the large-x entropy tail.
+    return np.logaddexp(0, -2 * x) + 2 * x / (np.exp(2 * x) + 1)
+
+
+def main():
+    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 11})
+    fig, (a, b) = plt.subplots(1, 2, figsize=(11, 5.2), facecolor="white")
+    t = np.linspace(0.025, 1.35, 800)
+    colors = ["#c77a22", "#478a52", "#4266ab"]
+    for field, color in zip([0.1, 0.2, 1.0], colors):
+        a.plot(t, entropy(field / t), color=color, lw=2.3, label=f"$B={field:g}$ T")
+    a.axhline(np.log(2), color="#717b86", linestyle=":", lw=1.3)
+    a.text(0.05, np.log(2) + 0.012, "$\\ln 2$", fontsize=11, color="#56616b")
+    a.axhline(entropy(np.array(1.0)), color="#4266ab", linestyle="--", alpha=0.55)
+    a.scatter([1, 1, 0.1], entropy(np.array([0.2, 1, 1])), c="#202c39", zorder=4)
+    for label, xy, offset in [("A", (1, entropy(np.array(0.2))), (8, -17)),
+                               ("B", (1, entropy(np.array(1.0))), (8, 8)),
+                               ("C", (0.1, entropy(np.array(1.0))), (8, 8))]:
+        a.annotate(label, xy, xytext=offset, textcoords="offset points", weight="bold")
+    a.set(xlim=(0, 1.35), ylim=(0, 0.75), xlabel="Temperature $T$ (K)",
+          ylabel="Magnetic entropy $S_{\\rm mag}/(N k_B)$", title="Same entropy at a smaller field and temperature")
+    a.legend(loc="lower right", frameon=True)
+    field = np.linspace(0.025, 1.2, 500)
+    for x, color in zip([0.4, 1, 2], colors):
+        b.plot(field, field / x, color=color, lw=2.2,
+               label=f"$x={x:g}$,  $s={entropy(np.array(x)):.3f}$")
+    b.annotate("", (1.0, 1.0), (0.2, 1.0),
+               arrowprops=dict(arrowstyle="-&gt;", color="#202c39", lw=2.5))
+    b.annotate("", (0.1, 0.1), (1.0, 1.0),
+               arrowprops=dict(arrowstyle="-&gt;", color="#202c39", lw=2.5))
+    for label, xy, offset in [("A", (0.2, 1), (-16, 9)), ("B", (1, 1), (9, 2)),
+                               ("C", (0.1, 0.1), (10, -3))]:
+        b.scatter(*xy, c="#202c39", zorder=5)
+        b.annotate(label, xy, xytext=offset, textcoords="offset points", weight="bold")
+    b.text(0.53, 1.055, "$T=T_b$: switch closed", ha="center", fontsize=10)
+    b.text(0.73, 0.4, "$S$ constant\nswitch open", ha="center", fontsize=10,
+           bbox=dict(facecolor="white", edgecolor="none", alpha=0.9))
+    b.set(xlim=(0, 1.2), ylim=(0, 1.35), xlabel="Applied magnetic field $B$ (T)",
+          ylabel="Temperature $T$ (K)", title="Preparation A → B, isolated cooling B → C")
+    b.legend(loc="upper right", fontsize=9, framealpha=0.95)
+    for ax in (a, b):
+        ax.grid(alpha=0.18)
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.text(0.5, 0.035, "Ideal independent two-level spins; chosen μ/kB = 1 K/T. Positive B and T only; no experimental data.",
+             ha="center", fontsize=10, color="#384c5e")
+    fig.subplots_adjust(left=0.075, right=0.98, wspace=0.27, top=0.89, bottom=0.17)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=120, facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>tunnel-diode-band-state-overlap.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="tunnel-diode-band-state-overlap.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/tunnel-diode-band-state-overlap.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">tunnel-diode-band-state-overlap.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/tunnel-diode-band-state-overlap.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/tunnel-diode-band-state-overlap.py">tunnel-diode-band-state-overlap.py</a></b></div></nav></div><div class="p"><b>tunnel-diode-band-state-overlap.py</b></div><div class="code"><div><pre><code>"""Original band/state diagram. Python 3.14; NumPy 2.3.5; Matplotlib 3.10.7.
+
+Run from _media. Energies are deliberately arbitrary; no device parameters fit.
+The n reservoir is left, p reservoir right; positive V lowers p electron energies.
+"""
+from pathlib import Path
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
+
+BLUE = '#2468a0'
+ORANGE = '#cc7420'
+GREEN = '#168253'
+GAP = 2.2
+ECN = -0.5
+EVP0 = 0.5
+
+
+def transfer_window(v):
+    """Zero-T same-energy occupied-to-empty intervals, arbitrary energy units."""
+    if v &gt;= 0:
+        return max(ECN, -v), min(0.0, EVP0 - v), 'n to p'
+    return max(0.0, -GAP), min(-v, EVP0 - v), 'p to n'
+
+
+def main():
+    plt.rcParams.update({'font.size': 10, 'axes.titlesize': 11,
+                         'figure.facecolor': 'white', 'axes.facecolor': 'white'})
+    fig, axes = plt.subplots(2, 3, figsize=(12, 7.2), sharey=True)
+    choices = [(0.0, 'Equilibrium'), (0.25, 'Forward: window opens'),
+               (0.70, 'Forward: window shrinks'), (1.15, 'Forward: no band overlap'),
+               (-0.70, 'Reverse: p to n transfer')]
+    for ax, (v, title) in zip(axes.flat, choices):
+        evp = EVP0 - v
+        ecp = evp + GAP
+        mup = -v
+        # Only neutral reservoir states are shaded. The barrier has no added states.
+        ax.fill_between([0, .30], -3.0, ECN-GAP, color=BLUE, alpha=.8)
+        ax.fill_between([0, .30], 0, 3.5, facecolor='white',
+                        edgecolor=ORANGE, hatch='///', linewidth=0)
+        ax.fill_between([0, .30], ECN, 0, color=BLUE, alpha=.8)
+        ax.fill_between([.70, 1], mup, evp, facecolor='white',
+                        edgecolor=ORANGE, hatch='///', linewidth=0)
+        ax.fill_between([.70, 1], -3.0, mup, color=BLUE, alpha=.8)
+        ax.fill_between([.70, 1], ecp, 3.5, facecolor='white',
+                        edgecolor=ORANGE, hatch='///', linewidth=0)
+        x = np.linspace(0, 1, 301)
+        u = np.clip((x-.30)/.40, 0, 1)
+        bend = u*u*(3-2*u)
+        ec = ECN + (ecp-ECN)*bend
+        ax.plot(x, ec, color='#303940', lw=1.6)
+        ax.plot(x, ec-GAP, color='#303940', lw=1.6)
+        ax.plot([0, .32], [0, 0], '--', color=BLUE, lw=1.4)
+        ax.plot([.68, 1], [mup, mup], '--', color=BLUE, lw=1.4)
+        ax.text(.015, .11, r'$\mu_n$', color=BLUE, fontsize=10)
+        ax.text(.88, mup+.10, r'$\mu_p$', color=BLUE, fontsize=10)
+        ax.text(.03, ECN-.25, r'$E_{c,n}$', fontsize=9)
+        ax.text(.73, evp+.13, r'$E_{v,p}$', fontsize=9)
+        lo, hi, direction = transfer_window(v)
+        if hi &gt; lo:
+            ax.plot([.50, .50], [lo, hi], color=GREEN, lw=5, solid_capstyle='butt')
+            e = (lo+hi)/2
+            ends = ((.24, e), (.76, e)) if v &gt; 0 else ((.76, e), (.24, e))
+            ax.annotate('', xy=ends[1], xytext=ends[0],
+                        arrowprops={'arrowstyle': '-&gt;', 'color': GREEN, 'lw': 2})
+            note = f'transfer window = {hi-lo:.2f}'
+        else:
+            note = 'net current = 0' if v == 0 else 'direct band transfer closed'
+        ax.text(.5, -3.43, note, ha='center', color=GREEN, fontsize=9)
+        ax.set_title(f'{title}\n$qV={v:+.2f}$ (chosen units)', pad=9)
+        ax.set_xlim(-.04, 1.04)
+        ax.set_ylim(-3.6, 3.65)
+        ax.set_xticks([.15, .50, .85], [r'$n^+$', 'thin barrier', r'$p^+$'])
+        ax.tick_params(axis='x', length=0)
+        ax.set_yticks([-2, 0, 2])
+        ax.spines[['top', 'right', 'bottom']].set_visible(False)
+        ax.set_ylabel('Electron energy (arbitrary units)')
+    key = axes.flat[-1]
+    key.axis('off')
+    key.legend(handles=[Patch(facecolor=BLUE, alpha=.8, label='occupied reservoir states'),
+                        Patch(facecolor='white', edgecolor=ORANGE, hatch='///',
+                              label='empty reservoir states'),
+                        Patch(facecolor=GREEN, label='same-energy transfer window')],
+               loc='upper left', frameon=False, fontsize=10)
+    key.text(.03, .60, 'Each arrow conserves electron energy.\n'
+             'Available final states are essential.\n\n'
+             r'Positive bias: $\mu_n-\mu_p=qV$.' '\n'
+             'At zero bias the occupations balance.\n\n'
+             'Reservoir occupations use $T=0$.\n'
+             'Band bending and barrier width are\n'
+             'schematic; momentum selection and\n'
+             'phonon assistance are omitted.', transform=key.transAxes,
+             va='top', linespacing=1.45)
+    fig.suptitle('Tunnel diode: occupied and empty states must overlap in energy', fontsize=15, y=.99)
+    fig.text(.5, .012, 'Original qualitative construction; not a measured band profile or a fit to an Esaki device.',
+             ha='center', fontsize=10)
+    fig.tight_layout(rect=(0, .035, 1, .94), h_pad=2.0, w_pad=2.2)
+    out = Path.cwd() / (Path(__file__).stem + '.png')
+    fig.savefig(out, dpi=120, facecolor='white')
+    plt.close(fig)
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

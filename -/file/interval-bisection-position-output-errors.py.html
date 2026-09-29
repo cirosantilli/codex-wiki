@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>interval-bisection-position-output-errors.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="interval-bisection-position-output-errors.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/interval-bisection-position-output-errors.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">interval-bisection-position-output-errors.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/interval-bisection-position-output-errors.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/interval-bisection-position-output-errors.py">interval-bisection-position-output-errors.py</a></b></div></nav></div><div class="p"><b>interval-bisection-position-output-errors.py</b></div><div class="code"><div><pre><code>"""Compare position certificates and output residuals for an analytic toy.
+
+Write the matching PNG to the CWD; run from _media with
+MPLCONFIGDIR=/tmp/codex-wiki-matplotlib. Tested with Python 3.14.4,
+Matplotlib 3.10.7 and NumPy 2.3.5. Fractions drive every search decision.
+"""
+
+from fractions import Fraction
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    blue, red, green = "#2166ac", "#bd4c32", "#28855d"
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                         "axes.spines.right": False, "figure.facecolor": "white",
+                         "axes.facecolor": "white"})
+    a, b = Fraction(0), Fraction(3)
+    bounds, errors, residuals = [], [], []
+    for k in range(13):
+        m = (a + b) / 2
+        r = m**3 + m - 10
+        bounds.append(float((b - a) / 2))
+        errors.append(float(abs(m - 2)))
+        residuals.append(float(abs(r)))
+        assert b - a == Fraction(3, 2**k)
+        assert abs(m - 2) &lt;= (b - a) / 2
+        if r &lt; 0:
+            a = m
+        else:
+            b = m
+
+    fig, (decay, geometry) = plt.subplots(1, 2, figsize=(10.1, 4.7), layout="constrained")
+    fig.suptitle("Position error and output residual are different quantities", fontsize=15)
+    k = np.arange(13)
+    decay.semilogy(k, bounds, color=blue, lw=2, label=r"Position bound $W_k/2$")
+    decay.semilogy(k, errors, "o-", color=green, markersize=4, label=r"Position error $|m_k-2|$")
+    decay.semilogy(k, residuals, "s--", color=red, markersize=4, label=r"Output residual $|f(m_k)-10|$")
+    decay.axhline(1e-3, color="#777777", lw=1, ls=":")
+    decay.text(0.3, 1.2e-3, "Position tolerance 0.001", fontsize=9, color="#555555")
+    decay.set(xlabel="Completed halvings k", ylabel="Magnitude (log scale)",
+              xticks=[0, 2, 4, 6, 8, 10, 12], title="Exact cubic toy; not measured data")
+    decay.legend(fontsize=9, frameon=False, loc="upper right")
+    decay.grid(alpha=0.17, which="both")
+
+    m = Fraction(63, 32)
+    fm = m**3 + m
+    assert fm - 10 == -Fraction(13121, 32768)
+    x = np.linspace(1.93, 2.05, 300)
+    geometry.plot(x, x**3 + x, color=blue, lw=2.3)
+    geometry.axhline(10, color="#bbbbbb", lw=1)
+    geometry.scatter([float(m), 2], [float(fm), 10], color=[blue, green], zorder=5)
+    geometry.plot([float(m), float(m)], [float(fm), 10], color=red, lw=1.4)
+    geometry.annotate("", xy=(1.956, 10), xytext=(1.956, float(fm)),
+                      arrowprops={"arrowstyle": "&lt;-&gt;", "color": red, "lw": 1.7})
+    geometry.text(1.951, float((fm + 10) / 2), "Output residual\n≈ 0.400421", color=red,
+                  ha="right", va="center", fontsize=10)
+    geometry.plot([2, 2], [9.25, 10], color=green, lw=1, ls=":")
+    geometry.plot([float(m), float(m)], [9.25, float(fm)], color=blue, lw=1, ls=":")
+    geometry.annotate("", xy=(2, 9.32), xytext=(float(m), 9.32),
+                      arrowprops={"arrowstyle": "&lt;-&gt;", "color": green, "lw": 1.7})
+    geometry.text(float((m + 2) / 2), 9.24, "Position error = 1/32", ha="center",
+                  va="top", fontsize=10, color=green)
+    geometry.text(2.004, 10.02, "x* = 2", color=green, fontsize=10)
+    geometry.text(float(m) + 0.002, float(fm) - 0.05, "m₄ = 63/32", fontsize=10, color=blue)
+    geometry.set(xlim=(1.9, 2.058), ylim=(9.07, 10.8), xlabel="Input x", ylabel="Output f(x)",
+                 title="After four halvings", xticks=[1.92, 1.96, 2.00, 2.04])
+    geometry.grid(alpha=0.14)
+    fig.savefig(Path(__file__).stem + ".png", dpi=120, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

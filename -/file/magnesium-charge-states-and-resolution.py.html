@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>magnesium-charge-states-and-resolution.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="magnesium-charge-states-and-resolution.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/magnesium-charge-states-and-resolution.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">magnesium-charge-states-and-resolution.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/magnesium-charge-states-and-resolution.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/magnesium-charge-states-and-resolution.py">magnesium-charge-states-and-resolution.py</a></b></div></nav></div><div class="p"><b>magnesium-charge-states-and-resolution.py</b></div><div class="code"><div><pre><code>"""Synthetic magnesium spectra; neutral masses approximate ion masses.
+
+Modern input data, not historical Aston observations:
+https://physics.nist.gov/cgi-bin/Compositions/stand_alone.pl?ascii=ascii&amp;ele=Mg
+Tested with Python 3.14, matplotlib 3.10.7, numpy 2.3.5.
+Run from the desired output directory; emits this script's basename.png.
+"""
+from pathlib import Path
+import matplotlib.pyplot as plt
+import numpy as np
+
+masses = np.array([23.985041697, 24.985836976, 25.982592968])
+fractions = np.array([.7899, .1000, .1101])
+colors = ['#16749b', '#b94b20', '#7754a3']
+plt.rcParams.update({'font.size': 10, 'figure.facecolor':'white', 'axes.facecolor':'white'})
+fig = plt.figure(figsize=(10.8, 8))
+gs = fig.add_gridspec(3, 2, height_ratios=[1.05, 1, .83], hspace=.72, wspace=.25)
+a=fig.add_subplot(gs[0,:])
+for z,scale in ((1,1), (2,.28)):
+    for i,(m,f,c) in enumerate(zip(masses,fractions,colors)):
+        x=m/z
+        a.vlines(x,0,scale*f,color=c,lw=3)
+        a.annotate(f'{24+i}, z={z}', xy=(x,scale*f), xytext=(x + ((-.24, 0, .24)[i] if z==2 else 0), scale*f + ((.10,.23,.10)[i] if z==2 else .025)), ha='center', fontsize=9, arrowprops={'arrowstyle':'-', 'color':c, 'lw':.7} if z==2 else None)
+a.set(xlim=(10.5,27.6),ylim=(0,.96),xlabel='x = (m / u) / z     [dimensionless]',ylabel='Chosen line area')
+a.set_title('A. The same three isotopes occupy two charge-state groups', loc='left',weight='bold')
+a.text(15.9,.58,'Doubly charged yield chosen as 0.28 × singly charged yield.\nPositions approximate ion masses by neutral masses.',fontsize=9)
+xs=np.linspace(22.3,27.7,5000)
+for j,width in enumerate((.12,1.20)):
+    ax=fig.add_subplot(gs[1,j])
+    sigma=width/(2*np.sqrt(2*np.log(2)))
+    components=[f*np.exp(-.5*((xs-m)/sigma)**2)/(sigma*np.sqrt(2*np.pi)) for m,f in zip(masses,fractions)]
+    for y,c in zip(components,colors):ax.plot(xs,y,color=c,lw=1.4)
+    ax.plot(xs,np.sum(components,axis=0),color='#292929',lw=1.3,ls='--',label='Sum')
+    ax.set(xlim=(22.6,27.4),xlabel='x',ylabel='Signal per unit x')
+    ax.set_title(f'{"B" if j==0 else "C"}. Chosen FWHM = {width:.2f}; R₂₅ ≈ {masses[1]/width:.1f}',loc='left',weight='bold',fontsize=11)
+    ax.legend(frameon=False,fontsize=9)
+ax=fig.add_subplot(gs[2,:])
+p=np.arange(3)
+biased=fractions*np.array([1,2,1]);biased/=biased.sum()
+ax.bar(p-.18,fractions,width=.34,label='Neutral isotope fractions',color='#16749b')
+ax.bar(p+.18,biased,width=.34,label='Normalized areas: mass-25 response × 2',color='#c87933')
+for i,(f,b) in enumerate(zip(fractions,biased)):
+    ax.text(i-.18,f+.015,f'{f:.4f}',ha='center',fontsize=9)
+    ax.text(i+.18,b+.015,f'{b:.4f}',ha='center',fontsize=9)
+ax.set(xticks=p,xticklabels=['Mass number 24','Mass number 25','Mass number 26'],ylim=(0,1.04),ylabel='Fraction')
+ax.set_title('D. A response change alters inferred fractions without altering the sample',loc='left',weight='bold')
+ax.legend(frameon=False,loc='upper right',fontsize=9)
+for ax in fig.axes:
+    ax.spines[['top','right']].set_visible(False)
+fig.subplots_adjust(left=.075,right=.98,top=.94,bottom=.09)
+fig.text(.075,.025,'Original synthetic illustration: no measured counts, historical masses, or historical resolution are inferred.',fontsize=9)
+fig.savefig(Path.cwd() / (Path(__file__).stem + '.png'),dpi=120,facecolor='white')
+plt.close(fig)
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-zoology-course-of-the-university-of-cambridge/2025/paper-zm1-classification.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-zoology-course-of-the-university-of-cambridge/2025/paper-zm1-classification.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../-/raw/main.css">
+<link rel="icon" href="../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../" class="brand"><img class="openai-logo" src="../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-zoology-course-of-the-university-of-cambridge/2025/paper-zm1-classification.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-zoology-course-of-the-university-of-cambridge/2025/paper-zm1-classification.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-zoology-course-of-the-university-of-cambridge/2025/paper-zm1-classification.py"><img src="../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../-/dir">(root)</a> / <a href="../../../../-/dir/past-exam-of-the-zoology-course-of-the-university-of-cambridge">past-exam-of-the-zoology-course-of-the-university-of-cambridge</a> / <a href="../../../../-/dir/past-exam-of-the-zoology-course-of-the-university-of-cambridge/2025">2025</a> / <a href="../../../../-/raw/past-exam-of-the-zoology-course-of-the-university-of-cambridge/2025/paper-zm1-classification.py">paper-zm1-classification.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-zoology-course-of-the-university-of-cambridge/2025/paper-zm1-classification.py</b></div><div class="code"><div><pre><code>"""Original ancestry schematic; Python 3.14, matplotlib 3.10.
+
+Run from the desired output directory. Branch lengths are illustrative.
+"""
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+TREE = {
+    'Amniota': ('Mammals', 'Sauropsida'),
+    'Sauropsida': ('Lepidosaurs', 'TurtleArchosaur'),
+    'TurtleArchosaur': ('Turtles', 'Archosauria'),
+    'Archosauria': ('Crocodilians', 'Birds'),
+}
+LEAVES = ['Mammals', 'Lepidosaurs', 'Turtles', 'Crocodilians', 'Birds']
+X = {'Amniota': 0, 'Sauropsida': 0.8, 'TurtleArchosaur': 1.6, 'Archosauria': 2.4}
+Y = {name: 4-i for i, name in enumerate(LEAVES)}
+
+def position(node):
+    if node in TREE:
+        Y[node] = sum(position(ch) for ch in TREE[node])/2
+    return Y[node]
+
+position('Amniota')
+
+def descendants(node):
+    result = {node}
+    for ch in TREE.get(node, ()):
+        result |= descendants(ch)
+    return result
+
+
+def main():
+    fig, axes = plt.subplots(1, 3, figsize=(13.2, 5.1), layout='constrained')
+    panels = [
+        ('Monophyletic', '#167248', descendants('Archosauria'), 'Archosauria: ancestry + all descendants'),
+        ('Paraphyletic', '#b46b14', descendants('Sauropsida')-{'Birds'}, 'Traditional reptiles, excluding birds'),
+        ('Polyphyletic', '#255caa', {'Mammals', 'Birds'}, 'Selected endotherms: mammals + birds'),
+    ]
+    for ax, (title, color, selected, subtitle) in zip(axes, panels):
+        for parent, children in TREE.items():
+            for child in children:
+                child_x = X.get(child, 3.2)
+                included = parent in selected and child in selected
+                ax.plot([X[parent], X[parent], child_x], [Y[parent], Y[child], Y[child]],
+                        color=color if included else '#b6bec5', lw=3 if included else 1.6,
+                        solid_capstyle='round', zorder=1)
+        for node in TREE:
+            ax.scatter(X[node], Y[node], s=38, color=color if node in selected else '#b6bec5', zorder=3)
+        for leaf in LEAVES:
+            ax.scatter(3.2, Y[leaf], s=64, color=color if leaf in selected else '#b6bec5', zorder=3)
+            ax.text(3.38, Y[leaf], leaf, va='center', fontsize=10,
+                    color=color if leaf in selected else '#616a73')
+        ax.text(0, -.7, subtitle.replace(': ', ':\n'), fontsize=10, color=color, va='top')
+        ax.set_title(title, fontsize=14, color=color, weight='bold', pad=20)
+        ax.set(xlim=(-.15, 5.4), ylim=(-1.45, 4.5))
+        ax.axis('off')
+    for ax, note in zip(axes, ('Ancestor and complete subtree selected',
+                              'Ancestry retained; one branch excluded',
+                              'Connecting ancestry excluded')):
+        ax.text(0, 4.55, note, fontsize=9, color='#616a73')
+    fig.suptitle('One ancestry, three membership rules', fontsize=17, weight='bold')
+    fig.savefig('paper-zm1-classification.png', dpi=150, facecolor='white')
+    plt.close(fig)
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

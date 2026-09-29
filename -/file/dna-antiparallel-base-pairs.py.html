@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>dna-antiparallel-base-pairs.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="dna-antiparallel-base-pairs.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/dna-antiparallel-base-pairs.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">dna-antiparallel-base-pairs.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/dna-antiparallel-base-pairs.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/dna-antiparallel-base-pairs.py">dna-antiparallel-base-pairs.py</a></b></div></nav></div><div class="p"><b>dna-antiparallel-base-pairs.py</b></div><div class="code"><div><pre><code>"""Draw canonical DNA pair counts; write dna-antiparallel-base-pairs.png in CWD.
+
+Run from _media: python ../dna-antiparallel-base-pairs.py
+Tested with Python 3.14.4, Matplotlib 3.10.7 and NumPy 2.3.5.
+Original unrolled schematic: boxes are bases, not atomic structures.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyBboxPatch
+
+
+def main():
+    sequence = "ACGTAC"
+    partner = sequence.translate(str.maketrans("ACGT", "TGCA"))
+    counts = [2 if base in "AT" else 3 for base in sequence]
+    assert partner == "TGCATG" and partner[::-1] == "GTACGT"
+    assert counts == [2, 3, 3, 2, 2, 3] and sum(counts) == 15
+    colors = {"A": "#f4cb72", "T": "#a9dce8", "G": "#c8b9e7", "C": "#add8b0"}
+    ink = "#31485c"
+    plt.rcParams.update({"font.size": 12, "figure.facecolor": "white"})
+    fig, ax = plt.subplots(figsize=(8.8, 5.0))
+    fig.subplots_adjust(left=0.03, right=0.97, top=0.88, bottom=0.04)
+    ax.set(xlim=(-1.1, 6.0), ylim=(-0.9, 4.1))
+    ax.axis("off")
+    fig.suptitle("DNA: antiparallel strands and canonical base pairs", fontsize=16)
+    for y, left, right in [(3.0, "5′", "3′"), (0.5, "3′", "5′")]:
+        ax.plot([-0.35, 5.35], [y, y], color=ink, lw=3)
+        ax.text(-0.75, y, left, ha="center", va="center", fontsize=18)
+        ax.text(5.75, y, right, ha="center", va="center", fontsize=18)
+        for i in range(6):
+            ax.text(i, y, "S", ha="center", va="center", fontsize=11,
+                    bbox={"boxstyle": "square,pad=0.22", "fc": "white", "ec": ink})
+            if i &lt; 5:
+                ax.text(i + 0.5, y, "P", ha="center", va="center", fontsize=10,
+                        bbox={"boxstyle": "circle,pad=0.18", "fc": "white", "ec": ink})
+    for i, (top, bottom, count) in enumerate(zip(sequence, partner, counts)):
+        ax.plot([i, i], [2.63, 3.0], color=ink, lw=2)
+        ax.plot([i, i], [0.5, 0.87], color=ink, lw=2)
+        for y, base in [(2.35, top), (1.15, bottom)]:
+            ax.add_patch(FancyBboxPatch((i - 0.28, y - 0.27), 0.56, 0.54,
+                                      boxstyle="round,pad=0.02", facecolor=colors[base],
+                                      edgecolor=ink, zorder=3))
+            ax.text(i, y, base, ha="center", va="center", fontsize=18, zorder=4)
+        for j in range(count):
+            x = i + (j - (count - 1) / 2) * 0.13
+            ax.plot([x, x], [1.46, 2.04], color=ink, lw=1.5, ls=":")
+        ax.text(i, 1.75, str(count), ha="center", va="center", fontsize=10,
+                bbox={"fc": "white", "ec": "none", "pad": 0.5}, zorder=5)
+    for start, end, y in [(-0.25, 5.25, 3.55), (5.25, -0.25, 0.05)]:
+        ax.annotate("", (end, y), (start, y),
+                    arrowprops={"arrowstyle": "-&gt;", "lw": 1.8, "color": "#176b92"})
+    ax.text(2.5, 3.73, "Arrows show each strand’s 5′ → 3′ direction", ha="center", fontsize=11)
+    ax.text(2.5, -0.34, "3 A–T pairs × 2 + 3 G–C pairs × 3 = 15 hydrogen bonds",
+            ha="center", fontsize=12)
+    ax.text(2.5, -0.72, "S: sugar   P: phosphate   Dotted lines: hydrogen bonds\n"
+            "Unrolled schematic; connector positions do not show atomic geometry",
+            ha="center", va="center", fontsize=10, color=ink)
+    fig.savefig(Path(Path(__file__).stem + ".png"), dpi=120,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+    print(f"5′–{sequence}–3′ / 3′–{partner}–5′; counts: {counts}; total: {sum(counts)}")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

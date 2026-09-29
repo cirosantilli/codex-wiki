@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>s3-conjugacy-classes.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="s3-conjugacy-classes.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/s3-conjugacy-classes.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">s3-conjugacy-classes.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/s3-conjugacy-classes.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/s3-conjugacy-classes.py">s3-conjugacy-classes.py</a></b></div></nav></div><div class="p"><b>s3-conjugacy-classes.py</b></div><div class="code"><div><pre><code>"""Enumerate S3 and draw its conjugacy classes; save a white PNG to the CWD.
+
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+Products act on the rightmost factor first. Tuples give images of 1, 2, 3.
+"""
+
+from itertools import permutations
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyBboxPatch
+
+
+def compose(left, right):
+    return tuple(left[i - 1] for i in right)
+
+
+def inverse(p):
+    return tuple(p.index(i) + 1 for i in range(1, 4))
+
+
+def conjugate(g, x):
+    return compose(compose(g, x), inverse(g))
+
+
+def cycle_label(p):
+    unseen = set(range(1, 4))
+    cycles = []
+    while unseen:
+        i = min(unseen)
+        cycle = []
+        while i in unseen:
+            unseen.remove(i)
+            cycle.append(str(i))
+            i = p[i - 1]
+        if len(cycle) &gt; 1:
+            cycles.append("(" + "".join(cycle) + ")")
+    return "".join(cycles) or "e"
+
+
+def compute():
+    group = tuple(permutations((1, 2, 3)))
+    e, t, r = (1, 2, 3), (2, 1, 3), (2, 3, 1)
+    classes = [{conjugate(g, x) for g in group} for x in (e, t, r)]
+    centralizers = [{g for g in group if compose(g, x) == compose(x, g)}
+                   for x in (e, t, r)]
+    assert [len(c) for c in classes] == [1, 3, 2]
+    assert [len(c) for c in centralizers] == [6, 2, 3]
+    assert set.union(*classes) == set(group)
+    assert sum(map(len, classes)) == len(group)
+    # Verify all six elements, not just the three representatives.
+    for x in group:
+        orbit = {conjugate(g, x) for g in group}
+        stabilizer = {g for g in group if compose(g, x) == compose(x, g)}
+        assert len(orbit) * len(stabilizer) == len(group)
+        assert orbit in classes
+    assert conjugate(r, t) == (1, 3, 2)
+    assert conjugate(t, r) == inverse(r)
+    center = {x for x in group if all(compose(g, x) == compose(x, g)
+                                     for g in group)}
+    assert center == {e}
+    return group, classes, centralizers
+
+
+def main():
+    group, classes, centralizers = compute()
+    plt.rcParams.update({"font.size": 13, "figure.facecolor": "white"})
+    fig, ax = plt.subplots(figsize=(9.6, 5.0), dpi=100)
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    ax.axis("off")
+    ax.text(0.5, 0.94, "Six permutations, three conjugacy classes",
+            ha="center", fontsize=19, weight="bold")
+    all_labels = [cycle_label(p) for orbit in classes for p in sorted(orbit, key=cycle_label)]
+    ax.text(0.5, 0.86, "S₃ = {" + ", ".join(all_labels) + "}",
+            ha="center", fontsize=15)
+    titles = ("Identity", "Transpositions", "Three-cycles")
+    colors = ("#475569", "#2166a5", "#b65b13")
+    for j, (orbit, centralizer, title, color) in enumerate(
+            zip(classes, centralizers, titles, colors, strict=True)):
+        left = 0.035 + j * 0.32
+        middle = left + 0.145
+        ax.add_patch(FancyBboxPatch((left, 0.32), 0.29, 0.46,
+                                   boxstyle="round,pad=0.008", facecolor="#f8fafc",
+                                   edgecolor=color, linewidth=2))
+        ax.text(middle, 0.715, title, ha="center", color=color, weight="bold")
+        labels = sorted(cycle_label(p) for p in orbit)
+        ax.text(middle, 0.615, "  ".join(labels), ha="center", fontsize=18, color=color)
+        ax.text(middle, 0.525, f"Class size: {len(orbit)}", ha="center", weight="bold")
+        c_text = ("C(e) = S₃" if j == 0 else
+                  "C((12)) = {e, (12)}" if j == 1 else
+                  "C((123)) = {e, (123), (132)}")
+        ax.text(middle, 0.435, c_text, ha="center", fontsize=11)
+        ax.text(middle, 0.365, f"6 / {len(centralizer)} = {len(orbit)}",
+                ha="center", fontsize=15)
+    ax.text(0.5, 0.235, "Class equation:  6 = 1 + 3 + 2       Center: {e}",
+            ha="center", fontsize=16, weight="bold")
+    ax.text(0.5, 0.135, "Relabel with g = (123):  (12) → (g(1) g(2)) = (23)",
+            ha="center", fontsize=14)
+    ax.text(0.5, 0.065, "Conjugation: g x g⁻¹. Apply the rightmost factor first.",
+            ha="center", fontsize=12, color="#475569")
+    fig.subplots_adjust(left=0.01, right=0.99, bottom=0.02, top=0.99)
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+    print({"elements": len(group), "class_sizes": list(map(len, classes)),
+           "centralizer_sizes": list(map(len, centralizers)), "center": ["e"]})
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

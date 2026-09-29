@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>multigrid-method.bigb - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="multigrid-method.bigb - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/multigrid-method.bigb"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">multigrid-method.bigb</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/multigrid-method.bigb"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/multigrid-method.bigb">multigrid-method.bigb</a></b></div></nav></div><div class="p"><b>multigrid-method.bigb</b></div><div class="code"><div><pre><code>= Multigrid method
+{wiki}
+
+A &lt;multigrid method&gt; solves a &lt;linear system&gt; by combining local relaxation with &lt;coarse-grid correction&gt; on a hierarchy of &lt;meshes&gt;. The key is to divide the work by scale: a suitable relaxation removes rapidly oscillating &lt;approximation error&gt;, while &lt;coarse-grid correction&gt; addresses slowly varying &lt;approximation error&gt; that relaxation barely changes. A broad error hump occupies many fine-grid points but fewer coarse-grid points; it becomes easier to resolve by relaxation after enough coarsening. This complementary action is why &lt;multigrid methods&gt; are useful for large &lt;finite difference method&gt; and &lt;finite element method&gt; systems.
+
+For a concrete model, take the one-dimensional &lt;Poisson equation&gt; with homogeneous &lt;Dirichlet boundary conditions&gt;:
+$$
+-u''(x)=f(x),\qquad 0&lt;x&lt;1,\qquad u(0)=u(1)=0.
+$$
+Use $n$ interior points $x_j=jh$, $h=1/(n+1)$, and the centered &lt;finite difference&gt; system
+$$
+(A_hu_h)_j=\frac{2u_{h,j}-u_{h,j-1}-u_{h,j+1}}{h^2}=b_{h,j},\qquad b_{h,j}=f(x_j),\qquad u_{h,0}=u_{h,n+1}=0.
+$$
+Thus $A_h=h^{-2}\operatorname{tridiag}(-1,2,-1)$ is a &lt;symmetric matrix&gt; and a &lt;positive-definite matrix&gt;. The minus sign in $-u''$ fixes this positive convention; changing both $A_h$ and $b_h$ to their negatives leaves the relaxation update unchanged. For $f=1$, the &lt;linear system&gt; has the exact discrete solution $u_{h,j}=x_j(1-x_j)/2$, since the centered &lt;finite difference&gt; is exact on this &lt;quadratic polynomial&gt;. In general, the exact discrete solution need not equal the sampled continuous solution: solving the &lt;linear system&gt; removes algebraic &lt;approximation error&gt;, not the &lt;global discretization error&gt;.
+
+Let $u_h^*$ solve $A_hu_h^*=b_h$, let $v_h$ be the current approximation, and define the signed &lt;approximation error&gt; $e_h=u_h^*-v_h$. The &lt;linear-system residual&gt; is $r_h=b_h-A_hv_h$, so $A_he_h=r_h$. In particular, a &lt;linear-system residual&gt; is available without knowing $u_h^*$; it supplies the right-hand side for a correction equation. With $D=2h^{-2}I$, a &lt;weighted Jacobi method&gt; sweep is
+$$
+v_h\leftarrow v_h+\omega D^{-1}r_h,\qquad e_h\leftarrow S_\omega e_h,\qquad S_\omega=I-\omega D^{-1}A_h.
+$$
+The &lt;sine&gt; &lt;eigenvectors&gt; shared by $A_h$ and the &lt;iteration matrix&gt; $S_\omega$ are $w_j^{(k)}=\sin(k\pi j/(n+1))$, $1\leq k\leq n$. Their &lt;eigenvalues&gt; are
+$$
+\lambda_k(A_h)=4h^{-2}\sin^2\frac{k\pi}{2(n+1)},\qquad \mu_k(S_\omega)=1-2\omega\sin^2\frac{k\pi}{2(n+1)}.
+$$
+For $n=63$, one &lt;weighted Jacobi method&gt; sweep with $\omega=2/3$ multiplies the lowest &lt;Fourier frequency&gt; mode $k=1$ by about $0.999197$, but the highest &lt;Fourier frequency&gt; mode $k=63$ by about $-0.332530$. Four sweeps retain about $99.68\%$ of the first amplitude and $1.22\%$ of the second. The sign reversal of the second amplitude is harmless when its magnitude shrinks. However, the plain &lt;Jacobi method&gt;, $\omega=1$, has factor $\cos(k\pi/(n+1))$: at $k=63$ it is about $-0.998795$. A nearly alternating mode near the grid's Nyquist limit therefore persists almost as strongly as the smoothest mode. Plain &lt;Jacobi method&gt; convergence on a fixed &lt;Dirichlet boundary condition&gt; grid does not imply effective smoothing.&lt;Introduction to Multigrid Methods by Long Chen&gt;{ref} The &lt;high-frequency smoothing factor of weighted Jacobi&gt; is uniformly at most $1/3$ for $\omega=2/3$ and $k\geq(n+1)/2$; the &lt;exact finite-grid high-frequency Jacobi smoothing optimum&gt; distinguishes this convenient uniform choice from the finite-grid optimum.&lt;CS267: Supplemental Notes for Lecture 17 — How Multigrid Damps High Frequencies by James Demmel&gt;{ref}
+
+\Image[multigrid-coarse-grid-smoothing.png]
+{title=Analytic Poisson error modes: weighted Jacobi damps short wavelengths while plain Jacobi struggles near the Nyquist limit}
+
+One two-grid cycle applies a few &lt;weighted Jacobi method&gt; sweeps, computes the &lt;linear-system residual&gt;, performs &lt;coarse-grid correction&gt;, and applies a few more sweeps. The first relaxation makes the remaining &lt;approximation error&gt; easier to represent on a coarse &lt;mesh&gt;; the last relaxation damps oscillatory components left after the transferred correction. In a &lt;geometric multigrid V-cycle&gt;, replace the expensive exact coarse solve by one recursive cycle on the coarse correction equation, starting its correction from zero. Repeat until a tiny coarsest &lt;linear system&gt; can be solved directly, then return through the levels by adding each interpolated correction and post-smoothing. The descent and return give the cycle its V shape.&lt;A Multigrid Tutorial (lecture slides) by William L. Briggs&gt;[slides 59–63]{ref}
+
+For this one-dimensional model, fixed sweep counts and bounded local &lt;finite difference&gt; and transfer work give a &lt;geometric multigrid V-cycle&gt; cost proportional to $n+n/2+n/4+\cdots&lt;2n$, hence $O(n)$ in &lt;Big O notation&gt;. A fixed error reduction also needs a contraction factor bounded below one independently of $h$; per-cycle work alone does not establish that. Starting from arbitrary &lt;approximation error&gt; and demanding a relative reduction $\varepsilon$ generally adds a factor proportional to $\log(1/\varepsilon)$ in the cycle count. &lt;Full multigrid&gt; uses coarse solutions as initial guesses on successively finer &lt;meshes&gt; to target the &lt;global discretization error&gt; efficiently. The &lt;two-grid Poisson factor with weighted Jacobi&gt; illustrates favorable convergence for this model. Other &lt;partial differential equations&gt;, strong &lt;anisotropy&gt;, or poorly chosen coarse spaces and relaxation can defeat these choices; a linear-work guarantee for arbitrary &lt;linear systems&gt; does not follow.
+
+A historical example of the multilevel viewpoint is Achi Brandt's April 1977 paper, which analyzes adaptive &lt;meshes&gt; and reports numerical experiments on linear and nonlinear &lt;boundary value problems&gt;. This is a documented development of the approach, not a claim that the paper was its first invention.&lt;Multi-Level Adaptive Solutions to Boundary-Value Problems by Achi Brandt&gt;[pp. 333–390; abstract]{ref} The figure above is generated from the displayed &lt;eigenvalues&gt;, with lines joining discrete nodes; it contains no experimental measurements.
+
+= Full multigrid
+{parent=Multigrid method}
+
+Full multigrid solves first on a coarse mesh, interpolates that approximation to the next finer mesh, and applies a fixed number of &lt;geometric multigrid V-cycles&gt; before proceeding to the next level. If interpolation introduces only the expected discretization-scale error and the cycle count reduces the inherited error sufficiently at every level, the final algebraic error matches the fine-grid discretization error. The geometric sum of level costs is then $O(N)$, unlike reducing an arbitrary fine-grid initial error by an arbitrarily small tolerance.
+
+= Two-grid Poisson factor with weighted Jacobi
+{parent=Multigrid method}
+{title2=$\rho(E)=1/9$}
+
+For the one-dimensional &lt;Poisson equation&gt;, use linear interpolation, &lt;full-weighting restriction&gt;, an exact coarse solve, and one pre- and one post-sweep of &lt;weighted Jacobi&gt; with weight $2/3$. On a pair of harmonics $\theta,\theta+\pi$, put $s=\sin^2(\theta/2)$ and $c=1-s$. The coarse correction is $C=\left(\begin{smallmatrix}s&amp;-c\\-s&amp;c\end{smallmatrix}\right)$, and the smoother is $S=\operatorname{diag}(1-4s/3,1-4c/3)$. The rank-one error operator $SCS$ has nonzero eigenvalue $s(1-4s/3)^2+c(1-4c/3)^2=1/9$. This exact harmonic calculation illustrates mesh-independent two-grid contraction for the constant-coefficient model; it is not an unconditional result for arbitrary operators or transfer choices.
+
+= Geometric multigrid V-cycle
+{parent=Multigrid method}
+
+A geometric multigrid V-cycle pre-smooths an approximate solution, restricts its residual, recursively solves the coarse error equation once from zero, prolongs and adds that error correction, and post-smooths. The recursion ends in a direct solve on a small coarsest grid. With fixed sweep counts and bounded stencil work, coarsening in $d$ dimensions gives total work $O(N)\sum_{j\geq0}2^{-dj}=O(N)$ per cycle. A mesh-independent convergence factor also requires compatible coarse approximation and effective smoothing; linear work alone does not prove convergence.
+
+= Full-weighting restriction
+{parent=Multigrid method}
+{title2=$R=2^{-d}P^T$}
+
+Full-weighting restriction transfers a fine-grid residual to a coarser grid by local averaging. In one dimension its weights are $(1,2,1)/4$; in two dimensions they are the tensor-product stencil $\left(\begin{smallmatrix}1&amp;2&amp;1\\2&amp;4&amp;2\\1&amp;2&amp;1\end{smallmatrix}\right)/16$. For linear or bilinear interpolation $P$ and coarsening by two in every direction, it equals $2^{-d}P^T$ in unweighted coordinates. This scaling makes restriction the adjoint of interpolation for mesh-weighted inner products.
+
+= Coarse-grid correction
+{parent=Multigrid method}
+{title2=$u_h\leftarrow u_h+PA_H^{-1}R(b_h-A_hu_h)$}
+
+A &lt;coarse-grid correction&gt; improves a fine-grid approximation by solving a smaller equation for the part of its &lt;approximation error&gt; representable on a coarse &lt;mesh&gt;. Use the signed convention $e_h=u_h^*-v_h$ and the &lt;linear-system residual&gt; $r_h=b_h-A_hv_h=A_he_h$. A prolongation &lt;linear map&gt; $P:\mathbb{R}^m\to\mathbb{R}^n$ interpolates coarse corrections into fine-grid corrections, and a restriction &lt;linear map&gt; $R:\mathbb{R}^n\to\mathbb{R}^m$ transfers the &lt;linear-system residual&gt;. Solve $A_Hz_H=Rr_h$ exactly or approximately and update $v_h\leftarrow v_h+Pz_H$. The plus sign follows from defining the &lt;approximation error&gt; as exact minus approximate. It is the correction equation's right-hand side $Rr_h$, rather than merely restricted solution values, that determines the update.
+
+For the &lt;multigrid method&gt; model $A_h=h^{-2}\operatorname{tridiag}(-1,2,-1)$, take $n=2m+1$, so $H=2h$ and the coarse nodes coincide with every second fine node. Use &lt;linear interpolation&gt; with zero boundary corrections $z_0=z_{m+1}=0$:
+$$
+(Pz)_{2i}=z_i\quad(1\leq i\leq m),\qquad (Pz)_{2i+1}=\frac{z_i+z_{i+1}}{2}\quad(0\leq i\leq m).
+$$
+Use &lt;full-weighting restriction&gt; for the interior &lt;linear-system residual&gt;:
+$$
+(Rr)_i=\frac{r_{2i-1}+2r_{2i}+r_{2i+1}}4\quad(1\leq i\leq m),\qquad R=\frac12P^T.
+$$
+Here $P^T$ is the &lt;matrix transpose&gt; in ordinary unweighted coordinates. With these specific transfers, the &lt;Galerkin coarse-grid operator&gt; is
+$$
+A_H=RA_hP=H^{-2}\operatorname{tridiag}(-1,2,-1).
+$$
+Thus it equals the rediscretized &lt;Poisson equation&gt; operator on this constant-coefficient one-dimensional &lt;mesh&gt;. The equality is special to the stated model and transfers. In particular, dropping $h^{-2}$ from the fine &lt;matrix&gt; while using $H^{-2}$ on the coarse &lt;mesh&gt; changes the correction unless the right-hand sides and transfers are rescaled consistently.
+
+Take seven interior points, $h=1/8$, three coarse unknowns, and the deliberately constructed &lt;approximation error&gt;
+$$
+z=(1,2,1)^T,\qquad e_h=Pz=(1/2,1,3/2,2,3/2,1,1/2)^T.
+$$
+For example, choose $b_h=0$, so $u_h^*=0$ and $v_h=-e_h$. Direct &lt;matrix&gt; multiplication gives
+$$
+r_h=A_he_h=(0,0,0,64,0,0,0)^T,\qquad Rr_h=(0,32,0)^T,\qquad A_H=16\begin{pmatrix}2&amp;-1&amp;0\\-1&amp;2&amp;-1\\0&amp;-1&amp;2\end{pmatrix}.
+$$
+The exact coarse solve returns $z_H=z$, so adding $Pz_H$ removes the entire chosen &lt;approximation error&gt;. A broad triangular error can have a sharply localized &lt;linear-system residual&gt;: the latter measures discrete curvature, not error height. This is why the two should not be confused. A smooth &lt;sine&gt; mode instead has &lt;linear-system residual&gt; $\lambda_k(A_h)e_h$, so interpreting its magnitude also requires the &lt;eigenvalue&gt; and the equation's scaling.
+
+\Image[multigrid-coarse-grid-correction.png]
+{title=Constructed seven-point Poisson example: residual restriction, coarse solve, interpolation, and the error remaining after exact or partial correction}
+
+The algebra explains the exact cancellation beyond this example. Assume $P$ has linearly independent columns and choose an invertible &lt;Galerkin coarse-grid operator&gt; $A_H=RA_hP$. With an exact coarse solve, the &lt;iteration matrix&gt; for the remaining &lt;approximation error&gt; is
+$$
+e_h^{\mathrm{new}}=Ce_h,\qquad C=I-PA_H^{-1}RA_h,\qquad CP=0,\qquad C^2=C,\qquad RA_hC=0.
+$$
+The short proof is to substitute $RA_hP=A_H$. Thus every vector in the &lt;column space&gt; of $P$ is eliminated, and the corrected &lt;linear-system residual&gt; restricts to zero. These are exact &lt;projection&gt; identities, not a statement that every visually smooth vector belongs to that &lt;column space&gt;. If $A_h$ is a &lt;symmetric matrix&gt; and a &lt;positive-definite matrix&gt;, and $R=cP^T$ with $c&gt;0$, then $A_H$ is also a &lt;positive-definite matrix&gt;. Moreover $P^TA_hCe_h=0$: $C$ is an &lt;orthogonal projection&gt; onto the complement of the &lt;column space&gt; of $P$ in the &lt;energy norm&gt; $\|q\|_{A_h}=\sqrt{q^TA_hq}$. Equivalently, the added correction is the best approximation to $e_h$ from that &lt;column space&gt; in this &lt;energy norm&gt;. Without these symmetry and transfer assumptions, the &lt;projection&gt; need not be orthogonal.&lt;Introduction to Multigrid Methods by Long Chen&gt;{ref}
+
+For an approximate coarse solve represented by a fixed &lt;linear map&gt; $B_H$, replace $A_H^{-1}$ by $B_H$. Then
+$$
+C_B=I-PB_HRA_h,\qquad C_BP=P(I-B_HA_H).
+$$
+There is no exact cancellation of coarse-representable &lt;approximation error&gt; unless $B_HA_H=I$ on the relevant directions. For the triangular example, deliberately returning half the exact correction, $B_H=\tfrac12 A_H^{-1}$, leaves $e_h/2$, as the figure shows. This controlled mathematical comparison illustrates an incomplete coarse solve; it is not a measured performance result or a prescription for a &lt;geometric multigrid V-cycle&gt;. More generally, if $z_H^*=A_H^{-1}Rr_h$, then an approximate $z_H$ leaves $Ce_h+P(z_H^*-z_H)$, separating the nonrepresentable remainder from the coarse-solve defect.
+
+With pre- and post-relaxation &lt;iteration matrices&gt; $S_{\mathrm{pre}}$ and $S_{\mathrm{post}}$, a two-grid error step has &lt;iteration matrix&gt; $E=S_{\mathrm{post}}C_BS_{\mathrm{pre}}$. A &lt;geometric multigrid V-cycle&gt; supplies $B_H$ by one recursive coarse cycle from zero, with a direct solve only at the bottom. Effective smoothing, a coarse &lt;column space&gt; that approximates the surviving &lt;approximation error&gt;, and a sufficiently accurate coarse correction must work together. Coarsening alone supplies no convergence guarantee, and correcting an arbitrary fine-grid vector exactly would require a coarse &lt;column space&gt; large enough to contain it.
+
+= Galerkin coarse-grid operator
+{parent=Coarse-grid correction}
+{title2=$A_H=RA_hP$}
+
+A Galerkin coarse-grid operator is obtained by composing interpolation, the fine operator and residual restriction. With $R=cP^T$, $c&gt;0$, and positive-definite $A_h$, the exact &lt;coarse-grid correction&gt; $I-P(RA_hP)^{-1}RA_h$ is the energy-orthogonal projection onto the complement of the coarse space. Indeed it annihilates every vector $Pz$, and its corrected error $e'$ satisfies $P^TA_he'=0$. These identities explain why compatible transfers remove representable smooth error rather than merely averaging an approximate solution.
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

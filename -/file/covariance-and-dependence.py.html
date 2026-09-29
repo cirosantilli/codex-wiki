@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>covariance-and-dependence.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="covariance-and-dependence.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/covariance-and-dependence.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">covariance-and-dependence.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/covariance-and-dependence.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/covariance-and-dependence.py">covariance-and-dependence.py</a></b></div></nav></div><div class="p"><b>covariance-and-dependence.py</b></div><div class="code"><div><pre><code>"""Plot exact finite distributions, contrasting covariance and dependence."""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def covariance(x, y):
+    return np.mean((x - np.mean(x)) * (y - np.mean(y)))
+
+
+def main():
+    grid = np.array([-1.0, 0.0, 1.0])
+    x = np.repeat(grid, 3)
+    z = np.tile(grid, 3)
+    y = 2 * x + z
+    assert np.isclose(np.var(x), 2 / 3)
+    assert np.isclose(covariance(x, y), 4 / 3)
+    assert np.isclose(np.var(y), 10 / 3)
+    assert np.isclose(np.var(x + y), 20 / 3)
+    assert np.isclose(np.var(x - y), 4 / 3)
+    assert np.isclose(np.corrcoef(x, y)[0, 1], 2 / np.sqrt(5))
+    assert np.isclose(covariance(grid, grid**2), 0)
+    assert np.isclose(np.var(grid**2), 2 / 9)
+    assert np.isclose(np.corrcoef([1, 2, 3, 4], [2, 1, 4, 3])[0, 1], 0.6)
+    plt.rcParams.update({"font.size": 12, "axes.titlesize": 14})
+    fig, axes = plt.subplots(2, 2, figsize=(9.6, 8.3), dpi=120, facecolor="white")
+    cases = [(x, y, r"$Y=2X+Z$", "Positive linear association", "#206a9d", (-3.5, 3.5)),
+             (x, -2 * x + z, r"$Y=-2X+Z$", "Negative linear association", "#be7521", (-3.5, 3.5)),
+             (x, z, r"$Y=Z$", "Independent variables", "#2f8a68", (-1.5, 1.5)),
+             (grid, grid**2, r"$Y=X^2$", "Dependent, but uncorrelated", "#8255a2", (-0.2, 1.5))]
+    for ax, (xs, ys, formula, title, color, ylim) in zip(axes.flat, cases):
+        cov = covariance(xs, ys)
+        corr = np.corrcoef(xs, ys)[0, 1]
+        ax.axvline(np.mean(xs), color="#b4bcc2", lw=1)
+        ax.axhline(np.mean(ys), color="#b4bcc2", lw=1)
+        if len(xs) == 3:
+            curve = np.linspace(-1.12, 1.12, 300)
+            ax.plot(curve, curve**2, color=color, lw=1.5, alpha=0.45)
+        ax.scatter(xs, ys, s=85, color=color, edgecolor="white", linewidth=1, zorder=4)
+        ax.set(xlim=(-1.4, 1.4), ylim=ylim, xlabel="X", ylabel="Y",
+               title=title + "\n" + formula, xticks=[-1, 0, 1])
+        ax.text(0.5, -0.29, f"Cov(X, Y) = {cov:.3f};  correlation = {corr:.3f}",
+                transform=ax.transAxes, fontsize=11, ha="center")
+        ax.grid(color="#e7eaed")
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.suptitle("Exact distributions: shared variation, independence, and a nonlinear rule", fontsize=15)
+    fig.subplots_adjust(left=0.09, right=0.98, top=0.865, bottom=0.12, wspace=0.28, hspace=0.9)
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

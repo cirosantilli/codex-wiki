@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>conic-sections-double-cone-plane-cuts.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="conic-sections-double-cone-plane-cuts.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/conic-sections-double-cone-plane-cuts.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">conic-sections-double-cone-plane-cuts.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/conic-sections-double-cone-plane-cuts.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/conic-sections-double-cone-plane-cuts.py">conic-sections-double-cone-plane-cuts.py</a></b></div></nav></div><div class="p"><b>conic-sections-double-cone-plane-cuts.py</b></div><div class="code"><div><pre><code>"""Four exact cone/plane intersections. Write the original PNG to cwd."""
+from pathlib import Path
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def intersection(m):
+    if m == 0:
+        t = np.linspace(0, 2*np.pi, 501)
+        return [(np.cos(t), np.sin(t), np.ones_like(t))]
+    if m &lt; 1:
+        t = np.linspace(0, 2*np.pi, 501)
+        h = 1-m*m
+        x = m/h + np.cos(t)/h
+        y = np.sin(t)/np.sqrt(h)
+        return [(x, y, 1+m*x)]
+    if m == 1:
+        y = np.linspace(-2.15, 2.15, 501)
+        x = (y*y-1)/2
+        return [(x, y, 1+x)]
+    t = np.linspace(-1, 1, 501)
+    h = m*m-1
+    lines = []
+    for sign in [-1, 1]:
+        x = -m/h + sign*np.cosh(t)/h
+        y = np.sinh(t)/np.sqrt(h)
+        lines.append((x, y, 1+m*x))
+    return lines
+
+
+def main():
+    fig = plt.figure(figsize=(11.2, 9.1), facecolor='white')
+    titles = [('Circle', 0, r'$m=0$'), ('Ellipse', .6, r'$m=3/5$'),
+              ('Parabola', 1., r'$m=1$'), ('Hyperbola', 1.4, r'$m=7/5$')]
+    angle, z = np.meshgrid(np.linspace(0, 2*np.pi, 29), np.linspace(-3.25, 3.25, 25))
+    cx, cy = np.abs(z)*np.cos(angle), np.abs(z)*np.sin(angle)
+    for index, (title, m, label) in enumerate(titles, 1):
+        ax = fig.add_subplot(2, 2, index, projection='3d')
+        ax.plot_wireframe(cx, cy, z, color='#9eafb9', alpha=.44, lw=.48,
+                          rstride=3, cstride=3)
+        px, py = np.meshgrid(np.linspace(-2.65, 2.65, 10), np.linspace(-2.65, 2.65, 10))
+        pz = 1+m*px
+        pz = np.where(np.abs(pz)&lt;=3.25, pz, np.nan)
+        ax.plot_surface(px, py, pz, color='#79b7d4', alpha=.17, linewidth=0)
+        for x, y, zc in intersection(m):
+            # Every displayed point satisfies both equations independently.
+            assert np.max(np.abs(zc*zc-x*x-y*y)) &lt; 3e-14
+            assert np.max(np.abs(zc-1-m*x)) &lt; 3e-15
+            ax.plot(x, y, zc, color='#b84d25', lw=3, zorder=8)
+        ax.scatter(0, 0, 0, color='#485561', s=14)
+        ax.set_xlim(-3.35, 3.35)
+        ax.set_ylim(-3.35, 3.35)
+        ax.set_zlim(-3.35, 3.35)
+        ax.set_box_aspect((1, 1, 1))
+        ax.set_xticks([-2, 0, 2])
+        ax.set_yticks([-2, 0, 2])
+        ax.set_zticks([-2, 0, 2])
+        ax.set_xlabel('x', labelpad=1)
+        ax.set_ylabel('y', labelpad=1)
+        ax.set_zlabel('z', labelpad=1)
+        ax.view_init(elev=25, azim=-110)
+        ax.set_title(title+'  '+label, fontsize=15, weight='bold', pad=0)
+        ax.set_facecolor('white')
+        for axis in (ax.xaxis, ax.yaxis, ax.zaxis):
+            axis.pane.set_facecolor((1, 1, 1, 1))
+    fig.suptitle('Four plane cuts of the same double cone', fontsize=19, weight='bold', y=.98)
+    fig.text(.5, .935, r'Cone: $z^2=x^2+y^2$     Cutting plane: $z=1+mx$',
+             ha='center', fontsize=14)
+    fig.subplots_adjust(top=.89, bottom=.08, left=.02, right=.98, hspace=.10, wspace=.01)
+    fig.text(.5, .025, 'Orange: exact intersection. Blue: plane patch. Gray: cone mesh. Each panel has equal spatial scales.',
+             ha='center', fontsize=10.5, color='#405063')
+    fig.savefig(Path.cwd() / (Path(__file__).stem+'.png'), dpi=120, facecolor='white')
+    plt.close(fig)
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

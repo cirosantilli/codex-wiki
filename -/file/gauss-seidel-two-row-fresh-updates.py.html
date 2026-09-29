@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>gauss-seidel-two-row-fresh-updates.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="gauss-seidel-two-row-fresh-updates.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/gauss-seidel-two-row-fresh-updates.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">gauss-seidel-two-row-fresh-updates.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/gauss-seidel-two-row-fresh-updates.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/gauss-seidel-two-row-fresh-updates.py">gauss-seidel-two-row-fresh-updates.py</a></b></div></nav></div><div class="p"><b>gauss-seidel-two-row-fresh-updates.py</b></div><div class="code"><div><pre><code>"""Draw an original two-row update schedule; emit the PNG into the CWD.
+
+Tested with Python 3.14, matplotlib 3.10.7, and numpy 2.3.5.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+
+
+def box(ax, xy, text, color, width=0.33):
+    x, y = xy
+    ax.add_patch(FancyBboxPatch(
+        (x - width / 2, y - 0.055), width, 0.11,
+        boxstyle="round,pad=0.014", facecolor="white", edgecolor=color,
+        linewidth=1.8, zorder=3,
+    ))
+    ax.text(x, y, text, ha="center", va="center", color=color, fontsize=13, zorder=4)
+
+
+def arrow(ax, start, end, color, dashed=False):
+    ax.add_patch(FancyArrowPatch(
+        start, end, arrowstyle="-|&gt;", mutation_scale=17, linewidth=2.2,
+        linestyle="--" if dashed else "-", color=color, zorder=2,
+    ))
+
+
+def main():
+    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 12})
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5.2), dpi=110, facecolor="white")
+    blue, orange, gray = "#146b88", "#b05012", "#6b7280"
+    fig.suptitle("Same equations, different information flow", fontsize=18, y=0.97)
+    fig.text(0.5, 0.895, r"$4x+y=1,\quad x+3y=2,\quad (x^{(0)},y^{(0)})=(0,0)$",
+             ha="center", fontsize=15)
+    for ax, fresh in zip(axes, (True, False)):
+        ax.set(xlim=(0, 1), ylim=(0, 1))
+        ax.axis("off")
+        ax.text(0.5, 0.98, "Gauss–Seidel: fresh" if fresh else "Jacobi: stale",
+                ha="center", fontsize=15, weight="bold", color=blue if fresh else orange)
+        box(ax, (0.26, 0.83), r"$x^{(0)}=0$", gray if fresh else orange)
+        box(ax, (0.75, 0.83), r"$y^{(0)}=0$", gray)
+        box(ax, (0.26, 0.53), r"$x^{(1)}=1/4$", blue)
+        box(ax, (0.75, 0.23), r"$y^{(1)}=7/12$" if fresh else r"$y^{(1)}=2/3$",
+            blue if fresh else orange)
+        arrow(ax, (0.71, 0.76), (0.32, 0.60), gray)
+        ax.text(0.74, 0.51, r"Row 1: $(1-0)/4$", ha="center", fontsize=11)
+        if fresh:
+            arrow(ax, (0.33, 0.46), (0.68, 0.30), blue)
+            ax.text(0.61, 0.405, "reuse 1/4 now", color=blue, fontsize=12, ha="center")
+            ax.text(0.52, 0.075, r"Row 2: $(2-1/4)/3=7/12$", ha="center", fontsize=13)
+        else:
+            # Route the stale input outside the new first-coordinate box.
+            arrow(ax, (0.078, 0.83), (0.038, 0.83), orange, dashed=True)
+            ax.plot([0.038, 0.038], [0.83, 0.23], color=orange, linewidth=2.2, linestyle="--")
+            arrow(ax, (0.038, 0.23), (0.57, 0.23), orange, dashed=True)
+            ax.text(0.005, 0.53, "keep old x = 0", color=orange, fontsize=11, rotation=90,
+                    ha="center", va="center")
+            ax.text(0.52, 0.075, r"Row 2: $(2-0)/3=2/3$", ha="center", fontsize=13)
+    fig.subplots_adjust(left=0.035, right=0.975, bottom=0.12, top=0.82, wspace=0.16)
+    fig.text(0.5, 0.035, "First sweep only • arrows identify the input actually used by each row",
+             ha="center", fontsize=11, color="#374151")
+    fig.savefig(Path(__file__).stem + ".png", facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

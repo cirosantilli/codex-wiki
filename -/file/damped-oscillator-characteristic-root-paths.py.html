@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>damped-oscillator-characteristic-root-paths.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="damped-oscillator-characteristic-root-paths.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/damped-oscillator-characteristic-root-paths.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">damped-oscillator-characteristic-root-paths.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/damped-oscillator-characteristic-root-paths.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/damped-oscillator-characteristic-root-paths.py">damped-oscillator-characteristic-root-paths.py</a></b></div></nav></div><div class="p"><b>damped-oscillator-characteristic-root-paths.py</b></div><div class="code"><div><pre><code>"""Mode roots and decay rates; run from _media. Python 3.14, matplotlib 3.10.7, numpy 2.3.5."""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def roots(zeta):
+    """Dimensionless roots λ = r/ω₀ of λ² + 2ζλ + 1 = 0."""
+    zeta = np.asarray(zeta, dtype=float)
+    d = np.sqrt(zeta**2 - 1 + 0j)
+    return -zeta + d, -zeta - d
+
+
+def main():
+    plt.rcParams.update({'font.size': 11, 'axes.spines.top': False,
+                         'axes.spines.right': False, 'figure.facecolor': 'white',
+                         'axes.facecolor': 'white'})
+    fig, axes = plt.subplots(1, 2, figsize=(10, 4.2), layout='constrained')
+    for zeta, color, label in [(np.linspace(0, 1, 301), '#2467a5', '0 ≤ ζ &lt; 1'),
+                               (np.linspace(1, 2, 301), '#27834d', '1 &lt; ζ ≤ 2')]:
+        for i, r in enumerate(roots(zeta)):
+            assert np.max(np.abs(r*r + 2*zeta*r + 1)) &lt; 1e-12
+            axes[0].plot(r.real, r.imag, color=color, lw=2.4,
+                         label=label if i == 0 else None)
+    for zeta, color in [(0.25, '#2467a5'), (1, '#c13b35'), (2, '#27834d')]:
+        a, b = roots(zeta)
+        axes[0].scatter([a.real, b.real], [a.imag, b.imag], color=color, s=48, zorder=5)
+    axes[0].annotate('ζ = 1: double root', xy=(-1, 0), xytext=(-2.95, 0.62),
+                     arrowprops={'arrowstyle': '-&gt;'}, fontsize=10)
+    axes[0].annotate('ζ = 0.25', xy=(-0.25, np.sqrt(1-0.25**2)),
+                     xytext=(-1.55, 1.04), arrowprops={'arrowstyle': '-&gt;'}, fontsize=10)
+    axes[0].text(-3.55, -0.23, 'ζ = 2: two real roots', fontsize=10)
+    axes[0].set(title='Root paths as damping increases', xlim=(-3.95, 0.25),
+                ylim=(-1.2, 1.25), xlabel='Real part of r/ω₀', ylabel='Imaginary part of r/ω₀')
+    axes[0].axvline(0, color='#666', lw=0.8)
+    axes[0].axhline(0, color='#666', lw=0.8)
+    axes[0].legend(loc='lower left', fontsize=9)
+    zeta = np.linspace(0, 3, 601)
+    a, b = roots(zeta)
+    for r in [a, b]:
+        assert np.max(np.abs(r*r + 2*zeta*r + 1)) &lt; 1e-12
+    axes[1].plot(zeta, -b.real, color='#a0a0a0', lw=2.2, label='Fast root: −Re(r₋)/ω₀')
+    axes[1].plot(zeta, -a.real, color='#2467a5', lw=2.6, label='Slow root: −Re(r₊)/ω₀')
+    axes[1].scatter([1], [1], color='#c13b35', s=50, zorder=5)
+    axes[1].axvline(1, color='#c13b35', lw=1, ls='--')
+    axes[1].annotate('Largest slow-root decay rate', xy=(1, 1), xytext=(0.2, 2.5),
+                     arrowprops={'arrowstyle': '-&gt;'}, fontsize=10)
+    axes[1].text(1.58, 1.25, 'More damping →\nslower late response', fontsize=10)
+    axes[1].set(title='Positive decay rates', xlim=(0, 3), ylim=(0, 6.05),
+                xlabel='Damping ratio ζ', ylabel='Decay rate divided by ω₀')
+    axes[1].legend(loc='upper left', fontsize=9)
+    for ax in axes:
+        ax.grid(alpha=0.17)
+    fig.suptitle('Ideal mode roots: r/ω₀ = −ζ ± √(ζ² − 1)', fontsize=14)
+    fig.savefig(Path(__file__).stem + '.png', dpi=120, facecolor='white', transparent=False)
+    plt.close(fig)
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

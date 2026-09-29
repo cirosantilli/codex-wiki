@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>binary-powering-multiplication-count.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="binary-powering-multiplication-count.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/binary-powering-multiplication-count.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">binary-powering-multiplication-count.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/binary-powering-multiplication-count.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/binary-powering-multiplication-count.py">binary-powering-multiplication-count.py</a></b></div></nav></div><div class="p"><b>binary-powering-multiplication-count.py</b></div><div class="code"><div><pre><code>"""Plot exact operation counts, not timings; tested on Python 3.14 / Matplotlib 3.10.7."""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 11})
+    ns = np.arange(1, 64)
+    lengths = np.array([int(n).bit_length() for n in ns])
+    counts = np.array([int(n).bit_length() + int(n).bit_count() - 2 for n in ns])
+    fig, (ax, bars) = plt.subplots(1, 2, figsize=(10, 4.8), dpi=120,
+                                  facecolor="white", gridspec_kw={"width_ratios": [1.45, 1]})
+    fig.suptitle("Optimized binary powering: one square per remaining digit",
+                 fontsize=15, y=0.97)
+    ax.plot(ns, ns - 1, color="#999999", label="Successive products: n − 1")
+    ax.step(ns, lengths - 1, where="post", linestyle="--", color="#13775f",
+            label="Lower bound: ℓ − 1")
+    ax.step(ns, 2 * lengths - 2, where="post", linestyle="--", color="#c5811a",
+            label="Upper bound: 2ℓ − 2")
+    ax.scatter(ns, counts, s=15, color="#18639a", label="Exact: ℓ + wt(n) − 2", zorder=3)
+    ax.annotate("n = 13: 5", (13, 5), xytext=(20, 14), color="#18639a",
+                arrowprops={"arrowstyle": "-&gt;", "color": "#18639a"})
+    ax.set(xlabel="Positive exponent n", ylabel="Multiplications (including squares)",
+           xlim=(0, 64), ylim=(-0.7, 64))
+    ax.legend(loc="upper left", fontsize=9, framealpha=1)
+    samples = [8, 13, 15, 16, 31]
+    squares = np.array([n.bit_length() - 1 for n in samples])
+    extra = np.array([n.bit_count() - 1 for n in samples])
+    positions = np.arange(len(samples))
+    bars.bar(positions, squares, color="#18639a", label="Squarings: ℓ − 1")
+    bars.bar(positions, extra, bottom=squares, color="#c5811a", label="Further products: wt(n) − 1")
+    for x, n, s, t in zip(positions, samples, squares, extra):
+        bars.text(x, s / 2, str(s), ha="center", va="center", color="white")
+        if t:
+            bars.text(x, s + t / 2, str(t), ha="center", va="center", color="white")
+        bars.text(x, s + t + 0.2, f"{s + t}", ha="center", weight="bold")
+    bars.set_xticks(positions, [f"{n}\n{n:b}₂" for n in samples])
+    bars.set(xlabel="Exponent and its binary expansion", ylabel="Multiplications",
+             ylim=(0, 10.4), title="Same digit count, different weight")
+    bars.legend(loc="upper left", fontsize=8)
+    for panel in (ax, bars):
+        panel.spines[["top", "right"]].set_visible(False)
+        panel.grid(axis="y", alpha=0.15)
+        panel.set_axisbelow(True)
+    fig.text(0.5, 0.025, "Start at the leading 1. No base-specific shortcuts. Counts are arithmetic operations, not bit costs.",
+             ha="center", fontsize=10)
+    fig.subplots_adjust(left=0.065, right=0.98, top=0.82, bottom=0.2, wspace=0.38)
+    fig.savefig(Path(__file__).with_suffix(".png").name, facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

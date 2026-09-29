@@ -1,0 +1,739 @@
+= Paper 35
+{scope}
+{title2=Biostatistics}
+
+https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2015/paper_35.pdf
+
+= 1
+{parent=Paper 35}
+{scope}
+
+= a
+{parent=1}
+{scope}
+
+= Solution
+{parent=a}
+
+Write $C$ for the binary response, $P$ for the partner count, and $Z$ for fully observed background variables. Let $R=(R_C,R_P)$ indicate which of $C,P$ are observed, with 1 meaning observed. For any realised pattern $r$, partition the data into $D_{\mathrm{obs}}(r)$ and $D_{\mathrm{mis}}(r)$.
+
+<Missing completely at random> means that the <missing-data mechanism> does not depend on any of the measurements:
+$$
+\boxed{\Pr(R=r\mid C,P,Z)=\Pr(R=r).}
+$$
+<Missing at random> allows dependence on the data observed under the particular pattern, but no further dependence on its unobserved values:
+$$
+\boxed{\Pr(R=r\mid D_{\mathrm{obs}},D_{\mathrm{mis}})=\Pr(R=r\mid D_{\mathrm{obs}}).}
+$$
+Thus a response probability depending on fully observed age or sex can satisfy <missing at random>. Dependence on an observed partner count can also be permissible for patterns in which that count is available. <Missing not at random> means that this equality fails: the probability of the pattern still depends on one of its missing measurements, after conditioning on the observed ones. **The distinction concerns dependence on the unseen values, not whether missingness looks haphazard.** These definitions can be applied within the target population $P>1$; unknown membership of that population must itself be handled when $P$ is missing.
+
+= b
+{parent=1}
+{scope}
+
+= Solution
+{parent=b}
+
+**<Missing not at random> is the plausible working classification.** The suggested reluctance depends on the actual partner count and actual condom response, including the values that are withheld. Among people with the same observed age, sex and other recorded information, those with an unreported high count or an unreported negative response may still be less likely to answer.
+
+Such dependence on unobserved values violates <missing at random> and therefore also <missing completely at random>. This is a substantive judgement rather than something that can be proved from the observed data alone. If all the dependence were explained by measured predictors, the mechanism could instead satisfy <missing at random>.
+
+= c
+{parent=1}
+{scope}
+
+= Solution
+{parent=c}
+
+A <complete-case analysis> changes the mix of people contributing to the <logistic regression>. Let $A=1$ mean that both required variables are observed, and write $s_c(p,z)=\Pr(A=1\mid C=c,P=p,Z=z)$. Within $P>1$, <Bayes' theorem> gives
+$$
+\boxed{\operatorname{logit}\Pr(C=1\mid p,z,A=1)
+=\operatorname{logit}\Pr(C=1\mid p,z)+\log\frac{s_1(p,z)}{s_0(p,z)}.}
+$$
+If completeness depends differently on the two responses, and that selection also varies with partner count or the other predictors, the extra term changes the fitted <regression coefficients>. For example, people with high counts and poor condom use can be under-represented, weakening or otherwise distorting the apparent association. Dropping people with missing $P$ also excludes some whose membership of the $P>1$ target group is unknown.
+
+**The fitted conditional association among complete responders need not equal the target-population association.** No direction of <selection bias> follows without specifying the response mechanism. Selection on predictors alone need not bias a correctly specified conditional <logistic regression>; it is the outcome-related selection described here that removes that reassurance.
+
+= d
+{parent=1}
+{scope}
+
+= Solution
+{parent=d}
+
+<Multiple imputation by chained equations> specifies one <conditional distribution> for each incomplete variable. In general, let $V_1,\ldots,V_q$ be the incomplete variables, $Z$ the fully observed predictors, and $\phi_j$ the parameters of a model $p_j(V_j\mid V_{-j},Z;\phi_j)$. The notation $V_{-j}$ means all variables except $V_j$. The models should respect each variable's support and contain the terms needed by the planned analysis.
+
+First choose suitable models and initialise only the missing entries with admissible provisional values. One sweep updates $j=1,\ldots,q$ in turn. At update $j$, fit its model to records whose $V_j$ is observed, using the latest filled-in predictors. Draw
+$$
+\phi_j^*\sim p(\phi_j\mid V_{j,\mathrm{obs}},V_{-j}^{\mathrm{current}},Z),
+\qquad
+V_{j,\mathrm{mis}}^*\sim p_j(V_{j,\mathrm{mis}}\mid V_{-j}^{\mathrm{current}},Z;\phi_j^*).
+$$
+The first draw represents parameter uncertainty through a <Bayesian posterior>; the second represents residual uncertainty through a <posterior predictive distribution>. Replace the missing entries with these draws, leaving every genuinely observed entry fixed. Repeat whole sweeps until the chain has settled, assessing traces, mixing and plausibility. Obtain $M$ completed datasets from independently initialised chains, or sufficiently separated draws after convergence. **Both parameter and missing-value uncertainty must be propagated; repeated deterministic prediction is not multiple imputation.**
+
+Here use a <logistic regression> for $C$ conditional on $P$, age and sex. For $P$, use an appropriate discrete count model conditional on $C$, age and sex, such as a suitably checked <negative binomial regression>, allowing enough flexibility for skewness and nonlinear effects. Include interactions or transformations needed by the analysis in the imputation models. If condom use is structurally undefined for a record, preserve that applicability rule rather than treating it as ordinary <missing data>.
+
+Impute the eligible survey information before discarding records solely because the observed $P$ is absent. In each completed dataset select its own $P>1$ records and fit the requested <logistic regression>. This allows a record with missing $P$ to contribute to the target group in some imputations and not others. Models must respect any known eligibility restrictions; if eligibility was independently known, use that information.
+
+For a scalar <regression coefficient>, let $\widehat Q_m$ be its estimate and $U_m$ its estimated <variance> in completed dataset $m$. <Rubin's rules> give
+$$
+\boxed{\overline Q=\frac1M\sum_m\widehat Q_m,\quad
+\overline U=\frac1M\sum_m U_m,\quad
+B=\frac1{M-1}\sum_m(\widehat Q_m-\overline Q)^2,\quad
+T=\overline U+(1+M^{-1})B.}
+$$
+The <standard error> is $\sqrt T$. Use the corresponding <multiple-imputation confidence interval>, rather than treating one completed dataset as fully observed. For vector coefficients replace the squared differences by outer products and $U_m$ by the covariance matrix. This combines within-imputation and between-imputation uncertainty.
+
+= e
+{parent=1}
+{scope}
+
+= Solution
+{parent=e}
+
+Ordinary <multiple imputation by chained equations> relies on <missing at random>, conditional on the variables included in its models, together with adequate model specification and suitable <conditional distributions>. For <Bayesian inference> that ignores the response mechanism, the usual sufficient condition also includes <distinct parameters> for data and missingness models, with an appropriately separate prior.
+
+**The suspected dependence on withheld responses makes the usual missing-at-random assumption doubtful.** An accurately fitted observed-data model cannot, on its own, establish what the nonresponders would have reported. Use substantive judgement and <sensitivity analysis> under plausible <missing not at random> departures, for example a <pattern-mixture sensitivity analysis> shifting the imputed condom <log odds> or partner-count distribution relative to the observed-data prediction. Report how the final association changes. Additional informative measurements may make <missing at random> more credible, but cannot verify it.
+
+= f
+{parent=1}
+{scope}
+
+= Solution
+{parent=f}
+
+Treat the extra measurements as <auxiliary variables for multiple imputation>. Include alcohol consumption and disease history as predictors in both the $C$ and $P$ <conditional distributions>, together with age, sex and the other incomplete response. If these auxiliary variables themselves have missing entries, give them appropriate models and update them within the same <multiple imputation by chained equations> sweeps. Preserve observed entries throughout.
+
+**Useful auxiliary measurements can improve predictions, precision and the plausibility of missing at random.** Their association with the missing responses reduces uncertainty in the imputed values; association with nonresponse may explain some selection that otherwise depends on unobserved values. This can reduce <selection bias> under the enlarged <missing at random> model and reduce between-imputation <variance>. It does not guarantee elimination of <missing not at random> dependence. They need not be added to the final substantive <logistic regression> merely because they help imputation: the final analysis should still estimate its intended association.
+
+= 2
+{parent=Paper 35}
+{scope}
+
+= a
+{parent=2}
+{scope}
+
+= Solution
+{parent=a}
+
+Three distinct benefits of a <meta-analysis> are **greater precision, an explicit synthesis of the effect, and assessment of variation across studies**.
+
+Combining compatible <independent> estimates can reduce the <standard error>, improve <statistical power> and provide more informative <confidence intervals> than individual small trials. A prespecified pooled estimate summarises the direction and magnitude of the evidence quantitatively, instead of informally counting statistically significant results. Finally, <between-study heterogeneity> and subgroup comparisons can reveal whether effects vary with populations or interventions, helping assess generalisability. These benefits require comparable estimands and an appraisal of study validity; pooling cannot repair systematic <within-study bias>.
+
+= b
+{parent=2}
+{scope}
+
+= Solution
+{parent=b}
+
+The event and nonevent cell counts are $(a,b)=(30,60)$ and $(c,d)=(20,40)$. Thus the estimated <odds ratio> and <log odds ratio> are
+$$
+\widehat{\operatorname{OR}}=\frac{30/60}{20/40}=1,
+\qquad \widehat\ell=\log1=0.
+$$
+For <independent> binomial groups, the <delta method> gives
+$$
+\widehat{\operatorname{Var}}(\widehat\ell)
+=\frac1{30}+\frac1{60}+\frac1{20}+\frac1{40}
+=\frac18=0.125,
+\qquad \operatorname{SE}(\widehat\ell)=\sqrt{0.125}=0.353553\ldots.
+$$
+Using the permitted <normal approximation> quantile of 2, **the approximate 95% interval is**
+$$
+\boxed{\widehat\ell=0,\qquad \mathrm{CI}_{\log\mathrm{OR}}=(-0.7071,0.7071).}
+$$
+The observed odds of death are equal between groups. The <confidence interval> includes zero and allows appreciable effects in either direction; it does not demonstrate equivalence. Exponentiating gives an <odds ratio> interval approximately $(0.493,2.028)$, so the data are compatible with roughly half to twice the death odds for the first treatment relative to the second. The tabulated <standard error> is rounded.
+
+= c
+{parent=2}
+{scope}
+
+= Solution
+{parent=c}
+
+Use $w_i=1/v_i$ for the inverse within-study <variances>, and $m=21$. For <Cochran's Q statistic>, the <DerSimonian–Laird estimator> of the between-study <variance> is
+$$
+\widehat\tau^2=\max\left\{0,\frac{Q-(m-1)}{C}\right\},\qquad
+C=\sum_iw_i-\frac{\sum_iw_i^2}{\sum_iw_i}
+=400-\frac{16000}{400}=360.
+$$
+Consequently **the estimated heterogeneity variance and standard deviation are**
+$$
+\boxed{\widehat\tau^2=\frac{38-20}{360}=0.05,\qquad
+\widehat\tau=\sqrt{0.05}=0.2236.}
+$$
+These describe dispersion of underlying study <log odds ratios>, not ordinary sampling error of a single trial. The <between-study heterogeneity> is additional to the within-study <variances>.
+
+The <I-squared statistic> is
+$$
+\boxed{I^2=\max\left\{0,\frac{Q-(m-1)}Q\right\}\times100\%
+=\frac{18}{38}\times100\%=47.37\%.}
+$$
+It estimates the share of variation beyond that expected from sampling error in this collection of studies. Approximately half the variation is attributed to heterogeneity on that scale; this is neither the percentage of trials with different effects nor a percentage change in mortality. The PDF omits the symbol naming its heterogeneity estimate, so both $\widehat\tau^2$ and $\widehat\tau$ are reported explicitly.
+
+= d
+{parent=2}
+{scope}
+
+= Solution
+{parent=d}
+
+A <fixed-effect meta-analysis> assigns <inverse-variance weights>. Using the unrounded within-study <variance> from part (b), this trial has $w=8$, so **its percentage weight is**
+$$
+\boxed{100\frac8{400}=2\%.}
+$$
+Using the printed rounded <standard error> of $0.35$ instead gives approximately $2.04\%$; the raw cell calculation yields the more precise answer.
+
+For a <random-effects meta-analysis>, the corresponding weight and percentage weight are
+$$
+\boxed{w^*=\frac1{0.125+\widehat\tau^2},\qquad
+100\frac{(0.125+\widehat\tau^2)^{-1}}{\sum_{i=1}^{21}(v_i+\widehat\tau^2)^{-1}}.}
+$$
+With $\widehat\tau^2=0.05$, its unnormalised weight is $40/7\approx5.714$. The supplied sums of fixed-effect weights do not determine the denominator of the random-effects percentage; the individual $v_i$ are needed. Positive heterogeneity makes the weight distribution more even. Percentage weight measures the trial's contribution to a pooled mean with fixed weights; total influence can also involve re-estimation of heterogeneity.
+
+= e
+{parent=2}
+{scope}
+
+= Solution
+{parent=e}
+
+<Within-study bias> is a systematic displacement of a study's effect estimate from its intended true effect because of its design, conduct, analysis or reporting. Examples include faulty allocation concealment, differential outcome assessment without suitable blinding, informative loss to follow-up, deviations from the intended treatment analysis, and selective reporting of outcomes or analyses. This differs from chance sampling error; the bias need not diminish as a study becomes larger.
+
+It can shift a pooled <meta-analysis> effect and can create or obscure <between-study heterogeneity>. A <random-effects meta-analysis> accommodates dispersion, not systematic invalidity. Publication or non-inclusion of whole studies is a separate selection problem at the synthesis level.
+
+**Two useful approaches are risk-of-bias sensitivity analyses and explicit bias adjustment.** First, appraise the relevant bias domains and compare the full synthesis with a prespecified synthesis restricted to studies with more credible methods, or stratify by those domains; discuss the resulting loss of precision and possible confounding of study characteristics. Second, if substantive information supports plausible bias magnitudes, use a <bias-adjusted meta-analysis> with uncertainty about those adjustments, and assess the effect across plausible values. Simply assigning a generic quality score or downweighting a study's sampling variance does not by itself remove its bias.
+
+= f
+{parent=2}
+{scope}
+
+= Solution
+{parent=f}
+
+For an <independent subgroup contrast in meta-analysis>, the difference of disjoint <independent> subgroup estimates has estimated <variance> equal to the sum of the two variances. The subgroup contrast and <standard error> are
+$$
+D=0.45-0.16=0.29,\qquad
+\operatorname{SE}(D)=\sqrt{0.11+0.05}=0.4.
+$$
+The <Wald test> of equal subgroup mean <log odds ratios> therefore gives
+$$
+\boxed{Z=\frac{0.29}{0.4}=0.725,\qquad
+Z^2=0.525625,\qquad p\approx0.468.}
+$$
+Under the null, $Z$ is approximately <standard normal> and $Z^2$ has a <chi-squared distribution> with one degree of freedom. A quantile-2 <confidence interval> for the difference is $(0.29-0.8,0.29+0.8)=(-0.51,1.09)$. **There is no statistically persuasive evidence of a subgroup difference.** The result does not establish equal effects. Nor does a between-trial subgroup comparison, by itself, identify a causal advantage of one technique: other study characteristics may differ.
+
+= 3
+{parent=Paper 35}
+{scope}
+
+= a
+{parent=3}
+{scope}
+
+= Solution
+{parent=a}
+
+Let $u$ be the infection time and $s=t-u\geq0$ its incubation delay, with independent delays having <probability density function> $f(s)$. Each infection contributes to the symptom-onset intensity according to its delay density. <Back-calculation of infection incidence> uses the <convolution>
+$$
+\boxed{\mu(t)=\int_{-\infty}^{t}h(u)f(t-u)\,du
+=\int_0^\infty h(t-s)f(s)\,ds.}
+$$
+**Observed onset intensity is infection intensity convolved with the incubation distribution.** If infections begin at a known $t_0$, take $h(u)=0$ for $u<t_0$, reducing the first integral's lower limit to $t_0$. Otherwise past infections must be included; the observation window's start need not be the infection process's start.
+
+= b
+{parent=3}
+{scope}
+
+= Solution
+{parent=b}
+
+In <discrete back-calculation with endpoint cohorts>, for equal-width intervals $I_k=[t_{k-1},t_k)$, write $\Delta=t_k-t_{k-1}$, $h_i$ for the expected infection count assigned to time $t_i$ under the end-of-interval approximation, and $\mu_k$ for the expected onset count in $I_k$. Define
+$$
+q_\ell=\Pr((\ell-1)\Delta\leq T<\ell\Delta),\qquad \ell=1,2,\ldots.
+$$
+An infection assigned to $t_i$ can first contribute to $I_{i+1}$, so **the discrete convolution with this timing convention is**
+$$
+\boxed{\mu_k\approx\sum_{i<k}h_iq_{k-i}.}
+$$
+The sum includes any infection cohorts before the observation window. With no infections before $t_0$ and cohorts beginning at $i=1$, it is $\sum_{i=1}^{k-1}$ and the first mean is zero in this endpoint approximation.
+
+For unequal intervals use $q_{ik}=\Pr(t_{k-1}-t_i\leq T<t_k-t_i)$, truncating negative endpoints at zero, and $\mu_k\approx\sum_i h_iq_{ik}$. An alternative approximation assigning cohort $i$ to $t_{i-1}$ gives $\sum_{i\leq k}h_iq_{k-i+1}$. Both are legitimate discretisations; the subsequent solutions use the end-of-interval convention explicitly specified in part (d), so the index shift is essential.
+
+= c
+{parent=3}
+{scope}
+
+= Solution
+{parent=c}
+
+For the stated scale-parameterisation of the <Weibull distribution>, its incubation <survivor function> is $S_T(s)=\exp[-(s/\lambda)^\kappa]$ for $s\geq0$, with $\lambda,\kappa>0$. The continuous <back-calculation of infection incidence> equation becomes
+$$
+\boxed{\mu(t)=\int_0^\infty h(t-s)\frac\kappa\lambda
+\left(\frac s\lambda\right)^{\kappa-1}
+\exp\!\left[-\left(\frac s\lambda\right)^\kappa\right]ds.}
+$$
+Set $h(t-s)=0$ before the infection process's start if one is specified. For the equal-width endpoint approximation, integrate the incubation density over each delay bin:
+$$
+q_\ell(\lambda,\kappa)
+=\exp\!\left[-\left(\frac{(\ell-1)\Delta}\lambda\right)^\kappa\right]
+-\exp\!\left[-\left(\frac{\ell\Delta}\lambda\right)^\kappa\right].
+$$
+Thus **the discrete Weibull equation is**
+$$
+\boxed{\mu_k(\theta,\lambda,\kappa)
+=\sum_{i<k}h_i(\theta)q_{k-i}(\lambda,\kappa).}
+$$
+For unequal intervals replace $q_{k-i}$ by $S_T(\max\{0,t_{k-1}-t_i\})-S_T(\max\{0,t_k-t_i\})$. These are probabilities, not point evaluations of a density; no additional factor of $\Delta$ is needed after bin integration.
+
+= d
+{parent=3}
+{scope}
+
+= Solution
+{parent=d}
+
+Assume individual incubation delays are <independent> of the <inhomogeneous Poisson process> of infections and of one another. This marking assumption is needed in addition to specifying a marginal incubation density.
+
+In the discrete cohort model let $N_i\sim\operatorname{Poisson}(h_i)$ be the <independent> infection counts. Mark each infection by its eventual onset interval. For cohort $i$, the categories have probabilities $q_{ik}$ for observed intervals, with the remaining probability assigned to onsets outside the window. <Poisson thinning> makes the counts $N_{ik}$ in these categories mutually <independent> <Poisson random variables> with means $h_iq_{ik}$. One direct proof is their <probability generating function>:
+$$
+\mathbb E\!\left[\prod_k z_k^{N_{ik}}\right]
+=\exp\!\left[h_i\sum_kq_{ik}(z_k-1)\right]
+=\prod_k\exp[h_iq_{ik}(z_k-1)].
+$$
+Different cohorts are <independent>. Summing their counts therefore gives **independent Poisson onset counts in disjoint intervals**:
+$$
+\boxed{Y_k=\sum_iN_{ik}\sim\operatorname{Poisson}(\mu_k),\qquad
+\mu_k=\sum_i h_iq_{ik},\qquad Y_j\perp Y_k\ (j\ne k).}
+$$
+The same argument applies exactly in continuous time by the <independent marking theorem for Poisson point processes> and mapping each marked infection to its onset time. The endpoint model approximates its means; its independent-Poisson conclusion is exact within that discrete model. A fixed cohort size would instead induce negatively correlated onset-bin counts, so the <Poisson process> infection assumption matters.
+
+= e
+{parent=3}
+{scope}
+
+= Solution
+{parent=e}
+
+With the onset means $\mu_k(\theta,\lambda,\kappa)$ defined by the discrete <back-calculation of infection incidence>, the <independent> <Poisson observation model> yields **the product likelihood**
+$$
+\boxed{L(\theta,\lambda,\kappa;y_{1:N})
+=\prod_{k=1}^N\frac{\mu_k(\theta,\lambda,\kappa)^{y_k}
+ e^{-\mu_k(\theta,\lambda,\kappa)}}{y_k!}.}
+$$
+For positive means its <log-likelihood> is $\sum_k\{y_k\log\mu_k-\mu_k-\log(y_k!)\}$. A zero mean assigns probability one to a zero count and zero to a positive count. Any unknown pre-observation infection history must be parameterised or supplied as well; it cannot silently be excluded merely because the observation series starts at $t_0$.
+
+= f
+{parent=3}
+{scope}
+
+= Solution
+{parent=f}
+
+Use one transition per time step in the printed <discrete-time multi-state diagnosis model>. Put $a=\delta_E$, $b=\delta_N$, and $r=1-b$. Let $I_k=S_{1k}\sim\operatorname{Poisson}(h_k(\theta))$ be the new infection count. Let $U_k$ be the undiagnosed non-early count present in state 3 at step $k$, including those retained by its self-loop. Start with $I_0=U_0=0$.
+
+For the realised <random variables>, define conditionally
+$$
+E_k\mid I_{k-1}\sim\operatorname{Binomial}(I_{k-1},a),\qquad
+D_k\mid U_{k-1}\sim\operatorname{Binomial}(U_{k-1},b),
+$$
+using independent individual transition choices, and set
+$$
+\boxed{S_{2k}=E_k,\quad
+U_k=I_{k-1}-E_k+U_{k-1}-D_k,\quad
+S_{4k}=D_k.}
+$$
+The early split's two complementary counts are not independent conditional on $I_{k-1}$, nor are the late split's two counts conditional on $U_{k-1}$. **Random state incidences must not be equated to their expectations.**
+
+Explicitly, the first four realised vectors are
+$$
+\begin{aligned}
+S_1&=(I_1,0,0,0),\\
+S_2&=(I_2,E_2,I_1-E_2,0),\\
+S_3&=(I_3,E_3,I_2-E_3+I_1-E_2-D_3,D_3),\\
+S_4&=(I_4,E_4,I_3-E_4+I_2-E_3+I_1-E_2-D_3-D_4,D_4).
+\end{aligned}
+$$
+Here $E_k$ and $D_k$ have the conditional laws just given; $D_1=D_2=0$. The corresponding expressions solely in terms of the parameters are the mean flow vectors. Writing $h_j=h_j(\theta)$ and interpreting state 3 with its self-loop as $S_{3k}=U_k$, they are
+$$
+\begin{aligned}
+\mathbb E S_1&=(h_1,0,0,0),\\
+\mathbb E S_2&=(h_2,ah_1,(1-a)h_1,0),\\
+\mathbb E S_3&=(h_3,ah_2,(1-a)(h_2+rh_1),b(1-a)h_1),\\
+\mathbb E S_4&=(h_4,ah_3,(1-a)(h_3+rh_2+r^2h_1),b(1-a)(h_2+rh_1)).
+\end{aligned}
+$$
+These follow from $\mathbb E U_k=(1-a)h_{k-1}+r\mathbb E U_{k-1}$. They make the minimum one-step early delay and two-step late delay explicit. If “entering state 3” is reserved for first entry only, its incidence is $I_{k-1}-E_k$ with mean $(1-a)h_{k-1}$; $U_k$ is then a separate occupancy variable. The late-diagnosis expressions are unchanged. This distinction resolves the wording's use of incidence alongside a state-3 self-loop.
+
+= g
+{parent=3}
+{scope}
+
+= Solution
+{parent=g}
+
+The <expected values> of early and late new diagnosis counts at step $k$ are
+$$
+e_k=\delta_Eh_{k-1}(\theta),\qquad
+n_k=\delta_N(1-\delta_E)\sum_{i=1}^{k-2}
+ h_i(\theta)(1-\delta_N)^{k-i-2}.
+$$
+Each summand in $n_k$ corresponds to an infection that avoids early diagnosis, enters the non-early state one step later, remains there for the intervening steps and is then diagnosed. Define $h_j=0$ for $j\leq0$, and take an empty sum as zero. **The early share of diagnosis intensity is**
+$$
+\boxed{p_{Ek}=\frac{e_k}{e_k+n_k}
+=\frac{\delta_Eh_{k-1}(\theta)}{\delta_Eh_{k-1}(\theta)
++\delta_N(1-\delta_E)\sum_{i=1}^{k-2}h_i(\theta)(1-\delta_N)^{k-i-2}}.}
+$$
+It is defined only when $e_k+n_k>0$; in particular there are no diagnoses at step 1 under the initial condition. With infection counts following a <Poisson distribution> and independent marking, early and late diagnosis counts in a fixed interval are <independent> <Poisson random variables>. Conditional on a positive total, the early count has a <binomial distribution> given the total with probability $p_{Ek}$, so this ratio also equals the <expectation> of the observed early fraction conditional on a nonzero total. Without that conditioning a sample fraction at zero diagnoses is undefined.
+
+= 4
+{parent=Paper 35}
+{scope}
+
+= a
+{parent=4}
+{scope}
+
+= i
+{parent=a}
+{scope}
+
+= Solution
+{parent=i}
+
+Under <independent censoring>, observation of an event-free individual to $x_i$ contributes **the survival probability**
+$$
+\boxed{L_i=F(x_i).}
+$$
+Here $F$ denotes the <survivor function> as in the paper, rather than a cumulative distribution function. The <censoring> distribution contributes an additional factor to the full observed-data likelihood, but if it has distinct parameters and the required independence holds, that factor can be omitted when estimating the event-time parameters. A censored observation still conveys that the event time exceeded $x_i$.
+
+= ii
+{parent=a}
+{scope}
+
+= Solution
+{parent=ii}
+
+An exact observed event contributes **its event-time density**:
+$$
+\boxed{L_i=f(x_i)=-F'(x_i).}
+$$
+For <exponential-rate estimation from censored exposure>, the event-model <survival likelihood> under <independent censoring> is $\prod_i f(x_i)^{v_i}F(x_i)^{1-v_i}$. For the <exponential distribution>, put $d=\sum_i v_i$ and $X=\sum_i x_i$. Then
+$$
+L(\theta)=\theta^d e^{-\theta X},\qquad
+\ell(\theta)=d\log\theta-\theta X+\text{constant}.
+$$
+If $d>0$ and $X>0$, $\ell'(\theta)=d/\theta-X$ vanishes at
+$$
+\boxed{\widehat\theta=\frac{d}{X}.}
+$$
+The second derivative $-d/\theta^2$ is strictly negative, so this is the unique global <maximum-likelihood estimate>. The likelihood also tends to zero at both ends of the positive parameter range. If $d=0$ and $X>0$, the likelihood decreases on $\theta>0$; its supremum is at $\theta\downarrow0$, with no attained positive estimate. Thus every censored time belongs in the exposure denominator.
+
+= b
+{parent=4}
+{scope}
+
+= i
+{parent=b}
+{scope}
+
+= Solution
+{parent=i}
+
+Condition on the bulb being alive at age $\tau$. The next hour's survival <likelihood contribution> is
+$$
+\frac{F(\tau+1)}{F(\tau)}
+=\frac{e^{-\lambda(\tau+1)}}{e^{-\lambda\tau}}
+=\boxed{e^{-\lambda}}.
+$$
+**It does not depend on the unknown age** $\tau$. This is <memorylessness of the exponential distribution>: the residual lifetime given survival has the same <exponential distribution> as a new lifetime.
+
+= ii
+{parent=b}
+{scope}
+
+= Solution
+{parent=ii}
+
+For an exact failure half an hour after entry, use the conditional density, rather than the probability of an event at one exact time:
+$$
+\boxed{\frac{f(\tau+1/2)}{F(\tau)}=\lambda e^{-\lambda/2}.}
+$$
+Again this is independent of $\tau$ by <memorylessness of the exponential distribution>. Whether successive observed lecture segments came from the same bulb does not affect the conditional <likelihood>: surviving segments of one bulb multiply into its survival exposure, and replacement starts another memoryless lifetime. Assume no unrecorded use relevant to the exposure calculation or, equivalently, condition on the bulb being alive at each observed lecture's start; unobserved ages themselves need not be known.
+
+The observed working exposure is $12+1/2=12.5$ bulb-hours with one failure. Thus
+$$
+L(\lambda)\propto\lambda e^{-12.5\lambda},\qquad
+\boxed{\widehat\lambda=\frac1{12.5}=0.08\ \text{hour}^{-1}.}
+$$
+Strict concavity of $\log\lambda-12.5\lambda$ verifies the maximum. **Immediate replacement would increase observed working exposure to 13 hours**, since the replacement survives the remaining half hour, giving
+$$
+\boxed{L_{\mathrm{replaced}}(\lambda)\propto\lambda e^{-13\lambda},\qquad
+\widehat\lambda_{\mathrm{replaced}}=\frac1{13}\approx0.07692\ \text{hour}^{-1}.}
+$$
+For the alternative <Weibull distribution> and <unknown entry age in a Weibull survival segment>, keep its different inverse-scale convention: $F(t)=\exp[-(\lambda t)^p]$. Conditional survival for an additional duration $u$ is
+$$
+\frac{F(\tau+u)}{F(\tau)}
+=\exp\{-\lambda^p[(\tau+u)^p-\tau^p]\},
+$$
+and the conditional failure density after $u$ is
+$$
+p\lambda^p(\tau+u)^{p-1}
+\exp\{-\lambda^p[(\tau+u)^p-\tau^p]\}.
+$$
+Both depend on the unknown age unless $p=1$. The available segment data, with ages and bulb identity unrecorded, do not specify the usual Weibull likelihood needed to estimate $\lambda,p$. **Merely collecting more of the same unknown-age records does not fix the missing age/design information.** A larger dataset with documented ages or identities, or a justified model for the entry-age distribution, could permit estimation. If $p=1$ is imposed, the exponential calculation remains valid. The issue is loss of memorylessness and unspecified entry history, not a universal impossibility of learning from any larger bulb experiment.
+
+= 5
+{parent=Paper 35}
+{scope}
+
+= Solution
+{parent=5}
+
+$Y_{j,k}$ is the number in group $k$ still observed and event-free immediately before event time $a_j$: its group-specific <risk set> size. Set $Y_j=Y_{j,0}+Y_{j,1}$. Under the common <hazard function> and conditional on exactly one event at that time, each at-risk individual has the same infinitesimal event probability. Therefore
+$$
+\boxed{p(j,k)=\frac{Y_{j,k}}{Y_j}.}
+$$
+The indicator $g_{\pi(j)}$ records whether the event came from group 1, while $p(j,1)$ is its conditional expectation under equal hazards. Thus $z_j$ is the observed-minus-expected group-1 event count at that time. Under the null these are <martingale differences>, with conditional <variance>
+$$
+\operatorname{Var}(z_j\mid\mathcal H_{a_j-})=p_j(1-p_j),
+\qquad p_j=Y_{j,1}/Y_j.
+$$
+The <log-rank statistic> $z=\sum_jz_j$ has null mean zero. Its predictable variance estimate is $V=\sum_jp_j(1-p_j)$, so **the equal-hazards test uses**
+$$
+\boxed{Z=\frac{z}{\sqrt V}\ \dot\sim N(0,1),\qquad
+\frac{z^2}{V}\ \dot\sim\chi^2_1.}
+$$
+Use a two-sided large-sample <log-rank test> if no direction was prespecified; $V>0$ and adequate information are needed. The variance is the no-ties form. A positive $z$ indicates more group-1 events than expected. <Independent censoring> conditional on the model is required for these at-risk event intensities to describe the data.
+
+Under the <proportional hazards model>, the total instantaneous group-$k$ rate is $Y_{j,k}e^{\beta k}h_0(a_j)$. Conditioning on the next event cancels the <baseline hazard>, giving
+$$
+\boxed{p_\beta(j,k)=\frac{Y_{j,k}e^{\beta k}}
+ {Y_{j,0}+Y_{j,1}e^\beta}.}
+$$
+Keep $z_j$ defined using its null probability $p(j,1)$, as in the question. Its conditional expectation under the alternative is
+$$
+\boxed{\mathbb E_\beta[z_j\mid\mathcal H_{a_j-}]
+=\frac{Y_{j,1}e^\beta}{Y_{j,0}+Y_{j,1}e^\beta}
+ -\frac{Y_{j,1}}{Y_j}
+=\frac{Y_{j,0}Y_{j,1}(e^\beta-1)}
+ {Y_j(Y_{j,0}+Y_{j,1}e^\beta)}.}
+$$
+It is zero at $\beta=0$, as required, and has the sign of $\beta$ when both groups remain at risk. Replacing $p(j,1)$ inside the definition of $z_j$ with the alternative probability would give a different residual, whose mean would instead be zero under that alternative.
+
+= 6
+{parent=Paper 35}
+{scope}
+
+= 1
+{parent=6}
+{scope}
+
+= Solution
+{parent=1}
+
+The history $\mathcal H_{t-}$ contains the information observed strictly before $t$: baseline characteristics, previous events and <censoring>, and therefore which individuals are currently eligible and under observation. Formally it is the pre-$t$ information in the relevant <filtration>. The <at-risk process> $Y_i(t)$ is 1 if individual $i$ is observed and event-free immediately before $t$, and 0 otherwise. Let $Y_+(t)=\sum_iY_i(t)$ and write $dH(t)=h(t)dt$ for the <cumulative hazard> increment.
+
+The <counting-process intensity in survival analysis> gives
+$$
+\boxed{\Pr(dN_i(t)=1\mid\mathcal H_{t-})
+=Y_i(t)h(t)dt+o(dt).}
+$$
+The common conditional <hazard function> is assumed to remain applicable after conditioning on the observed history, as under suitable <independent censoring>. Summing gives **the conditional mean of the total event increment**:
+$$
+\boxed{\mathbb E[dN_+(t)\mid\mathcal H_{t-}]
+=Y_+(t)dH(t)+o(dt).}
+$$
+On times with $Y_+(t)>0$, invert this relation to estimate the hazard increment:
+$$
+\boxed{d\widehat H(t)=\frac{dN_+(t)}{Y_+(t)},\qquad
+\widehat H(t)=\int_0^t\frac{\mathbf1_{\{Y_+(u)>0\}}}{Y_+(u)}\,dN_+(u)
+=\sum_{a_j\leq t}\frac1{Y_+(a_j)}.}
+$$
+The last sum is for untied events. This is the <Nelson–Aalen estimator>; for ties replace 1 by the number of events at that time. No increment can be estimated once the <risk set> is empty.
+
+= 2
+{parent=6}
+{scope}
+
+= Solution
+{parent=2}
+
+In the no-simultaneous-event infinitesimal representation, the event increment is binary, so $dN_+(t)^2=dN_+(t)$. **Its second moment equals its first moment**:
+$$
+\boxed{\mathbb E[dN_+(t)^2\mid\mathcal H_{t-}]
+=Y_+(t)dH(t)+o(dt).}
+$$
+This uses the assumed binary increment. In an ordinary finite interval more than one event is possible, and the equality would not hold exactly; the no-ties counting-process calculation concerns the first-order infinitesimal terms.
+
+= 3
+{parent=6}
+{scope}
+
+= Solution
+{parent=3}
+
+Put $q_t=\Pr(dN_+(t)=1\mid\mathcal H_{t-})$. A binary event increment has conditional <variance> $q_t(1-q_t)$. Since $q_t=Y_+(t)h(t)dt+o(dt)$, its squared mean is of second order, giving
+$$
+\boxed{\operatorname{Var}(dN_+(t)\mid\mathcal H_{t-})
+=Y_+(t)dH(t)+o(dt).}
+$$
+Treating the predictable <risk set> size as known given the history, the <Nelson–Aalen estimator> increment therefore has first-order variance
+$$
+\boxed{\operatorname{Var}(d\widehat H(t)\mid\mathcal H_{t-})
+=\frac{dH(t)}{Y_+(t)}+o(dt),\qquad Y_+(t)>0.}
+$$
+Substitute $d\widehat H=dN_+/Y_+$ for $dH$ to obtain the estimated increment variance $dN_+/Y_+^2$. Summing these estimated predictable variances gives **the usual <Nelson–Aalen variance estimator>**:
+$$
+\boxed{\widehat{\operatorname{Var}}(\widehat H(t))
+=\int_0^t\frac{\mathbf1_{\{Y_+(u)>0\}}}{Y_+(u)^2}\,dN_+(u)
+=\sum_{a_j\leq t}\frac1{Y_+(a_j)^2}.}
+$$
+The martingale $dN_+-Y_+dH$ has orthogonal increments, which justifies accumulating the predictable variances of the estimation error. This is an estimated sampling variance on the observed at-risk range, not a claim of exact finite-sample unbiasedness after the <risk set> becomes empty. For multiple events at an event time the usual extension replaces the numerator 1 by the event count.
+
+= 7
+{parent=Paper 35}
+{scope}
+
+= 1
+{parent=7}
+{scope}
+
+= Solution
+{parent=1}
+
+Let $T=\min(T_A,T_B)$ be the first event time and $J$ its type. The <cause-specific hazard> for A is
+$$
+h_A(t)=\lim_{u\downarrow0}\frac{\Pr(t\leq T<t+u,\ J=A\mid T\geq t)}u.
+$$
+It is a rate among people free of both event types, not the marginal probability of eventually experiencing A. Under the given <independent> latent event times, their constant <hazard functions> give exponential <survivor functions>. Therefore **the first-event survivor is**
+$$
+\boxed{S(t)=\Pr(T_A\geq t,T_B\geq t)
+=e^{-\alpha t}e^{-\beta t}=e^{-(\alpha+\beta)t}.}
+$$
+The combined first-event rate is $s=\alpha+\beta>0$. Subsequent formulas concerning conditioning on type A require $\alpha>0$.
+
+= 2
+{parent=7}
+{scope}
+
+= Solution
+{parent=2}
+
+Multiply survival to $t$ by the conditional type-A event probability in the next infinitesimal interval. **The unconditional type-A increment probability is**
+$$
+\boxed{\Pr(t\leq T<t+dt,J=A)=e^{-(\alpha+\beta)t}\alpha\,dt+o(dt).}
+$$
+Equivalently, its exact value over a positive interval of length $u$ is $\int_t^{t+u}\alpha e^{-(\alpha+\beta)v}dv$. The factor $e^{-(\alpha+\beta)t}$ is essential because a prior B event removes an individual from the relevant <risk set>.
+
+= 3
+{parent=7}
+{scope}
+
+= Solution
+{parent=3}
+
+Integrate the type-A first-event density from zero to $t$. **The type-A cumulative incidence is**
+$$
+\boxed{F_A(t)=\Pr(T\leq t,J=A)
+=\int_0^t\alpha e^{-(\alpha+\beta)u}du
+=\frac\alpha{\alpha+\beta}(1-e^{-(\alpha+\beta)t}).}
+$$
+This is the <cumulative incidence function> in the <competing risks model>, distinct from the hypothetical net risk $1-e^{-\alpha t}$ obtained by removing B.
+
+= 4
+{parent=7}
+{scope}
+
+= Solution
+{parent=4}
+
+Letting $t\to\infty$ in the <cumulative incidence function> gives **the probability that the observed first event is of type A**:
+$$
+\boxed{\Pr(J=A)=\Pr(T_A<T_B)=\frac\alpha{\alpha+\beta}.}
+$$
+This is the sense of occurrence in the <competing risks model>. If one instead followed the latent exponential $T_A$ even after B, its eventual-occurrence probability would be one; that is a different question from observing A before the competing event.
+
+= 5
+{parent=7}
+{scope}
+
+= Solution
+{parent=5}
+
+Divide the joint first-event/type-A density by the type probability. For $\alpha>0$,
+$$
+f_{T\mid J=A}(t)=\frac{\alpha e^{-(\alpha+\beta)t}}{\alpha/(\alpha+\beta)}
+=\boxed{(\alpha+\beta)e^{-(\alpha+\beta)t},\qquad t\geq0.}
+$$
+It integrates to one, so **the conditional time is exponential with rate** $\alpha+\beta$. Type-A events that win the competition tend to occur sooner than an unrestricted latent A time. In fact the same conditional density holds for B, so the observed first-event time and its type are <independent> in this constant-rate model.
+
+= 6
+{parent=7}
+{scope}
+
+= Solution
+{parent=6}
+
+A <right-censored> subject contributes survival up to the recorded censoring time, not no information. Under <independent censoring>, write $x_i=\min(T_i,C_i)$ and $v_i=\mathbf1_{\{T_i\leq C_i\}}$. For exponential death rate $\lambda$, the event-model <survival likelihood> is
+$$
+\boxed{L(\lambda)\propto\lambda^{\sum_i v_i}
+ e^{-\lambda\sum_i x_i},\qquad
+\widehat\lambda_{\mathrm{full}}=\frac{\sum_i v_i}{\sum_i x_i}.}
+$$
+**Discarding censored subjects drops observed exposure and selects people whose death occurred before censoring.** Their recorded event times are not an unselected sample of all death times. The death-only conditional distribution can differ from the marginal death-time distribution even when censoring is independent. A correct <maximum likelihood estimate> uses the total observed person-time, including censored follow-up.
+
+= 7
+{parent=7}
+{scope}
+
+= Solution
+{parent=7}
+
+Let $\gamma$ be the exponential censoring rate and assume its time is <independent> of the exponential death time. Regard censoring as the competing event B. The preceding conditional-density calculation gives
+$$
+X\mid\{\text{death observed}\}\sim\operatorname{Exp}(\lambda+\gamma).
+$$
+Hence **the reported death-only rate estimates the combined rate**:
+$$
+\boxed{0.3\ \text{year}^{-1}\ \text{estimates}\ \lambda+\gamma.}
+$$
+It is not, in general, an estimate of the death <cause-specific hazard> alone. This interpretation assumes the stated two-exponential competition without an additional administrative end of observation that truncates the conditional time distribution.
+
+= 8
+{parent=Paper 35/7}
+{scope}
+
+= Solution
+{parent=8}
+
+**The observed death fraction is**
+$$
+\boxed{\widehat\pi=\frac{100}{150}=\frac23.}
+$$
+In the <independent> two-exponential <competing risks model>, $\pi=\lambda/(\lambda+\gamma)$. Thus the observed fraction estimates the share of the combined rate attributable to death. Combining it with an estimate of $s=\lambda+\gamma$ yields $\widehat\lambda=\widehat\pi\widehat s$ and $\widehat\gamma=(1-\widehat\pi)\widehat s$. This uses the event-type information that the death-only time analysis ignored.
+
+= 9
+{parent=Paper 35/7}
+{scope}
+
+= Solution
+{parent=9}
+
+Applying <death-only rate correction under exponential censoring> to the death fraction and combined-rate estimate, **the corrected plug-in death rate is**
+$$
+\boxed{\widehat\lambda_{\text{plug-in}}
+=\frac23\times0.3=0.2\ \text{year}^{-1}.}
+$$
+The corresponding censoring-rate estimate is $0.1\ \text{year}^{-1}$. This correction is consistent under the <independent> exponential competition model: the death-only conditional rate estimates $s$ and the observed fraction estimates $\lambda/s$.
+
+There is an important distinction from the full-data <maximum likelihood estimate>. If $T_D$ and $T_C$ are total observed follow-up for the 100 deaths and 50 censored subjects, the full likelihood for both rates is
+$$
+L(\lambda,\gamma)\propto\lambda^{100}\gamma^{50}
+ e^{-(\lambda+\gamma)(T_D+T_C)},
+\qquad
+\boxed{\widehat\lambda_{\mathrm{full}}=\frac{100}{T_D+T_C}.}
+$$
+The reported death-only rate determines $T_D=100/0.3$, but supplies no $T_C$, so the exact full-data estimate cannot be reconstructed from the numerical summaries alone. The value $0.2$ is the requested corrected rate using those summaries; it need not equal the realised full-data maximum-likelihood estimate. The full analysis should use the actual censored follow-up whenever available.

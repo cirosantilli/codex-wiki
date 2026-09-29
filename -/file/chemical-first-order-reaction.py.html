@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>chemical-first-order-reaction.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="chemical-first-order-reaction.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/chemical-first-order-reaction.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">chemical-first-order-reaction.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/chemical-first-order-reaction.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/chemical-first-order-reaction.py">chemical-first-order-reaction.py</a></b></div></nav></div><div class="p"><b>chemical-first-order-reaction.py</b></div><div class="code"><div><pre><code>"""Plot an illustrative irreversible A -&gt; B first-order conversion.
+
+Writes chemical-first-order-reaction.png to the current working directory.
+Tested with Python 3.14.4, NumPy 2.3.5, and Matplotlib 3.10.7.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    initial, k = 1.0, 0.2  # mol/L and 1/s
+    time = np.linspace(0.0, 20.0, 2001)
+    a = initial * np.exp(-k * time)
+    b = initial - a
+    rate = k * a
+    half = np.log(2.0) / k
+    a10 = initial * np.exp(-k * 10.0)
+    b10, rate10 = initial - a10, k * a10
+
+    # Check stoichiometric balance and the differential/integral rate relations.
+    assert np.allclose(a + b, initial)
+    assert np.isclose(initial * np.exp(-k * half), initial / 2.0)
+    assert np.allclose(-np.gradient(a, time)[1:-1], rate[1:-1], rtol=1e-6)
+    assert np.isclose(np.trapezoid(rate, time), initial - a[-1], rtol=1e-6)
+    assert np.allclose([a10, b10, rate10], [0.1353352832, 0.8646647168, 0.0270670566])
+
+    plt.rcParams.update({
+        "font.size": 12, "figure.facecolor": "white", "axes.facecolor": "white",
+        "savefig.facecolor": "white", "axes.spines.top": False,
+        "axes.spines.right": False,
+    })
+    fig, (concentration, speed) = plt.subplots(1, 2, figsize=(9.0, 4.5), dpi=120)
+    fig.subplots_adjust(left=0.075, right=0.97, bottom=0.25, top=0.78, wspace=0.34)
+    fig.suptitle("First-order conversion: A → B", fontsize=16, y=0.97)
+    fig.text(0.5, 0.875, r"$[\mathrm{A}]_0=1$ mol/L, $[\mathrm{B}]_0=0$, $k=0.2$ s$^{-1}$",
+             ha="center")
+    blue, orange, green, gray = "#236a9e", "#bc542c", "#257653", "#666666"
+    concentration.plot(time, a, color=blue, lw=2.5, label="[A]: reactant")
+    concentration.plot(time, b, color=orange, lw=2.5, label="[B]: product")
+    concentration.scatter([half, 10.0, 10.0], [0.5, a10, b10],
+                          color=[gray, blue, orange], s=35, zorder=4)
+    concentration.set(xlabel="Time (s)", ylabel="Concentration (mol/L)",
+                      xlim=(0, 20), ylim=(0, 1.05), title="The two concentrations sum to 1 mol/L")
+    concentration.legend(loc="center right", fontsize=10, frameon=False)
+    speed.plot(time, rate, color=green, lw=2.5, label=r"$v=k[\mathrm{A}]$")
+    speed.scatter([half, 10.0], [0.1, rate10], color=green, s=35, zorder=4)
+    speed.set(xlabel="Time (s)", ylabel="Reaction rate (mol/L/s)",
+              xlim=(0, 20), ylim=(0, 0.21), title="Same fractional decay; different units")
+    speed.legend(loc="upper right", frameon=False)
+    for axis in (concentration, speed):
+        axis.axvline(half, color=gray, ls=":", lw=1.2)
+        axis.axvline(10.0, color=gray, ls="--", lw=1.0, alpha=0.6)
+        axis.set_xticks([0, 5, 10, 15, 20])
+        axis.grid(alpha=0.16)
+        axis.set_title(axis.get_title(), fontsize=11, pad=12)
+    fig.text(0.5, 0.10, "Half-life = 3.4657 s (dotted guides); 10 s (dashed guides)",
+             ha="center", fontsize=11)
+    fig.text(0.5, 0.04, "At 10 s: [A] = 0.135335 mol/L, [B] = 0.864665 mol/L, v = 0.027067 mol/L/s",
+             ha="center", fontsize=10)
+    fig.savefig(Path.cwd() / "chemical-first-order-reaction.png", transparent=False)
+    plt.close(fig)
+    print(f"half-life={half:.8f} s; A(10)={a10:.9f}; B(10)={b10:.9f}; v(10)={rate10:.9f}")
+    print("Checks passed: concentration balance, half-life, numerical derivative and integrated rate.")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

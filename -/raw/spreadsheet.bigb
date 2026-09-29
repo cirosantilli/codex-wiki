@@ -1,0 +1,224 @@
+= Spreadsheet
+{wiki}
+
+A <spreadsheet> is <software> for organizing information in a rectangular grid of <spreadsheet cells> and calculating with it. Rows are numbered and columns are lettered: `B3` is the <spreadsheet cell> at column `B`, row `3`. A <spreadsheet cell> can hold a label, a numerical <input>, or a <spreadsheet formula> whose value supplies an <output>. This brings a <mathematical model> close to its data: quantities, assumptions and results can be read side by side. The address convention is described in LibreOffice's official help. <Addresses and References, Absolute and Relative, LibreOffice Help>[Addresses and References, Absolute and Relative: Cell references, column letters and row numbers]{ref}
+
+The useful idea is to write a relationship once and reuse it across similar rows. <Relative spreadsheet references> follow each row's data; <absolute spreadsheet references> retain a shared assumption; <mixed spreadsheet references> let one coordinate vary while the other stays fixed. <Spreadsheet dependency evaluation> then computes the resulting <spreadsheet formulas>. A rectangular layout organizes the model for its reader, while the <spreadsheet dependency graph> organizes its calculation.
+
+= Spreadsheet tabular model
+{parent=Spreadsheet}
+
+A <spreadsheet tabular model> assigns a consistent meaning to each row and column. For an original example, let rows 2–4 describe three items, with quantity in column `A`, unit price in column `B`, subtotal in column `C`, and total including tax in column `D`. Put the single shared tax rate in `F1`. The chosen rate $1/5$ is an illustrative assumption. Quantities, unit prices and `F1` are <inputs>; columns `C` and `D` hold <spreadsheet formulas> and display their computed values as <outputs>.
+
+Enter decimal <inputs> `2.5`, `1.75`, `4.5` for the unit prices and `0.2` for the tax rate. The following table expresses those values as exact <fractions> so that the <arithmetic> is easy to check. It does not require typing a fraction into an input <spreadsheet cell> or assume that all <software> calculates with exact <rational numbers>.
+
+|| Row
+|| Quantity (`A`)
+|| Unit price (`B`)
+|| Subtotal (`C`)
+|| Total including tax (`D`)
+
+| 2
+| $3$
+| $5/2$
+| $15/2$
+| $9$
+
+| 3
+| $4$
+| $7/4$
+| $7$
+| $42/5$
+
+| 4
+| $2$
+| $9/2$
+| $9$
+| $54/5$
+
+Start with `C2` containing `=A2*B2` and `D2` containing `=C2*(1+$F$1)`. Here `*` requests <multiplication>, and `1+$F$1` adds the tax fraction to one. Copy these two <spreadsheet formulas> down into rows 3 and 4, a fill operation. The <relative spreadsheet references> change with the destination row: `C3` becomes `=A3*B3` and `D3` becomes `=C3*(1+$F$1)`; `C4` becomes `=A4*B4` and `D4` becomes `=C4*(1+$F$1)`. The <absolute spreadsheet reference> `$F$1` continues to read the shared rate. Copying <spreadsheet formulas> adjusts relative coordinates while retaining absolute coordinates. <Addresses and References, Absolute and Relative, LibreOffice Help>[Addresses and References, Absolute and Relative: Relative Addressing; Absolute Addressing; When to Use Relative and Absolute References, final two paragraphs]{ref}
+
+\Image[spreadsheet-copy-fill-shared-rate.png]
+{title=Original three-row <spreadsheet tabular model> before and after filling two <spreadsheet formulas>, with a shared <absolute spreadsheet reference>}
+
+The same <mathematical expression> applies to every item. Writing $q_i$ for quantity, $p_i$ for unit price and $t$ for the shared tax rate gives
+$$
+s_i=q_i p_i,\qquad d_i=s_i(1+t).
+$$
+For row 2, the exact <arithmetic> is $(3\cdot5/2)(1+1/5)=(15/2)(6/5)=9$. The subtotals add to $47/2$, so the totals add to $(47/2)(6/5)=141/5$, agreeing with $9+42/5+54/5$. The <spreadsheet formulas> encode the relationship; the displayed numbers are its results for these particular <inputs>.
+
+This separation is useful for forecasting and <sensitivity analysis>. Keeping quantities and unit prices fixed while changing only `F1` from $1/5$ to $1/4$ gives exact totals $75/8$, $35/4$, and $45/4$. More generally, a rate change $\Delta t$ changes each total by
+$$
+d_i(t+\Delta t)-d_i(t)=s_i\Delta t.
+$$
+This follows by expanding the two <mathematical expressions> and cancelling $s_i(1+t)$. Here $\Delta t=1/20$, so the increases are $3/8$, $7/20$, and $9/20$, adding to $47/40$. One shared <input> makes the assumption visible and consistent across all rows. Overwriting a computed total with a number would instead remove that <spreadsheet formula>; its value would cease to follow the model when the rate changes.
+
+// Target: computer-science.bigb
+
+= Spreadsheet dependency evaluation
+{parent=Spreadsheet}
+
+Evaluate numeric formula dependencies using <depth-first search> and <memoization>, or a <topological ordering>. Marking active evaluations detects cycles; repeated numerical sweeps need not terminate or determine a unique result.
+
+A <spreadsheet dependency graph> turns a page of <spreadsheet formulas> into a plan: compute each prerequisite before the <spreadsheet cell> that consumes it. This section uses a deliberately small model with explicit cell references, fixed <spreadsheet formulas>, and <deterministic computation> from numerical <inputs>. There are no external data changes or formulas that change their references while running. Within these assumptions, a <topological order> gives a reproducible answer without repeatedly sweeping the visible grid.
+
+Take two input <spreadsheet cells> and five <spreadsheet formulas>:
+
+|| <Spreadsheet cell>
+|| Stored input or <spreadsheet formula>
+|| Initial value
+|| Value after changing `A1` to 5
+
+| `A1`
+| `3`, later `5`
+| $3$
+| $5$
+
+| `A2`
+| `4`
+| $4$
+| $4$
+
+| `B1`
+| `=A1+A2`
+| $7$
+| $9$
+
+| `B2`
+| `=2*A1`
+| $6$
+| $10$
+
+| `C1`
+| `=B1+B2`
+| $13$
+| $19$
+
+| `D1`
+| `=C1/2`
+| $13/2$
+| $19/2$
+
+| `E1`
+| `=A2^2`
+| $16$
+| $16$
+
+\Image[spreadsheet-formula-dependency-evaluation.png]
+{title=An original <spreadsheet dependency graph> and a <topological order> with values before and after one edit}
+
+Our <directed edge> convention is *prerequisite to consumer*: `A1` $\to$ `B1` means that `B1` reads `A1`, not the reverse. The seven <directed edges> are `A1` $\to$ `B1`, `A2` $\to$ `B1`, `A1` $\to$ `B2`, `B1` $\to$ `C1`, `B2` $\to$ `C1`, `C1` $\to$ `D1`, and `A2` $\to$ `E1`. This <spreadsheet dependency graph> is a <directed acyclic graph>. One <topological order> is `A1,A2,B1,B2,C1,D1,E1`; `E1` could instead be computed immediately after `A2`. A <topological order> constrains prerequisites, not the physical positions of <spreadsheet cells>.
+
+In that order, the initial <arithmetic operations> give $B1=3+4=7$, $B2=2\cdot3=6$, $C1=7+6=13$, $D1=13/2$, and $E1=4^2=16$. The <spreadsheet formulas> define one value per <spreadsheet cell>: an outline by <induction> along any <topological order> shows that every prerequisite already has its uniquely determined value when its consumer is computed. Different permitted orders therefore agree in this model. The useful idea is that information flows through the <directed acyclic graph> even when the visible grid does not display that flow.
+
+A concrete implementation history illustrates this separation. Microsoft's documentation distinguishes the per-worksheet calculation chains used in Excel 2002 and earlier from calculation using multiple <software threads> introduced in Excel 2007 for independent chain sections. This is a documented implementation example, not a definition of <spreadsheet dependency evaluation>.<Excel Recalculation by Microsoft>[Dependence, Dirty Cells, and Recalculated Cells: paragraphs beginning “In Excel 2002 and earlier versions” and “In Excel 2007”]{ref}
+
+= Spreadsheet dependency graph
+{parent=Spreadsheet dependency evaluation}
+{title2=$G=(V,E)$}
+
+The <directed graph> whose <vertices> are the <spreadsheet cells> and whose <directed edges> $u\to v$ mean that the <spreadsheet formula> in $v$ references $u$. Input <spreadsheet cells> have no prerequisites in this model. Retain both incoming references and outgoing consumers: <depth-first search> for evaluation follows incoming references backwards, whereas downstream invalidation follows outgoing consumers forwards. A <directed path> then expresses indirect dependence, and a <directed cycle> expresses a <spreadsheet circular reference>.
+
+= Spreadsheet circular reference
+{parent=Spreadsheet dependency graph}
+
+A <spreadsheet cell> depends on itself along a nonempty <directed path>. For a separate formula-edit experiment, restore the initial inputs and replace only `B1` by `=A1+A2+C1`. Now `B1` $\to$ `C1` $\to$ `B1` is a <directed cycle>. Requesting `D1` makes `D1,C1,B1` active and then requests the still-active `C1`; the <algorithm> reports `C1,B1,C1` rather than returning an old value. This witness follows references backwards, opposite to our dependency arrows; reversing it gives a <directed cycle> in the <spreadsheet dependency graph>.
+
+`D1` is not itself on that <directed cycle>, but it cannot receive a value from this evaluator because it needs `C1`. Independent requests for `B2` and `E1` still succeed. A <topological order> of the entire modified <spreadsheet dependency graph> is impossible: the two cyclic <directed edges> would require `B1` before `C1` and `C1` before `B1`. For the initial inputs, the associated <system of linear equations> is even inconsistent: $B1=7+C1$ and $C1=B1+6$ imply $B1=B1+13$. Detecting a <directed cycle> is a structural check, not an attempt to solve these <linear equations>.
+
+= Iterative spreadsheet calculation
+{parent=Spreadsheet circular reference}
+
+A different interpretation can treat cyclic <spreadsheet formulas> as simultaneous equations and seek a <fixed point> by repeated numerical updates. This requires an explicit update rule, initial values and stopping condition. It is not automatically the meaning of a <spreadsheet formula>. In particular, a <directed cycle> alone tells us neither whether a <fixed point> exists nor whether a chosen update rule approaches it.
+
+Two original toy examples make the distinction exact. The cyclic pair `X1=Y1+1`, `Y1=X1+1` has no solution over the <real numbers>: substitution gives $X1=X1+2$. For `X1=Y1`, `Y1=X1`, every equal pair is a <fixed point>, so there is no unique answer. Simultaneously updating both <spreadsheet cells> from the previous pair gives $(x_{n+1},y_{n+1})=(y_n,x_n)$. Starting at $(0,1)$ produces the <periodic sequence> $(0,1),(1,0),(0,1),\ldots$, which does not approach a <fixed point>. Updating `X1` first and immediately using its new value for `Y1` instead gives $(1,1)$ in one sweep. That difference follows from the specified rules, not from a claim about any current spreadsheet product. Numerical iteration can be useful for a deliberately chosen model with a justification such as the <contraction mapping theorem>; ordinary acyclic <spreadsheet dependency evaluation> already has its answer from prerequisite order.
+
+= Cached cell value
+{parent=Spreadsheet dependency evaluation}
+
+A numerical value retained for reuse by <memoization>. It is usable only while the <spreadsheet formula> and all its relevant <inputs> remain valid. After changing `A1` from 3 to 5, following outgoing <directed edges> finds exactly `B1,B2,C1,D1`. Invalidate their <cached cell values> before evaluating another requested result; install the new input value for `A1`. The <cached cell values> of `A2` and `E1` remain valid because neither has a <directed path> from `A1`.
+
+\Image[spreadsheet-cycle-downstream-invalidation.png]
+{title=Downstream invalidation after an input edit, and a different formula edit creating a <spreadsheet circular reference>}
+
+One recomputation in the restricted <topological order> `B1,B2,C1,D1` gives $9,10,19,19/2$. Four <spreadsheet formulas> are recomputed, while `E1` stays at 16. Removing invalid values from the cache prevents a subtle error: a finished marker from the previous evaluation does not prove that the old value is correct after an edit. The affected set is conservative; a changed prerequisite might leave a consumer's value numerically equal, but this simple scheme still invalidates it. For a formula edit, update the incoming <directed edges> and corresponding outgoing consumer lists as well as invalidating the edited <spreadsheet cell> and its downstream consumers. Microsoft's documentation explicitly describes both direct and indirect dependents being marked for recalculation.<Excel Recalculation by Microsoft>[Dependence, Dirty Cells, and Recalculated Cells: paragraph beginning “When a structural change is made”; B1/A1 and C1/B1 dirty-cell example]{ref}
+
+For demand-driven evaluation, <memoization> combines with <depth-first search>. Each <spreadsheet cell> has one of three states: `UNSEEN` means no valid <cached cell value>; `ACTIVE` means its evaluation is on the current <call stack>; `FINISHED` means a valid value is available. Initialize valid input <spreadsheet cells> as `FINISHED`. Start with all <spreadsheet formulas> `UNSEEN`, or retain only valid `FINISHED` entries after invalidation. The following original <algorithm> uses an ordered `references` list and an `apply_formula` operation for each <spreadsheet formula>:
+
+```
+def value(cell):
+    if state[cell] == FINISHED:
+        return cache[cell]
+    if state[cell] == ACTIVE:
+        i = stack.index(cell)
+        raise CircularReference(stack[i:] + [cell])
+    state[cell] = ACTIVE
+    stack.append(cell)
+    try:
+        args = [value(p) for p in references[cell]]
+        cache[cell] = apply_formula(cell, args)
+        state[cell] = FINISHED
+        return cache[cell]
+    except Exception:
+        state[cell] = UNSEEN
+        raise
+    finally:
+        stack.pop()
+```
+
+Requesting `D1` first makes `D1,C1,B1` active, then reads the finished inputs `A1,A2`. `B1` finishes at 7. Evaluating `B2` reuses the finished value of `A1` and finishes at 6; `C1` finishes at 13 and `D1` at $13/2$. A later request for `D1` immediately returns its <cached cell value>. The shared prerequisite `A1` is not a <directed cycle>: it was finished before the second request. The crucial distinction is between a previously visited <vertex> and a still-active <vertex>. The exceptional path restores unfinished states while unwinding the <call stack>, so failed evaluations are not cached as successful results. MIT's <depth-first search> notes use stack-duration marks to distinguish an <edge> to an active ancestor and to detect a <directed cycle>.<6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff/Lecture 14: Graphs II: Depth-First Search>[Lecture 14: Graphs II: Depth-First Search, printed pp. 3–4: stack-duration marks and cycle detection]{ref}
+
+With <adjacency lists> and constant-time state/cache access, the structural work of a successful demand-driven evaluation is $O(|V_R|+|E_R|)$ in <big O notation>, where $V_R$ and $E_R$ are the requested <spreadsheet cells> and their recursively reached prerequisites and references. Each reached <spreadsheet formula> is computed once; each reference is inspected once. This <time complexity> counts dependency bookkeeping separately from the cost of the <arithmetic operations>. Detecting a <spreadsheet circular reference> can additionally scan the current <call stack> once to report its witness.
+
+= Spreadsheet cell
+{parent=Spreadsheet}
+
+An addressed entry of a <spreadsheet>, such as `A1`. Here it stores either a literal numerical <input> or a <spreadsheet formula>; its current value is distinct from the stored formula. A <cached cell value> records a previously computed value, not an instruction to compute it again.
+
+In a <spreadsheet tabular model>, `D2` can store `=C2*(1+$F$1)` while displaying `9`. The <spreadsheet cell reference> `D2` identifies the location, the <spreadsheet formula> describes the calculation, and `9` is the value obtained from the present <inputs>. Keeping those three ideas distinct makes copying and checking a model much easier.
+
+= Spreadsheet formula
+{parent=Spreadsheet cell}
+
+A <mathematical expression> stored in a <spreadsheet cell>, with references to other <spreadsheet cells>. In this example `=A1+A2` asks for <addition>, `=2*A1` for <multiplication>, and `=A2^2` for <exponentiation>. The evaluator in <spreadsheet dependency evaluation> assumes these <spreadsheet formulas> have already been represented by their ordered lists of referenced <spreadsheet cells> and operations on the resulting numbers; it does not execute arbitrary formula text.
+
+Copying a <spreadsheet formula> produces a new expression by adjusting its <spreadsheet cell references>. Copying only its displayed value produces a number instead. For example, copying the <spreadsheet formula> `=A2*B2` down one row gives `=A3*B3`; entering its former value $15/2$ in the next row would give neither the required relationship nor this example's correct subtotal $7$.
+
+= Spreadsheet cell reference
+{parent=Spreadsheet formula}
+
+= A1 spreadsheet reference
+{c}
+{synonym}
+
+A <spreadsheet cell reference> identifies the <spreadsheet cell> read by a <spreadsheet formula>. In A1 notation, `B3` combines a column letter with a row number. For copying, the column and row can each be relative or absolute, independently: a `$` immediately before a coordinate fixes that coordinate during the copy. The `$` is an addressing marker, not a currency symbol. <Switch between relative, absolute, and mixed references, Microsoft Support>[Switch between relative, absolute, and mixed references: opening paragraphs and table of reference changes when copying two cells down and two cells right]{ref}
+
+Number columns as $A=1$, $B=2$, and so on. If a <spreadsheet formula> moves by $\Delta c$ columns and $\Delta r$ rows during copying, a referenced coordinate $(c,r)$ becomes
+$$
+(c',r')=(c+\varepsilon_c\Delta c,\ r+\varepsilon_r\Delta r),
+$$
+where each $\varepsilon$ is $1$ for a relative coordinate and $0$ for an absolute coordinate. This is a <translation> on the unfixed coordinates. For ordinary in-sheet references whose translated addresses exist, repeated copies compose by <addition> of their displacements: substitute the rule twice to obtain $c''=c+\varepsilon_c(\Delta c_1+\Delta c_2)$, and likewise for the row. Copying therefore preserves either a fixed coordinate or an offset from the formula's location.
+
+= Relative spreadsheet reference
+{parent=Spreadsheet cell reference}
+
+A <relative spreadsheet reference>, such as `A2`, allows both coordinates to change when its <spreadsheet formula> is copied. From `C2`, `A2` means two columns left, in the same row. Copy `=A2*B2` from `C2` to `C4`: the displacement is zero columns and two rows, so it becomes `=A4*B4`. The row number changes to retain the same positional relationship to the <spreadsheet formula>.
+
+= Absolute spreadsheet reference
+{parent=Spreadsheet cell reference}
+
+An <absolute spreadsheet reference>, such as `$F$1`, fixes both coordinates when its <spreadsheet formula> is copied. In the <spreadsheet tabular model>, every copied total reads the same tax rate. Absolute addressing retains the <spreadsheet cell reference>, not the value: changing the <input> in `F1` changes the computed totals even though the references remain `$F$1`.
+
+= Mixed spreadsheet reference
+{parent=Spreadsheet cell reference}
+
+A <mixed spreadsheet reference> fixes exactly one coordinate. `$A2` fixes column `A` and lets the row follow the copy; `B$1` fixes row `1` and lets the column follow the copy. Put $2,3,4$ in `A2:A4` and $5,6,7$ in `B1:D1`. Store `=$A2*B$1` in `B2`, then fill the rectangle `B2:D4`. The colon denotes the inclusive rectangular range between the named corner <spreadsheet cells>. Each <spreadsheet formula> reads its row's factor from column `A` and its column's factor from row `1`, producing a <multiplication table>.
+
+\Image[spreadsheet-mixed-reference-anchors.png]
+{title=Original <multiplication table> showing how two <mixed spreadsheet references> anchor the column and row independently during two-dimensional copying}
+
+Copying from `B2` to `D4` moves two columns right and two rows down. The <mixed spreadsheet references> become `$A4` and `D$1`, so `D4` contains `=$A4*D$1` and has value $4\cdot7=28$. For comparison, under that same displacement `A2` becomes `C4`, `$A$2` remains `$A$2`, `$A2` becomes `$A4`, and `A$2` becomes `C$2`. These four cases express the independent choice for each coordinate. Microsoft's official table demonstrates the same four possibilities for a two-row, two-column copy. <Switch between relative, absolute, and mixed references, Microsoft Support>[Switch between relative, absolute, and mixed references: final four-row table, absolute column/row, relative column/absolute row, absolute column/relative row, and relative column/row]{ref}
+
+The filled rows have values $(10,12,14)$, $(15,18,21)$, and $(20,24,28)$. The <multiplication table> works because the left factor moves only vertically and the top factor moves only horizontally. Without the anchors, copying `=A2*B1` from `B2` to `D4` would give `=C4*D3`, reading interior results rather than the intended boundary <inputs>.
+
+// Target: computer-science.bigb

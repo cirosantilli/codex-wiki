@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>matrix-similarity-physical-bases.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="matrix-similarity-physical-bases.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/matrix-similarity-physical-bases.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">matrix-similarity-physical-bases.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/matrix-similarity-physical-bases.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/matrix-similarity-physical-bases.py">matrix-similarity-physical-bases.py</a></b></div></nav></div><div class="p"><b>matrix-similarity-physical-bases.py</b></div><div class="code"><div><pre><code>"""Draw one physical linear map in two bases; emit PNG into the current directory.
+
+Tested with Python 3.14, matplotlib 3.10.7, and numpy 2.3.5.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+BLUE = "#1769a4"
+ORANGE = "#bc5318"
+GREEN = "#287451"
+INK = "#243444"
+
+
+def arrow(ax, start, end, color, width=2.4, style="-"):
+    ax.annotate("", xy=end, xytext=start,
+                arrowprops=dict(arrowstyle="-&gt;", color=color, lw=width,
+                                linestyle=style, mutation_scale=14), zorder=4)
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "text.color": INK,
+                         "axes.titlecolor": INK, "font.family": "DejaVu Sans"})
+    fig, axes = plt.subplots(1, 2, figsize=(11.2, 6.5), dpi=100)
+    fig.patch.set_facecolor("white")
+    fig.suptitle("Same physical map: double horizontal, multiply vertical by five",
+                 fontsize=16, y=0.965)
+    bases = [np.eye(2), np.array([[1., 1.], [0., 1.]])]
+    titles = ["Old basis: horizontal and vertical", "New basis: horizontal and diagonal"]
+    for index, (ax, basis, title) in enumerate(zip(axes, bases, titles)):
+        ax.set_facecolor("white")
+        ax.set_aspect("equal")
+        ax.set_xlim(-1.6, 5.6)
+        ax.set_ylim(-0.9, 6.0)
+        ax.set_title(title, fontsize=13, pad=16)
+        for i in range(-7, 8):
+            for fixed, variable in [(0, 1), (1, 0)]:
+                coords = np.zeros((2, 2))
+                coords[fixed] = i
+                coords[variable] = [-10, 10]
+                line = basis @ coords
+                ax.plot(line[0], line[1], color="#e3e7eb", lw=0.8, zorder=0)
+        ax.axhline(0, color="#a3adb6", lw=1)
+        ax.axvline(0, color="#a3adb6", lw=1)
+        for j in range(2):
+            arrow(ax, (0, 0), basis[:, j], GREEN, 2)
+            label = ("$e_1$", "$e_2$")[j] if index == 0 else ("$b_1$", "$b_2$")[j]
+            pos = basis[:, j] + ([0.05, -0.34] if j == 0 else [-0.40, 0.12])
+            ax.text(*pos, label, color=GREEN, fontsize=13)
+        p, tp = np.array([2., 1.]), np.array([4., 5.])
+        for vector, color in [(p, BLUE), (tp, ORANGE)]:
+            coefficients = np.linalg.solve(basis, vector)
+            elbow = coefficients[0] * basis[:, 0]
+            ax.plot([0, elbow[0], vector[0]], [0, elbow[1], vector[1]],
+                    linestyle=(0, (2, 3)), color=color, lw=1.8, zorder=2)
+            ax.scatter(*elbow, s=18, color=color, zorder=3)
+            arrow(ax, (0, 0), vector, color)
+        ax.text(2.12, 0.85, "$p$", color=BLUE, fontsize=14)
+        ax.text(4.08, 5.06, "$T(p)$", color=ORANGE, fontsize=14)
+        ax.set_xticks(range(-1, 6))
+        ax.set_yticks(range(0, 6))
+        ax.tick_params(length=0, labelsize=10, colors="#667582")
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+        ax.text(0.02, 0.98, "Physical plane (same scale)", transform=ax.transAxes,
+                va="top", fontsize=10, color="#667582")
+        ax.set_xlabel("Physical horizontal direction", fontsize=11)
+    fig.text(0.26, 0.13, "$x=(2,1)^T$    $Ax=(4,5)^T$", ha="center", fontsize=14)
+    fig.text(0.76, 0.13, "$y=(1,1)^T$    $By=(-1,5)^T$", ha="center", fontsize=14)
+    fig.text(0.5, 0.055, "$4e_1+5e_2=-b_1+5b_2$   —   identical output vector",
+             ha="center", fontsize=14)
+    fig.subplots_adjust(left=0.045, right=0.97, bottom=0.23, top=0.86, wspace=0.15)
+    fig.savefig(Path(__file__).stem + ".png", facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

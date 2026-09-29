@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>bellman-ford-negative-cycle-reachability.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="bellman-ford-negative-cycle-reachability.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/bellman-ford-negative-cycle-reachability.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">bellman-ford-negative-cycle-reachability.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/bellman-ford-negative-cycle-reachability.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/bellman-ford-negative-cycle-reachability.py">bellman-ford-negative-cycle-reachability.py</a></b></div></nav></div><div class="p"><b>bellman-ford-negative-cycle-reachability.py</b></div><div class="code"><div><pre><code>"""Draw relevant and irrelevant negative cycles and reverse every arrow.
+
+Tested with Python 3.14, matplotlib 3.10.7 and numpy 2.3.5.
+The output PNG is written to the CWD.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, FancyArrowPatch
+from matplotlib.path import Path as MplPath
+
+
+POSITIONS = {"S": (0, 1.5), "A": (2, 2.5), "B": (2, 0.5),
+             "C": (4, 0.5), "T": (5.6, 2.5), "U": (5.2, -1.45)}
+EDGES = (("S", "A", 4), ("S", "B", 5), ("A", "B", -2),
+         ("B", "C", 3), ("C", "T", 2), ("A", "T", 8),
+         ("C", "A", -4))
+CYCLE = {("A", "B"), ("B", "C"), ("C", "A")}
+LABEL_POSITIONS = {( "S", "A"): (0.85, 2.30),
+                   ("S", "B"): (0.75, 0.67),
+                   ("A", "B"): (1.62, 1.50),
+                   ("B", "C"): (3, 0.21),
+                   ("C", "T"): (5.10, 1.40),
+                   ("A", "T"): (3.75, 2.77),
+                   ("C", "A"): (3.30, 1.66)}
+
+
+def panel(ax, reversed_arrows):
+    ax.set(xlim=(-0.7, 6.3), ylim=(-2.45, 3.5), aspect="equal")
+    ax.axis("off")
+    for u, v, weight in EDGES:
+        tail, head = (v, u) if reversed_arrows else (u, v)
+        color = "#bb293a" if (u, v) in CYCLE else "#587a8c"
+        ax.add_patch(FancyArrowPatch(POSITIONS[tail], POSITIONS[head],
+                                    arrowstyle="-|&gt;", mutation_scale=17,
+                                    linewidth=2.1, color=color,
+                                    shrinkA=21, shrinkB=21))
+        ax.text(*LABEL_POSITIONS[u, v], str(weight).replace("-", "−"),
+                ha="center", va="center", fontsize=12, color=color,
+                bbox={"facecolor": "white", "edgecolor": "none", "pad": 1})
+    for v, (x, y) in POSITIONS.items():
+        affected = v in ("A", "B", "C", "T")
+        edge = "#bb293a" if affected else "#263b48"
+        face = "#fff0f1" if affected else "white"
+        if v == "U":
+            edge, face = "#687783", "#f1f3f5"
+        ax.add_patch(Circle((x, y), 0.37, facecolor=face, edgecolor=edge,
+                            linewidth=1.8, zorder=3))
+        ax.text(x, y + 0.13, v, ha="center", va="center", fontsize=12,
+                weight="bold", zorder=4)
+        distance = r"$-\infty$" if affected else ("0" if v == "S" else r"$\infty$")
+        ax.text(x, y - 0.16, distance, ha="center", va="center", fontsize=11,
+                color=edge, zorder=4)
+    ux, uy = POSITIONS["U"]
+    loop_points = [(ux - 0.29, uy - 0.23), (ux - 1.0, uy - 1.12),
+                   (ux + 1.0, uy - 1.12), (ux + 0.29, uy - 0.23)]
+    if reversed_arrows:
+        loop_points.reverse()
+    loop = MplPath(loop_points, [MplPath.MOVETO] + [MplPath.CURVE4] * 3)
+    ax.add_patch(FancyArrowPatch(path=loop,
+                                arrowstyle="-|&gt;", mutation_scale=14, linewidth=1.8,
+                                color="#687783", zorder=2))
+    ax.text(ux + 0.80, uy - 0.65, "−1", ha="center", fontsize=11, color="#687783")
+    ax.text(3, -0.40, "cycle total = −3", ha="center", va="center",
+            color="#a52131", fontsize=11)
+    ax.text(1.55, -1.35, "S stays 0\nU stays ∞", ha="center", va="center",
+            fontsize=12, color="#263b48")
+    title = "Reversed arrows: distances TO sink S" if reversed_arrows else "Original arrows: distances FROM source S"
+    ax.set_title(title, fontsize=12, weight="bold", pad=8)
+
+
+def main():
+    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 12})
+    fig, axes = plt.subplots(1, 2, figsize=(11, 6.3), dpi=120, facecolor="white")
+    fig.subplots_adjust(left=0.025, right=0.975, top=0.82, bottom=0.14, wspace=0.10)
+    fig.suptitle("Negative cycles: which distances become −∞?", fontsize=18,
+                 weight="bold", y=0.97)
+    fig.text(0.5, 0.89, "Add C→A of weight −4 and an isolated negative self-loop at U",
+             ha="center", fontsize=12)
+    panel(axes[0], False)
+    panel(axes[1], True)
+    fig.text(0.265, 0.115, "Affected: cycle vertices and their descendants", ha="center", fontsize=11)
+    fig.text(0.755, 0.115, "Affected: cycle vertices and their ancestors", ha="center", fontsize=11)
+    fig.text(0.5, 0.043, "A, B, C, T have distance −∞ in both panels.  The isolated cycle at U is irrelevant.",
+             ha="center", fontsize=12, color="#263b48")
+    fig.savefig(Path(__file__).stem + ".png", facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

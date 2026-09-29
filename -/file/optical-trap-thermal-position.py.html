@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>optical-trap-thermal-position.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="optical-trap-thermal-position.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/optical-trap-thermal-position.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">optical-trap-thermal-position.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/optical-trap-thermal-position.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/optical-trap-thermal-position.py">optical-trap-thermal-position.py</a></b></div></nav></div><div class="p"><b>optical-trap-thermal-position.py</b></div><div class="code"><div><pre><code>"""Exact harmonic-trap equilibrium densities at a common temperature.
+
+Write optical-trap-thermal-position.png to the working directory.
+Uses the repository numpy/matplotlib dependencies; tested with Python 3.14.
+"""
+
+import numpy as np
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+
+def density(q, kappa):
+    """Probability density per unit q, where ell = sqrt(k_B T / k_0)."""
+    return np.sqrt(kappa / (2 * np.pi)) * np.exp(-0.5 * kappa * q**2)
+
+
+def main():
+    q = np.linspace(-4, 4, 1601)
+    integration_q = np.linspace(-12, 12, 48001)
+    stiffnesses = np.array([1.0, 2.0, 4.0])
+    colors = ("#2469a0", "#c76720", "#27805a")
+    plt.rcParams.update({"font.size": 12, "figure.facecolor": "white", "axes.facecolor": "white"})
+    fig, ax = plt.subplots(figsize=(8.8, 5.7))
+    fig.subplots_adjust(left=0.11, right=0.96, bottom=0.32, top=0.77)
+    fig.suptitle("Thermal force calibration model", fontsize=19, y=0.97)
+    fig.text(0.5, 0.89, "Exact Gaussian position densities • common temperature • κ = k/k₀", ha="center", fontsize=12)
+    for kappa, color in zip(stiffnesses, colors):
+        pdf = density(integration_q, kappa)
+        area = np.trapezoid(pdf, integration_q)
+        mean = np.trapezoid(integration_q * pdf, integration_q)
+        variance = np.trapezoid(integration_q**2 * pdf, integration_q)
+        energy = np.trapezoid(0.5 * kappa * integration_q**2 * pdf, integration_q)
+        np.testing.assert_allclose([area, mean, variance, energy], [1, 0, 1/kappa, 0.5], atol=2e-14)
+        assert np.all(pdf &gt;= 0)
+        sigma = 1 / np.sqrt(kappa)
+        ax.plot(q, density(q, kappa), lw=2.6, color=color, label=f"κ = {kappa:g}    σ/ℓ = {sigma:.3f}")
+        print(f"κ={kappa:g}: area={area:.15f}, mean={mean:.3g}, variance={variance:.15f}, mean U/(k_BT)={energy:.15f}")
+    ax.set(xlim=(-4, 4), ylim=(0, 0.86), xlabel=r"Displacement $q=x/\ell$, where $\ell=\sqrt{k_BT/k_0}$", ylabel=r"Probability density $p_q(q)=\ell\,p(\ell q)$")
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.grid(alpha=0.18)
+    ax.legend(frameon=False, fontsize=11, loc="upper right")
+    ax.axvline(0, color="#777777", lw=0.8, ls=":")
+    fig.text(0.5, 0.14, "Each curve has total area 1. Quadrupling stiffness halves the position standard deviation.", ha="center", fontsize=11)
+    fig.text(0.5, 0.065, "Model curves, not experimental data: σ² = kBT/k, so measured variance calibrates stiffness.", ha="center", fontsize=10, color="#555555")
+    fig.savefig("optical-trap-thermal-position.png", dpi=110, facecolor="white", transparent=False)
+    plt.close(fig)
+    thermal_energy_pn_nm = 1.380649e-23 * 300 / 1e-21
+    sigma_nm = np.sqrt(thermal_energy_pn_nm / 0.01)
+    print(f"300 K example: kBT={thermal_energy_pn_nm:.7f} pN nm, σ={sigma_nm:.7f} nm")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

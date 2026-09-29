@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005/iii/paper-82-love-dispersion.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005/iii/paper-82-love-dispersion.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005/iii/paper-82-love-dispersion.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005/iii/paper-82-love-dispersion.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005/iii/paper-82-love-dispersion.py"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../../-/dir">(root)</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge">past-exam-of-the-mathematics-course-of-the-university-of-cambridge</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005">2005</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005/iii">iii</a> / <a href="../../../../../-/raw/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005/iii/paper-82-love-dispersion.py">paper-82-love-dispersion.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005/iii/paper-82-love-dispersion.py</b></div><div class="code"><div><pre><code>"""Original Love-wave dispersion/profile figure; Python 3.14.4.
+Existing NumPy 2.3.5/Matplotlib 3.10.7; basename PNG output to caller CWD.
+Honor caller MPLCONFIGDIR; no publication or media-mirroring logic.
+"""
+from pathlib import Path
+import numpy as np
+import matplotlib.pyplot as plt
+
+BETA = 1.8
+MODULUS_RATIO = BETA**2  # Equal densities, layer shear speed normalized to one.
+
+
+def root(omega_scale, order):
+    lo = order*np.pi
+    hi = min(omega_scale, (order+.5)*np.pi)
+    if omega_scale &lt;= lo:
+        return None
+    hi -= 1e-11
+    for _ in range(80):
+        mid = (lo+hi)/2
+        residual = mid*np.tan(mid)-MODULUS_RATIO*np.sqrt(max(0,omega_scale**2-mid**2))
+        if residual &gt; 0:
+            hi = mid
+        else:
+            lo = mid
+    return (lo+hi)/2
+
+
+def main():
+    fig, (ax, profile) = plt.subplots(1, 2, figsize=(10.8,4.7), dpi=100, facecolor="white", gridspec_kw={"width_ratios":[1.5,1]})
+    fig.subplots_adjust(left=.075,right=.96,bottom=.18,top=.86,wspace=.30)
+    contrast = np.sqrt(1-BETA**-2)
+    colors=["#286b93","#b2602c","#488148","#85569a"]
+    for order,color in enumerate(colors):
+        scales = np.linspace(order*np.pi+.018,4.4*np.pi,450)
+        qh = np.array([root(x,order) for x in scales])
+        speed = 1/np.sqrt(1-(qh/scales)**2*contrast**2)
+        ax.plot(scales/np.pi,speed,color=color,lw=2,label="Fundamental" if order==0 else f"Overtone {order}")
+        ax.plot(order,BETA,"o",mfc="white",mec=color,ms=6)
+    ax.axhline(1,color="#777777",ls=":",lw=1)
+    ax.set(xlim=(0,4.4),ylim=(.98,1.86),xlabel=r"$\Omega/\pi=|\omega|h\sqrt{\beta_0^{-2}-\beta^{-2}}/\pi$",ylabel=r"Phase speed $c_L/\beta_0$",title="Trapped modes lie strictly below the cutoff speed")
+    ax.legend(frameon=False,fontsize=9)
+    ax.spines[["top","right"]].set_visible(False)
+    scale = 2*np.pi
+    q = root(scale,1)
+    p = np.sqrt(scale*scale-q*q)
+    depth=np.linspace(0,2.2,500)
+    amplitude=np.where(depth&lt;=1,np.cos(q*depth),np.cos(q)*np.exp(-p*(depth-1)))
+    profile.axhspan(0,1,color="#edf1f7")
+    profile.axhline(1,color="#888888",lw=1)
+    profile.axvline(0,color="#999999",lw=.8)
+    profile.plot(amplitude,depth,color=colors[1],lw=2)
+    profile.set(xlim=(-1.15,1.15),ylim=(2.2,-.06),xlabel="Normalized SH displacement",ylabel=r"Depth $z/h$",title=r"Overtone 1 at $\Omega=2\pi$")
+    profile.text(-1.07,.11,"Free surface",fontsize=9)
+    profile.text(.10,1.08,"Half-space: exponential tail",fontsize=9)
+    profile.spines[["top","right"]].set_visible(False)
+    fig.text(.5,.035,r"$\beta/\beta_0=1.8$, equal densities; hollow endpoints have zero decay exponent and are not trapped modes.",ha="center",fontsize=10)
+    fig.savefig(Path.cwd()/"paper-82-love-dispersion.png",facecolor="white",transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

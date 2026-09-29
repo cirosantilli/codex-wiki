@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>feasible-triangle-objective-contours.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="feasible-triangle-objective-contours.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/feasible-triangle-objective-contours.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">feasible-triangle-objective-contours.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/feasible-triangle-objective-contours.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/feasible-triangle-objective-contours.py">feasible-triangle-objective-contours.py</a></b></div></nav></div><div class="p"><b>feasible-triangle-objective-contours.py</b></div><div class="code"><div><pre><code>"""Plot the feasible triangle and squared-distance contours; save basename.png to CWD.
+
+Tested: Python 3.14.4, Matplotlib 3.10.7, NumPy 2.3.5.
+Run from _media with MPLBACKEND=Agg MPLCONFIGDIR=/tmp/codex-wiki-matplotlib.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.patches import Polygon
+
+
+def main():
+    target = np.array([2.0, 2.0])
+    normal = np.ones(2)
+    optimum = target - ((normal @ target - 3) / (normal @ normal)) * normal
+    assert np.allclose(optimum, [1.5, 1.5])
+    assert np.isclose(np.sum((optimum - target) ** 2), 0.5)
+    assert np.allclose(2 * (optimum - target) + normal, 0)
+
+    grid = np.linspace(-0.4, 3.5, 450)
+    x, y = np.meshgrid(grid, grid)
+    f = (x - 2) ** 2 + (y - 2) ** 2
+    mask = (x &gt;= 0) &amp; (y &gt;= 0) &amp; (x + y &lt;= 3)
+    assert np.all(f[mask] &gt;= 0.5 - 1e-12)
+    assert np.allclose(f, ((x + y - 4) ** 2 + (x - y) ** 2) / 2)
+
+    plt.rcParams.update({"font.size": 11})
+    fig, ax = plt.subplots(figsize=(7.4, 6.0), layout="constrained", facecolor="white")
+    ax.set_facecolor("white")
+    ax.add_patch(Polygon([(0, 0), (3, 0), (0, 3)], facecolor="#dcefe5",
+                         edgecolor="#247654", lw=2, zorder=2))
+    cs = ax.contour(x, y, f, levels=[0.5, 1, 2, 4], colors="#648cb0",
+                    linewidths=[2, 1, 1, 1], zorder=3)
+    ax.clabel(cs, fmt=lambda v: f"f = {v:g}", fontsize=9,
+              manual=[(2.5, 2.5), (2.95, 2.05), (2.85, 3.1), (0.2, 2.85)])
+    ax.plot([1.5, 2], [1.5, 2], color="#ce7d20", lw=2.5, zorder=4)
+    ax.scatter([2, 1.5], [2, 1.5], c=["#b44f47", "#247654"], s=65, zorder=5)
+    ax.scatter([1], [1], color="#57636b", s=35, zorder=5)
+    box = {"facecolor": "white", "edgecolor": "none", "pad": 3}
+    ax.annotate("Unconstrained optimum (2, 2)\nf = 0; infeasible", (2, 2),
+                xytext=(0.8, 3.22), fontsize=10, bbox=box,
+                arrowprops={"arrowstyle": "-&gt;", "color": "#b44f47"})
+    ax.annotate("Constrained optimum (1.5, 1.5)\nf = 0.5", (1.5, 1.5),
+                xytext=(1.65, 0.35), fontsize=10, bbox=box,
+                arrowprops={"arrowstyle": "-&gt;", "color": "#247654"})
+    ax.annotate("(1, 1): feasible\nf = 2", (1, 1), xytext=(0.13, 0.27),
+                fontsize=10, bbox=box, arrowprops={"arrowstyle": "-&gt;"})
+    ax.text(0.14, 1.65, "Feasible region F\nx ≥ 0, y ≥ 0\nx + y ≤ 3", fontsize=10,
+            color="#205f44", bbox=box)
+    ax.text(2.45, 0.93, "x + y = 3", rotation=-45, color="#205f44", fontsize=10)
+    # Perpendicular displacement to the active edge.
+    p = optimum
+    tangent = np.array([-1.0, 1.0]) / np.sqrt(2)
+    outward = normal / np.sqrt(2)
+    corner = np.array([p + .14 * tangent, p + .14 * (tangent + outward), p + .14 * outward])
+    ax.plot(*corner.T, color="#5e6369", lw=1, zorder=4)
+    ax.set(xlim=(-.2, 3.5), ylim=(-.2, 3.6), aspect="equal", xlabel="x", ylabel="y",
+           title="Feasibility selects points; the objective ranks them")
+    ax.set_xticks([0, 1, 2, 3])
+    ax.set_yticks([0, 1, 2, 3])
+    ax.grid(alpha=.15)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=120,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

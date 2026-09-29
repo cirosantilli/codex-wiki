@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>lock-in-multiplication-and-averaging.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="lock-in-multiplication-and-averaging.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/lock-in-multiplication-and-averaging.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">lock-in-multiplication-and-averaging.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/lock-in-multiplication-and-averaging.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/lock-in-multiplication-and-averaging.py">lock-in-multiplication-and-averaging.py</a></b></div></nav></div><div class="p"><b>lock-in-multiplication-and-averaging.py</b></div><div class="code"><div><pre><code>"""Original lock-in waveforms; Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7.
+
+Run from _media; writes lock-in-multiplication-and-averaging.png to CWD.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    cycles = np.linspace(0, 4, 8001)
+    theta = 2 * np.pi * cycles
+    wanted = 0.4 * np.cos(theta + np.pi / 3)
+    interference = 0.9 * np.cos(3 * theta + np.pi / 5)
+    signal = wanted + interference
+    px = 2 * signal * np.cos(theta)
+    py = -2 * signal * np.sin(theta)
+    # Composite trapezoidal integrals of the computed products, divided by time.
+    dt = cycles[1] - cycles[0]
+    ix = np.r_[0, np.cumsum((px[:-1] + px[1:]) * dt / 2)]
+    iy = np.r_[0, np.cumsum((py[:-1] + py[1:]) * dt / 2)]
+    use = cycles &gt;= 0.15
+    x_running = ix[use] / cycles[use]
+    y_running = iy[use] / cycles[use]
+    for n in range(1, 5):
+        k = np.argmin(abs(cycles - n))
+        np.testing.assert_allclose([ix[k] / n, iy[k] / n],
+                                   [0.2, 0.2 * np.sqrt(3)], atol=1e-12)
+
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                         "axes.spines.right": False})
+    fig, axes = plt.subplots(3, 1, figsize=(9, 7.5), sharex=True,
+                             layout="constrained", facecolor="white")
+    blue, orange = "#1663a6", "#c45111"
+    axes[0].plot(cycles, signal, color="#6a6f75", lw=1.5, label="Input: wanted + third harmonic")
+    axes[0].plot(cycles, wanted, color=blue, lw=2, label="Wanted: 0.4 cos(2πt + π/3) V")
+    axes[0].set_title("A larger third harmonic cancels after coherent averaging", fontsize=14)
+    axes[0].set_ylabel("Input (V)")
+    axes[0].legend(loc="upper right", fontsize=9, ncol=2)
+    axes[1].plot(cycles, px, color=blue, lw=1.4, label=r"$2s(t)\cos(2\pi t)$")
+    axes[1].plot(cycles, py, color=orange, lw=1.4, label=r"$-2s(t)\sin(2\pi t)$")
+    axes[1].axhline(0.2, color=blue, ls="--", lw=1)
+    axes[1].axhline(0.2 * np.sqrt(3), color=orange, ls="--", lw=1)
+    axes[1].set_ylabel("Products (V)")
+    axes[1].legend(loc="upper right", fontsize=10, ncol=2)
+    axes[2].plot(cycles[use], x_running, color=blue, lw=1.7, label=r"$X(t)$")
+    axes[2].plot(cycles[use], y_running, color=orange, lw=1.7, label=r"$Y(t)$")
+    axes[2].axhline(0.2, color=blue, ls="--", lw=1)
+    axes[2].axhline(0.2 * np.sqrt(3), color=orange, ls="--", lw=1)
+    axes[2].scatter(np.arange(1, 5), np.full(4, 0.2), color=blue, zorder=4, s=28)
+    axes[2].scatter(np.arange(1, 5), np.full(4, 0.2 * np.sqrt(3)), color=orange, zorder=4, s=28)
+    axes[2].set_ylim(-0.5, 0.9)
+    axes[2].set_ylabel("Running averages (V)")
+    axes[2].set_xlabel("Time / reference period  (reference frequency = 1 Hz)")
+    axes[2].legend(loc="upper right", fontsize=10)
+    axes[2].text(2.1, 0.71, "At every complete cycle:\nX = 0.200 V, Y = 0.346410 V", fontsize=10)
+    for ax in axes:
+        ax.set_facecolor("white")
+        ax.grid(alpha=0.18)
+        ax.set_xlim(0, 4)
+    fig.get_layout_engine().set(rect=(0, 0.04, 1, 0.96))
+    fig.text(0.5, 0.012, "Constructed waveforms • interference = 0.9 cos(6πt + π/5) V • peak convention",
+             ha="center", fontsize=10)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=120,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

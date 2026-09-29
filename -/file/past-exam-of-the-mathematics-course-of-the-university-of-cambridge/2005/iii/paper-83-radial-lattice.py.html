@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005/iii/paper-83-radial-lattice.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005/iii/paper-83-radial-lattice.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005/iii/paper-83-radial-lattice.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005/iii/paper-83-radial-lattice.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005/iii/paper-83-radial-lattice.py"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../../-/dir">(root)</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge">past-exam-of-the-mathematics-course-of-the-university-of-cambridge</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005">2005</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005/iii">iii</a> / <a href="../../../../../-/raw/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005/iii/paper-83-radial-lattice.py">paper-83-radial-lattice.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2005/iii/paper-83-radial-lattice.py</b></div><div class="code"><div><pre><code>"""Solve and plot a stationary GP vortex in a radial lattice.
+Tested with Python 3.14.4, NumPy 2.3.5 and Matplotlib 3.10.7.
+Writes only an opaque PNG basename to caller CWD; honors caller MPLCONFIGDIR.
+"""
+from pathlib import Path
+import numpy as np
+
+def tridiagonal(lower, diagonal, upper, rhs):
+    """Thomas elimination for the finite-difference Newton correction."""
+    b=diagonal.copy(); d=rhs.copy(); c=upper.copy()
+    for j in range(1,len(b)):
+        scale=lower[j]/b[j-1]
+        b[j]-=scale*c[j-1]; d[j]-=scale*d[j-1]
+    answer=np.empty_like(d);answer[-1]=d[-1]/b[-1]
+    for j in range(len(b)-2,-1,-1):answer[j]=(d[j]-c[j]*answer[j+1])/b[j]
+    return answer
+
+def solve_profile(depth=.6, period=4., outer=32., step=.025):
+    n=round(outer/step); r=np.linspace(0,outer,n+1); h=r[1]
+    potential=depth*np.sin(np.pi*r/period)**2
+    lower=np.zeros_like(r);upper=np.zeros_like(r);base=np.zeros_like(r)
+    lower[1:-1]=h**-2-1/(2*r[1:-1]*h)
+    upper[1:-1]=h**-2+1/(2*r[1:-1]*h)
+    base[1:-1]=-2/h**2-1/r[1:-1]**2+1-potential[1:-1]
+    lower[-1]=-1; base[-1]=1; base[0]=1
+    def residual(f):
+        out=np.zeros_like(f)
+        out[1:-1]=lower[1:-1]*f[:-2]+upper[1:-1]*f[2:]+base[1:-1]*f[1:-1]-f[1:-1]**3
+        out[0]=f[0];out[-1]=f[-1]-f[-2]
+        return out
+    f=np.tanh(r/np.sqrt(2))*np.sqrt(np.maximum(1-potential,.1))
+    for iteration in range(50):
+        res=residual(f); norm=np.max(np.abs(res))
+        if norm&lt;2e-10:break
+        diagonal=base.copy();diagonal[1:-1]-=3*f[1:-1]**2
+        correction=tridiagonal(lower,diagonal,upper,-res)
+        weight=1.
+        for attempt in range(30):
+            candidate=f+weight*correction
+            if np.min(candidate[1:])&gt;0 and np.max(np.abs(residual(candidate)))&lt;norm:
+                f=candidate;break
+            weight*=.5
+        else:raise RuntimeError('Newton line search failed')
+    else:raise RuntimeError('Newton iteration did not converge')
+    return r,f,potential,float(np.max(np.abs(residual(f))))
+
+def main():
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    r,f,potential,res=solve_profile()
+    r0,f0,_,res0=solve_profile(depth=0)
+    assert max(res,res0)&lt;2e-10
+    fig,(ax,bx)=plt.subplots(2,1,figsize=(8.1,5.8),sharex=True,gridspec_kw={'height_ratios':[3,1]},constrained_layout=True)
+    ax.plot(r,f,lw=2,color='#176580',label='Radial lattice: computed unit vortex')
+    ax.plot(r0,f0,lw=1.3,ls='--',color='0.45',label='Zero-lattice vortex reference')
+    ax.set(xlim=(0,20),ylim=(0,1.08),ylabel=r'Amplitude $R/\sqrt{\mu/U}$',title='Stationary vortex in a radial optical lattice')
+    ax.text(6,.25,r'$\mathcal{N}=1$, $d=4\ell_0$, $sE_R/\mu=0.6$',fontsize=11)
+    ax.legend(loc='lower right',fontsize=9)
+    bx.plot(r,potential,color='#a05c22',lw=1.8)
+    bx.set(ylim=(0,.7),xlabel=r'Radius $r/\ell_0$',ylabel=r'$V/\mu$')
+    ax.grid(alpha=.18);bx.grid(alpha=.18)
+    fig.savefig(Path.cwd()/(Path(__file__).stem+'.png'),dpi=110,facecolor='white',transparent=False)
+
+if __name__=='__main__':main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

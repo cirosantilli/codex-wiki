@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>neutron-moderation-activation-model.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="neutron-moderation-activation-model.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/neutron-moderation-activation-model.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">neutron-moderation-activation-model.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/neutron-moderation-activation-model.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/neutron-moderation-activation-model.py">neutron-moderation-activation-model.py</a></b></div></nav></div><div class="p"><b>neutron-moderation-activation-model.py</b></div><div class="code"><div><pre><code>"""Original stipulated models, not measured historical data.
+
+Python 3.14, numpy 2.3.5, matplotlib 3.10.7. Run from _media.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def decrement(mass_ratio):
+    if mass_ratio == 1:
+        return 1.0
+    alpha = ((mass_ratio - 1) / (mass_ratio + 1)) ** 2
+    return 1 + alpha * np.log(alpha) / (1 - alpha)
+
+
+def main():
+    fig, axes = plt.subplots(1, 2, figsize=(11.6, 5.3), dpi=100, facecolor="white")
+    fig.suptitle("Moderation and activation: two distinct models", fontsize=17, weight="bold", y=0.98)
+    fig.text(0.5, 0.905, "Chosen examples • no measured historical data • no isotope-specific parameters",
+             ha="center", fontsize=11)
+    ax = axes[0]
+    n = np.linspace(0, 125, 501)
+    for ratio, label, color in [(1, "Mass ratio 1 (hydrogen model)", "#1764a0"),
+                                (12, "Mass ratio 12 (carbon model)", "#bd651b")]:
+        ax.semilogy(n, 1e6 * np.exp(-decrement(ratio) * n), label=label, color=color, lw=2)
+    ax.axhline(0.025, color="#555555", ls=":", label="Chosen 0.025 eV stopping scale")
+    ax.set(xlabel="Number of elastic collisions, n", ylabel="Geometric-mean energy (eV)",
+           ylim=(0.01, 2e6), xlim=(0, 125), title="Mean log-energy loss; stationary free targets")
+    ax.legend(loc="upper right", fontsize=9, framealpha=1)
+    ax.grid(alpha=0.2)
+    ax.text(0.04, 0.06, "Curves stop at the chosen scale:\nthermal motion then matters.",
+            transform=ax.transAxes, fontsize=9, bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.9})
+    # Mask below the chosen scale: free stationary targets cease to be adequate.
+    for line in ax.lines[:2]:
+        line.set_ydata(np.where(line.get_ydata() &gt;= 0.025, line.get_ydata(), np.nan))
+    ax = axes[1]
+    time = np.linspace(0, 12, 601)
+    lam, end = np.log(2) / 2, 4.0
+    for rate, color in [(120, "#1764a0"), (40, "#bd651b")]:
+        activity = rate * (-np.expm1(-lam * np.minimum(time, end))) * np.exp(-lam * np.maximum(time-end, 0))
+        ax.plot(time, activity, lw=2, color=color, label=f"Production R = {rate}/min")
+    ax.axhline(120, ls=":", color="#555555", label="Saturation activity for R = 120/min")
+    ax.axvline(end, color="#555555", ls="--")
+    ax.text(4.18, 108, "Irradiation\nends", fontsize=9)
+    ax.scatter([4, 6], [90, 45], s=25, color="#1764a0", zorder=4)
+    ax.set(xlabel="Time from irradiation start (min)", ylabel="Expected activity (decays/min)",
+           xlim=(0, 12), ylim=(0, 130), title="Production plus decay; chosen half-life 2 min")
+    ax.legend(loc="upper right", bbox_to_anchor=(1, 0.78), fontsize=9, framealpha=1)
+    ax.grid(alpha=0.2)
+    ax.text(0.53, 0.08, "Activity is not the\nrecorded count rate.", transform=ax.transAxes, fontsize=10,
+            bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.9})
+    fig.subplots_adjust(left=0.075, right=0.98, bottom=0.12, top=0.8, wspace=0.29)
+    fig.savefig(Path(__file__).stem + ".png", facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,625 @@
+= Computer aided geometric design
+
+<Computer aided geometric design> studies computational representations, evaluation and manipulation of <curves> and <regular surfaces>, especially using <splines> and <subdivision surfaces>.
+
+// Target: geometry-and-topology.bigb
+
+= Affine equivariance of a geometric basis
+{parent=Computer aided geometric design}
+{title2=$T(\sum_i b_iP_i)=\sum_i b_iT(P_i),\quad\sum_i b_i=1$}
+
+A geometry representation with scalar <partition of unity> basis functions commutes with every <affine map> of its <control points>. For $T(x)=Ax+b$, linearity moves $A$ through the sum and the sum-to-one identity supplies the translation $b$. Positivity is needed for a <convex hull> property, but not for this equivariance. The same argument applies to linear <subdivision matrices> whose rows sum to one. General <projective transformations> require homogeneous <control points> and rational dehomogenization rather than transforming Euclidean controls with unchanged weights.
+
+= Translational penetration depth
+{parent=Computer aided geometric design}
+{title2=$\delta(A,B)=\inf\{\|t\|:\operatorname{int}(A+t)\cap\operatorname{int}B=\varnothing\}$}
+
+For overlapping solid bodies, the penetration depth is the smallest translation needed to remove interior overlap, with orientation fixed. It is distance from the origin to the complement of the translational collision region. Define signed separation as positive ordinary separation for disjoint bodies, zero for contact, and $-\delta$ for interior overlap. Translation-space <branch and bound> can bracket it using certified intersection/containment queries. This convention handles crossing and complete containment; merely negating unsigned boundary distance does not.
+
+= Linear precision of a geometric basis
+{parent=Computer aided geometric design}
+{title2=$\sum_j\phi_j(u)=1,\quad\sum_j\xi_j\phi_j(u)=u$}
+
+= Linear precision
+{synonym}
+
+A basis with the displayed identities reproduces <affine functions> from their values at the precision sites $\xi_j$. For two such bases, the tensor-product precision sites are $(\xi_j,\eta_k)$: summation independently recovers $u$ and $v$. Affine images of this site grid therefore produce exact planar parameterizations, independent of the chosen control-grid representation.
+
+= Control point
+{parent=Computer aided geometric design}
+{title2=$P_i$}
+
+A <control point> is an editable geometric handle used to specify a <curve> or <surface> through a <basis> or refinement rule. The handle is part of the representation; it need not be a <point> on the resulting <curve>. In a <Bézier curve>, the <control points> are the geometric <coefficients> of the <Bernstein basis>. Joining them in order gives a <control polygon>, which makes the handles easy to manipulate without drawing the <curve> as a chain of <line segments>.<Curves and Surfaces in Geometric Modeling: Theory and Algorithms by Jean Gallier>[§4.3, pp. 132–133: control points and Bernstein representation; §5.1, p. 148: control polygon]{ref}
+
+For example, use the cubic <Bézier curve> with <control points>
+$$
+P_0=(0,0),\qquad P_1=(1,2),\qquad P_2=(3,2),\qquad P_3=(4,0).
+$$
+Its <Bernstein basis> representation gives
+$$
+C(t)=\bigl(3t+3t^2-2t^3,\;6t(1-t)\bigr),\qquad 0\leq t\leq1,\qquad C(1/2)=(2,1.5).
+$$
+The greatest height is $1.5$, so neither interior <control point>, both at height $2$, lies on this <curve>. The endpoint <control points> do lie on it: $C(0)=P_0$ and $C(1)=P_3$. This separates <interpolation>, which requires passage through prescribed data, from an approximating representation, which uses handles to shape a <curve> without requiring passage through every handle. If measured <points> must be interpolated, choose <control points> to satisfy those constraints; simply using the measured <points> as the handles of a <Bézier curve> does not enforce <interpolation>.
+
+\Image[control-point-cubic-curve-edit.png]
+{title=Original cubic and the curve after moving only the interior control point P1 upward by one unit, with fixed endpoints and a smaller displacement at the same parameter}
+
+Now move only $P_1$ by the <vector> $h=(0,1)$, giving $\widetilde P_1=(1,3)$. With the <Bernstein basis> and parameter $t$ unchanged, the new <curve> is
+$$
+\widetilde C(t)=C(t)+3t(1-t)^2h.
+$$
+At $t=1/2$ this gives $\widetilde C(1/2)=(2,15/8)$, a displacement $(0,3/8)$ despite moving the handle by a full unit. Both endpoints stay fixed because the <coefficient> $3t(1-t)^2$ vanishes there. Thus dragging a <control point> shapes a whole range of the <curve>; it does not generally drag an arbitrary selected <point> on the <curve> by the same <vector>. The <control-point influence on a curve> tells us exactly how much each parameter value moves.
+
+= Control-point influence on a curve
+{parent=Control point}
+{title2=$\Delta C(t)=b_i(t)h$}
+
+For a <parametric curve> represented by fixed scalar <functions> $b_j$ and <control points> $P_j$ in <Euclidean space>, write
+$$
+C(t)=\sum_j b_j(t)P_j,\qquad \widetilde P_i=P_i+h,\qquad \widetilde P_j=P_j\quad(j\ne i).
+$$
+The influence function of this handle is $b_i$: the resulting displacement <vector> is $\Delta C(t)=\widetilde C(t)-C(t)=b_i(t)h$, and its <norm> is $|b_i(t)|\,\|h\|$. These are exact finite changes, not only a first-order estimate. Where $b_i$ is negative the displacement points opposite to $h$. Where $b_i(t)=0$, the <curve> is unchanged at that parameter.
+
+\Image[control-point-cubic-basis-influence.png]
+{title=The influence coefficient 3t(1-t)^2 equals the vertical displacement for a unit upward move of P1, reaches 4/9 at t=1/3, and vanishes at both endpoints}
+
+For the cubic <Bézier curve> above, the <Bernstein basis> influence function is $b_{1,3}(t)=3t(1-t)^2$. Its <derivative> is
+$$
+b_{1,3}'(t)=3(1-t)(1-3t).
+$$
+It increases up to $t=1/3$ and decreases thereafter on $[0,1]$. Consequently the largest displacement at corresponding parameters is
+$$
+\max_{0\leq t\leq1}\|\widetilde C(t)-C(t)\|=\frac49\|h\|,\qquad C(1/3)=\left(\frac{34}{27},\frac43\right),\qquad \widetilde C(1/3)=\left(\frac{34}{27},\frac{16}{9}\right).
+$$
+For $h=(0,1)$ it is $4/9$. This is a comparison at the same parameter. A geometric closest-distance comparison, as in a <closest-point search on a subdivision curve>, instead minimizes over another parameter:
+$$
+d\bigl(C(t),\widetilde C([0,1])\bigr)=\min_{0\leq s\leq1}\|\widetilde C(s)-C(t)\|\leq\|\widetilde C(t)-C(t)\|.
+$$
+The closest parameter $s$ can differ from $t$, so $4/9$ is not automatically a maximum closest-distance separation of the two <curves>. Neither parameter is assumed to be <arc length>.
+
+The <support of a function> $b_i$ is the closure of the parameter values where $b_i\ne0$. It bounds where a nonzero handle move can act, but may include boundary <points> where the actual displacement is zero. Here the <support of a function> $b_{1,3}$ is all of $[0,1]$ relative to the parameter domain, while the endpoints are unaffected. In contrast, a <B-spline> of order $k$ has <support> within $[t_i,t_{i+k}]$ in its <spline knot> sequence, so its handle affects only that parameter range; the <support and Gram bandwidth of B-splines> describes the same locality in another application. Changing the <spline knots> or the <basis> along with the handle requires a different comparison.
+
+When the <basis> functions form a <partition of unity>, $\sum_j b_j(t)=1$, each evaluation is an <affine combination> of the <control points>. Applying an <affine map> $T(x)=Ax+a$ to all handles gives
+$$
+\sum_j b_j(t)T(P_j)=A C(t)+a=T(C(t)).
+$$
+This is <affine equivariance of a geometric basis>, also called affine covariance: <affine maps preserve affine combinations>. In particular, translating every handle by $h$ translates the whole <curve> by $h$, whereas moving just one handle produces $b_i(t)h$. The <Bernstein basis> has this <partition of unity> property.<Curves and Surfaces in Geometric Modeling: Theory and Algorithms by Jean Gallier>[§4.3, pp. 132–133: Bernstein weights sum to one]{ref} Nonnegative weights further make evaluations <convex combinations>, giving the <convex hull> bound illustrated by the <control polygon>; nonnegativity is not needed for affine covariance.
+
+For a proof outline of the influence formula, subtract the two <basis> representations: every unchanged <coefficient> cancels, leaving $b_i(t)(P_i+h)-b_i(t)P_i=b_i(t)h$. The same subtraction with several moved handles gives $\Delta C(t)=\sum_i b_i(t)h_i$. No claim about <interpolation>, <closest-point search on a subdivision curve> or endpoint motion follows until the actual <basis> values are examined.
+
+= Control net
+{parent=Control point}
+
+= Control polyhedron
+{synonym}
+
+A mesh connecting a surface's <control points> according to the representation's indexing topology. A <tensor-product surface basis> gives a rectangular index grid and quadrilateral cells, even when its points in space are neither planar nor rectangular. The drawn mesh is a geometric skeleton, not generally the exact limit surface or an enclosing solid. Positive <partition of unity> coefficients give a <convex hull> bound on the relevant controls.
+
+= Control polygon
+{parent=Control point}
+
+A <control polygon> joins successive <control points> by <line segments>. It gives an editable geometric skeleton, not usually the exact <curve>. An open <control polygon> has two ends; a closed <control polygon> also joins the last <control point> to the first. Store the first <control point> only once when using cyclic indices, so the closing edge is counted exactly once. Positive <partition of unity> basis functions place the <curve> inside the <convex hull> of its active <control points>; a convergent <subdivision curve> rule refines the <control polygon> toward its limit, with a certified error when an appropriate bound is available.
+
+= Apparent-gravity camera frame
+{parent=Computer aided geometric design}
+
+If $g$ is gravitational <acceleration> and $a$ is the camera's <acceleration>, the locally felt upward vector is $U=a-g$. Choose the travel <unit vector> $X$, set $W=U-(U\cdot X)X$, and, when $W\ne0$, take $Z=W/\|W\|$ and $Y=Z\times X$. These form an <orthonormal basis> with $U$ in the $XZ$ plane. If $U$ is parallel to $X$, the condition leaves the roll angle free even when $U\ne0$; transport a previous transverse axis or choose a well-conditioned coordinate axis and project it into $X^\perp$.
+
+= Subdivision curve
+{parent=Computer aided geometric design}
+
+A <subdivision curve> is the limit of repeated refinement of a <control polygon>, when that limit exists. Each finite stage still consists of <line segments>; the limiting <curve> can have a <continuous> <derivative>. Linear stationary rules, which use the same fixed weighted averages at every stage, can be studied through their <subdivision masks> and often represent <splines>. An <interpolation> rule retains the old <control points>, as in <binary linear interpolatory subdivision>; an approximating rule such as <Chaikin subdivision> generally moves away from them. Increasing the number of <control points> alone does not prove convergence or smoothness.
+
+// Target: analysis.bigb
+
+= Binary linear interpolatory subdivision
+{parent=Subdivision curve}
+{title2=$p'_{2i}=p_i,\quad p'_{2i+1}=(p_i+p_{i+1})/2$}
+
+The centered <subdivision mask> $[1,2,1]/2$ retains old <control points> and inserts edge midpoints. Its <control polygon> is unchanged as a geometric curve by refinement. Its basic limit is the hat $\phi(t)=\max(1-|t|,0)$, with support $[-1,1]$. This <linear spline> representation reproduces constants and linear functions, and is $C^0$ but generally not $C^1$ at its <spline knots>.
+
+= Functional precision set of a subdivision scheme
+{parent=Subdivision curve}
+{title2=$\mathcal P=\{f:\mathcal R_h(f|_{h\mathbb Z})=f\}$}
+
+The <functional precision set of a subdivision scheme> consists of functions exactly reproduced by refining their uniform samples with the scheme's consistent parameter placement. Polynomial precision usually specifies the reproduced polynomial space. If exactness is required for every grid spacing and shift, the binary midpoint-interpolation scheme has precision exactly the <affine functions>. At one fixed grid, its entire reconstruction range is the space of continuous <piecewise linear functions> on that grid; this larger range should not be confused with polynomial precision or arbitrary-grid reproduction.
+
+= Chaikin subdivision
+{c}
+{parent=Subdivision curve}
+{title2=$Q_i=\tfrac34P_i+\tfrac14P_{i+1},\quad R_i=\tfrac14P_i+\tfrac34P_{i+1}$}
+
+= Chaikin's algorithm
+{c}
+{synonym}
+
+= Chaikin corner cutting
+{c}
+{synonym}
+
+<Chaikin subdivision> generates a rounded <subdivision curve> by repeatedly cutting the corners off a <control polygon>. Each edge contributes two new <control points>, one a quarter of the way along the edge and the other three quarters of the way along it. Connecting these new <control points> in edge order replaces the old corners by shorter <line segments>. This makes <Chaikin subdivision> a useful way to draw a smooth outline from a small, editable set of <control points>, without evaluating <B-spline> basis functions at each drawing step. Joy presents both the corner-cutting rule and its closed version.https://www.cs.unc.edu/~dm/UNC/COMP258/LECTURES/Chaikins-Algorithm.pdf[Kenneth I. Joy, Chaikin's Algorithms for Curves, §§Chaikin's Method and Example — A Closed Curve, UC Davis authored notes]{ref}
+
+For a closed <control polygon> with $n\geq3$ <control points> $P_0,\ldots,P_{n-1}$, set $P_n=P_0$ and interpret indices cyclically. One refinement $S$ gives
+$$
+Q_i=\frac34P_i+\frac14P_{i+1},\qquad R_i=\frac14P_i+\frac34P_{i+1},\qquad 0\leq i<n,
+$$
+and the new <control polygon> is the ordered sequence
+$$
+S(P)=(Q_0,R_0,Q_1,R_1,\ldots,Q_{n-1},R_{n-1}).
+$$
+Close it by joining $R_{n-1}$ back to $Q_0$. Use the old <control points> for every average in the same refinement; updating them in place would define a different <algorithm>. One refinement produces $2n$ stored <control points>, and $k$ refinements produce $2^kn$, counting entries even if some coordinates coincide. Open <control polygons> need an explicit endpoint convention: applying only the interior edge rule discards the original endpoints, whereas retaining endpoints changes the boundary rule. The closed analysis below uses cyclic indices throughout.
+
+For a worked example, start with the rectangular <control polygon>
+$$
+P_0=(0,0),\quad P_1=(4,0),\quad P_2=(4,2),\quad P_3=(0,2).
+$$
+The first edge gives $Q_0=\tfrac34(0,0)+\tfrac14(4,0)=(1,0)$ and $R_0=\tfrac14(0,0)+\tfrac34(4,0)=(3,0)$. Applying <Chaikin subdivision> to all four edges, including the closing edge, gives exactly eight <control points> in this order:
+$$
+(1,0),\ (3,0),\ (4,\tfrac12),\ (4,\tfrac32),\ (3,2),\ (1,2),\ (0,\tfrac32),\ (0,\tfrac12).
+$$
+Thus the rectangle becomes an octagonal <control polygon>. Two refinements have $16$ <control points>, and five have $128$. The illustration shows finite <control polygons> at stages $0,1,2,5$; the last is already visually rounded but still consists of <line segments>.
+
+\Image[chaikin-corner-cutting-iterations.png]
+{title=Chaikin corner cutting on a rectangle at iterations zero, one, two and five}
+{description=The dashed rectangle is the original <control polygon> and its <convex hull>. Blue <line segments> and dots show the current <control polygon> and <control points>; no panel claims to be the exact limiting <curve>.}
+
+The <convex hull> property follows directly from the weights. Each new <control point> is a <convex combination> of the endpoints of one old edge, because the weights are nonnegative and sum to one. Consequently, if $H_k$ is the <convex hull> of the stage-$k$ <control points>, then $H_{k+1}\subseteq H_k$. Every later <line segment>, and every limit point, stays in the original <convex hull>. This gives a useful geometric enclosure. It also explains why <Chaikin subdivision> is approximating rather than an <interpolation> rule: the rectangle's four original corners are outside the first octagon's <convex hull>, so the limiting <curve> cannot pass through them. A refinement <control polygon> generally lies off the limiting <curve> as well.
+
+For the cyclic uniform rule, the closed limit is the periodic quadratic uniform <B-spline> <curve> determined by the original <control points>. Uniform refers to equal spacing in the <spline knot sequence>, not equal physical lengths of edges of the <control polygon>. An infinite uniform control sequence has the corresponding local description; arbitrary open endpoint conventions need separate treatment. Joy derives the quarter-point refinement by splitting quadratic uniform <B-spline> spans.https://www.cs.unc.edu/~dm/UNC/COMP258/LECTURES/Quadratic-B-Spline-Curve-Refinement.pdf[Kenneth I. Joy, Quadratic Uniform B-Spline Curve Refinement, §§Splitting and Refinement and The General Refinement Procedure, UC Davis authored notes]{ref}
+
+Here is an explicit description of that closed limit, with cyclic indices and a unit parameter span for each original <control point>:
+$$
+C_i(u)=\frac{(1-u)^2}{2}P_{i-1}+\left(\frac12+u-u^2\right)P_i+\frac{u^2}{2}P_{i+1},\qquad 0\leq u\leq1.
+$$
+Each coordinate is a <quadratic polynomial>, and the three coefficients form a nonnegative <partition of unity>. The span runs from $(P_{i-1}+P_i)/2$ to $(P_i+P_{i+1})/2$. Differentiating gives $C_i'(0)=P_i-P_{i-1}$ and $C_i'(1)=P_{i+1}-P_i$, so adjacent spans have matching values and matching first <derivatives>. Their second <derivatives> generally differ. Thus the parameterized <curve> is $C^1$, generally not $C^2$; degenerate <control points> can still make its <tangent vector> vanish. For the rectangle, the span around $P_1=(4,0)$ is
+$$
+C_1(u)=(2+4u-2u^2,\ u^2),\qquad C_1(\tfrac12)=(\tfrac72,\tfrac14),
+$$
+which rounds the original corner between edge midpoints $(2,0)$ and $(4,1)$. For equally spaced abscissae, the centered <Chaikin basis function> gives the scalar graph version of this quadratic <B-spline> representation and has support of width three original grid intervals.
+
+Another useful property is <affine equivariance of a geometric basis>: refining and applying an <affine map> commute. For $T(x)=Ax+b$,
+$$
+T(Q_i)=A\left(\frac34P_i+\frac14P_{i+1}\right)+b=\frac34T(P_i)+\frac14T(P_{i+1}),
+$$
+and the same calculation holds for $R_i$. The sum-to-one weights account for the <translation>. Therefore $T(S(P))=S(T(P))$ at every refinement, and also for the limit. A designer can apply a <shear mapping>, <translation>, or other <affine map> to the original <control polygon> and obtain exactly the transformed outline.
+
+For example, compose the <shear mapping> $(x,y)\mapsto(x+y/2,y)$ with the <translation> $(1,-1)$ to obtain $T(x,y)=(x+y/2+1,y-1)$. The rectangle's <control points> become $(1,-1),(5,-1),(6,1),(2,1)$. On its right edge, cutting first gives $Q_1=(4,1/2)$ and then $T(Q_1)=(21/4,-1/2)$. Transforming first and cutting instead gives $\tfrac34(5,-1)+\tfrac14(6,1)=(21/4,-1/2)$, the same <control point>.
+
+\Image[chaikin-affine-equivariance.png]
+{title=Shearing and translating a control polygon commutes with one Chaikin refinement}
+{description=Left: the rectangle and its first refinement. Right: the transformed <control polygon>, with blue dots from cutting after the <affine map> and orange rings from applying the <affine map> after cutting. All eight pairs coincide.}
+
+Historically, George M. Chaikin published “An algorithm for high-speed curve generation” in Computer Graphics and Image Processing 3(4), December 1974, pages 346–349. Its emphasis was practical curve generation through a recursive <algorithm> using simple arithmetic, with applications including machine control and three-dimensional curves. The lasting appeal of <Chaikin subdivision> is how an elementary local average creates an entire smooth <B-spline> <curve>.https://doi.org/10.1016/0146-664X(74)90028-8[G. M. Chaikin, An algorithm for high-speed curve generation, Computer Graphics and Image Processing 3(4), 346–349, 1974; publisher metadata and abstract]{ref}
+
+= Chaikin basis function
+{c}
+{parent=Chaikin subdivision}
+{title2=$\beta(t)=\begin{cases}3/4-t^2,&|t|\leq1/2,\\(3/2-|t|)^2/2,&1/2<|t|\leq3/2,\\0,&|t|>3/2.\end{cases}$}
+
+This centered <quadratic cardinal B-spline> weights each original control ordinate at its uniformly spaced abscissa. Its translates sum to one. It and its first <derivative> match at half-integer knots, while the second <derivative> can jump. The limit graph is $\sum_i y_i\beta((x-x_i)/h)$; one ordinate influences exactly three original intervals. Refinement of a quadratic adds $ah^2/4$ in the limit, yielding this basis by extending each three-point neighborhood quadratically.
+
+= Polynomial degree preservation under Chaikin subdivision
+{parent=Chaikin subdivision}
+{title2=$n=0,1,2$}
+
+For uniformly spaced abscissae, quarter and three-quarter averages applied to constant or affine samples leave the same polynomial. For $P(x)=ax^2+bx+c$ on spacing $h$, both new subgrids lie on $P(x)+3ah^2/16$. For degree $n\geq3$, their candidate polynomial formulas differ with leading term $(h^3/32)P'''$, which has a nonzero highest-degree coefficient. Thus preservation of polynomial degree for arbitrary sufficiently long data sequences holds exactly for degrees zero, one and two, despite quadratic values changing.
+
+= Support of a stationary subdivision scheme
+{parent=Subdivision curve}
+{title2=$[j_{\min}/(a-1),j_{\max}/(a-1)]$}
+
+Under $P_i^{\ell+1}=\sum_jM_{i-aj}P_j^\ell$, the descendants of control index zero lie at $a^{\ell-1}j_1+\cdots+j_\ell$, where each $j_k$ is in the mask support. Dividing by the refined parameter scale $a^\ell$ gives a limiting influence enclosure with the displayed endpoints. For a mask supported on $[-w,w]$ its width is $2w/(a-1)$ when the endpoints are active and a nonzero compactly supported basic limit exists. To prove exactness, the largest active mask term is the only surviving term near the right endpoint of the refinement equation, forcing $\beta=(\beta+j_{\max})/a$; the analogous left-end argument completes the result. Mask padding should be removed, and a nonconvergent rule has no limit support.
+
+= Subdivision curve interrogation
+{parent=Subdivision curve}
+
+A useful <subdivision curve> interface provides parameter ranges, endpoint and limit evaluation, derivatives, subdivision into equivalent restricted pieces, a certified <bounding volume>, and a certified error relative to a chord. Positive <subdivision masks> often give a <convex hull> bound. Masks with negative coefficients need a separate enclosing bound; their control-point hull need not enclose the limit curve.
+
+= Closest-point search on a subdivision curve
+{parent=Subdivision curve interrogation}
+{title2=$(P(t)-Q)\cdot P'(t)=0$}
+
+At a regular differentiable interior nearest point of a <parametric curve>, the displacement from the query point is perpendicular to the <tangent vector>. A <branch and bound> search uses distances to certified enclosing <bounding volumes> as lower bounds, and evaluated limit points as upper bounds. Refine the most promising restricted pieces until the upper bound differs from the global lower bound by the chosen distance tolerance. Safeguarded <Newton root-finding iteration> accelerates local candidates, but endpoints, nonregular points, ties and other stationary branches must not be omitted.
+
+= Shadow tracing for a subdivision curve
+{parent=Subdivision curve interrogation}
+{title2=$S(u,v)=L+\lambda(C(t)-L),\quad\lambda>1$}
+
+For a point light at $L$, the shadow of a curve point is the first surface intersection on its ray beyond that point. Certified patch bounds and subdivision isolate intersections; regular hits are corrected with a three-variable <Newton method> solve. Differentiating the displayed equation gives $[S_u,S_v,-(C-L)](u',v',\lambda')^T=\lambda C'$, a predictor for continuation along the shadow. Surface boundaries and grazing rays require clipping and reseeding; every visible component must be isolated, rather than assumed detectable from a fixed sample of the casting curve.
+
+= Recursive half-space clipping of a subdivision curve
+{parent=Subdivision curve interrogation}
+
+For an oriented plane function $\ell$, certified extrema over a <bounding volume> allow a <subdivision curve> piece to be rejected when $\max\ell<0$, or wholly retained when $\min\ell\geq0$. Otherwise subdivide. At an explicitly chosen rendering tolerance, a sufficiently flat, sufficiently short piece can be replaced by its clipped chord. This is an approximation, not a proof of exact crossing topology. Exact treatment of tangent contacts and small excursions requires root isolation of $\ell(C(t))$ and splitting into sign-constant intervals, when the curve representation supports such isolation.
+
+= Subdivision surface
+{parent=Computer aided geometric design}
+{wiki}
+
+A <subdivision surface> is the limit of repeated mesh refinement and vertex averaging. Exact interrogation evaluates this limit and, where defined, its <tangent vectors> and <normal vectors>; a finite refined control mesh is generally only an approximation to the limit.
+
+// Target: analysis.bigb
+
+= Lateral artifacts of a subdivision surface
+{parent=Subdivision surface}
+
+<Lateral artifacts of a subdivision surface> are unwanted variations along an intended straight extrusion: input cross-sections identical along a lattice direction acquire ripples in that direction under refinement. For a stationary arity-$m$ lattice rule $a_{i,j}$, extrusion along the first lattice coordinate is preserved exactly when $\sum_{i\equiv r\ (\mathrm{mod}\ m)}a_{i,j}$ is independent of the residue $r$ for every transverse offset $j$. Then summing along each row gives a single associated univariate <subdivision mask>. This direction-specific criterion does not promise invariance under every possible oblique extrusion.
+
+= Extrusion invariance of a ternary triangular scheme
+{parent=Lateral artifacts of a subdivision surface}
+{title2=$b_j=\sum_{i\equiv0\ (\mathrm{mod}\ 3)}a_{i,j}=\sum_{i\equiv1}a_{i,j}=\sum_{i\equiv2}a_{i,j}$}
+
+If a triangular-lattice <subdivision mask> has the displayed residue-sum equality, refining data $p_{i,j}=q_j$ gives $p'_{I,J}=\sum_k b_{J-3k}q_k$, independent of $I$. If affine coordinates reproduce their parameter positions, a geometrically straight extrusion is preserved. Rotationally symmetric masks give the corresponding property in all three lattice-edge directions. A boundary curve compatible with this extrusion uses the collapsed mask $b$, not just the central row of the two-dimensional mask.
+
+= Mid-edge subdivision
+{parent=Subdivision surface}
+
+Mid-edge subdivision replaces each mesh edge by its midpoint, joins successive midpoints around every old face, and joins successive midpoints around every old vertex. For an interior <manifold> mesh, each new vertex has valence four. Each geometric update is a <convex combination>, so every refined control point remains in the <convex hull> of the original control mesh. The regular limit is associated with the <quadratic four-direction box spline>.
+
+= Mid-edge facet centroid invariance
+{parent=Mid-edge subdivision}
+{title2=$\overline p^{\,(r+1)}=\overline p^{\,(r)}$}
+
+The descendant of a face with cyclic vertices $p_0,\ldots,p_{n-1}$ has vertices $p_i'=(p_i+p_{i+1})/2$. Their arithmetic mean is unchanged. On the cyclic <Fourier basis>, a mode of frequency $j$ is multiplied by $(1+e^{2\pi ij/n})/2$. Every nonconstant mode has modulus less than one, so the descendant face shrinks to the original vertex <centroid>. This puts that <centroid> on the subdivision limit, without requiring the original face to be planar.
+
+= Subdivision surface interrogation
+{parent=Subdivision surface}
+
+Interrogation of a subdivision limit needs patch/topology navigation, refinement, limit evaluation and <derivatives> where they exist, with certified bounds and geometric error estimates. On regular patches one may use the corresponding spline representation. At <extraordinary subdivision vertices>, local <subdivision matrices> determine limit positions and tangents under the scheme's smoothness conditions. A <normal vector> may exist even when <second derivatives> and <Gaussian curvature> do not; finite refined polygons are approximations rather than exact limit queries.
+
+= Intersection of subdivision limit surfaces
+{parent=Subdivision surface interrogation}
+
+A robust intersection search applies <branch and bound> to pairs of <subdivision surface> patches. Certified <bounding volumes> reject disjoint pairs, and refinement reduces unresolved pairs. Limit evaluation, tangent data and controlled approximation bounds produce and correct local intersection arcs, then patch adjacency joins them. Bounds must enclose the limit, not merely the current mesh. Flat polygon intersections are approximations and can miss tiny components or tangencies unless the associated geometric and transversality conditions are verified.
+
+= Plane section of a subdivision surface
+{parent=Subdivision surface interrogation}
+{title2=$g(u,v)=n\cdot S(u,v)-d=0$}
+
+A <plane section of a subdivision surface> is a zero set of the plane functional evaluated on the limit <parametric surface>. Certified patch <bounding volumes> reject sign-definite patches. On a regular transverse section, $\nabla g\ne0$ and the parameter tangent is $(-g_v,g_u)$; predictor-corrector <continuation method> traces a branch after every component has been isolated. Closed loops, tangencies, coplanar patches and extraordinary-vertex neighborhoods require more than corner-sign tests. Degenerate sections can contain isolated points or two-dimensional portions rather than only regular curves.
+
+= Minimum distance between subdivision bodies
+{parent=Subdivision surface interrogation}
+{title2=$d(A,B)=\inf_{a\in A,b\in B}\|a-b\|$}
+
+For disjoint compact bodies, the minimum occurs on their boundaries. Patch <bounding volumes> give certified lower bounds and evaluated limit-point pairs give upper bounds. A <branch and bound> search refines promising patch pairs until the global bounds differ by the tolerance. Boundary distance alone cannot detect containment; touching, crossing or nested solid bodies have ordinary set distance zero. Negative overlap values require an additional convention such as <translational penetration depth>.
+
+= Extraordinary subdivision vertex
+{parent=Subdivision surface}
+
+An <extraordinary subdivision vertex> has a valence different from that of the regular refinement lattice. Regular <box spline> calculations do not alone establish smoothness at this vertex. The finite local <subdivision matrix>, its <eigenvalues>, and the associated <characteristic map of a subdivision surface> determine convergence and tangent behavior.
+
+= Characteristic map of a subdivision surface
+{parent=Extraordinary subdivision vertex}
+
+The <characteristic map of a subdivision surface> is the planar limit map obtained from the two independent tangent <eigenvectors> of its local <subdivision matrix>. In the usual stationary setting, a simple constant eigenvalue one, a semisimple double subdominant eigenvalue $0<\lambda<1$, strictly smaller other eigenvalues, and a regular injective characteristic map establish the standard $C^1$ tangent-plane behavior for nondegenerate data. The eigenvalue inequalities alone do not exclude a folded or singular characteristic map. For an alternating scheme these tests must use a full period of refinement.
+
+= Quincunx subdivision
+{parent=Subdivision surface}
+{title2=$D^2=2I$}
+
+A regular <quincunx subdivision> step replaces a square lattice by the union of its old vertices and face centres. In lattice indices one may use
+$$
+D=\begin{pmatrix}1&1\\1&-1\end{pmatrix},\qquad D^2=2I.
+$$
+Thus two steps give ordinary binary refinement. If $A(z,w)$ is the one-step <subdivision mask> symbol, the two-step symbol is $A(z,w)A(zw,z/w)$. The two lattice parity classes separately determine the old-vertex and face-vertex stencils; their coefficient sums must each be one to reproduce constants.
+
+= Loop subdivision surface
+{c}
+{parent=Subdivision surface}
+{wiki}
+
+= Loop subdivision
+{c}
+{synonym}
+
+On a regular triangular grid, <Loop subdivision> retains an old vertex with weight $10/16$ and adds its six neighbors with weight $1/16$ each. A new edge vertex has weights $3/8$ on the endpoints and $1/8$ on the two opposite vertices. Extraordinary vertices require valence-dependent rules.
+
+// Target: analysis.bigb
+
+= Polynomial generation by regular Loop subdivision
+{parent=Loop subdivision surface}
+
+For the three unit-grid edge vectors $v_1,v_2,v_3$ and a <multivariate polynomial> $f$ of total degree at most three, sampled regular-grid <Loop subdivision> generates the graph of $f+\frac1{12}\sum_{r=1}^3(v_r\cdot\nabla)^2f$. Thus affine polynomials are reproduced exactly and all polynomials through degree three retain their degree. Fourth-degree data constant along one edge direction reduce to a <cardinal cubic B-spline>, whose limit need not be a polynomial.
+
+= Extrusion invariance of Loop subdivision
+{parent=Loop subdivision surface}
+
+On an infinite regular triangular grid, height data constant along one edge direction remain constant along that direction under <Loop subdivision>. Across rows the induced rule is $g'_{2j}=(g_{j-1}+6g_j+g_{j+1})/8$, $g'_{2j+1}=(g_j+g_{j+1})/2$, the centered <cardinal cubic B-spline> rule.
+
+// Target: analysis.bigb
+
+= Subdivision mask
+{parent=Subdivision surface}
+{title2=$q_j=\sum_i a_{j-2i}p_i$}
+
+A stationary binary <subdivision mask> $a$ specifies a refinement operator $q_j=\sum_i a_{j-2i}p_i$. Indices may be vectors for a surface. Coefficients restricted to a parity class give the stencil for one type of refined vertex.
+
+// Target: analysis.bigb
+
+= Subdivision mask width
+{parent=Subdivision mask}
+{title2=$w=j_{\max}-j_{\min}+1$}
+
+For a stationary univariate refinement $S_{ij}=a_{i-mj}$, the <subdivision mask width> counts fine-grid positions from the first to the last active entry in a column, including any internal zeros. Consecutive columns are translates by $m$ rows, the <subdivision arity>. The number of old <control points> used by a particular new point is instead the size of its row stencil; it need not equal the mask width. A span convention counts $w-1$ fine intervals, so numerical width claims should specify the convention.
+
+= Subdivision arity
+{parent=Subdivision mask}
+{title2=$a$}
+
+The subdivision arity is the integer factor $a>1$ by which a stationary refinement shrinks parameter-grid intervals: control index $i$ has coordinate $i/a^\ell$ after $\ell$ levels. It is distinct from the mask width and from the number of neighbors in a stencil.
+
+= Subdivision difference scheme
+{parent=Subdivision mask}
+{title2=$\Delta S_M=S_B\Delta,\quad B(z)=M(z)/(1+z+\cdots+z^{a-1})$}
+
+For backward differences $\Delta P_i=P_i-P_{i-1}$, a <scalar> stationary arity-$a$ <subdivision mask> has symbol $M(z)=\sum_iM_i z^i$. The identity $(1-z)M(z)=B(z)(1-z^a)$ gives the displayed intertwining whenever the quotient is a finite <Laurent polynomial>. Iterating supplies higher-difference masks. The coefficients $a^{r\ell}\Delta^rP_i^\ell$ are candidate $r$th-derivative controls. A convergent <derivative> scheme, proved by contraction of its first differences, establishes corresponding smoothness of the original limit under the standard consistent parameterization.
+
+= Norm and spectral bounds for subdivision regularity
+{parent=Subdivision difference scheme}
+{title2=$\max\rho(A_{\epsilon_p}\cdots A_{\epsilon_1})^{1/p}\le\widehat\rho\le\max\|A_{\epsilon_p}\cdots A_{\epsilon_1}\|^{1/p}$}
+
+Finite local <subdivision matrices> for the scaled difference scheme track <derivative> variations in nested parameter intervals. A product-norm bound below one proves uniform contraction for every interval and therefore gives a <lower bound> on <derivative> <continuity>. A product <eigenvalue> of modulus at least one is an obstruction when its mode is reachable from the data and visible in the limit: generic data excite it, so the corresponding <derivative> differences fail to vanish. Harmless <polynomial> or unobservable modes must be removed before applying such an <upper bound>. Borderline smoothness needs direct analysis, not rounding a numerical exponent. Stability and convergence of the underlying scheme must be checked rather than inferred from mask width.
+
+= Subdivision matrix
+{parent=Subdivision mask}
+{title2=$S$}
+
+A local <subdivision matrix> maps the <control points> in a refinement-invariant neighborhood to the refined neighborhood. Row sums one express constant reproduction. Its constant <eigenvector> has <eigenvalue> one; remaining <eigenvalues> govern decay of shape modes. Near an <extraordinary subdivision vertex>, tangent modes and a <characteristic map of a subdivision surface> are needed to test geometric smoothness, beyond simple convergence.
+
+= Bézier curve
+{c}
+{parent=Computer aided geometric design}
+{wiki}
+{title2=$C(t)=\sum_{i=0}^n\binom ni(1-t)^{n-i}t^iP_i$}
+
+A <Bézier curve> is a <parametric curve> specified by <control points> $P_0,\ldots,P_n$ in a <Euclidean space> and the <Bernstein basis>:
+$$
+C(t)=\sum_{i=0}^n b_{i,n}(t)P_i,\qquad b_{i,n}(t)=\binom ni(1-t)^{n-i}t^i,\qquad 0\leq t\leq1.
+$$
+Here $\binom ni$ is a <binomial coefficient>. Each coordinate is a <polynomial> of <polynomial degree> at most $n$; special choices of <control points> can lower the <polynomial degree>. The ordered <control points> form the <control polygon>. A cubic <Bézier curve> uses four <control points> and has the explicit form
+$$
+C(t)=(1-t)^3P_0+3(1-t)^2tP_1+3(1-t)t^2P_2+t^3P_3.
+$$
+The curve passes through $P_0$ and $P_3$; the interior <control points> steer its shape and need not lie on it.https://ocw.mit.edu/courses/6-837-computer-graphics-fall-2012/aba8735cf2cf7c71ca5d29b46873309a_MIT6_837F12_Lec01.pdf[MIT 6.837, Bézier Curves and Splines, slides 23–31 and 45–47, 2012]{ref}
+
+For a worked example, choose
+$$
+P_0=(0,0),\qquad P_1=(1,2),\qquad P_2=(3,2),\qquad P_3=(4,0).
+$$
+Substituting these <control points> gives
+$$
+C(t)=\bigl(3t+3t^2-2t^3,\;6t(1-t)\bigr),\qquad C(1/2)=\tfrac18P_0+\tfrac38P_1+\tfrac38P_2+\tfrac18P_3=(2,1.5).
+$$
+Here $y(t)=1.5-6(t-1/2)^2\leq1.5$, so neither interior <control point>, both at height $2$, lies on the curve. <De Casteljau's algorithm> computes the same point using only successive <linear interpolations>.
+
+The endpoint <tangent vectors> follow from the <Bézier derivative control polygon>:
+$$
+C'(0)=3(P_1-P_0)=(3,6),\qquad C'(1)=3(P_3-P_2)=(3,-6).
+$$
+Thus the curve leaves $P_0$ toward $P_1$ and arrives at $P_3$ from $P_2$. These nonzero <derivatives> determine the endpoint <tangent lines>; if an endpoint <derivative> vanishes, that formula alone does not determine its tangent direction. Endpoint handles are useful when arranging a <parametric first-derivative join of Bézier curves>.
+
+The parameter $t$ is usually not <arc length>. For this example,
+$$
+C'(t)=\bigl(3+6t-6t^2,\;6-12t\bigr),\qquad \|C'(0)\|=\sqrt{45},\qquad \|C'(1/2)\|=4.5.
+$$
+Equal steps in $t$ therefore do not generally travel equal distances. Distance along the curve is instead the <arc length>, given by the <integral> $s(t)=\int_0^t\|C'(u)\|\,du$; its <derivative> is the <norm> of the <tangent vector> and measures the rate of travel.
+
+Two geometric facts make <Bézier curves> especially convenient for design. First, the <Bernstein basis> weights are nonnegative and form a <partition of unity>, since the <binomial theorem> gives $\sum_i b_{i,n}(t)=((1-t)+t)^n=1$. Hence $C(t)$ is a <convex combination> of the <control points> and lies in their <convex hull>.https://groups.csail.mit.edu/graphics/classes/6.838/S98/meetings/m15/[MIT 6.838, Bézier Curve and B-Spline Curve, §1.4.1, 1998]{ref} The <convex hull> is the smallest <convex set> containing the <control points>, not their <axis-aligned bounding box>. Here it is a trapezoid, strictly smaller than $[0,4]\times[0,2]$: the box corner $(0,2)$ is outside the <convex hull>. The curve need not fill or touch every edge of either enclosure. The <convex hull> guarantee concerns $0\leq t\leq1$; outside that interval weights can be negative.
+
+Second, applying an <affine map> to every <control point> gives exactly the same result as applying it to the entire curve. For $T(x)=Ax+b$,
+$$
+\sum_i b_{i,n}(t)T(P_i)=A\sum_i b_{i,n}(t)P_i+b\sum_i b_{i,n}(t)=T(C(t)).
+$$
+This is <affine equivariance of a geometric basis>: a <translation>, <rotation> or <shear mapping> can be performed on a handful of <control points>. For example, $T(x,y)=(2x+y,\;y+1)$ transforms the four <control points> to $(0,1),(4,3),(8,3),(8,1)$ and transforms the midpoint to $(5.5,2.5)$, also obtained from the same weights $(1,3,3,1)/8$.
+
+These editable handles explain the usefulness of <Bézier curves> in <computer aided geometric design>, <vector graphics> paths and <outline fonts>: a small collection of points controls an entire smooth stroke, and resizing the design preserves its mathematical shape. Cambridge's computer-graphics notes describe their use in graphic design, typography and PostScript outlines. The industrial context includes Pierre Bézier's work at Renault and Paul de Casteljau's work at Citroën.https://www.cl.cam.ac.uk/teaching/1415/CompGraph/cgip.pdf[Neil A. Dodgson and Peter Robinson, Cambridge Computer Graphics and Image Processing, slides 183 and 226–228, 2014]{ref}
+
+// Target: analysis.bigb
+
+= Bézier derivative control polygon
+{parent=Bézier curve}
+{c}
+{title2=$C^{(r)}=\frac{n!}{(n-r)!}\sum_{j=0}^{n-r}\Delta^rP_j B_j^{n-r}$}
+
+For a degree-$n$ <Bézier curve>, the $r$th <derivative> has degree at most $n-r$ and <control points> $n!\Delta^rP_j/(n-r)!$. The first <derivative> follows by differentiating the <Bernstein basis> and shifting one summation index; iteration proves the general formula. A parameter interval of length $h$ multiplies these <derivative> controls by $h^{-r}$.
+
+= Parametric first-derivative join of Bézier curves
+{parent=Bézier derivative control polygon}
+{title2=$P_n=Q_0,\quad n(P_n-P_{n-1})/h=m(Q_1-Q_0)/k$}
+
+Two adjacent <Bézier curves> of degrees $n,m$ and interval lengths $h,k$ have a $C^1$ join precisely when their endpoint positions and their <derivatives> in the common parameter agree. Parallel endpoint polygon edges alone give tangent-direction agreement; their scaled vectors must be equal for parametric first-derivative <continuity>.
+
+= De Casteljau's algorithm
+{c}
+{parent=Bézier curve}
+{wiki}
+{title2=$P_i^{(r)}(t)=(1-t)P_i^{(r-1)}(t)+tP_{i+1}^{(r-1)}(t)$}
+
+= De Casteljau algorithm
+{c}
+{synonym}
+
+<De Casteljau's algorithm> evaluates a <Bézier curve> by repeated <linear interpolation> between neighboring <control points>. Fix $t\in[0,1]$, start with $P_i^{(0)}(t)=P_i$, and compute
+$$
+P_i^{(r)}(t)=(1-t)P_i^{(r-1)}(t)+tP_{i+1}^{(r-1)}(t),\qquad r=1,\ldots,n,\quad i=0,\ldots,n-r.
+$$
+Each new row has one fewer point. The final point is $P_0^{(n)}(t)=C(t)$. Use the same $t$ at every stage: it describes the fraction of each <line segment> traversed from its first endpoint toward its second. A cubic <Bézier curve> needs three levels containing $3$, $2$, and $1$ <linear interpolations>, respectively.https://graphics.stanford.edu/courses/cs164-10-spring/Handouts/handout19.pdf[Stanford CS348a, Handout 19, §2.3, pp. 10–11]{ref}
+
+For the <Bézier curve> with <control points> $P_0=(0,0)$, $P_1=(1,2)$, $P_2=(3,2)$, $P_3=(4,0)$, evaluation at $t=1/2$ takes the <midpoint> of every neighboring pair. The first level gives
+$$
+Q_0=\tfrac12(P_0+P_1)=(0.5,1),\qquad Q_1=\tfrac12(P_1+P_2)=(2,2),\qquad Q_2=\tfrac12(P_2+P_3)=(3.5,1).
+$$
+The second level gives
+$$
+R_0=\tfrac12(Q_0+Q_1)=(1.25,1.5),\qquad R_1=\tfrac12(Q_1+Q_2)=(2.75,1.5),
+$$
+and the third level gives
+$$
+S=\tfrac12(R_0+R_1)=(2,1.5)=C(1/2).
+$$
+The intermediate <control polygons> shrink toward the evaluated point. Each step is a <convex combination>, giving a geometric explanation of the <convex hull> property; every step also commutes with an <affine map>.
+
+\Image[bezier-de-casteljau-construction.png]
+{title=Cubic Bézier curve, its convex hull and bounding box, and the three levels of De Casteljau's algorithm at t = 1/2}
+
+The same construction splits the <Bézier curve> exactly, with no approximation. The outer edges of the triangular array give the new <control points>: for a cubic, $(P_0,Q_0,R_0,S)$ specify the left piece and $(S,R_1,Q_2,P_3)$ specify the right piece.https://graphics.stanford.edu/courses/cs164-10-spring/Handouts/handout19.pdf[Stanford CS348a, Handout 19, §2.3, p. 11, subsegment control points]{ref} At $t=1/2$ these two lists are
+$$
+L=\bigl((0,0),(0.5,1),(1.25,1.5),(2,1.5)\bigr),\qquad H=\bigl((2,1.5),(2.75,1.5),(3.5,1),(4,0)\bigr).
+$$
+Write $C_L$ and $C_H$ for the <Bézier curves> defined by these lists, each with its own parameter $u\in[0,1]$. Then
+$$
+C_L(u)=C(u/2),\qquad C_H(u)=C((1+u)/2).
+$$
+Their images reproduce the original curve, while their <derivatives> account for the shorter parameter intervals. At the join,
+$$
+C_L(1)=C_H(0)=S,\qquad C_L'(1)=3(S-R_0)=(2.25,0)=3(R_1-S)=C_H'(0).
+$$
+The <chain rule> gives $C_L'(1)=C_H'(0)=C'(1/2)/2$; in the original parameter, both pieces have <derivative> $(4.5,0)$. This is the interval scaling in the <parametric first-derivative join of Bézier curves>.
+
+\Image[bezier-subdivision-and-tangents.png]
+{title=Exact midpoint subdivision with two smaller control polygons, endpoint tangent directions, and equally spaced parameter samples}
+
+Repeated <midpoint> splitting is useful for drawing <vector graphics> paths: each piece has a smaller <control polygon> and its own <convex hull> enclosure. A renderer can refine pieces until they are sufficiently close to <line segments> at the chosen display scale. Evaluating $C(t)$ and splitting it are thus two results of the same short <algorithm>.
+
+For a proof outline, expanding the recursion gives
+$$
+P_i^{(r)}(t)=\sum_{j=0}^r\binom rj(1-t)^{r-j}t^jP_{i+j}.
+$$
+<Pascal's identity> proves this by <induction>; at $r=n$, $i=0$ it is precisely the <Bernstein basis> formula for the <Bézier curve>. The geometric construction remains useful even when expanding the <polynomial> by hand would be cumbersome.
+
+// Target: analysis.bigb
+
+= Bounding volume
+{parent=Computer aided geometric design}
+{wiki}
+
+A <bounding volume> is a simple enclosing <set> $B$ for an object $S$: every <point> of $S$ belongs to $B$. Its purpose is to make a cheap rejection possible before examining the object itself. For example, an <axis-aligned bounding box> can enclose a <triangle> using just its smallest and largest <coordinates>.
+
+The guarantee is one-sided. If $S\subseteq B_S$ and $T\subseteq B_T$, then
+$$
+S\cap T\ne\varnothing\ \Longrightarrow\ B_S\cap B_T\ne\varnothing.
+$$
+Thus an empty <set intersection> of the <bounding volumes> certifies an empty <set intersection> of the objects. An overlap of the <bounding volumes> is necessary for actual intersection, but does not prove it. This is a <conservative enclosure test>: rejection is conclusive, acceptance means further examination is needed.
+
+Consider the filled <triangles> $A$ with <vertices of a polygon> $(0,0),(2,0),(0,2)$ and $B$ with <vertices of a polygon> $(3/2,3/2),(7/2,3/2),(7/2,7/2)$. Their <axis-aligned bounding boxes> overlap in $[3/2,2]\times[3/2,2]$. Nevertheless, every <point> of $A$ satisfies $x+y\leq2$, whereas every <point> of $B$ satisfies $x+y\geq3$. The two <triangles> are disjoint. The shaded square in the <bounding volume hierarchy> illustration makes this false candidate visible.
+
+For <collision detection>, a <broad phase> produces possible object pairs from <bounding volume> tests; a <narrow phase> examines the actual shapes, for example with a <triangle-triangle intersection algorithm>. Scott Le Grand's <GPU Gems 3/Chapter 32. Broad-Phase Collision Detection with CUDA> explains this separation in its opening paragraphs. Whether touching counts as a <collision> must be specified by the application.
+
+An enclosure must cover the entire object being queried. A box fitted to samples of a <parametric curve> only guarantees enclosure of the sampled <points>, unless a separate bound covers the whole <parametric curve>. For a <Bézier curve>, the <convex hull> of its <control points> provides such a bound on its defining parameter <interval>. In <floating-point arithmetic>, <outward rounding> can preserve certified <coordinate> bounds; an inward <roundoff error> can invalidate a rejection. Bounds must also be updated when objects move.
+
+= Conservative enclosure test
+{parent=Bounding volume}
+{title2=$S\subseteq B_S,\ T\subseteq B_T,\ B_S\cap B_T=\varnothing\Rightarrow S\cap T=\varnothing$}
+
+A <conservative enclosure test> may retain disjoint objects as candidates, but must never reject a true <set intersection>. Increasing an enclosure can add candidates while preserving this implication.
+
+= Collision detection
+{parent=Bounding volume}
+
+<Collision detection> determines whether geometric objects meet, under a specified convention for touching. A <bounding volume> test can reject a pair before a more detailed shape test.
+
+= Broad phase
+{parent=Collision detection}
+
+The <broad phase> generates candidate pairs with inexpensive <conservative enclosure tests>. An accepted pair still needs the <narrow phase>.
+
+= Narrow phase
+{parent=Collision detection}
+
+The <narrow phase> checks the actual objects for candidates retained by the <broad phase>. Its numerical guarantees depend on the chosen shape test.
+
+// Target: analysis.bigb
+
+= Bounding volume hierarchy
+{parent=Bounding volume}
+{wiki}
+
+= BVH
+{c}
+{synonym}
+
+A <bounding volume hierarchy> is a <data structure> arranged as a <rooted tree>: leaves store objects, and each internal node stores a <bounding volume> enclosing its <children in a rooted tree>. Consequently, every node encloses all objects in its <subtree>. A common choice is a <binary tree> of <axis-aligned bounding boxes>. The objects assigned to sibling <subtrees> can be different even when their <bounding volumes> overlap.<Physically Based Rendering: From Theory to Implementation (4th edition) by Matt Pharr and others/7.3 Bounding Volume Hierarchies>[§7.3, opening paragraphs and Figure 7.3: leaves, descendant bounds and rejection of a subtree]{ref}
+
+Here is an exact two-dimensional example. Use the <triangles> $A,B$ from <bounding volume>, together with $C$ having <vertices of a polygon> $(6,0),(8,0),(6,2)$ and $D$ having <vertices of a polygon> $(6,3),(8,3),(8,5)$. Group $A,B$ under $L$, and $C,D$ under $R$. Their parent <axis-aligned bounding boxes> and the box at the <root of a tree> are
+$$
+B_L=[0,7/2]\times[0,7/2],\qquad B_R=[6,8]\times[0,5],\qquad B_{\mathrm{root}}=[0,8]\times[0,5].
+$$
+The diagram shows all seven nodes. Taking the <coordinate>-wise <minimum> and <maximum> of the two child boxes constructs each parent box; the resulting box contains the <set union> of the children, and can also contain empty space between them.
+
+\Image[bounding-box-enclosures-and-hierarchy.png]
+{title=Four exact <triangles>, their enclosing boxes, and a seven-node <bounding volume hierarchy> arranged as a <binary tree>}
+{id=bounding-box-enclosures-and-hierarchy}
+
+A <bounding volume hierarchy traversal> starts at the <root of a tree> and discards a <subtree> when its <bounding volume> misses the query. Accepted internal nodes expose their children; accepted leaves supply candidates for actual shape tests. Box2D's official <Collision: Dynamic Tree> describes <axis-aligned bounding box> region queries that return overlapping leaf boxes. A query box that bounds a different query shape can produce additional false candidates.
+
+For the closed query <rectangle>
+$$
+Q=[8/5,9/5]\times[8/5,9/5],
+$$
+left-first <depth-first search> tests the node boxes in order: root, $L$, $A$, $B$, $R$. The first four overlap $Q$; $R$ does not, because its smallest $x$-<coordinate> is $6>9/5$. Pruning $R$ skips both $C$ and $D$. Five box tests leave two <broad phase> candidates. The <narrow phase> rejects $A$, since $x+y\geq16/5>2$ throughout $Q$, and accepts $B$: the <point> $(7/4,13/8)$ belongs to both $Q$ and $B$. There are two detailed shape tests and one true hit.
+
+\Image[bounding-volume-hierarchy-query-pruning.png]
+{title=An exact <rectangle> query prunes the right <subtree> and leaves two box candidates but only one <triangle> hit}
+{id=bounding-volume-hierarchy-query-pruning}
+
+For a query asking for all intersections, <time complexity> depends on the number $v$ of visited nodes and the cost $T_j$ of each candidate shape test. With fixed dimension and constant bookkeeping cost per node, the work is
+$$
+O\!\left(v+\sum_{j=1}^{c}T_j\right),
+$$
+where $c$ counts candidate objects and $O$ is <Big O notation>. A balanced <binary tree> has small <height of a binary tree>, but a query can enter both children at every level. In this example a query containing $[0,8]\times[0,5]$ visits all seven nodes and tests all four <triangles>. More generally, a <full binary tree> with $n$ single-object leaves has $2n-1$ nodes, so such a query takes $O(n)$ work for constant-cost shape tests even when its <height of a binary tree> is $O(\log n)$. Listing $n$ hits itself requires $n$ outputs. Small height alone gives no unconditional logarithmic query bound.
+
+For <collision detection> between two <bounding volume hierarchies>, traverse pairs of nodes: reject disjoint pairs of <bounding volumes>, expand a nonleaf member of an accepted pair, and apply the <narrow phase> at accepted leaf pairs. A single collection's self-query must exclude pairing an object with itself and avoid duplicate unordered pairs. If every object overlaps every other object, reporting all pairs already requires $n(n-1)/2$ results. Construction quality, empty space in boxes and the queries determine how much pruning is useful.<GPU Gems 3/Chapter 32. Broad-Phase Collision Detection with CUDA>[§32.1: the n(n−1)/2 pair baseline and worst-case quadratic broad-phase work]{ref}
+
+For a short correctness outline, an object is enclosed by its leaf box, and each child box is enclosed by its parent box. Repeated <subset> relations carry this property to every ancestor. A true query intersection therefore prevents rejection at every ancestor of the object's leaf. Updating leaf boxes after motion also requires restoring all affected ancestor bounds before querying.
+
+= Bounding volume hierarchy traversal
+{parent=Bounding volume hierarchy}
+
+A <bounding volume hierarchy traversal> visits only nodes whose ancestors passed a <conservative enclosure test>. It can use <depth-first search>; its <time complexity> depends on how many nodes pass, not just the <height of a binary tree>.
+
+// Target: optics.bigb
+
+= Axis-aligned bounding box
+{parent=Bounding volume}
+{title2=$B=\prod_{i=1}^{d}[m_i,M_i]$}
+
+= AABB
+{c}
+{synonym}
+
+An <axis-aligned bounding box> is a <Cartesian product> of <closed intervals> aligned with a chosen <Cartesian coordinate system>:
+$$
+B=\prod_{i=1}^{d}[m_i,M_i],\qquad m_i\leq M_i.
+$$
+Only the two opposite corners $(m_1,\ldots,m_d)$ and $(M_1,\ldots,M_d)$ need to be stored. In two dimensions it is a <rectangle>. Changing the <Cartesian coordinate system> can change how tightly the <axis-aligned bounding box> fits the same object.<Physically Based Rendering: From Theory to Implementation (4th edition) by Matt Pharr and others/3.7 Bounding Boxes>[§3.7, two-point representation and Figure 3.9]{ref}
+
+For a nonempty <finite set> of <points> $P$, the smallest such <axis-aligned bounding box> has
+$$
+m_i=\min_{p\in P}p_i,\qquad M_i=\max_{p\in P}p_i.
+$$
+These <minimum> and <maximum> values also enclose the <convex hull> of $P$: each <coordinate> of a <convex combination> lies between the smallest and largest input <coordinates>. In particular, three <vertices of a polygon> determine the <axis-aligned bounding box> of a filled <triangle>. For a general nonempty <compact set>, the same formulas use all its <points>; inspecting only an arbitrary finite sample is insufficient.
+
+Given nonempty boxes $B=\prod_i[m_i,M_i]$ and $C=\prod_i[n_i,N_i]$, the <closed interval> convention gives
+$$
+B\cap C\ne\varnothing\quad\Longleftrightarrow\quad
+\max(m_i,n_i)\leq\min(M_i,N_i)\quad\text{for every }i.
+$$
+Equivalently, reject as soon as $M_i<n_i$ or $N_i<m_i$ in any <coordinate>. The surviving <set intersection> has endpoints $\max(m_i,n_i)$ and $\min(M_i,N_i)$. This is an exact box test, while its conclusion about enclosed objects remains a <conservative enclosure test>.<Physically Based Rendering: From Theory to Implementation (4th edition) by Matt Pharr and others/3.7 Bounding Boxes>[§3.7, Intersect() and Overlaps(): coordinate-wise intersection and inclusive comparisons]{ref}
+
+Equality counts as touching: $[0,1]\times[0,1]$ and $[1,2]\times[0,1]$ share an edge, so their <set intersection> is nonempty. Replacing every $\leq$ in the overlap formula by $<$ tests intersection of the <interiors> of full-dimensional boxes and excludes this contact. A zero-width <closed interval> can represent a <point> or a lower-dimensional enclosure, and must not automatically be discarded when touching counts. A box with some $m_i>M_i$ is empty; test emptiness before applying rules intended for nonempty boxes. The <broad phase> must retain touching candidates whenever the <narrow phase> counts touching as a hit.
+
+For nonempty boxes, the smallest enclosing <axis-aligned bounding box> of their <set union> is
+$$
+\prod_{i=1}^{d}\bigl[\min(m_i,n_i),\max(M_i,N_i)\bigr].
+$$
+This operation supplies the parent boxes in a <bounding volume hierarchy>. It is an enclosure of the <set union>, rather than generally the <set union> itself. In <floating-point arithmetic>, comparisons are conclusive only for endpoints that still enclose the intended exact objects; use certified bounds such as <interval arithmetic> with <outward rounding> when that guarantee is required.
+
+// Target: analysis.bigb
+
+= Triangle-triangle intersection algorithm
+{parent=Computer aided geometric design}
+
+For two noncoplanar <triangles>, first reject vertices strictly on one side of the other triangle's plane. Otherwise intersect each triangle with the other plane and compare the resulting intervals along the common line. Coplanar triangles require a planar overlap test; zero-area triangles require separate <line segment> or point tests.
+
+// Target: analysis.bigb

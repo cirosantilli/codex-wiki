@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>saturation-spectroscopy-chosen-doppler-envelope-and-dip.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="saturation-spectroscopy-chosen-doppler-envelope-and-dip.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/saturation-spectroscopy-chosen-doppler-envelope-and-dip.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">saturation-spectroscopy-chosen-doppler-envelope-and-dip.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/saturation-spectroscopy-chosen-doppler-envelope-and-dip.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/saturation-spectroscopy-chosen-doppler-envelope-and-dip.py">saturation-spectroscopy-chosen-doppler-envelope-and-dip.py</a></b></div></nav></div><div class="p"><b>saturation-spectroscopy-chosen-doppler-envelope-and-dip.py</b></div><div class="code"><div><pre><code>"""Chosen Gaussian velocity average and phenomenological dips, not data fits.
+
+Python 3.14, numpy 2.3.5, matplotlib 3.10.7; no SciPy.
+Run from _media; emits the matching opaque PNG in the working directory.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+SIGMA_D_MHZ = 120.0
+NATURAL_FWHM_MHZ = 6.0
+
+
+def envelope(x):
+    """Normalized Gaussian average of a weak Lorentzian response.
+
+    Integrate over the Lorentzian detuning t, resolving its 3 MHz HWHM.
+    x, t and the Gaussian standard deviation are all in ordinary MHz.
+    """
+    t = np.linspace(-2400, 2400, 24001)
+    h = NATURAL_FWHM_MHZ / 2
+    lorentz = h*h / (t*t + h*h)
+    norm = np.trapezoid(np.exp(-t*t/(2*SIGMA_D_MHZ**2))*lorentz, t)
+    return np.array([np.trapezoid(np.exp(-(value-t)**2/(2*SIGMA_D_MHZ**2))
+                                    * lorentz, t) / norm for value in x])
+
+
+def dip(x, s):
+    contrast = .24*s/(1+s)
+    width = NATURAL_FWHM_MHZ*np.sqrt(1+s)
+    return contrast/(1+4*x*x/(width*width))
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "font.family": "DejaVu Sans"})
+    fig, axes = plt.subplots(1, 2, figsize=(10.8, 4.7), dpi=110, facecolor="white")
+    colors = {1: "#2266a4", 9: "#c54336"}
+    for ax, limit in zip(axes, [420, 35]):
+        x = np.linspace(-limit, limit, 1001)
+        broad = envelope(x)
+        ax.plot(x, broad, "--", color="#555555", lw=1.7, label="Pump off: velocity average")
+        for s in [1, 9]:
+            width = NATURAL_FWHM_MHZ*np.sqrt(1+s)
+            ax.plot(x, broad-dip(x, s), color=colors[s], lw=2,
+                    label=fr"$s={s}$: assigned dip FWHM {width:.2f} MHz")
+        ax.set(xlim=(-limit, limit), xlabel=r"Laser detuning $\nu_L-\nu_0$ (MHz)")
+        ax.grid(alpha=.18)
+        ax.spines[["top", "right"]].set_visible(False)
+    axes[0].set(title="Broad thermal envelope", ylabel="Normalized absorption coefficient", ylim=(0, 1.08))
+    axes[1].set(title="Central Lamb dip (magnified)", ylim=(.75, 1.015))
+    axes[0].legend(loc="lower center", fontsize=8.4)
+    axes[1].annotate("Higher pump: deeper, wider toy dip", xy=(0, .784), xytext=(-29, .82),
+                     fontsize=9, arrowprops={"arrowstyle": "-&gt;", "color": "#45515b"})
+    fig.suptitle("Chosen line shapes — phenomenological dips, no historical data", fontsize=14, weight="bold")
+    fig.text(.5, .035, r"Gaussian $\sigma_D=120$ MHz; natural FWHM = 6 MHz; "
+             r"$C_s=0.24s/(1+s)$; assigned $w_s=6\sqrt{1+s}$ MHz.", ha="center", fontsize=10)
+    fig.subplots_adjust(left=.075, right=.98, bottom=.18, top=.81, wspace=.25)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

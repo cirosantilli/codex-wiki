@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>euler-heun-slopes-and-stage-construction.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="euler-heun-slopes-and-stage-construction.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/euler-heun-slopes-and-stage-construction.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">euler-heun-slopes-and-stage-construction.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/euler-heun-slopes-and-stage-construction.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/euler-heun-slopes-and-stage-construction.py">euler-heun-slopes-and-stage-construction.py</a></b></div></nav></div><div class="p"><b>euler-heun-slopes-and-stage-construction.py</b></div><div class="code"><div><pre><code>"""Original Euler-Heun geometry; emits an opaque PNG to the current directory.
+
+Tested with Python 3.14, matplotlib 3.10.7 and numpy 2.3.5.
+"""
+from pathlib import Path
+import math
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({'font.size': 11, 'figure.facecolor': 'white'})
+    fig, (ax, zoom) = plt.subplots(1, 2, figsize=(11, 4.8),
+                                  gridspec_kw={'width_ratios': [1.6, 1]}, layout='constrained')
+    h, k1 = 0.2, 1.0
+    k2 = 1 + h * k1
+    euler, heun = 1 + h * k1, 1 + h * (k1 + k2) / 2
+    exact = math.exp(h)
+    t = np.linspace(0, h, 200)
+    ax.plot(t, np.exp(t), color='black', lw=2, label='Exact $e^t$')
+    ax.plot([0, h], [1, euler], color='#2675ad', lw=2, label='$k_1=1$: Euler predictor')
+    ax.plot([0, h], [1, 1 + h * k2], '--', color='#b35412', lw=1.6,
+            label='$k_2=1.2$ transported to start')
+    ax.plot([0, h], [1, heun], color='#268544', lw=2,
+            label='Mean slope $1.1$: Heun output')
+    tx = np.array([0.175, 0.225])
+    ax.plot(tx, euler + k2 * (tx - h), color='#b35412', lw=2.5)
+    ax.scatter([0, h], [1, euler], s=50, color='#2675ad', zorder=5)
+    ax.scatter([h], [heun], s=45, color='#268544', zorder=5)
+    ax.annotate('Stage 2 samples $f$ here\n$(0.2,1.2)$; slope $k_2=1.2$',
+                xy=(h, euler), xytext=(0.07, 1.032),
+                arrowprops={'arrowstyle': '-&gt;', 'color': '#b35412'}, color='#b35412')
+    ax.annotate('Stage 1: $(0,1)$', xy=(0, 1), xytext=(0.012, 0.995))
+    ax.set(xlim=(-0.005, 0.235), ylim=(0.98, 1.258), xlabel='Time $t$', ylabel='State $y$',
+           title='Two sampled slopes, one averaged increment')
+    ax.legend(loc='upper left', fontsize=9, framealpha=1)
+    ax.grid(alpha=.2)
+    xs = [0.0, 0.65, 1.3]
+    for x, y, color in zip(xs, [euler, heun, exact], ['#2675ad', '#268544', 'black']):
+        zoom.scatter(x, y, s=70, color=color, zorder=5)
+        zoom.annotate(f'{y:.9f}', (x, y), xytext=(0, -21 if x == .65 else 9),
+                      textcoords='offset points', ha='center', fontsize=10)
+    zoom.axhline(euler, color='#2675ad', lw=1, alpha=.4)
+    zoom.axhline(heun, color='#268544', lw=1, alpha=.4)
+    zoom.axhline(exact, color='black', lw=1, alpha=.4)
+    zoom.annotate('', xy=(.29, heun), xytext=(.29, euler),
+                  arrowprops={'arrowstyle': '&lt;-&gt;', 'color': '#2675ad'})
+    zoom.text(.32, 1.210, '$d=0.020000$', va='center', fontsize=10)
+    zoom.annotate('', xy=(1.68, exact), xytext=(1.68, heun),
+                  arrowprops={'arrowstyle': '&lt;-&gt;', 'color': '#268544'})
+    zoom.text(.78, 1.233, 'Heun local defect\n$0.001402758$', ha='center', color='#268544')
+    zoom.set(xlim=(-.3, 1.85), ylim=(1.196, 1.239), ylabel='Endpoint state (magnified)',
+             title='Pair difference versus actual defect', xticks=xs,
+             xticklabels=['Euler', 'Heun', 'Exact'])
+    zoom.grid(axis='y', alpha=.2)
+    fig.suptitle("Euler-Heun on $y'=y$, $y(0)=1$, $h=0.2$", fontsize=15)
+    fig.savefig(Path(__file__).stem + '.png', dpi=100, facecolor='white', transparent=False)
+    plt.close(fig)
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

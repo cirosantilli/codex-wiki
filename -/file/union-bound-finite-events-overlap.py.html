@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>union-bound-finite-events-overlap.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="union-bound-finite-events-overlap.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/union-bound-finite-events-overlap.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">union-bound-finite-events-overlap.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/union-bound-finite-events-overlap.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/union-bound-finite-events-overlap.py">union-bound-finite-events-overlap.py</a></b></div></nav></div><div class="p"><b>union-bound-finite-events-overlap.py</b></div><div class="code"><div><pre><code>"""Draw exact unions of finite events. Run from _media with Python 3.14.
+
+Tested with Python 3.14.4, matplotlib 3.10.7 and numpy 2.3.5.
+All twelve outcomes have probability 1/12; no independence is assumed.
+"""
+
+from fractions import Fraction
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, Patch, Rectangle
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "font.family": "DejaVu Sans"})
+    omega = set(range(1, 13))
+    event_a = {1, 2, 3, 4}
+    cases = [
+        ("Disjoint events", {5, 6, 7, 8}, Fraction(2, 3)),
+        ("Two shared outcomes", {3, 4, 5, 6}, Fraction(1, 2)),
+        ("Identical events", {1, 2, 3, 4}, Fraction(1, 3)),
+    ]
+    colors = {"A": "#c3e2f2", "B": "#f8d6ad", "AB": "#ddc8ef", "": "white"}
+    fig, axes = plt.subplots(1, 3, figsize=(10.8, 6.4), facecolor="white")
+    fig.subplots_adjust(left=0.025, right=0.985, bottom=0.10, top=0.79, wspace=0.13)
+    fig.suptitle("Union bound: overlap changes the union, not the sum", fontsize=16, y=0.97)
+    fig.text(0.5, 0.915, "12 equally likely outcomes; P(A) = P(B) = 4/12 in every panel", ha="center")
+    fig.legend(
+        handles=[Patch(facecolor=colors[k], edgecolor="#586273", label=label)
+                 for k, label in [("A", "A only"), ("B", "B only"), ("AB", "A and B"), ("", "neither")]],
+        loc="upper center", bbox_to_anchor=(0.5, 0.885), ncol=4, frameon=False,
+    )
+    for ax, (title, event_b, expected) in zip(axes, cases, strict=True):
+        union = event_a | event_b
+        exact = Fraction(len(union), len(omega))
+        bound = Fraction(len(event_a) + len(event_b), len(omega))
+        assert exact == expected and bound == Fraction(2, 3)
+        assert bound - exact == Fraction(len(event_a &amp; event_b), len(omega))
+        ax.set(xlim=(-0.6, 3.6), ylim=(-3.0, 3.5), aspect="equal")
+        ax.axis("off")
+        ax.set_title(title, fontsize=13, pad=8)
+        ax.add_patch(Rectangle((-0.48, 0.40), 3.96, 2.90, facecolor="white", edgecolor="#8a919c", lw=1))
+        for index, outcome in enumerate(sorted(omega)):
+            x, y = index % 4, 2.8 - index // 4
+            membership = ("A" if outcome in event_a else "") + ("B" if outcome in event_b else "")
+            ax.add_patch(Circle((x, y), 0.35, facecolor=colors[membership], edgecolor="#586273", lw=1.1))
+            ax.text(x, y + 0.08, str(outcome), ha="center", va="center", fontsize=11)
+            ax.text(x, y - 0.16, membership or "–", ha="center", va="center", fontsize=8)
+        ax.text(1.5, 0.13, f"Union: {len(union)} distinct outcomes", ha="center", fontsize=11)
+        for y, value, label, color in [
+            (-0.62, exact, "Exact union", "#1b627f"),
+            (-1.42, bound, "Union bound", "#a65b20"),
+        ]:
+            ax.text(-0.4, y + 0.29, f"{label}: {value}", fontsize=11)
+            ax.add_patch(Rectangle((-0.4, y - 0.10), 3.8, 0.20, facecolor="#f0f1f3", edgecolor="none"))
+            ax.add_patch(Rectangle((-0.4, y - 0.10), 3.8 * float(value), 0.20, facecolor=color, edgecolor="none"))
+        ticks = np.array([0, 0.5, 1.0])
+        for tick in ticks:
+            ax.plot([-0.4 + 3.8 * tick] * 2, [-1.63, -1.53], color="#586273", lw=0.8)
+            ax.text(-0.4 + 3.8 * tick, -1.80, f"{tick:g}", ha="center", fontsize=9)
+        ax.text(1.5, -2.35, f"Extra counts: {bound - exact}", ha="center", fontsize=11)
+    fig.text(0.5, 0.035, "The sum counts a shared outcome twice; the union counts it once.", ha="center", fontsize=12)
+    destination = Path.cwd() / (Path(__file__).stem + ".png")
+    fig.savefig(destination, dpi=100, facecolor="white", transparent=False)
+    plt.close(fig)
+    print(destination)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

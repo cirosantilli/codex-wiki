@@ -1,0 +1,225 @@
+= Shortest path problem
+{title2=$\min_{p:s\leadsto t}\sum_{e\in p}w_e$}
+
+The <shortest path problem> asks for a <graph path> from a source <vertex> $s$ to a destination <vertex> $t$ minimizing its total <edge> weight. Here $w_e$ is the cost of traversing <edge> $e$, and costs add along the <graph path>. If no route exists, its shortest-path distance is $\infty$. With nonnegative <edge> weights, deleting <cycles in a graph> from a <walk> never increases its cost, so repetitions cannot improve the optimum.
+
+Consider the <undirected graph> with <vertex set> $V=\{A,B,C,D\}$ and the six <edge> weights
+$$
+w_{AB}=4,\quad w_{AC}=1,\quad w_{CB}=2,\quad w_{BD}=1,\quad w_{CD}=5,\quad w_{AD}=10.
+$$
+Each <edge> can be traversed in either direction at the same cost. The direct <graph path> $A,D$ costs $10$; $A,B,D$ costs $4+1=5$; $A,C,D$ costs $1+5=6$. The cheapest <graph path> is $A,C,B,D$, costing $1+2+1=4$. The remaining <graph path> $A,B,C,D$ costs $11$, exhausting the possibilities without repeated <vertices>.
+
+\Image[shortest-path-weights.png]
+{title=The <shortest path problem>: three highlighted <edges> cost less than the direct connection}
+
+Thus fewest <edges> and least total cost are different objectives. <Breadth-first search> minimizes the number of <edges>, which suffices when every <edge> has the same positive cost. Unequal nonnegative costs call for the <Dijkstra algorithm>. On a map, weights might be minutes rather than kilometres: a longer-looking route can arrive sooner. This is why a <weighted graph> separates the network's connections from what a particular journey costs.
+
+= Shortest path
+{parent=Shortest path problem}
+
+A <graph path> of minimum total edge weight between its endpoints, among the permitted paths. In an unweighted graph, its weight is the number of edges. A shortest path need not be unique.
+
+= Label-setting shortest-path algorithm
+{parent=Shortest path problem}
+
+An algorithm that makes each vertex's distance permanent once it is selected. With nonnegative <directed edge> lengths, the <Dijkstra algorithm> selects the unfinalized vertex with least tentative distance; a shorter route through another unfinalized vertex is impossible because its remaining route has at least that next tentative distance. For an all-to-one problem, incoming <directed edges> to the selected vertex are relaxed. Negative lengths can invalidate this finalization argument.
+
+= Bellman inequalities
+{c}
+{parent=Shortest path problem}
+{title2=$d_i\le c_{ij}+d_j$}
+
+The Bellman inequalities turn local <directed edge> checks into a global certificate for the <shortest path problem>. Here the convention is *all-to-one*: every journey ends at a fixed <vertex> $r$, and $c_{ij}$ is the cost of the original <directed edge> $i\to j$. Work in a finite <directed graph> with finite real costs. Write $L_i$ for candidate labels, normalized by $L_r=0$, on the <vertices> that can reach $r$. A feasible potential means precisely that these finite labels satisfy
+$$
+L_i\le c_{ij}+L_j
+$$
+for every <directed edge> within that set. These labels give <lower bounds> on costs *to* $r$. A discovered <directed path> of cost $U_i$ instead gives an <upper bound>. The following constructed <graph> shows both bounds and the exact distances between them; its weights are illustrative costs, not measured travel data.
+
+\Image[edge-relaxation-certificate.png]
+{title=<Bellman inequalities> and explicit <directed paths> certify distances to $r$ from opposite sides}
+
+The arrows in the picture point toward the destination, whereas <edge relaxation> propagates an improved label in the opposite direction: an improved $d_j$ can lower $d_i$. In the pictured <graph>, the <directed paths> from $a$ to $r$ cost $7$, $2+3=5$, and $2-2+4=4$. Thus $\delta(a,r)=4$. The candidate $L=(3,1,3,0)$ in <vertex> order $(a,b,c,r)$ is feasible, but underestimates the exact distances $(4,2,4,0)$. Merely satisfying the <Bellman inequalities> does not make a candidate exact.
+
+Why do they give <lower bounds>? Along any <directed path> $i=v_0\to v_1\to\cdots\to v_k=r$, successive substitution gives
+$$
+L_i\le\sum_{\ell=0}^{k-1}c_{v_\ell v_{\ell+1}}+L_r=\sum_{\ell=0}^{k-1}c_{v_\ell v_{\ell+1}}.
+$$
+The same calculation works for a <directed walk>, with repeated <vertices> allowed. Taking the <infimum> of route costs gives $L_i\le\delta(i,r)$. A discovered route gives $\delta(i,r)\le U_i$. If the bounds meet, $L_i=U_i$, they certify an optimum without enumerating routes. Equivalently, check the <Bellman inequalities> for the proposed distances and exhibit <directed paths> realizing them. The authored <Bellman-Ford algorithm> implementation checks the corresponding single-source inequalities and equality on recorded route <edges>; reversing every <directed edge> gives this all-to-one convention.<Algorithms, 4th edition by Robert Sedgewick and others/BellmanFordSP.java>[Algorithms, 4th edition by Robert Sedgewick and others; Sedgewick and Wayne, BellmanFordSP.java, optimality checks]{ref}
+
+For the exact labels in the picture, the slack $c_{ij}+d_j-d_i$ is respectively $0,3,1,0,0$ on $a\to b$, $a\to r$, $b\to r$, $b\to c$, $c\to r$. Zero slack means equality; the zero-slack <directed path> $a\to b\to c\to r$ realizes the cost $4$. This is the useful beauty of the certificate: a few local <inequalities> rule out every cheaper journey, while one explicit journey attains the bound.
+
+Keep unreachable <vertices> separate: $\delta(i,r)=\infty$ when no <directed path> to $r$ exists, and a finite <lower bound> alone cannot certify that fact. Extended labels can use $\infty+c=\infty$ for finite $c$, but never compute a slack as $\infty-\infty$. If $i$ can reach a negative-cost <directed cycle> and then reach $r$, repeatedly traversing the <directed cycle> makes route costs unbounded below: their <infimum> is $-\infty$, with no finite shortest <directed walk>. A finite feasible potential on such a <directed cycle> is impossible, since summing its <Bellman inequalities> would give $0\le\sum c_{ij}<0$. A negative-cost <directed cycle> that cannot reach $r$ does not affect distances to $r$. These are statements about unrestricted <directed walks>; requiring a <directed path> with no repeated <vertices> is a different optimization problem when negative-cost <directed cycles> exist.<6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff/Lecture 17: Shortest Paths III: Bellman-Ford>[6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff; MIT 6.006, Lecture 17, pp. 1 and 5: relevant negative cycles and simple paths]{ref}
+
+For the single-source convention, the same original <directed edge> $u\to v$ instead gives $L(v)\le L(u)+w_{uv}$ with $L(s)=0$, a <lower bound> on distance *from* $s$. The endpoint carrying the label on the left therefore changes with the direction of the problem.
+
+= Label-correcting shortest-path algorithm
+{parent=Shortest path problem}
+
+An algorithm whose tentative distance labels may be revised repeatedly until all relevant <Bellman inequalities> hold. <Bellman-Ford algorithm> uses this approach: a label is an upper bound supplied by a discovered <directed path>, and relaxing an <directed edge> can replace it with a shorter discovered <directed path>. A finite label is not declared permanent merely because it has been processed.
+
+= Bellman-Ford algorithm
+{c}
+{parent=Shortest path problem}
+{wiki}
+{title2=$\delta(s,v)$}
+
+The <Bellman-Ford algorithm> solves the single-source <shortest path problem> in a finite <directed graph> with finite real <edge> weights, allowing negative weights. It repeatedly applies <edge relaxation>, so an improved <tentative distance> can improve its neighbours on a later visit. This makes it a <label-correcting shortest-path algorithm>.<Algorithms, 4th edition by Robert Sedgewick and others/BellmanFordSP.java>[Algorithms, 4th edition by Robert Sedgewick and others; Robert Sedgewick and Kevin Wayne, BellmanFordSP.java, signed-weight single-source solver and queue-based relaxation]{ref} If no negative-cost <directed cycle> is reachable from the source, at most $|V|-1$ complete passes suffice for all distances; a further check detects a reachable negative-cost <directed cycle>.<6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff/Lecture 17: Shortest Paths III: Bellman-Ford>[6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff; MIT 6.006, Lecture 17, pp. 3–4: complete-pass algorithm, proof and reachable-cycle corollary]{ref}
+
+There are two orientations to keep distinct. The usual single-source problem asks for distances *from* $s$, extending routes along outgoing <directed edges>. The <Bellman inequalities> above instead concern distances *to* a sink $r$, prepending incoming <directed edges> to known routes. The <all-to-one Bellman-Ford recurrence> below preserves that convention. Reversing every <directed edge>, with its weight unchanged, converts one problem into the other.
+
+Here is an original single-source example with source $S$, <vertex set> $V=\{S,A,B,C,T\}$, and precisely these <directed edges>:
+$$
+w_{SA}=4,\qquad w_{SB}=5,\qquad w_{AB}=-2,\qquad w_{BC}=3,\qquad w_{CT}=2,\qquad w_{AT}=8.
+$$
+The negative <edge> $A\to B$ is harmless: this <directed graph> has no <directed cycle>. Its best route to $T$ is $S\to A\to B\to C\to T$, of cost $4-2+3+2=7$. The other routes to $T$ cost $12$ through $S,A,T$ and $10$ through $S,B,C,T$.
+
+\Image[bellman-ford-negative-edge-passes.png]
+{title=Four in-place <Bellman-Ford algorithm> passes propagate an improvement across a negative-weight <edge>}
+
+Initialize $d(S)=0$ and the other <tentative distances> to $\infty$. In each pass apply single-source <edge relaxation>, $d(v)\gets\min\{d(v),d(u)+w_{uv}\}$, scanning in the order $A\to T$, $C\to T$, $B\to C$, $A\to B$, $S\to B$, $S\to A$. Skip a candidate with $d(u)=\infty$. The figure records labels *after* each complete pass and uses current labels immediately: it is an in-place trace. In pass 2, $B\to C$ still uses $d(B)=5$, giving $8$; only later does $A\to B$ lower $B$ to $2$. Pass 3 carries that improvement to $C$, and pass 4 carries it to $T$. The final labels in order $(S,A,B,C,T)$ are $(0,4,2,5,7)$; the final <shortest-path predecessors> are $S,A,B,C$ for $A,B,C,T$ respectively.
+
+The scan order explains the delay. Scanning instead as $S\to A$, $S\to B$, $A\to B$, $B\to C$, $C\to T$, $A\to T$ gives those same final labels in just one in-place pass. The <synchronous Bellman-Ford recurrence> has a precise bound on the number of <edges> used by a recorded route; an in-place pass can propagate along several <edges> and need not have that interpretation. Both implementations have the $|V|-1$ pass guarantee under the stated no-reachable-negative-cycle hypothesis.
+
+With a stored list of <edges>, complete-pass <Bellman-Ford algorithm> has <time complexity> $O(|V||E|+|V|)$ and uses $O(|V|)$ extra space for labels and <shortest-path predecessors>, using <Big O notation> and constant-cost arithmetic. The extra $|V|$ accounts for initialization even when $E$ is empty. A pass with no strict decrease permits early termination. A queue variant instead revisits outgoing <edges> of <vertices> whose labels improved; the authored implementation provides this alternative and has $O(|V||E|)$ worst-case running time on its usual nontrivial instances.<Algorithms, 4th edition by Robert Sedgewick and others/BellmanFordSP.java>[Algorithms, 4th edition by Robert Sedgewick and others; Robert Sedgewick and Kevin Wayne, BellmanFordSP.java, class documentation, constructor and relax method]{ref} For nonnegative weights, the <Dijkstra algorithm> and its existing distance-frontier figure explain how permanent labels can avoid these repeated passes; the existing <edge relaxation> figure illustrates one update at a time.
+
+= Synchronous Bellman-Ford recurrence
+{c}
+{parent=Bellman-Ford algorithm}
+{title2=$D_k(v)=\min\{D_{k-1}(v),\min_{(u,v)\in E}(D_{k-1}(u)+w_{uv})\}$}
+
+For the single-source problem, let $D_k(v)$ be the minimum cost of a <directed walk> from $s$ to $v$ using at most $k$ <edges>. Set $D_0(s)=0$ and $D_0(v)=\infty$ for $v\ne s$, use $\infty+c=\infty$ for finite $c$, and let a <minimum> over an empty <set> be $\infty$. Then
+$$
+D_k(v)=\min\left\{D_{k-1}(v),\ \min_{(u,v)\in E}\bigl(D_{k-1}(u)+w_{uv}\bigr)\right\}.
+$$
+Every entry on the right comes from the previous round, requiring separate old and new arrays. The proof is the last-<edge> decomposition: a permitted <directed walk> either already uses at most $k-1$ <edges>, or ends with some $u\to v$ after a prefix using at most $k-1$. Conversely, each candidate describes a permitted <directed walk>. This <dynamic programming> viewpoint gives an exact meaning to every intermediate label, even when negative-cost <directed cycles> exist. Apply the formula to the source too: its initial zero is not a permanent constraint.
+
+If no negative-cost <directed cycle> is reachable from $s$, removing repeated-<vertex> portions of a <directed walk> cannot increase its cost. Whenever a destination is reachable, some shortest <directed path> therefore uses at most $|V|-1$ <edges>, and $D_{|V|-1}(v)=\delta(s,v)$. Unreachable <vertices> keep distance $\infty$. For in-place passes, every finite label still comes from a discovered <directed walk>; moreover, pass $k$ has offered every prefix of length $k$ of a shortest <directed path>, regardless of scan order. Its labels can improve faster than the synchronous labels, while the same $|V|-1$ upper bound on passes remains valid. This is why repeated local corrections eventually settle a global <shortest path problem>.
+
+= Bellman-Ford negative-cycle detection
+{c}
+{parent=Bellman-Ford algorithm}
+
+A negative-cost <directed cycle> matters to a particular destination $v$ precisely when it is reachable from $s$ and can itself reach $v$.<6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff/Lecture 17: Shortest Paths III: Bellman-Ford>[6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff; MIT 6.006, Lecture 17, p. 1: cycle between source and destination; p. 4: reachable-cycle corollary]{ref} Repeating it $m$ times adds $m$ times its negative total cost to a route. Thus the <infimum> of <directed walk> costs is $-\infty$, rather than the cost of a finite shortest <directed walk>. The distinction is about <reachability>, not simply the presence of a negative <edge> or a negative-cost <directed cycle> anywhere in the <graph>.
+
+Add $C\to A$ of weight $-4$ to the worked example. Now $A\to B\to C\to A$ has total weight $-2+3-4=-3$. Add also an isolated <vertex> $U$ with a <self-loop> of weight $-1$. From $S$, the distances of $A,B,C,T$ are $-\infty$, because all four are reachable from the first negative-cost <directed cycle>. The source retains distance $0$: no <directed edge> leads back to $S$. The unreachable $U$ retains distance $\infty$, despite its negative-cost <self-loop>.
+
+\Image[bellman-ford-negative-cycle-reachability.png]
+{title=Relevant negative-cost <directed cycles>: descendants from a source become ancestors when every <directed edge> is reversed}
+
+For example, $m$ extra laps before proceeding to $T$ give costs $7-3m$. This construction also shows why requiring a <directed path> with no repeated <vertices> would change the problem: only <directed walks> permit arbitrarily many laps. Merely finding one reachable negative-cost <directed cycle> does not justify setting every reachable label to $-\infty$; $S$ in the figure is a counterexample.
+
+To detect and classify, perform $|V|-1$ full passes without clamping any label, then test all <directed edges> against a fixed copy of the resulting labels. Collect heads $v$ of <edges> $u\to v$ satisfying $d(u)<\infty$ and $d(u)+w_{uv}<d(v)$. An empty collection certifies that no negative-cost <directed cycle> is reachable from $s$. Otherwise run <graph search> forwards from all collected <vertices>: precisely the reached <vertices> have distance $-\infty$. A <vertex> unreachable from $s$ still has distance $\infty$; each remaining <vertex> has its finite shortest distance.
+
+Why is this classification exact? Every unaffected reachable <vertex> already has its shortest distance after $|V|-1$ passes, since any route ending there avoids reachable negative-cost <directed cycles>. Thus it cannot be the head of a strict improvement, or be reached from such a head. Conversely, all <vertices> on a reachable negative-cost <directed cycle> have finite labels by that time. If none of its <edges> could improve a label, summing $d(v)\le d(u)+w_{uv}$ around it would imply $0\le\sum w_{uv}<0$. At least one of its heads is therefore collected, and the forward <graph search> reaches the entire <directed cycle> and every affected descendant. Detecting a <directed cycle> alone and marking its descendants are separate tasks; finite intermediate labels in the affected region are not answers.
+
+= All-to-one Bellman-Ford recurrence
+{c}
+{parent=Bellman-Ford algorithm}
+{title2=$d_i^{(k)}=\min\{d_i^{(k-1)},\min_{(i,j)\in E}(c_{ij}+d_j^{(k-1)})\}$}
+
+Keep the original all-to-one orientation of the <Bellman inequalities>: $d_i^{(k)}$ concerns routes *from* $i$ *to* a fixed sink $r$, and $c_{ij}$ belongs to the original <directed edge> $i\to j$. Initialize $d_r^{(0)}=0$ and $d_i^{(0)}=\infty$ for $i\ne r$. The synchronous <dynamic programming> recurrence is
+$$
+d_i^{(k)}=\min\left\{d_i^{(k-1)},\ \min_{(i,j)\in E}\bigl(c_{ij}+d_j^{(k-1)}\bigr)\right\}.
+$$
+It prepends the first <edge> of a route instead of appending the last: $d_i^{(k)}$ is the minimum cost of a <directed walk> from $i$ to $r$ using at most $k$ <edges>. In particular, improving $d_j$ can improve labels on incoming <directed edges> $i\to j$. The same original <directed edge> therefore updates its tail in this convention, whereas single-source <edge relaxation> updates its head.
+
+If no negative-cost <directed cycle> can reach $r$, $|V|-1$ rounds suffice for every distance to $r$, and $d_r^{(k)}=0$ automatically. This hypothesis concerns <directed paths> *from the cycle to the sink*, not paths from the sink to the cycle. In the base example with its original arrows and sink $T$, the distances in order $(S,A,B,C,T)$ are $(7,3,5,2,0)$. Once $C\to A$ of weight $-4$ is added, $S,A,B,C$ instead have distance $-\infty$ to $T$, while $T$ keeps distance $0$ and $U$ keeps $\infty$.
+
+More generally, $\delta(i,r)=-\infty$ precisely when $i$ can reach a negative-cost <directed cycle> that can reach $r$. Thus the affected <vertices> are the ancestors of such a <directed cycle>. A negative-cost <directed cycle> unable to reach $r$ is irrelevant. Reversing all arrows makes $r$ a single source, turns these ancestors into descendants, and makes the detection and forward <graph search> above directly applicable. The right panel of the figure uses that reversal with sink $S$; its distances to $S$ equal the left panel's distances from $S$.
+
+Do not force the root to remain zero outside the hypothesis. Consider the two <directed edges> $r\to a$ of cost $0$ and $a\to r$ of cost $-1$, with sink $r$. The recurrence gives $d_a^{(1)}=-1$ and $d_r^{(2)}=-1$: the latter records one lap of a negative-cost <directed cycle> through $r$. Repetition makes both unrestricted distances $-\infty$. Clamping $d_r$ at zero and omitting its update would instead leave the stationary labels $(d_r,d_a)=(0,-1)$, concealing that behaviour. Initialization specifies the cost of the empty <directed walk>; it does not forbid cheaper nonempty returns to the root. Cycle detection must test every relevant <directed edge>, including those whose relaxation updates the root.
+
+= Dijkstra algorithm
+{c}
+{parent=Shortest path problem}
+{wiki=Dijkstra's_algorithm}
+{title2=$d(v)=\operatorname{dist}(s,v)$}
+
+= Dijkstra's algorithm
+{c}
+{synonym}
+
+The <Dijkstra algorithm> solves the single-source <shortest path problem> in a finite <graph> with nonnegative <edge> weights, finding distances to all reachable <vertices>. Start with <tentative distance> $d(A)=0$ and $d(v)=\infty$ elsewhere. Repeatedly choose the unfinalized <vertex> with least <tentative distance>, declare that label permanent, and perform <edge relaxation> on its outgoing <edges>. For an <undirected graph>, inspect both directions. A finite <tentative distance> always records the cost of a discovered <graph path>, but can improve before finalization.
+
+In our example, finalizing $A$ discovers $C$ at $1$, $B$ at $4$, and $D$ at $10$. Choose $C$ next: <edge relaxation> through $C$ lowers $B$ to $1+2=3$ and $D$ to $1+5=6$. Choose $B$: <edge relaxation> through $B$ lowers $D$ to $3+1=4$. Finally choose $D$. The permanent distances are therefore $A:0$, $C:1$, $B:3$, $D:4$; the evolving <tentative distances> were $B:4\to3$ and $D:10\to6\to4$.
+
+\Image[dijkstra-distance-frontier.png]
+{title=<Tentative distances> fall until the <Dijkstra algorithm> makes each label permanent}
+
+Store a <shortest-path predecessor> whenever <edge relaxation> improves a label. The final table contains enough information to reconstruct routes, rather than merely their costs:
+
+|| <Vertex>
+|| Distance from $A$
+|| <Shortest-path predecessor>
+|| Finalization order
+
+| $A$
+| $0$
+| None: source
+| $1$
+
+| $C$
+| $1$
+| $A$
+| $2$
+
+| $B$
+| $3$
+| $C$
+| $3$
+
+| $D$
+| $4$
+| $B$
+| $4$
+
+Following <shortest-path predecessors> backwards gives $D,B,C,A$; reversing the order gives $A,C,B,D$. If only this destination matters, stop when $D$ is finalized. Stopping when $D$ is first discovered would incorrectly return $10$. If the smallest remaining <tentative distance> is $\infty$, all remaining <vertices> are unreachable.
+
+Why is the permanent choice safe? Suppose the selected <vertex> $u$ had a cheaper <graph path>. Let $y$ be the first unfinalized <vertex> on that <graph path>. Its preceding <vertex> was finalized, so <edge relaxation> has already offered $y$ a label no larger than that prefix's cost. Nonnegative remaining <edge> weights make the whole cost at least this prefix's cost; selection gives $d(u)\le d(y)$. A cheaper <graph path> would contradict these comparisons. Zero weights are allowed; ties can be resolved arbitrarily. This is the reason the <label-setting shortest-path algorithm> works, rather than a lucky feature of the drawing.
+
+Negative weights break that reasoning. In a <directed graph> with $s\to u$ costing $2$, $s\to v$ costing $5$, and $v\to u$ costing $-4$, the <Dijkstra algorithm> would finalize $u$ at $2$ before discovering the cheaper cost $1$. The <Bellman-Ford algorithm> handles negative <edge> weights when no relevant negative <directed cycle> exists.
+
+With an <adjacency list> and an indexed <binary heap> implementing a <priority queue>, the <time complexity> is $O((|V|+|E|)\log |V|)$ for $|V|\ge2$, using <Big O notation>. Each <vertex> is extracted at most once, each <edge> is inspected once per direction, and each successful <edge relaxation> decreases a heap key in $O(\log |V|)$ time. This assumes constant-cost arithmetic and comparisons; exact computation with very large weights adds their representation cost. The queue uses $O(|V|)$ space beyond the <graph>. Simply scanning all remaining <vertices> gives $O(|V|^2+|E|)$ instead.https://algs4.cs.princeton.edu/44sp/DijkstraSP.java.html[Princeton, DijkstraSP implementation]{ref}https://algs4.cs.princeton.edu/code/javadoc/edu/princeton/cs/algs4/IndexMinPQ.html[Princeton, indexed binary heap operations]{ref}
+
+The 1959 paper presents the <shortest path problem> as its second problem, after the <minimum spanning tree> problem, and grows known shortest routes in increasing distance order.https://www.cs.yale.edu/homes/lans/readings/routing/dijkstra-routing-1959.pdf[Dijkstra, A note on two problems in connexion with graphs, pp. 269–271]{ref} In his later recollection, Dijkstra dated the shortest-route discovery to 1956: a demonstration for the ARMAC computer used a simplified Dutch railway map and printed the route between towns. A practical request became an enduring <algorithm> because the same distance rule applies to any suitable <graph>.https://garfield.library.upenn.edu/classics1983/A1983QA19900001.pdf[Dijkstra's recollection, published in 1983]{ref}
+
+= Tentative distance
+{parent=Dijkstra algorithm}
+{title2=$d(v)$}
+
+A tentative distance $d(v)$ is the cheapest cost so far recorded by a <shortest path problem> <algorithm>. For the single-source convention, initialize $d(s)=0$ and $d(v)=\infty$ elsewhere. Every finite label is the cost of a discovered route from $s$ to $v$, so
+$$
+\delta(s,v)\le d(v).
+$$
+It is an <upper bound> supplied by an actual route, not a guess that might be too low. The <loop invariant> follows directly from <edge relaxation>: extending a discovered route to $u$ by $u\to v$ supplies another discovered route. The usual label initialization and this safety property are stated and proved in the authored MIT notes.https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/6277a1f06100c26a7ff21031af6757b5_MIT6_006F11_lec16.pdf[MIT 6.006, Lecture 16, p. 1: relaxation safety]{ref}
+
+In the trace under <edge relaxation>, $d(t)=10$ first records the direct <directed path> $s\to t$. Later $d(t)=8$ records $s\to a\to t$, and finally $d(t)=3$ records $s\to b\to a\to t$. Each label is a usable route cost, but the first two are not shortest. An infinite <tentative distance> means no route has yet been discovered; only a completed search establishes unreachability. The isolated <vertex> $z$ in that example remains at $\infty$.
+
+In a <directed graph>, the discovered route is formally a <directed walk>, which may repeat <vertices>; in the pictured acyclic <graph> it is always a <directed path>. Negative-cost <directed cycles> can keep supplying cheaper <directed walks> without a finite optimum. In the all-to-one convention, the same meaning applies to discovered routes *from* $i$ *to* $r$. Do not confuse either version with the <lower bounds> supplied by feasible potentials in the <Bellman inequalities>: one records something achievable, the other rules out anything cheaper.
+
+= Edge relaxation
+{parent=Dijkstra algorithm}
+{title2=$d(v)\gets\min\{d(v),d(u)+w_{uv}\}$}
+
+Edge relaxation tests whether extending a recorded route by one <directed edge> improves a <tentative distance>. For a single source $s$ and an original <directed edge> $u\to v$ of weight $w_{uv}$, form the candidate $q=d(u)+w_{uv}$. If $d(u)$ is finite and $q<d(v)$, replace $d(v)$ by $q$ and record the <shortest-path predecessor> $\pi(v)=u$. Otherwise leave both unchanged. The <minimum> formula in the header gives the resulting label in either case. The authored implementation uses this strict comparison and records the incoming <directed edge>.https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/DijkstraSP.java[Sedgewick and Wayne, DijkstraSP.java, relax method]{ref}
+
+\Image[edge-relaxation-trace.png]
+{title=<Edge relaxation> lowers discovered-route costs, including across a negative-weight <directed edge>}
+
+The table lists labels *after* each specified operation, keeping $d(s)=0$ throughout this constructed acyclic <graph>. Relaxing $a\to t$ first offers $6+2=8$. Relaxing $b\to a$ then offers $2-1=1$, lowering $a$ from $6$ to $1$; revisiting $a\to t$ now offers $1+2=3$. Finally $b\to t$ offers $2+7=9$, so the label $3$ stays. Changing a label can make a previously checked outgoing <directed edge> worth checking again. This trace illustrates the operation itself, with a deliberately specified order, rather than a run of the <Dijkstra algorithm>.
+
+A single <edge relaxation> does not require nonnegative weights: its candidate is the cost of a real extended <directed walk>, even when the last <directed edge> has negative weight. Nonnegative weights are needed by the <Dijkstra algorithm> to make its selected minimum <tentative distance> permanent. The <Bellman-Ford algorithm> permits negative weights and revisits labels; its authored implementation also checks for reachable negative-cost <directed cycles>.https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/DijkstraSP.java[Sedgewick and Wayne, DijkstraSP.java, nonnegative-weight precondition]{ref}<Algorithms, 4th edition by Robert Sedgewick and others/BellmanFordSP.java>[Algorithms, 4th edition by Robert Sedgewick and others; Sedgewick and Wayne, BellmanFordSP.java, signed weights and cycle detection]{ref}
+
+For the all-to-one convention of the <Bellman inequalities>, relax the same original <directed edge> $i\to j$ by $d_i\gets\min\{d_i,c_{ij}+d_j\}$. This prepends $i\to j$ to a discovered route from $j$ to $r$, and improves the tail label $d_i$, not the head label $d_j$. Skip the operation when $d_j=\infty$. In exact arithmetic, a full pass over all relevant <directed edges> with no improvement establishes all their <Bellman inequalities>; combined with the discovered-route <upper bounds>, this certifies finite distances. One unsuccessful operation establishes only that this particular candidate did not improve its label at that moment.
+
+= Shortest-path predecessor
+{parent=Dijkstra algorithm}
+{title2=$\pi(v)$}
+
+A shortest-path predecessor $\pi(v)$ records the previous <vertex> on a chosen route from source $s$ to $v$. When <edge relaxation> strictly improves $d(v)$ through $u\to v$, set $\pi(v)=u$. For a <multigraph>, store the actual <directed edge>, since two <edges> with the same endpoints can have different weights. Initialize all <vertices>, including the source, without a <shortest-path predecessor>. The authored implementation reconstructs a route by following these incoming <edges> backwards, then reversing their order.https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/DijkstraSP.java[Sedgewick and Wayne, DijkstraSP.java, edgeTo and pathTo]{ref}
+
+At the end of the <edge relaxation> trace, $\pi(t)=a$, $\pi(a)=b$, and $\pi(b)=s$. Following them gives $t,a,b,s$, so the forward <directed path> is $s\to b\to a\to t$, of cost $2-1+2=3$. This makes the distance useful: a number tells us the best cost, whereas the <shortest-path predecessors> tell us which connections to take. In the <Dijkstra algorithm>, reconstruct a destination's shortest route after its label becomes permanent. In a <label-correcting shortest-path algorithm>, wait for convergence and the appropriate negative-cost <directed cycle> check. During correction, a predecessor's label may have changed since its child's last update: immediately after $b\to a$ in the trace, the current chain to $t$ costs $3$ although $d(t)$ still records the earlier discovered route of cost $8$.
+
+Strict improvement is a useful guard against <directed cycles> in the recorded pointers. Consider $s\to a$ and $s\to b$ of cost zero, followed by $a\to b$ and $b\to a$, also of cost zero. After the first two <edge relaxations>, both labels are zero and both <shortest-path predecessors> are $s$. If equality also allows pointer replacement, the last two operations can set $\pi(b)=a$ and $\pi(a)=b$: following pointers loops forever despite correct distance labels. Keeping the old pointer on ties prevents this example; choosing among equal-cost routes requires a separate rule that preserves a route to the source. Strict improvement alone does not protect against reachable negative-cost <directed cycles>, which can force endless decreases. Equality on recorded <edges> plus the <Bellman inequalities> certifies route costs only when the pointer chains actually terminate at the source.
+
+For all-to-one distances to $r$, record a next <vertex> $j$ whenever relaxing $i\to j$ improves $d_i$. Follow these successors forward in the original <directed graph> to reach $r$. They are <shortest-path predecessors> when viewed in the reversed <directed graph>; keeping the direction convention explicit prevents returning a route whose arrows point the wrong way.

@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>feedback-reference-and-disturbance.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="feedback-reference-and-disturbance.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/feedback-reference-and-disturbance.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">feedback-reference-and-disturbance.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/feedback-reference-and-disturbance.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/feedback-reference-and-disturbance.py">feedback-reference-and-disturbance.py</a></b></div></nav></div><div class="p"><b>feedback-reference-and-disturbance.py</b></div><div class="code"><div><pre><code>"""Draw an ideal feedback loop and exact dimensionless responses; PNG to cwd.
+
+Tested with Python 3.14.4, numpy 2.3.5 and matplotlib 3.10.7.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, Rectangle
+import numpy as np
+
+
+def proportional_response(t, switch=2.0, disturbance=0.2, gain=2.0):
+    t = np.asarray(t)
+    elapsed = np.maximum(t - switch, 0.0)
+    return -np.expm1(-gain * t) - disturbance / gain * np.expm1(-gain * elapsed)
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "axes.titlesize": 12})
+    fig = plt.figure(figsize=(10, 7), dpi=120, facecolor="white")
+    grid = fig.add_gridspec(2, 2, height_ratios=[1, 1.25])
+    block = fig.add_subplot(grid[0, :])
+    block.set(xlim=(0, 12), ylim=(0, 4))
+    block.axis("off")
+    block.set_title("Measured feedback: the command responds to what actually happened", pad=8)
+
+    def arrow(start, end):
+        block.annotate("", xy=end, xytext=start,
+                       arrowprops={"arrowstyle": "-&gt;", "lw": 1.6, "color": "#35434d",
+                                   "shrinkA": 0, "shrinkB": 0})
+
+    def box(x, y, width, height, text):
+        block.add_patch(Rectangle((x, y), width, height,
+                                 facecolor="#edf4f7", edgecolor="#35434d", lw=1.4))
+        block.text(x + width / 2, y + height / 2, text, ha="center", va="center")
+
+    block.text(0.1, 2.6, r"Reference $r$", va="center")
+    block.add_patch(Circle((2.0, 2.6), 0.27, facecolor="white", edgecolor="#35434d", lw=1.4))
+    block.text(2, 2.6, r"$\Sigma$", ha="center", va="center")
+    block.text(1.6, 2.9, "+", ha="center")
+    block.text(1.68, 2.06, "−", ha="center")
+    arrow((1.36, 2.6), (1.73, 2.6))
+    arrow((2.27, 2.6), (3.3, 2.6))
+    block.text(2.76, 2.95, r"$e=r-y_m$", ha="center")
+    box(3.3, 2.05, 2.1, 1.1, "Controller\n" + r"$u=ke$")
+    arrow((5.4, 2.6), (6.85, 2.6))
+    block.text(6.1, 2.94, r"Command $u$", ha="center")
+    box(6.85, 2.05, 2.15, 1.1, "Plant\n" + r"$\dot{x}=u+w$")
+    arrow((7.925, 3.78), (7.925, 3.15))
+    block.text(8.15, 3.62, r"Disturbance $w$", va="center")
+    arrow((9, 2.6), (11.65, 2.6))
+    block.text(10.4, 2.94, r"Output $y=x$", ha="center")
+    block.plot([10.2, 10.2, 8.3], [2.6, 0.85, 0.85], color="#35434d", lw=1.6)
+    block.scatter([10.2], [2.6], s=14, color="#35434d")
+    box(5.0, 0.4, 3.3, 0.9, "Ideal measurement: " + r"$y_m=x$")
+    arrow((10.2, 0.85), (8.3, 0.85))
+    block.plot([5, 2, 2], [0.85, 0.85, 1.6], color="#35434d", lw=1.6)
+    arrow((2, 1.6), (2, 2.33))
+    block.text(3.4, 0.22, "Return actual output", ha="center", fontsize=10)
+
+    t = np.linspace(0, 8, 1601)
+    nominal_open = np.minimum(t, 1.0)
+    nominal_p = proportional_response(t, disturbance=0)
+    disturbed_open = nominal_open + 0.2 * np.maximum(t - 2, 0)
+    disturbed_p = proportional_response(t)
+    np.testing.assert_allclose(proportional_response(np.array([0, 2, 8])),
+                               [0, 1 - np.exp(-4), 1.1 - np.exp(-16) - 0.1 * np.exp(-12)])
+    assert disturbed_open[-1] == 2.2
+    print(f"Exact checks: x_open(8)={disturbed_open[-1]:.6f}; "
+          f"x_P(8)={disturbed_p[-1]:.6f}; P equilibrium=1.1")
+
+    for col, (open_values, p_values, title) in enumerate([
+        (nominal_open, nominal_p, r"No disturbance: $w=0$"),
+        (disturbed_open, disturbed_p, r"Disturbance: $w=0.2$ from $t=2$"),
+    ]):
+        ax = fig.add_subplot(grid[1, col])
+        ax.axhline(1, color="#555555", ls="--", lw=1.2, label=r"Reference $r=1$")
+        ax.plot(t, open_values, color="#bd7024", lw=2.4, label="Open loop: planned pulse")
+        ax.plot(t, p_values, color="#207699", lw=2.4, label=r"P feedback: $k=2$")
+        ax.set(title=title, xlabel="Dimensionless time t", ylabel="Dimensionless position x",
+               xlim=(0, 8), ylim=(0, 1.35 if col == 0 else 2.4))
+        ax.legend(loc="lower right", frameon=True, facecolor="white", framealpha=1, fontsize=9)
+        if col == 0:
+            ax.annotate("Planned arrival: x(1)=1", xy=(1, 1), xytext=(2.0, 1.17),
+                        fontsize=9, arrowprops={"arrowstyle": "-&gt;"})
+        else:
+            ax.axvline(2, color="#999999", ls=":", lw=1.2)
+            ax.annotate(r"P settles at $1+0.2/2=1.1$", xy=(5.5, disturbed_p[1100]),
+                        xytext=(2.65, 0.76), fontsize=9, arrowprops={"arrowstyle": "-&gt;"})
+            ax.annotate("Open loop keeps drifting", xy=(6.4, 1.88), xytext=(2.6, 2.14),
+                        fontsize=9, arrowprops={"arrowstyle": "-&gt;"})
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(color="#e5e9eb", lw=0.7)
+        ax.set_axisbelow(True)
+
+    fig.subplots_adjust(left=0.075, right=0.98, top=0.92, bottom=0.10, hspace=0.32, wspace=0.25)
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

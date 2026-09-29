@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>finite-grating-interference.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="finite-grating-interference.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/finite-grating-interference.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">finite-grating-interference.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/finite-grating-interference.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/finite-grating-interference.py">finite-grating-interference.py</a></b></div></nav></div><div class="p"><b>finite-grating-interference.py</b></div><div class="code"><div><pre><code>"""Ideal coherent grating array and slit envelope; PNG output in working directory.
+
+Uses existing numpy/matplotlib dependencies; tested with Python 3.14.
+"""
+
+import numpy as np
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+
+RATIO = 0.3  # wavelength / spacing: 600 nm / 2 micrometres
+
+
+def array_factor(sine, count):
+    # Reduce modulo one to evaluate removable singularities stably at every order.
+    cycles = (np.asarray(sine) / RATIO + 0.5) % 1.0 - 0.5
+    return (np.sinc(count * cycles) / np.sinc(cycles)) ** 2
+
+
+def main():
+    counts = (10, 40)
+    for count in counts:
+        width = RATIO / count
+        np.testing.assert_allclose(array_factor(0.3, count), 1.0, atol=1e-14)
+        np.testing.assert_allclose(array_factor(np.array([0.3 - width, 0.3 + width]), count), 0.0, atol=1e-25)
+        samples = np.array([-0.913, -0.601, 0.0, 0.277, 0.3, 0.318, 0.719])
+        phases = 2 * np.pi * samples / RATIO
+        direct = np.abs(np.exp(1j * phases[:, None] * np.arange(count)).mean(axis=1)) ** 2
+        np.testing.assert_allclose(array_factor(samples, count), direct, atol=1e-14)
+        zeros = 0.3 + np.array([-width, width])
+        print(f"N={count}: first zeros sin(theta)={zeros.tolist()}, one-sided width={width:g}")
+        print("  zero angles (degrees):", np.degrees(np.arcsin(zeros)).tolist())
+
+    plt.rcParams.update({"font.size": 12, "figure.facecolor": "white", "axes.facecolor": "white"})
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5.6))
+    fig.subplots_adjust(left=0.075, right=0.98, bottom=0.24, top=0.77, wspace=0.27)
+    fig.suptitle("Finite coherent arrays: sharp orders inside a broad slit envelope", fontsize=17, y=0.97)
+    fig.text(0.5, 0.89, "Normal incidence  •  λ = 600 nm  •  d = 2 μm", ha="center", fontsize=14)
+    s = np.linspace(-1, 1, 24001)
+    slit_width_nm = 500.0
+    envelope = np.sinc(slit_width_nm * s / 600.0) ** 2
+    axes[0].plot(s, array_factor(s, 40) * envelope, color="#246ba0", lw=1.1, label="N = 40, slit width a = 0.5 μm")
+    axes[0].plot(s, envelope, color="#777777", ls="--", lw=1.8, label="Single-slit envelope")
+    axes[0].set(xlim=(-1, 1), ylim=(0, 1.4), xlabel="sin θ", ylabel="Intensity / central intensity", title="Slit width sets the broad envelope")
+    axes[0].legend(fontsize=10, loc="upper center")
+    axes[0].set_xticks([-0.9, -0.6, -0.3, 0, 0.3, 0.6, 0.9])
+    axes[0].grid(alpha=0.18)
+
+    zoom = np.linspace(0.255, 0.345, 12001)
+    for count, shade in zip(counts, ["#c76921", "#246ba0"]):
+        width = RATIO / count
+        axes[1].plot(zoom, array_factor(zoom, count), color=shade, lw=2, label=f"N = {count}: Δsin θ = {width:g}")
+        axes[1].scatter([0.3 - width, 0.3 + width], [0, 0], color=shade, s=35, zorder=5)
+        axes[1].annotate("", (0.3 + width, -0.09 if count == 10 else -0.18), (0.3 - width, -0.09 if count == 10 else -0.18), arrowprops={"arrowstyle": "&lt;-&gt;", "color": shade, "lw": 1.6})
+    axes[1].axvline(0.3, color="#aaaaaa", ls=":", lw=1)
+    axes[1].set(xlim=(0.255, 0.345), ylim=(-0.23, 1.4), xlabel="sin θ, near first order", ylabel="Array factor / peak value", title="Four times as many slits: ¼ the width")
+    axes[1].set_yticks([0, 0.25, 0.5, 0.75, 1])
+    axes[1].legend(fontsize=10, loc="upper center")
+    axes[1].grid(alpha=0.18)
+    for ax in axes:
+        for side in ["top", "right"]:
+            ax.spines[side].set_visible(False)
+    fig.text(0.5, 0.13, "Dots: first array zeros. Arrows: full zero-to-zero widths 0.06 and 0.015.", ha="center", fontsize=12)
+    fig.text(0.5, 0.065, "Ideal uniform coherent illumination; right panel omits the slit envelope and normalizes both peaks to 1.", ha="center", fontsize=11, color="#555555")
+    fig.savefig("finite-grating-interference.png", dpi=100, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

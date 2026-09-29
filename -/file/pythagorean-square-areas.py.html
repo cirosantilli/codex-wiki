@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>pythagorean-square-areas.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="pythagorean-square-areas.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/pythagorean-square-areas.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">pythagorean-square-areas.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/pythagorean-square-areas.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/pythagorean-square-areas.py">pythagorean-square-areas.py</a></b></div></nav></div><div class="p"><b>pythagorean-square-areas.py</b></div><div class="code"><div><pre><code>"""Draw the exact square areas on a 3-4-5 right triangle; output in cwd.
+
+Tested with Python 3.14.4, NumPy 2.3.5 and Matplotlib 3.10.7.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
+import numpy as np
+
+
+def polygon_area(vertices):
+    x, y = vertices.T
+    return abs(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1))) / 2
+
+
+def main():
+    triangle = np.array([[0, 0], [4, 0], [0, 3]])
+    squares = [
+        (np.array([[0, 0], [0, 3], [-3, 3], [-3, 0]]), 9,
+         "#e5eefb", "#245b9b", (-1.5, 1.5), "3² = 9"),
+        (np.array([[0, 0], [4, 0], [4, -4], [0, -4]]), 16,
+         "#fff0d5", "#9b650c", (2, -2.2), "4² = 16"),
+        (np.array([[4, 0], [0, 3], [3, 7], [7, 4]]), 25,
+         "#e1f2e9", "#287551", (3.5, 3.5), "5² = 25"),
+    ]
+    assert np.dot(triangle[1] - triangle[0], triangle[2] - triangle[0]) == 0
+    assert polygon_area(triangle) == 6
+    assert sorted(np.linalg.norm(np.roll(triangle, -1, axis=0) - triangle,
+                                 axis=1)) == [3, 4, 5]
+    for vertices, area, *_ in squares:
+        edges = np.roll(vertices, -1, axis=0) - vertices
+        assert polygon_area(vertices) == area
+        assert np.all(np.sum(edges * edges, axis=1) == area)
+        assert np.all(np.sum(edges * np.roll(edges, -1, axis=0), axis=1) == 0)
+
+    plt.rcParams.update({"font.size": 13, "figure.facecolor": "white"})
+    fig, ax = plt.subplots(figsize=(6.8, 7.0), facecolor="white")
+    fig.subplots_adjust(left=0.02, right=0.98, bottom=0.08, top=0.88)
+    ax.set_facecolor("white")
+    ax.set_aspect("equal")
+    for vertices, _, face, edge, center, label in squares:
+        ax.add_patch(Polygon(vertices, facecolor=face, edgecolor=edge, linewidth=2))
+        ax.text(*center, label, color=edge, ha="center", va="center",
+                fontsize=18, fontweight="bold")
+    ax.add_patch(Polygon(triangle, facecolor="#f5f5f5", edgecolor="#333333",
+                         linewidth=2.2))
+    ax.plot([0.35, 0.35, 0], [0, 0.35, 0.35], color="#333333", linewidth=1.5)
+    ax.text(0.47, 0.29, "90°", fontsize=10)
+    ax.text(1.25, 0.93, "Triangle\narea = 6", ha="center", va="center", fontsize=11)
+    ax.text(-0.22, 1.7, "3", ha="right", color="#245b9b", fontsize=16,
+            bbox={"facecolor": "#e5eefb", "edgecolor": "none", "pad": 1})
+    ax.text(2.5, -0.18, "4", ha="center", va="top", color="#9b650c", fontsize=16)
+    ax.text(2.25, 1.85, "5", ha="center", color="#287551", fontsize=16,
+            bbox={"facecolor": "#e1f2e9", "edgecolor": "none", "pad": 1})
+    ax.set_xlim(-3.55, 7.55)
+    ax.set_ylim(-4.45, 7.45)
+    ax.axis("off")
+    fig.suptitle("Pythagorean theorem: square areas", fontsize=19, y=0.97)
+    fig.text(0.5, 0.92, "The marked right angle is an assumption, not a guess.",
+             ha="center", fontsize=11)
+    fig.text(0.5, 0.035, "Lengths: 3, 4, 5     •     Square areas: 9 + 16 = 25",
+             ha="center", fontsize=13)
+    output = Path.cwd() / (Path(__file__).stem + ".png")
+    fig.savefig(output, dpi=140, facecolor="white", transparent=False)
+    plt.close(fig)
+    print(f"Saved {output.name}; right angle, side lengths and areas checked.")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

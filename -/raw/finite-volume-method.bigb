@@ -1,0 +1,141 @@
+= Finite volume method
+{wiki}
+
+The <finite volume method> follows the amount of a conserved quantity inside each <control volume>. Its unknowns are <cell averages>, rather than values at isolated points: a cell's width times its stored average approximates that cell's total. A <numerical flux> transfers an amount across a face. Using one shared transfer for both neighboring cells makes the loss from one exactly the gain of the other, as explained in <shared face flux cancellation>.<Riemann Problems and Jupyter Solutions by David I. Ketcheson, Randall J. LeVeque, and Mauricio J. del Razo>[Approximate solvers, §Finite volume methods, equation FVupdate and the following cancellation argument]{ref}
+
+For a one-dimensional <scalar conservation law> without sources, let $u_t+\partial_x f(u)=0$, with <conservation law flux> $f$. Fix cells $I_j=[x_{j-1/2},x_{j+1/2}]$ of widths $h_j>0$. Define the exact <cell average> and its numerical approximation by
+$$
+\overline u_j(t)=\frac1{h_j}\int_{I_j}u(x,t)\,dx,\qquad U_j^n\approx\overline u_j(t_n).
+$$
+The integral balance over one cell and one time interval of length $k>0$ is
+$$
+h_j\bigl(\overline u_j(t_n+k)-\overline u_j(t_n)\bigr)=\int_{t_n}^{t_n+k}\bigl[f(u(x_{j-1/2},t))-f(u(x_{j+1/2},t))\bigr]\,dt.
+$$
+For a smooth solution this follows by <integration> of the differential equation; with <jump discontinuities>, it expresses the <conservation law> in integral form, using appropriate face traces when they exist. Replacing each time-averaged face <conservation law flux> by a <numerical flux> gives
+$$
+U_j^{n+1}=U_j^n-\frac{k}{h_j}\bigl(F_{j+1/2}^n-F_{j-1/2}^n\bigr).
+$$
+Thus the <finite volume method> implements a balance directly, without needing a pointwise <derivative> at a jump. The tube balance in <Riemann Problems and Jupyter Solutions by David I. Ketcheson, Randall J. LeVeque, and Mauricio J. del Razo> (Advection, §Conservation of mass) motivates this construction from <conservation of mass>.
+
+This is useful for <shock waves>: their speed is constrained by the <Rankine-Hugoniot condition>, itself an integral balance. A nonconservative approximation can give a visibly plausible jump with the wrong speed. Conservation is one requirement; a nonlinear <scalar conservation law> also needs the correct <entropy solution>, and the chosen <numerical flux> and update need their own <stability> and accuracy analysis.<Riemann Problems and Jupyter Solutions by David I. Ketcheson, Randall J. LeVeque, and Mauricio J. del Razo>[Approximate solvers, §§Finite volume methods, Godunov's method, High-resolution methods: wrong shock speeds, time-step restrictions and smeared jumps]{ref} The original <periodic upwind finite volume advection> example isolates the shared-transfer mechanism in a problem with a known translated solution.
+
+= Shared face flux cancellation
+{parent=Finite volume method}
+{title2=$M^{n+1}-M^n=k(F_{1/2}^n-F_{N+1/2}^n)$}
+
+In a <finite volume method>, orient every face <numerical flux> to the right. For cells $1,\ldots,N$, write the discrete total as $M^n=\sum_{j=1}^N h_jU_j^n$. If $u$ is a mass per unit length, this total approximates <mass>; for a different conserved field, it measures that field's <integral>. Multiplying the update by the cell width gives an amount balance, so adjacent cells contribute
+$$
+\begin{aligned}
+h_j(U_j^{n+1}-U_j^n)&=kF_{j-1/2}^n-kF_{j+1/2}^n,\\
+h_{j+1}(U_{j+1}^{n+1}-U_{j+1}^n)&=kF_{j+1/2}^n-kF_{j+3/2}^n.
+\end{aligned}
+$$
+The interior face contributes $-kF_{j+1/2}^n+kF_{j+1/2}^n=0$. Summing all cells gives
+$$
+M^{n+1}-M^n=k\bigl(F_{1/2}^n-F_{N+1/2}^n\bigr).
+$$
+With <periodic boundary conditions>, the two boundary labels denote the same physical face and must use the same <numerical flux>; then $M^{n+1}=M^n$. On an open interval the total changes by the boundary transfers. Unequal widths require the weighted total $\sum h_jU_j$, not the unweighted <sum> of <cell averages>.
+
+\Image[finite-volume-shared-face-bookkeeping.png]
+{title=One oriented face transfer leaves the left cell and enters the right cell with opposite signs}
+
+The diagram uses two unit-width cells, $k=1/4$, <cell averages> $(2,1)$ and right-oriented <numerical fluxes> $(1,3,2)$ at their three faces. The updated <cell averages> are $(3/2,5/4)$: the total changes from $3$ to $11/4$, exactly $k(1-2)=-1/4$. The shared interior transfer $k\cdot3=3/4$ cancels. If the receiving cell instead used $3+\varepsilon$ for that same face, the total would acquire the spurious term $k\varepsilon$. Conservation is therefore an algebraic property of sharing the transfer, even when the <numerical flux> is a poor approximation. In <floating-point arithmetic>, independently rounded cell updates may still leave small <roundoff errors> in the computed total.
+
+= Periodic upwind finite volume advection
+{parent=Finite volume method}
+{title2=$U_j^{n+1}=(1-\nu)U_j^n+\nu U_{j-1}^n$}
+
+Consider the <advection equation> $u_t+a u_x=0$ with constant speed $a>0$, no sources, and <periodic boundary conditions> on $[0,1]$. Use $N$ equal cells of width $h=1/N$, time step $k>0$, and indices modulo $N$. The exact solution is the periodic translation $u(x,t)=u_0(x-at)$. At a face, the <Riemann problem> transports the left state to the right, so the two-state upwind <numerical flux> is $F(L,R)=aL$, with $F(U,U)=aU$.<Riemann Problems and Jupyter Solutions by David I. Ketcheson, Randall J. LeVeque, and Mauricio J. del Razo>[Advection, equations adv:advection and adv:solution, §The Riemann problem; Approximate solvers, §High-resolution methods: reduction to upwind advection]{ref}
+
+The <finite volume method> with this <numerical flux> and an <explicit Euler method> step gives
+$$
+F_{j+1/2}^n=aU_j^n,\qquad \nu=\frac{ak}{h},\qquad U_j^{n+1}=(1-\nu)U_j^n+\nu U_{j-1}^n.
+$$
+Here $U_j^n$ represents a <cell average>; the recurrence also occurs in the <upwind finite difference scheme>. Impose the specific <CFL condition> $0<\nu\leq1$. Each updated <cell average> is then a <convex combination> of two old ones. This proves preservation of their initial minimum and maximum, including nonnegativity for nonnegative data, and contraction of the <maximum norm> of the difference of two solutions on this periodic grid. These statements concern this constant-speed scalar update with this time step.
+
+For an original synthetic example, take $N=8$, $a=1$, $h=1/8$, $k=1/16$, hence <Courant number> $\nu=1/2$. Choose a <function> constant on each successive cell, with the following values, so these are exact initial <cell averages>. One step gives
+$$
+\begin{array}{c|rrrrrrrr}
+j&0&1&2&3&4&5&6&7\\\hline
+U_j^0&0&0&2&2&1&0&0&1\\
+U_j^1&1/2&0&1&2&3/2&1/2&0&1/2
+\end{array}
+\qquad M^0=M^1=\frac18\cdot6=\frac34.
+$$
+For example, cell zero receives from cell seven across the periodic face: $U_0^1=(0+1)/2=1/2$. All eight face transfers cancel in the total by <shared face flux cancellation>. More generally this periodic recurrence conserves the total algebraically for any $\nu$, even though the <CFL condition> is needed for the <convex combination> argument. With the same initial data and $\nu=3/2$, one step gives $U_2^1=-1$ and $U_4^1=5/2$, despite preserving the total.
+
+\Image[finite-volume-periodic-upwind-mass.png]
+{title=Original periodic upwind profile at zero, one and four steps: the integral remains three quarters while jumps spread}
+
+After four steps, $t=1/4$, the exact translated profile has moved two cells to the right. Repeated averaging instead gives the explicit <binomial coefficient> formula
+$$
+U_j^4=\frac1{16}\bigl(U_j^0+4U_{j-1}^0+6U_{j-2}^0+4U_{j-3}^0+U_{j-4}^0\bigr),
+$$
+with all indices modulo eight. The diagram compares these computed <cell averages> with the exact translated <cell averages>. Their <integrals> agree, but the numerical jumps spread across cells. The <finite volume method> is useful for <jump discontinuities> because it retains the integral balance even at a jump; conservation alone does not guarantee a sharp profile. At $\nu=1$ this particular update is an exact one-cell shift, whereas for $0<\nu<1$ it mixes neighboring states. No accuracy conclusion at a jump follows just from the conserved total.
+
+= Monotone conservative scheme
+{parent=Finite volume method}
+
+A scalar finite-volume update is monotone if increasing any input state cannot decrease any output state. A consistent conservative update preserves constants and has an invariant interval by comparison. On a periodic grid, or an infinite grid with summable perturbations, conservation and monotonicity imply <L1 contraction of a monotone conservative scheme>. Translation invariance then implies the <total variation diminishing scheme> property.
+
+= Total variation diminishing scheme
+{parent=Monotone conservative scheme}
+{title2=$\operatorname{TV}(TU)\leq\operatorname{TV}(U)$}
+
+= TVD scheme
+{c}
+{synonym}
+
+A translation-invariant conservative monotone update decreases discrete <total variation>. If $S$ is the one-cell shift, $TS=ST$, and <L1 contraction of a monotone conservative scheme> applied to $U,SU$ gives $\sum_j|(TU)_{j+1}-(TU)_j|\leq\sum_j|U_{j+1}-U_j|$. This prevents creation of new total variation, though it does not make every discontinuity sharply resolved.
+
+= L1 contraction of a monotone conservative scheme
+{parent=Monotone conservative scheme}
+{c}
+{title2=$\|TU-TV\|_1\leq\|U-V\|_1$}
+
+Let $T$ be a monotone conservative scalar update on a periodic grid. Since $T(U\vee V)\geq TU,TV$, one has $(TU-TV)_+\leq T(U\vee V)-TV$. Conservation makes the sum of the right side equal to $\sum(U-V)_+$. Reverse $U,V$ and add to obtain $\|TU-TV\|_1\leq\|U-V\|_1$. On an infinite grid the same proof holds for summable differences with a Lipschitz flux on the state range.
+
+= Engquist-Osher method
+{parent=Monotone conservative scheme}
+{c}
+
+The Engquist-Osher method is the <finite volume method> using the <Engquist-Osher flux>. Under $(k/d)\sup|f\prime|\leq1$ on the invariant state interval, its update is monotone. It preserves the state range, is contractive for summable perturbations in $L^1$, and decreases discrete <total variation>.
+
+= CFL necessity for explicit Engquist-Osher stability
+{parent=Engquist-Osher method}
+{c}
+{title2=$\frac{k}{h}\sup|f'|\le1$}
+
+<Monotonicity> of the explicit update requires $(k/h)\sup_{[m,M]}|f'|\le1$ on its invariant state interval. <Convexity> and a unique <sonic point of a scalar flux> do not remove this time-step restriction. For $f(u)=u^2/2$, linearization about a positive constant $U$ gives an <upwind finite difference scheme> for <advection equation>: $v_j^{n+1}=(1-rU)v_j^n+rUv_{j-1}^n$, where $r=k/h$. At <Fourier frequency> $\pi$ the multiplier is $1-2rU$, whose modulus exceeds one when $rU>1$. Thus a <CFL condition> is essential to the claimed nonlinear <stability>.
+
+= Engquist-Osher flux
+{parent=Engquist-Osher method}
+{c}
+{title2=$F_{\rm EO}(a,b)$}
+
+The Engquist-Osher <numerical flux> is $F(a,b)=f(0)+\int_0^a\max(f\prime(s),0)ds+\int_0^b\min(f\prime(s),0)ds$. It sends positive-speed contributions from the left state and negative-speed contributions from the right state. Its consistency $F(u,u)=f(u)$ and opposite monotonicities in the two arguments yield a <monotone conservative scheme> under the appropriate <Courant–Friedrichs–Lewy condition>. For the <inviscid Burgers equation>, it is $\tfrac12\max(a,0)^2+\tfrac12\min(b,0)^2$.
+
+= Sonic-point splitting of a convex Engquist-Osher flux
+{parent=Engquist-Osher flux}
+{title2=$F(a,b)=f(s_*)+f^+(a)+f^-(b)$}
+
+For a flux that is a differentiable <convex function> with unique minimum at $s_*$, define $f^+(u)=f(u)-f(s_*)$ for $u>s_*$ and zero otherwise, and $f^-(u)=f(u)-f(s_*)$ for $u<s_*$ and zero otherwise. The <Engquist-Osher flux> is $F(a,b)=f(s_*)+f^+(a)+f^-(b)$. Thus transsonic <rarefaction wave> states $a\le s_*\le b$ give $F=f(s_*)$, while reversed transsonic states give $F=f(a)+f(b)-f(s_*)$. This follows by integrating the positive and negative parts of $f'$.
+
+= Numerical flux
+{parent=Finite volume method}
+{title2=$F(a,b)$}
+
+A <numerical flux> estimates the rate of transfer across a cell face from nearby states. In the <finite volume method> update, $F_{j+1/2}^n$ approximates the <conservation law flux> averaged over the time step; $kF_{j+1/2}^n$ is the transferred amount. For a two-state <numerical flux> $F(L,R)$ approximating a <scalar conservation law> with <conservation law flux> $f$, <consistency of a numerical method> requires $F(U,U)=f(U)$. Thus equal states recover the physical transfer rate. With constant equal-width cells, this also preserves a constant state because its incoming and outgoing <numerical fluxes> agree.<Riemann Problems and Jupyter Solutions by David I. Ketcheson, Randall J. LeVeque, and Mauricio J. del Razo>[Approximate solvers, §Finite volume methods, consistency paragraph after equation FVupdate]{ref}
+
+Consistency and <shared face flux cancellation> answer different questions: matching $f$ at equal states approximates the intended equation, while sharing one oriented face value preserves the total. The example <periodic upwind finite volume advection> uses $F(L,R)=aL$ for $a>0$, so the arriving state comes from the left. The <Godunov numerical flux> uses an <entropy solution> of a local <Riemann problem>; the <Engquist-Osher flux> provides a different construction for a <scalar conservation law>. A <monotone conservative scheme> uses a <numerical flux> nondecreasing in its left state and nonincreasing in its right state, together with a time step that makes the complete update monotone. Neither two-state consistency nor conservation by itself supplies that time-step restriction or a general <stability> or <order of a numerical method> guarantee.
+
+= Godunov numerical flux
+{parent=Numerical flux}
+{c}
+{title2=$F_G(a,b)$}
+
+= Godunov flux
+{synonym}
+{c}
+
+For a <scalar conservation law> whose flux is a <convex function>, the <Godunov numerical flux> is the physical flux at the origin of the <entropy solution> of the <Riemann problem> between states $a,b$. It is $\min_{u\in[a,b]}f(u)$ for $a\le b$ and $\max_{u\in[b,a]}f(u)$ for $a>b$. For a <rarefaction wave>, the <characteristic speed> is monotone across its states, so the origin sees either an endpoint or a zero-speed minimizing state. For a <shock wave>, its speed is $(f(a)-f(b))/(a-b)$; the origin sees the left state if this speed is positive and the right state if negative, selecting the larger endpoint flux. Unlike the <Godunov flux>, the <Engquist-Osher flux> at reversed transsonic states may equal $f(a)+f(b)-f(s_*)$.

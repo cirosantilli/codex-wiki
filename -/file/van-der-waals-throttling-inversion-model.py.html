@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>van-der-waals-throttling-inversion-model.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="van-der-waals-throttling-inversion-model.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/van-der-waals-throttling-inversion-model.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">van-der-waals-throttling-inversion-model.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/van-der-waals-throttling-inversion-model.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/van-der-waals-throttling-inversion-model.py">van-der-waals-throttling-inversion-model.py</a></b></div></nav></div><div class="p"><b>van-der-waals-throttling-inversion-model.py</b></div><div class="code"><div><pre><code>"""Hypothetical van der Waals inversion and finite-throttle temperature model.
+
+Python 3.14 / matplotlib 3.10.7 / numpy 2.3.5. Run from _media.
+No fitted material parameters or experimental points are used.
+r=v_m/b_m, theta=R*b_m*T/a_m, pi=b_m**2*p/a_m, eta=b_m*h_m/a_m.
+The caloric assumption is C_V,m/R=3/2, so u_m=C_V,m*T-a_m/v_m.
+Only supercritical theta&gt;8/27 is displayed; all endpoints have pi&gt;0.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+C = 1.5
+CASES = ((.8, .12, "#176ca4", "Cooling"),
+         (2.2, .12, "#9b4327", "Warming"),
+         (1.45, .30, "#7950a2", "Warms, then cools"))
+OUTLET = .025
+
+
+def initial_volume(theta, pressure):
+    roots = np.roots([pressure, -pressure-theta, 1, -1])
+    valid = [z.real for z in roots if abs(z.imag) &lt; 1e-9 and z.real &gt; 1]
+    if len(valid) != 1:
+        raise ValueError("The plotted supercritical state must have one physical root")
+    return valid[0]
+
+
+def state_on_isenthalp(r, eta):
+    theta = (eta + 2/r) / (C + r/(r-1))
+    pressure = theta/(r-1) - 1/r**2
+    return theta, pressure
+
+
+def throttle(theta, pressure):
+    r1 = initial_volume(theta, pressure)
+    eta = C*theta + pressure*r1 - 1/r1
+    lo, hi = r1, 250.
+    for _ in range(100):
+        mid = (lo+hi)/2
+        if state_on_isenthalp(mid, eta)[1] &gt; OUTLET:
+            lo = mid
+        else:
+            hi = mid
+    r = np.geomspace(r1, (lo+hi)/2, 600)
+    t, p = state_on_isenthalp(r, eta)
+    return r, t, p, eta
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "figure.facecolor": "white"})
+    fig, (ax, bx) = plt.subplots(1, 2, figsize=(10, 5.6), dpi=120)
+    r = np.linspace(1.5, 450, 20000)
+    inv_t, inv_p = 2*(1-1/r)**2, (2*r-3)/r**2
+    # At fixed theta, the inversion pressure is found directly from r.
+    ts = np.linspace(.42, 2, 500)
+    inverse_r = 1-np.sqrt(ts/2)
+    ps = 2*inverse_r-3*inverse_r**2
+    ax.fill_betweenx(ts, 0, ps, color="#e6f2fa")
+    ax.fill_betweenx(ts, ps, .38, color="#f9ece7")
+    ax.axhspan(2, 2.36, color="#f9ece7")
+    ax.plot(inv_p, inv_t, "k", linewidth=1.8, label="$\\mu_{JT}=0$")
+    ax.text(.055, 1.06, "Cooling\n$\\mu_{JT}&gt;0$", color="#176ca4", ha="center")
+    ax.text(.30, 1.97, "Warming\n$\\mu_{JT}&lt;0$", color="#9b4327", ha="center")
+    ax.set(xlim=(0, .38), ylim=(.42, 2.36), xlabel="Reduced pressure $\\pi$",
+           ylabel="Reduced temperature $\\theta$", title="Inversion curve and endpoint states")
+    summary = []
+    for t1, p1, color, label in CASES:
+        r, t, p, eta = throttle(t1, p1)
+        ax.plot(p, t, color=color, linewidth=2)
+        ax.plot([p[0], p[-1]], [t[0], t[-1]], "o", color=color, markersize=4)
+        j = len(p)//2
+        ax.annotate("", xy=(p[j+25], t[j+25]), xytext=(p[j-25], t[j-25]),
+                    arrowprops={"arrowstyle": "-&gt;", "color": color, "lw": 1.8})
+        bx.plot(p1-p, t-t1, color=color, linewidth=2, label=label)
+        bx.plot(p1-p[-1], t[-1]-t1, "o", color=color, markersize=4)
+        summary.append((t1, p1, float(t[-1]), float(p[-1]), eta))
+    ax.legend(loc="lower left", framealpha=1)
+    bx.axhline(0, color="#777777", linewidth=1)
+    bx.set(xlabel="Pressure drop $\\pi_1-\\pi_2$",
+           ylabel="Temperature change $\\theta_2-\\theta_1$",
+           title="Finite drops along constant enthalpy")
+    bx.legend(loc="lower right", fontsize=10, framealpha=1)
+    for a in (ax, bx):
+        a.grid(alpha=.22)
+    fig.suptitle("Hypothetical van der Waals throttling: cooling is not universal",
+                 fontsize=15, weight="bold", y=.98)
+    fig.text(.5, .10, "$r=v_m/b_m$,  $\\theta=Rb_mT/a_m$,  $\\pi=b_m^2p/a_m$;  $C_{V,m}=3R/2$",
+             ha="center", fontsize=11)
+    fig.text(.5, .045, "Model curves only; supercritical states; no experimental measurements or fitted gas.",
+             ha="center", fontsize=10, color="#555555")
+    fig.subplots_adjust(left=.08, right=.98, bottom=.25, top=.86, wspace=.31)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), facecolor="white")
+    plt.close(fig)
+    for row in summary:
+        print("theta1=%.8f pi1=%.8f theta2=%.8f pi2=%.8f eta=%.8f" % row)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

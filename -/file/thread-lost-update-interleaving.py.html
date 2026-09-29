@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>thread-lost-update-interleaving.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="thread-lost-update-interleaving.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/thread-lost-update-interleaving.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">thread-lost-update-interleaving.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/thread-lost-update-interleaving.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/thread-lost-update-interleaving.py">thread-lost-update-interleaving.py</a></b></div></nav></div><div class="p"><b>thread-lost-update-interleaving.py</b></div><div class="code"><div><pre><code>"""Draw two explicit schedules of an abstract indivisible-step counter model.
+
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+Run from _media; write the opaque matching PNG to the current directory.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+import numpy as np
+
+
+def trace(schedule):
+    """Return states after each step, keeping each thread's register separate."""
+    x, registers, next_step = 0, [None, None], [0, 0]
+    rows = [("Initial", "—", "—", x, None)]
+    for step, thread in enumerate(schedule, 1):
+        action = ("load x", "add 1", "store r")[next_step[thread]]
+        if next_step[thread] == 0:
+            registers[thread] = x
+        elif next_step[thread] == 1:
+            registers[thread] += 1
+        else:
+            x = registers[thread]
+        next_step[thread] += 1
+        rows.append((f"{step}. T{thread + 1}: {action}",
+                     *["—" if r is None else str(r) for r in registers], x, thread))
+    assert next_step == [3, 3]
+    return rows
+
+
+def main():
+    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 12})
+    ink, blue, green, red = "#203040", "#155d8a", "#187355", "#a0392a"
+    fig, ax = plt.subplots(figsize=(11, 6.3), dpi=110, facecolor="white")
+    ax.set(xlim=(0, 11), ylim=(0, 6.3), facecolor="white")
+    ax.axis("off")
+    ax.text(5.5, 6.04, "Two increments: separate registers, one shared counter",
+            ha="center", fontsize=17, weight="bold", color=ink)
+    ax.text(5.5, 5.62, "Abstract model: each load / add / store is indivisible; time runs downward",
+            ha="center", fontsize=11, color=ink)
+
+    panels = [(0.3, "Interleaved: lost update", [0, 1, 0, 1, 0, 1], 1, red),
+              (5.85, "Serial: T1 then T2", [0, 0, 0, 1, 1, 1], 2, green)]
+    row_positions = np.linspace(4.27, 1.57, 7)
+    for left, title, schedule, result, color in panels:
+        rows = trace(schedule)
+        assert rows[-1][3] == result
+        ax.text(left + 2.4, 5.09, title, ha="center", fontsize=14,
+                weight="bold", color=color)
+        ax.add_patch(Rectangle((left + 3.86, 1.34), 0.92, 3.5,
+                               facecolor="#fff1dc", edgecolor="none"))
+        ax.text(left + 0.05, 4.74, "Logical step", color=ink, weight="bold")
+        for offset, label, label_color in [(2.65, "r1", blue), (3.45, "r2", green),
+                                            (4.32, "shared x", ink)]:
+            ax.text(left + offset, 4.74, label, ha="center", fontsize=11,
+                    color=label_color, weight="bold")
+        for y, (action, r1, r2, x, thread) in zip(row_positions, rows):
+            active_color = ink if thread is None else (blue, green)[thread]
+            ax.plot([left, left + 4.85], [y - 0.23, y - 0.23],
+                    color="#d7dfe5", lw=0.7)
+            ax.text(left + 0.05, y, action, va="center", color=active_color)
+            ax.text(left + 2.65, y, r1, ha="center", va="center", color=blue)
+            ax.text(left + 3.45, y, r2, ha="center", va="center", color=green)
+            ax.text(left + 4.32, y, str(x), ha="center", va="center",
+                    color=ink, weight="bold")
+        ax.text(left + 2.4, 0.94, f"Final x = {result}", ha="center", fontsize=15,
+                weight="bold", color=color)
+    ax.text(5.5, 0.48, "A load reads the latest preceding store. Adding changes only that thread's register.",
+            ha="center", fontsize=11, color=ink)
+    ax.text(5.5, 0.12, "This is not an unprotected C program: C data races have undefined behavior.",
+            ha="center", fontsize=11, color=ink)
+    fig.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.02)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"),
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

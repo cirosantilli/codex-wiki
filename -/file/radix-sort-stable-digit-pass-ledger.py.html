@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>radix-sort-stable-digit-pass-ledger.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="radix-sort-stable-digit-pass-ledger.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/radix-sort-stable-digit-pass-ledger.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">radix-sort-stable-digit-pass-ledger.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/radix-sort-stable-digit-pass-ledger.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/radix-sort-stable-digit-pass-ledger.py">radix-sort-stable-digit-pass-ledger.py</a></b></div></nav></div><div class="p"><b>radix-sort-stable-digit-pass-ledger.py</b></div><div class="code"><div><pre><code>"""Original LSD radix-sort ledger; run from _media with Python 3.14.
+
+Uses matplotlib 3.10.7. Writes the matching opaque white PNG to CWD.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyBboxPatch, Rectangle
+
+
+def stable_pass(records, place, radix=10):
+    buckets = [[] for _ in range(radix)]
+    for record in records:
+        buckets[record[0] // radix**place % radix].append(record)
+    return [record for bucket in buckets for record in bucket]
+
+
+def main():
+    records = list(zip([314, 27, 305, 42, 217, 5, 127, 40], "ABCDEFGH"))
+    rows = [records]
+    for place in range(3):
+        rows.append(stable_pass(rows[-1], place))
+    assert [r[0] for r in rows[-1]] == sorted(r[0] for r in records)
+    for p, row in enumerate(rows[1:], start=1):
+        assert [k % 10**p for k, _ in row] == sorted(k % 10**p for k, _ in records)
+
+    fig, ax = plt.subplots(figsize=(10, 6.6), dpi=120, facecolor="white")
+    fig.subplots_adjust(left=0.02, right=0.99, bottom=0.035, top=0.985)
+    ax.set(xlim=(0, 10), ylim=(0, 6.7))
+    ax.axis("off")
+    ink = "#223349"
+    orange, green = "#ffe0ad", "#d7efe7"
+    ax.text(0.12, 6.43, "Radix sort: retain each lower-digit ordering", fontsize=19,
+            weight="bold", color=ink)
+    ax.text(0.12, 6.03, "Eight complete records · decimal keys · width 3", fontsize=12, color=ink)
+    labels = ["Input", "1  Units", "2  Tens", "3  Hundreds"]
+    for p, row in enumerate(rows):
+        y = 5.1 - p * 1.25
+        ax.text(0.12, y + 0.21, labels[p], fontsize=13, color=ink, weight="bold")
+        for col, (key, label) in enumerate(row):
+            x = 1.85 + col * 0.99
+            card = FancyBboxPatch((x, y - 0.1), 0.87, 0.77,
+                                 boxstyle="round,pad=0.025,rounding_size=0.05",
+                                 facecolor="white", edgecolor="#8b9aaa", linewidth=1)
+            ax.add_patch(card)
+            for pos, char in enumerate(f"{key:03d}"):
+                place = 2 - pos
+                xx = x + 0.13 + pos * 0.22
+                if p and place &lt;= p - 1:
+                    ax.add_patch(Rectangle((xx - 0.1, y + 0.23), 0.20, 0.32,
+                                           facecolor=orange if place == p - 1 else green,
+                                           edgecolor="none"))
+                ax.text(xx, y + 0.38, char, fontsize=15, family="monospace",
+                        ha="center", va="center", color=ink)
+            ax.text(x + 0.435, y + 0.04, f"record {label}", fontsize=10, ha="center", color=ink)
+            if p:
+                ax.text(x + 0.435, y - 0.40, f"{key % 10**p:0{p}d}",
+                        fontsize=12, family="monospace", ha="center", color="#206653")
+        if p:
+            ax.text(0.12, y - 0.4, "Ordered suffix:", fontsize=10, color="#206653")
+    ax.add_patch(Rectangle((0.15, 0.62), 0.21, 0.21, facecolor=orange, edgecolor="none"))
+    ax.text(0.43, 0.72, "digit read this pass", fontsize=11, va="center", color=ink)
+    ax.add_patch(Rectangle((3.0, 0.62), 0.21, 0.21, facecolor=green, edgecolor="none"))
+    ax.text(3.28, 0.72, "lower positions already processed", fontsize=11, va="center", color=ink)
+    ax.text(0.15, 0.22, "Units order is not whole-key order: 314 still comes before 305.",
+            fontsize=12, color=ink)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>virial-kepler-ellipse-orbit-configuration.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="virial-kepler-ellipse-orbit-configuration.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/virial-kepler-ellipse-orbit-configuration.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">virial-kepler-ellipse-orbit-configuration.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/virial-kepler-ellipse-orbit-configuration.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/virial-kepler-ellipse-orbit-configuration.py">virial-kepler-ellipse-orbit-configuration.py</a></b></div></nav></div><div class="p"><b>virial-kepler-ellipse-orbit-configuration.py</b></div><div class="code"><div><pre><code>"""Relative Kepler ellipse with equal-time samples; tested with Python 3.14."""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    # NumPy 2.3.5 and Matplotlib 3.10.7; same exact model as energy figure.
+    eccentricity = 0.6
+    minor = np.sqrt(1 - eccentricity**2)
+    anomaly = np.linspace(0, 2 * np.pi, 1001)
+    x = np.cos(anomaly) - eccentricity
+    y = minor * np.sin(anomaly)
+    mean_samples = np.arange(24) * 2 * np.pi / 24
+    sample_anomaly = mean_samples.copy()
+    for _ in range(12):
+        sample_anomaly -= (sample_anomaly - eccentricity * np.sin(sample_anomaly) - mean_samples) / (
+            1 - eccentricity * np.cos(sample_anomaly)
+        )
+    sample_x = np.cos(sample_anomaly) - eccentricity
+    sample_y = minor * np.sin(sample_anomaly)
+
+    plt.rcParams.update({"font.size": 11})
+    fig, ax = plt.subplots(figsize=(8, 5.4))
+    fig.patch.set_facecolor("white")
+    ax.set_facecolor("white")
+    ax.plot(x, y, color="#1769aa", lw=2.2)
+    ax.scatter(sample_x, sample_y, s=25, color="#1769aa", zorder=4,
+               label=r"Equal time steps $\Delta t=P/24$")
+    ax.scatter([0], [0], marker="*", s=180, color="#d35f16", zorder=6)
+    ax.annotate("Attracting focus\n(relative coordinate)", xy=(0, 0), xytext=(-0.35, -0.42),
+                ha="center", arrowprops={"arrowstyle": "-&gt;", "color": "#555555"})
+    ax.scatter([-eccentricity], [0], marker="+", s=65, color="#777777", zorder=5)
+    ax.text(-eccentricity - 0.05, -0.14, "Ellipse centre", ha="right", fontsize=10, color="#555555")
+    ax.annotate("Periapsis: r = 0.4\nK = 2, U = −2.5\n2K + U = 1.5", xy=(0.4, 0),
+                xytext=(0.65, 0.72), ha="center",
+                arrowprops={"arrowstyle": "-&gt;", "color": "#555555"}, fontsize=10)
+    ax.annotate("Apoapsis: r = 1.6\nK = 0.125, U = −0.625\n2K + U = −0.375", xy=(-1.6, 0),
+                xytext=(-1.75, -0.98), ha="center",
+                arrowprops={"arrowstyle": "-&gt;", "color": "#555555"}, fontsize=10)
+    # Arrow follows counterclockwise motion, from eta=0.6 to eta=0.85.
+    ax.annotate("", xy=(np.cos(0.85) - eccentricity, minor * np.sin(0.85)),
+                xytext=(np.cos(0.6) - eccentricity, minor * np.sin(0.6)),
+                arrowprops={"arrowstyle": "-&gt;", "color": "#1769aa", "lw": 2})
+    ax.annotate("", xy=(0.4, -1.02), xytext=(-0.6, -1.02),
+                arrowprops={"arrowstyle": "&lt;-&gt;", "color": "#555555"})
+    ax.text(-0.1, -1.12, "Semimajor axis a = 1", ha="center", fontsize=10)
+    ax.set_aspect("equal")
+    ax.set_xlim(-2.3, 1.17)
+    ax.set_ylim(-1.28, 1.22)
+    ax.set_xlabel(r"Relative position $x/a$")
+    ax.set_ylabel(r"Relative position $y/a$")
+    ax.set_title("Kepler ellipse: fast near periapsis, slow near apoapsis", pad=13)
+    ax.legend(loc="upper left", fontsize=10, framealpha=0.95)
+    ax.grid(alpha=0.17)
+    fig.text(0.5, 0.015, "m = a = κ = 1, e = 0.6; total energy E = −0.5 everywhere",
+             ha="center", fontsize=10)
+    fig.tight_layout(rect=(0, 0.045, 1, 1))
+    fig.savefig(Path(__file__).stem + ".png", dpi=120, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

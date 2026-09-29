@@ -1,0 +1,366 @@
+= f-divergence
+{c}
+{title2=$D_f(P\Vert Q)$}
+{wiki}
+
+For a <convex function> $f$ satisfying $f(1)=0$, the f-divergence between <probability distributions> $P$ and $Q$ is
+$$
+D_f(P\Vert Q)=\int qf(p/q)\,d\lambda,
+$$
+where $p=dP/d\lambda$, $q=dQ/d\lambda$, and the integrand uses the lower-semicontinuous perspective convention at $q=0$.
+
+= Kullback-Leibler divergence
+{title2=$D_{\mathrm{KL}}(P\Vert Q)$}
+{parent=f-divergence}
+{c}
+{wiki}
+
+= Relative entropy
+{synonym}
+
+The <Kullback-Leibler divergence>, also called <relative entropy>, compares two <probability distributions> in a specified order. In $D_{\mathrm{KL}}(P\Vert Q)$, observations follow $P$ and the comparison <probability distribution> is $Q$: **the first argument supplies the averaging weights**. For <probability mass functions> $p_i,q_i$ on a finite <alphabet>,
+$$
+D_{\mathrm{KL}}(P\Vert Q)=\sum_i p_i\log\frac{p_i}{q_i}
+=\mathbb E_P\!\left[\log\frac{p(X)}{q(X)}\right].
+$$
+Here $X$ is a <random variable> with <probability distribution> $P$. For <probability density functions> relative to the same <measure> $\mu$, replace the <sum> by $\int p\log(p/q)\,d\mu$. These formulas use <natural logarithms> unless stated otherwise. The <expected value> is under $P$, even though $Q$ appears in the denominator. https://web.stanford.edu/class/ee276/files/previous_notes/lecture_2.pdf[Weissman, information measures, 2024, Definition 4]{ref}
+
+Take $P=(0.75,0.25)$ and $Q=(0.5,0.5)$ on two outcomes. Direct calculation gives
+$$
+\begin{aligned}
+D_{\mathrm{KL}}(P\Vert Q)&=0.75\log(1.5)+0.25\log(0.5)\approx0.130812,\\
+D_{\mathrm{KL}}(Q\Vert P)&=0.5\log(2/3)+0.5\log2\approx0.143841.
+\end{aligned}
+$$
+The second outcome contributes negatively to the first <sum>: assigning it more <probability> than $P$ does makes its individual contribution negative. Nevertheless, <relative entropy nonnegativity> guarantees a nonnegative total. Reversing the arguments changes both the <likelihood ratio> and the averaging <probabilities>; taking an absolute value inside the <logarithm> would define a different quantity.
+
+\Image[kl-direction-and-support.png]
+{title=Direction changes the averaging weights; a missing outcome can make relative entropy infinite}
+
+The units depend on the <logarithm>: <natural logarithms> give <nats>, whereas base-two <logarithms> give <bits>. Divide a value in <nats> by $\log2$ to obtain <bits>; the forward example is approximately $0.188722$ <bits>. Changing the base rescales every <Kullback-Leibler divergence> by the same positive factor. Since the two calculated directions differ, <Kullback-Leibler divergence> is asymmetric and cannot be a <metric>. It also need not satisfy the <triangle inequality>. https://web.stanford.edu/~kedart/ee376a_winter1617/Lecture_3.pdf[Tse, relative entropy, 2017, Section 3.3]{ref}
+
+The operational meaning is an expected penalty for using the wrong <probability distribution>. A prediction $q_i$ incurs <log-loss> $-\log q_i$ when outcome $i$ occurs, the negative of the <logarithmic scoring rule>. Under $P$, its <expected value> is the <cross-entropy> $H(P,Q)=-\sum_i p_i\log q_i$. Predicting with $P$ itself incurs <information entropy> $H(P)=-\sum_i p_i\log p_i$, so
+$$
+H(P,Q)-H(P)=D_{\mathrm{KL}}(P\Vert Q).
+$$
+Thus <Kullback-Leibler divergence> is exactly excess expected <log-loss>, whenever these separate quantities are finite. https://web.stanford.edu/class/ee276/files/previous_notes/lecture_2.pdf[Weissman, information measures, 2024, property 3]{ref}
+
+For <lossless source coding>, ideal <codeword lengths> $-\log_2q_i$ similarly give excess expected length $D_{\mathrm{KL}}(P\Vert Q)$ in <bits> per symbol. Actual <prefix codes> require integer <codeword lengths>; <Shannon's source coding theorem> explains how long blocks approach ideal per-symbol lengths. The interpretation concerns an average, not a fractional physical <bit> attached to every outcome. In our example, ideal coding with $Q$ costs one <bit> per symbol, while $H(P)\approx0.811278$ <bits>; the difference is exactly the computed $0.188722$ <bits>. https://web.stanford.edu/~kedart/ee376a_winter1617/Lecture_3.pdf[Tse, information theory, 2017, Section 3.4]{ref}
+
+Zeros require explicit conventions. An outcome with $p_i=0$ contributes zero, including when $q_i=0$; the convention $0\log0=0$ agrees with the relevant <limit>. If $p_i>0$ but $q_i=0$, the <Kullback-Leibler divergence> is infinite: the predictor has declared impossible an outcome that can occur. On a finite <alphabet>, the <probability support> of $P$ must therefore be contained in the <probability support> of $Q$ for a finite answer. For example, $P=(1,0)$ and $Q=(0.5,0.5)$ give $D(P\Vert Q)=\log2$, but $D(Q\Vert P)=+\infty$. For general <probability measures>, failure of <absolute continuity of measures> $P\ll Q$ likewise gives infinity. Even $P\ll Q$ does not guarantee a finite <integral>. https://arxiv.org/pdf/1206.2459[van Erven and Harremoës, Rényi Divergence and Kullback-Leibler Divergence, 2014, Section II]{ref}
+
+To see how confidently wrong predictions are punished, hold the true <Bernoulli distribution> parameter at $p=0.75$ and vary the predicted parameter $q$. Its <binary relative entropy> is
+$$
+d(0.75,q)=0.75\log\frac{0.75}{q}+0.25\log\frac{0.25}{1-q}.
+$$
+It vanishes at $q=0.75$, equals approximately $2.894055$ <nats> at $q=0.01$, and equals $0.596495$ <nats> at $q=0.99$. Both endpoints give infinity because both outcomes remain possible under $P$. Predicting almost no successes is especially costly because successes actually occur three quarters of the time. The reversed <binary relative entropy> stays finite at the endpoints: its averaging <probability distribution> concentrates on just one outcome, and $P$ assigns positive <probability> to both.
+
+\Image[kl-bernoulli-penalty.png]
+{title=Bernoulli relative entropy with true success probability 0.75 and varying predicted probability}
+
+For <model selection>, minimizing expected <log-loss> ranks candidate <statistical models> by $D(P\Vert Q)$, since $H(P)$ is common to them. The true <probability distribution> is usually unknown, so one estimates predictive performance using fresh observations or <cross-validation>. Fitting and assessing on the same data can reward <overfitting>; a small fitted <Kullback-Leibler divergence> alone does not establish useful prediction.
+
+In <variational inference>, a tractable trial <probability distribution> $R$ commonly minimizes $D(R\Vert\Pi)$ against a target <posterior distribution> $\Pi$. Maximizing the <evidence lower bound> accomplishes this without evaluating the target's <normalization constant>. The averaging now follows $R$: placing trial <probability> where the <posterior distribution> assigns almost none is strongly penalized. The chosen direction and trial family therefore matter. https://www.cs.columbia.edu/~blei/papers/BleiKucukelbirMcAuliffe2017.pdf[Blei, Kucukelbir and McAuliffe, Variational Inference: A Review for Statisticians, 2017, Section 2.2]{ref}
+
+These comparisons do not by themselves establish <causal inference>. Two <statistical models> can reproduce the same observed <probability distribution> while predicting different responses to an <intervention>. Choosing the smaller <Kullback-Leibler divergence> therefore needs additional assumptions or experimental evidence before supporting a causal claim. https://ftp.cs.ucla.edu/pub/stat_ser/r350.pdf[Pearl, Causal inference in statistics: An overview, 2009, Section 2]{ref}
+
+The original reference is S. Kullback and R. A. Leibler's 1951 paper https://doi.org/10.1214/aoms/1177729694[On Information and Sufficiency]{ref}, published in The Annals of Mathematical Statistics 22(1), pages 79–86. Its title connects this comparison with <sufficient statistics>: the historical setting was statistical information, before today's widespread applications in prediction and <variational inference>.
+
+= Binary partition bound for relative entropy
+{parent=Kullback-Leibler divergence}
+{title2=$K(P,Q)\geq d(P(A),Q(A))$}
+
+= Bernoulli reduction of relative entropy
+{synonym}
+{c}
+
+For a measurable event $A$, applying <Jensen inequality> to $u\log u$ separately on $A$ and its complement shows that the <Kullback-Leibler divergence> between two <probability measures> is at least the divergence between the two event indicators. This reduces a general <probability measure> comparison to a binary one and is the key step in a proof of <Pinsker's inequality>.
+
+= Bernoulli relative entropy lower bound
+{parent=Binary partition bound for relative entropy}
+{c}
+{title2=$d(a,b)\geq2(a-b)^2$}
+
+For $d(a,b)=a\log(a/b)+(1-a)\log((1-a)/(1-b))$, the <second derivative> with respect to $a$ is $1/[a(1-a)]\geq4$. Its value and first derivative at $a=b$ vanish, so $d(a,b)\geq2(a-b)^2$. Boundary values follow by continuity or the infinite-divergence convention. Together with the <binary partition bound for relative entropy>, this gives <Pinsker's inequality> with the natural-logarithm constant.
+
+= Relative Fisher information
+{parent=Kullback-Leibler divergence}
+{title2=$I(f\mid g)=\int|\nabla\log(f/g)|^2f$}
+
+For sufficiently regular positive <probability densities>, this compares their spatial logarithmic derivatives. It is the dissipation functional for <relative entropy> under suitable diffusion equations. For standard Gaussian $g=\gamma$, it becomes $\int|\nabla\log f+v|^2f$, and in one dimension equals $\int|f'|^2/f+\int v^2f-2$ at unit <mass>.
+
+= Relative Fisher information decay under Ornstein-Uhlenbeck flow
+{parent=Relative Fisher information}
+{title2=$I(t)\leq e^{-2(t-s)}I(s)$}
+
+The differential estimate $I'(t)\leq-2I(t)$ gives the displayed exponential bound by an integrating factor. Start at any time with finite information. Combining this with a zero limiting entropy yields $H(f_t\mid\gamma)=\int_t^\infty I(s)ds\leq I(t)/2$.
+
+= Relative entropy nonnegativity
+{parent=Kullback-Leibler divergence}
+{title2=$H(f\mid g)\geq0$}
+
+For <probability distributions> $P,Q$, <relative entropy> satisfies $D_{\mathrm{KL}}(P\Vert Q)\geq0$, with equality exactly when $P=Q$. Thus truthful prediction uniquely minimizes expected <log-loss> whenever the comparison is well defined, explaining the <strictly proper scoring rule> property of the <logarithmic scoring rule>.
+
+For a short proof with <probability density functions> $f,g$ and $g>0$, set $r=f/g$. Their <integrals> both equal one, giving
+$$
+H(f\mid g)=\int g\bigl(r\log r-r+1\bigr)\,d\mu\geq0.
+$$
+The <strictly convex function> $r\log r-r+1$ is minimized only at $r=1$, so equality means $f=g$ <almost everywhere>. Its value at zero is one by $0\log0=0$. Where $g=0<f$, <relative entropy> is infinite; where both vanish, the contribution is zero. These conventions extend the argument beyond positive reference <probability density functions>.
+
+= Generalized Kullback–Leibler divergence
+{parent=Kullback-Leibler divergence}
+{title2=$D(x,y)=\int[x\log(x/y)-x+y]$}
+
+For nonnegative densities of possibly different total masses, this divergence includes the mass correction $-x+y$ as well as the logarithmic term. It is the <Bregman distance> of the <maximum-entropy regularization functional> at a positive reference $y$. Convexity of $s\log s-s$ proves nonnegativity. For equal masses the correction integrates to zero, recovering the <Kullback-Leibler divergence>; for <probability density functions> both masses are one. Use the usual extended-value conventions at zero reference density.
+
+= Three-point identity for relative entropy
+{parent=Kullback-Leibler divergence}
+
+For probability mass functions $P,Q,R$ with compatible supports,
+$$
+D(P\Vert Q)
+=D(P\Vert R)+D(R\Vert Q)
++\sum_a\{P(a)-R(a)\}\log\frac{R(a)}{Q(a)}.
+$$
+When the final term vanishes, this is the Pythagorean identity for relative entropy.
+
+= Pythagorean identity for relative entropy
+{parent=Three-point identity for relative entropy}
+
+The Pythagorean identity is
+$$
+D(P\Vert Q)=D(P\Vert R)+D(R\Vert Q)
+$$
+whenever the residual term in the <three-point identity for relative entropy> is zero. Convex information projections replace equality by the corresponding Pythagorean inequality.
+
+= Binary relative entropy
+{title2=$\operatorname{kl}(a,b)$}
+{parent=Kullback-Leibler divergence}
+
+The binary relative entropy is the <Kullback-Leibler divergence> between Bernoulli distributions:
+$$
+\operatorname{kl}(a,b)
+=a\log\frac ab+(1-a)\log\frac{1-a}{1-b}.
+$$
+It is the exact exponent obtained by optimizing the Chernoff bound for a Bernoulli mean.
+
+= Gibbs inequality
+{c}
+{parent=Kullback-Leibler divergence}
+{wiki}
+
+For <probability distribution>[probability distributions] $p$ and $q$ on the same finite set,
+$$
+D_{\mathrm{KL}}(p\Vert q)
+=\sum_i p_i\log\frac{p_i}{q_i}\geq0,
+$$
+with equality exactly when $p=q$ on the support of $p$.
+
+= Log-optimal multiplicative betting
+{parent=Gibbs inequality}
+{title2=$g_*=D(p\Vert u/U)-\log U$}
+
+For independent outcomes with positive <probability distribution> $p$, allocations $a_j>0$ summing to one and return multipliers $a_j/u_j$, the <strong law of large numbers> gives asymptotic logarithmic fortune growth $g(a)=\sum_jp_j\log(a_j/u_j)$. <Gibbs inequality> gives $g(a)=g(p)-D(p\Vert a)$, so the unique optimum is $a=p$. Writing $U=\sum_ju_j$ gives $g(p)=D(p\Vert u/U)-\log U$. Thus $U<1$ guarantees positive optimal growth, whereas $U>1$ allows the house to force negative growth by choosing $u_j=Up_j$, but does not guarantee decline for every choice of $u$.
+
+= Chain rule for relative entropy
+{parent=Kullback-Leibler divergence}
+
+For <probability distribution>[probability distributions] $P$ and $Q$ on a product space, the <Kullback-Leibler divergence> decomposes into the divergence of a marginal and the expected divergence of the corresponding conditional distributions. Iteration gives
+$$
+D(Q\Vert P)=\sum_i\mathbb E_QD\bigl(Q_i(\mathord\cdot\mid X_{<i})\Vert P_i(\mathord\cdot\mid X_{<i})\bigr).
+$$
+
+= Log-sum inequality
+{parent=Kullback-Leibler divergence}
+{wiki}
+
+For nonnegative $a_i,b_i$, with $a=\sum_i a_i$ and $b=\sum_i b_i$, the log-sum inequality is
+$$
+\sum_i a_i\log\frac{a_i}{b_i}\geq a\log\frac ab.
+$$
+It proves both <Gibbs inequality> and the <data processing inequality for relative entropy>.
+
+= Gibbs variational principle for relative entropy
+{parent=Kullback-Leibler divergence}
+
+For a <probability mass function> $Q$ of full support on a finite <alphabet> and a real function $g$,
+$$
+\log\mathbb E_Q e^g
+=\sup_P\{\mathbb E_Pg-D_e(P\Vert Q)\},
+$$
+where $D_e$ uses <natural logarithms>. The unique maximizing <probability mass function> is the exponential tilt $P^*(x)=Q(x)e^{g(x)}/\mathbb E_Qe^g$.
+
+= Kullback-Leibler divergence between normal distributions
+{c}
+{parent=Kullback-Leibler divergence}
+
+For univariate normal distributions,
+$$
+D_{\mathrm{KL}}\bigl(N(m_1,v_1)\Vert N(m_0,v_0)\bigr)
+=\frac12\left[\log\frac{v_0}{v_1}+\frac{v_1+(m_1-m_0)^2}{v_0}-1\right].
+$$
+
+= Han's inequality for relative entropy
+{c}
+{parent=Kullback-Leibler divergence}
+
+If $P=\bigotimes_{i=1}^nP_i$ is a product measure, $Q$ is any probability measure, and $X^{(i)}$ omits coordinate $i$, then
+$$
+D(Q\Vert P)\geq\frac1{n-1}\sum_{i=1}^nD(Q_{X^{(i)}}\Vert P_{X^{(i)}}).
+$$
+
+= Han's entropy inequality
+{c}
+{parent=Han's inequality for relative entropy}
+
+For a random vector $X_{1:n}$,
+$$
+\sum_{i=1}^nH(X^{(i)})\geq(n-1)H(X_{1:n}).
+$$
+This is equivalent to <Han's inequality for relative entropy> after expansion against a product reference measure.
+
+= Normalized subset entropy
+{parent=Han's entropy inequality}
+{title2=$h_k^{(n)}=\frac{1}{k\binom nk}\sum_{|S|=k}h(X_S)$}
+
+For a discrete <random vector> with $n$ coordinates, this is the average <information entropy> per coordinate over all subsets of size $k$. Independent coordinates give the same average for every $k$, even when their individual entropies differ. If all coordinates are copies of one random variable $Z$, the average is $h(Z)/k$.
+
+= Monotonicity of normalized subset entropies
+{parent=Normalized subset entropy}
+{title2=$h_n^{(n)}\leq h_{n-1}^{(n)}\leq\cdots\leq h_1^{(n)}$}
+
+For discrete <random variables>, <normalized subset entropy> decreases with subset size. For finite entropies, the <chain rule for information entropy> and <conditioning reduces entropy> give $\sum_{i\in S}h(X_{S\setminus\{i\}})\geq(|S|-1)h(X_S)$. Sum this over all $k$-subsets $S$. Every $(k-1)$-subset occurs $n-k+1$ times, and $k\binom nk=(n-k+1)\binom n{k-1}$ cancels the normalization factors. This proves $h_k^{(n)}\leq h_{k-1}^{(n)}$. If a marginal entropy is infinite, every one of these subset averages is infinite; otherwise all entropies used in the proof are finite.
+
+= Strong form of Han's entropy inequality
+{c}
+{parent=Han's inequality for relative entropy}
+
+The strong form
+$$
+(n-1)\sum_iH(X^{(i)})
+\geq n(n-2)H(X_{1:n})+\sum_iH(X_i)
+$$
+follows by iterating <entropy submodularity>.
+
+= Tensorization lower bound for relative entropy
+{parent=Kullback-Leibler divergence}
+
+For a product reference $P=\bigotimes_iP_i$ and arbitrary $Q$,
+$$
+D(Q\Vert P)\geq\sum_iD(Q_i\Vert P_i).
+$$
+It follows from the <chain rule for relative entropy> and convexity of relative entropy in its first argument.
+
+= Chi-squared divergence
+{title2=$\chi^2(P\Vert Q)$}
+{parent=f-divergence}
+{wiki}
+
+For <probability mass functions> $P,Q$ with $P$ absolutely continuous with respect to $Q$,
+$$
+\chi^2(P\Vert Q)=\sum_x\frac{(P(x)-Q(x))^2}{Q(x)}.
+$$
+
+= Chi-squared divergence of product measures
+{parent=Chi-squared divergence}
+{title2=$1+\chi^2(Q^{\otimes n}\Vert P^{\otimes n})=(1+\chi^2(Q\Vert P))^n$}
+
+If $r=dQ/dP$, <independence> gives $E_{P^{\otimes n}}\prod_i r(X_i)^2=(E_Pr^2)^n$. Since $E_Pr=1$, this proves the displayed identity. The <Cauchy-Schwarz inequality> also gives $\|Q^{\otimes n}-P^{\otimes n}\|_1^2\leq\chi^2(Q^{\otimes n}\Vert P^{\otimes n})$. Thus perturbations of size $\chi^2(Q\Vert P)=O(1/n)$ have a uniformly bounded joint <total variation distance>, a useful input to a <metric squared-loss two-point bound>.
+
+= Second moment of a mixture likelihood ratio
+{parent=Chi-squared divergence}
+{title2=$\chi^2(\sum_jw_jP_j\Vert Q)=\sum_{j,k}w_jw_k\mathbb E_Q[L_jL_k]-1$}
+
+If $L_j=dP_j/dQ$ and the nonnegative <mixture weights> sum to one, the <likelihood ratio> of the <mixture model> is $L=\sum_jw_jL_j$. Expanding $\mathbb E_QL^2-1$ proves the displayed <chi-squared divergence> identity. For <independent random variables> sampled from a fixed component, one-observation cross moments multiply across observations. The component is drawn once for the whole sample; redrawing it per observation gives a different <mixture model>.
+
+= Data processing inequality for f-divergences
+{parent=f-divergence}
+
+For a <measurable function> $T$, every f-divergence contracts under <pushforward measure>[pushforward]:
+$$
+D_f(T_*P\Vert T_*Q)\leq D_f(P\Vert Q).
+$$
+This follows from conditional <Jensen inequality> applied to the jointly convex perspective $(a,b)\mapsto bf(a/b)$.
+
+= Data processing inequality for relative entropy
+{parent=Data processing inequality for f-divergences}
+
+This is the <data processing inequality for f-divergences> specialized to <relative entropy>. Passing two <probability distributions> through the same <Markov kernel> cannot increase their <relative entropy>. For a kernel $K$,
+$$
+D(PK\Vert QK)\leq D(P\Vert Q).
+$$
+
+= Squared Hellinger distance
+{c}
+{title2=$H^2(P,Q)$}
+{parent=f-divergence}
+
+The squared Hellinger distance is
+$$
+H^2(P,Q)=\int(\sqrt p-\sqrt q)^2d\lambda
+=2-2\int\sqrt{pq}\,d\lambda,
+$$
+where $p$ and $q$ are densities with respect to any common dominating measure $\lambda$.
+
+= Hellinger distance
+{title2=$d_H(P,Q)$}
+{parent=Squared Hellinger distance}
+{wiki}
+
+The Hellinger distance is the square root of a constant multiple of $\int(\sqrt p-\sqrt q)^2d\lambda$. Common conventions use either the factor $1$ or $1/2$.
+
+= Relative entropy bound for the unnormalized Hellinger distance
+{parent=Hellinger distance}
+{title2=$H^2(P,Q)\leq K(P,Q)$}
+
+The scalar inequality $-\log u\geq1-u$, applied to $u=\sqrt{q/p}$ and integrated against $P$, gives $K(P,Q)\geq2-2\int\sqrt{pq}\,d\mu$. The right side is the unnormalized squared <Hellinger distance>. Infinite divergence and zero density regions are handled by the usual extended-integral conventions.
+
+= Hellinger affinity
+{parent=Hellinger distance}
+{c}
+{title2=$\int\sqrt{pq}\,d\mu$}
+
+The <Hellinger affinity> of dominated <probability measures> is the integral of the geometric mean of their <probability density functions>. It lies in $[0,1]$ by <Cauchy-Schwarz inequality>. The unnormalized squared <Hellinger distance> is $2-2$ times this affinity; this identity makes the relation with <relative entropy> particularly simple.
+
+= Total variation–Hellinger–relative entropy inequality
+{parent=Hellinger distance}
+{title2=$\operatorname{TV}(P,Q)\leq h(P,Q)\leq\sqrt{\operatorname{KL}(P,Q)}$}
+
+For the <unnormalized Hellinger distance>, $\operatorname{TV}(P,Q)\leq h(P,Q)\leq\sqrt{\operatorname{KL}(P,Q)}$. Factor $|p-q|=|\sqrt p-\sqrt q|(\sqrt p+\sqrt q)$ and use the <Cauchy-Schwarz inequality> to bound the <total variation distance>. For the other bound, $\log t\leq t-1$ gives $p\log(p/q)\geq2(p-\sqrt{pq})$, whose integral is the squared <unnormalized Hellinger distance>. Infinite <Kullback-Leibler divergence> is allowed.
+
+= Unnormalized Hellinger distance
+{parent=Hellinger distance}
+{title2=$h(P,Q)=\|\sqrt p-\sqrt q\|_{L^2(\nu)}$}
+
+= Unnormalised Hellinger distance
+{synonym}
+
+The <Hellinger distance> convention $h^2(P,Q)=\int(\sqrt p-\sqrt q)^2\,d\nu$, with no factor $1/2$, for densities under a common dominating measure. Its range is $[0,\sqrt2]$. This convention makes $\operatorname{TV}(P,Q)\leq h(P,Q)\leq\sqrt{\operatorname{KL}(P,Q)}$ hold with the displayed constants.
+
+= Hellinger bound for differences of expectations
+{c}
+{parent=Hellinger distance}
+
+If $f$ is a measurable function into a separable <Banach space> and has finite second <moments> under <probability measures> $\mu,\mu'$, then their <Bochner integral> <expected values> satisfy
+$$
+\|\mathbb E^\mu f-\mathbb E^{\mu'}f\|
+\leq2\left(\mathbb E^\mu\|f\|^2+\mathbb E^{\mu'}\|f\|^2\right)^{1/2}d_{\mathrm{Hell}}(\mu,\mu').
+$$
+Here the <Hellinger distance> includes the factor $1/2$ in its square. For a proof, use $\nu=(\mu+\mu')/2$, $p=d\mu/d\nu$, and $q=d\mu'/d\nu$. Apply the norm bound for a <Bochner integral> and the <Cauchy-Schwarz inequality> to $f(p-q)=f(\sqrt p-\sqrt q)(\sqrt p+\sqrt q)$, then use $(\sqrt p+\sqrt q)^2\leq2(p+q)$. This explains why stability of a <Bayesian posterior> in <Hellinger distance> controls posterior <expected values> when the relevant second <moments> remain bounded.
+
+= Hellinger distance between normal distributions
+{c}
+{parent=Hellinger distance}
+{title2=$d_{\mathrm{Hell}}(\mathcal N(\theta_1,\sigma_1^2),\mathcal N(\theta_2,\sigma_2^2))$}
+
+With the convention $d_{\mathrm{Hell}}^2=\frac12\int(\sqrt p-\sqrt q)^2$, the <Hellinger distance> between two <normal distributions> with $\sigma_1,\sigma_2>0$ is
+$$
+d_{\mathrm{Hell}}^2=1-\sqrt{\frac{2\sigma_1\sigma_2}{\sigma_1^2+\sigma_2^2}}
+\exp\left[-\frac{(\theta_1-\theta_2)^2}{4(\sigma_1^2+\sigma_2^2)}\right].
+$$
+To prove it, integrate the geometric mean of their <probability density functions>. <Completing the square> makes that geometric mean the density of a <normal distribution> times the displayed prefactor and exponential. For example, writing $S=\sigma_1^2+\sigma_2^2$, that <normal distribution> has mean $(\theta_1\sigma_2^2+\theta_2\sigma_1^2)/S$ and <variance> $2\sigma_1^2\sigma_2^2/S$. The identity $d_{\mathrm{Hell}}^2=1-\int\sqrt{pq}$ then proves the formula.
+
+For equal unit <variances>, this becomes $1-e^{-(\theta_1-\theta_2)^2/8}$. More generally, put $B=\sqrt{2\sigma_1\sigma_2/S}\leq1$ and $x=(\theta_1-\theta_2)^2/(4S)$. Then $1-Be^{-x}=(1-B)+B(1-e^{-x})$, $1-B=(\sigma_1-\sigma_2)^2/[S(1+B)]$, and $1-e^{-x}\leq x$, proving
+$$
+d_{\mathrm{Hell}}^2\leq\frac{(\sigma_1-\sigma_2)^2+(\theta_1-\theta_2)^2}{\sigma_1^2+\sigma_2^2}.
+$$

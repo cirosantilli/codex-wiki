@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>shot-noise-poisson-counts-filtered-spectrum-and-variance.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="shot-noise-poisson-counts-filtered-spectrum-and-variance.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/shot-noise-poisson-counts-filtered-spectrum-and-variance.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">shot-noise-poisson-counts-filtered-spectrum-and-variance.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/shot-noise-poisson-counts-filtered-spectrum-and-variance.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/shot-noise-poisson-counts-filtered-spectrum-and-variance.py">shot-noise-poisson-counts-filtered-spectrum-and-variance.py</a></b></div></nav></div><div class="p"><b>shot-noise-poisson-counts-filtered-spectrum-and-variance.py</b></div><div class="code"><div><pre><code>"""Original analytic Poisson/filter examples, not experimental or simulated data.
+
+Python 3.14; numpy 2.3.5; matplotlib 3.10.7. Emit basename.png in CWD.
+With a=lambda*tau, u=t/tau, x=tau*i_filtered/q, and nu=f*tau,
+the exponential filter yields E[x]=a, Var(x)=a/2, S_x(nu)=2a/(1+(2*pi*nu)^2).
+The count in a gate of length tau instead has mean a and variance a.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 10, "font.family": "DejaVu Sans"})
+    fig, axes = plt.subplots(1, 3, figsize=(11.3, 4.6), dpi=120, facecolor="white")
+    blue, orange, green = "#17659a", "#aa5515", "#26734d"
+    n = np.arange(15)
+    probability = np.empty(15)
+    probability[0] = np.exp(-4.0)
+    for k in range(1, 15):
+        probability[k] = probability[k - 1] * 4 / k
+    axes[0].bar(n, probability, color=blue, width=.8)
+    axes[0].set(xlabel="Count n in one gate", ylabel="Probability",
+                title="A. Discrete counts: mean 4", xlim=(-.8, 14.8), ylim=(0, .245))
+    axes[0].set_xticks([0, 4, 8, 12])
+    axes[0].text(7.0, .205, "Poisson(4)\nmean = variance = 4", ha="center", fontsize=9)
+    nu = np.geomspace(.002, 12, 500)
+    for a, color in [(1, blue), (4, orange), (8, green)]:
+        axes[1].loglog(nu, 2 * a / (1 + (2 * np.pi * nu) ** 2),
+                       color=color, label=f"a = {a}")
+    axes[1].axvline(1 / (2 * np.pi), color=".5", lw=1, ls=":")
+    axes[1].set(xlabel=r"Frequency $\nu=f\tau$", ylabel=r"One-sided $S_x^{(1)}(\nu)$",
+                title="B. Exponential filtering", xlim=(.002, 12), ylim=(.0002, 30))
+    axes[1].legend(fontsize=9, loc="lower left")
+    axes[1].text(.55, .69, r"$\nu_c=1/(2\pi)$", transform=axes[1].transAxes, fontsize=9)
+    a = np.linspace(0, 10, 200)
+    axes[2].plot(a, a, color=blue, label="Gate count: variance = a")
+    axes[2].plot(a, a / 2, color=orange, label="Filtered x: variance = a/2")
+    axes[2].scatter([4, 4], [4, 2], color=[blue, orange], s=35, zorder=4)
+    axes[2].set(xlabel="Common mean a", ylabel="Variance",
+                title="C. Weighting changes variance", xlim=(0, 10), ylim=(0, 10.7))
+    axes[2].legend(loc="upper left", fontsize=8.5)
+    for ax in axes:
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(alpha=.18, axis="y")
+        ax.set_axisbelow(True)
+    fig.suptitle("Exact model calculations — no experimental trace", fontsize=15, weight="bold", y=.97)
+    fig.text(.5, .075, r"$a=\lambda\tau$,  $x=\tau i_{\rm filtered}/q$,  "
+             r"$\int_0^\infty S_x^{(1)}(\nu)\,d\nu=a/2$;  gate duration = $\tau$.",
+             ha="center", fontsize=11)
+    fig.text(.5, .02, "Stationary independent equal-charge arrivals; ideal unit-gain exponential response.",
+             ha="center", fontsize=10)
+    fig.subplots_adjust(left=.067, right=.985, bottom=.24, top=.79, wspace=.4)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

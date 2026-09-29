@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>stable-matching-deferred-acceptance-trace.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="stable-matching-deferred-acceptance-trace.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/stable-matching-deferred-acceptance-trace.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">stable-matching-deferred-acceptance-trace.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/stable-matching-deferred-acceptance-trace.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/stable-matching-deferred-acceptance-trace.py">stable-matching-deferred-acceptance-trace.py</a></b></div></nav></div><div class="p"><b>stable-matching-deferred-acceptance-trace.py</b></div><div class="code"><div><pre><code>"""Draw an original deferred-acceptance example; Python 3.14, matplotlib 3.10.7.
+
+Run from _media: MPLBACKEND=Agg python ../stable-matching-deferred-acceptance-trace.py
+"""
+from collections import deque
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyBboxPatch
+
+LEFT = {"A": "XYZ", "B": "XYZ", "C": "YZX"}
+RIGHT = {"X": "CAB", "Y": "ABC", "Z": "ABC"}
+
+
+def proposal_trace():
+    """Compute proposals; the fourth replaces a tentative held partner."""
+    free = deque(LEFT)
+    next_choice = dict.fromkeys(LEFT, 0)
+    held = {}
+    rows = []
+    proposed = set()
+    while free:
+        proposer = free.popleft()
+        receiver = LEFT[proposer][next_choice[proposer]]
+        next_choice[proposer] += 1
+        assert (proposer, receiver) not in proposed
+        proposed.add((proposer, receiver))
+        previous = held.get(receiver)
+        if previous is None:
+            held[receiver] = proposer
+            decision = f"{receiver} holds {proposer}"
+        elif RIGHT[receiver].index(proposer) &lt; RIGHT[receiver].index(previous):
+            held[receiver] = proposer
+            free.append(previous)
+            decision = f"{receiver} replaces {previous} by {proposer}; {previous} is free"
+        else:
+            free.append(proposer)
+            decision = f"{receiver} keeps {previous}; rejects {proposer}"
+        pairs = ",  ".join(f"{held[r]}–{r}" for r in RIGHT if r in held)
+        rows.append((f"{proposer} → {receiver}", decision, pairs))
+    assert held == {"X": "A", "Y": "B", "Z": "C"}
+    assert len(rows) == 5
+    return rows
+
+
+def main():
+    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 12})
+    fig, ax = plt.subplots(figsize=(11.2, 6.5), dpi=120, facecolor="white")
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    ax.axis("off")
+    ax.text(.03, .96, "Deferred acceptance: a held proposal can be replaced", fontsize=19,
+            weight="bold", va="top", color="#172f44")
+    ax.text(.03, .875, "Left proposes • best → worst", color="#176494", weight="bold")
+    ax.text(.55, .875, "Right receives • best → worst", color="#176494", weight="bold")
+    for i, (left, right) in enumerate(zip(LEFT, RIGHT)):
+        y = .825 - .045 * i
+        ax.text(.03, y, left + ": " + " &gt; ".join(LEFT[left]), fontsize=13)
+        ax.text(.55, y, right + ": " + " &gt; ".join(RIGHT[right]), fontsize=13)
+    ax.text(.03, .66, "Start with free queue A, B, C; append rejected proposers at the end.", fontsize=12)
+    columns = (.035, .11, .275, .77)
+    for x, label in zip(columns, ("Step", "Proposal", "Receiver's decision", "Held pairs after step")):
+        ax.text(x, .597, label, fontsize=11, weight="bold", va="center", color="#263d4f")
+    for i, row in enumerate(proposal_trace(), 1):
+        y = .53 - (i - 1) * .085
+        bg = "#fff0da" if i == 4 else ("#f0f5fa" if i % 2 else "#f8fafc")
+        ax.add_patch(FancyBboxPatch((.025, y - .035), .95, .069,
+                                   boxstyle="round,pad=0.008", facecolor=bg, edgecolor="none"))
+        for x, val in zip(columns, (str(i), *row)):
+            ax.text(x, y, val, fontsize=11.5, va="center",
+                    weight="bold" if i == 4 else "normal")
+    ax.text(.03, .083, "Final pairs: A–X, B–Y, C–Z", fontsize=15, weight="bold", color="#176494")
+    ax.text(.03, .032, "Each edge is proposed along at most once. A receiver always holds its best offer so far.", fontsize=11)
+    fig.subplots_adjust(left=.015, right=.985, bottom=.025, top=.98)
+    fig.savefig(Path(__file__).stem + ".png", facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

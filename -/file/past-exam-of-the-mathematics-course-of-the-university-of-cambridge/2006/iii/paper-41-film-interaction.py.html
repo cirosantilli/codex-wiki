@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-41-film-interaction.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-41-film-interaction.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-41-film-interaction.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-41-film-interaction.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-41-film-interaction.py"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../../-/dir">(root)</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge">past-exam-of-the-mathematics-course-of-the-university-of-cambridge</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006">2006</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii">iii</a> / <a href="../../../../../-/raw/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-41-film-interaction.py">paper-41-film-interaction.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-41-film-interaction.py</b></div><div class="code"><div><pre><code>"""Plot fitted film means and wash-cell means; write the PNG to the caller's cwd."""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    response = np.array([
+        3.3, 4.1, 4.9, 5.0, 3.4, 4.0, 4.2, 4.9,
+        19.6, 17.5, 17.6, 20.9, 14.5, 17.0, 15.2, 17.1,
+        5.5, 5.7, 5.6, 7.2, 3.7, 6.1, 5.7, 6.0,
+        26.6, 31.6, 30.5, 31.4, 29.5, 30.2, 30.2, 29.6,
+    ]).reshape(2, 2, 2, 4)
+    fitted_means = response.mean(axis=(2, 3))
+    residuals = response - fitted_means[:, :, None, None]
+    standard_error = np.sqrt(np.sum(residuals**2) / 28 / 8)
+    cell_means = response.mean(axis=2)
+    wash_minutes = np.array([20, 30, 40, 60])
+    fig, (interaction, wash) = plt.subplots(
+        1, 2, figsize=(8.8, 4.4), dpi=120, sharey=True, facecolor="white"
+    )
+    colors = ["#3572b0", "#d27817"]
+    for thickness, name in enumerate(["Thin film", "Thick film"]):
+        interaction.errorbar(
+            [0, 1], fitted_means[thickness], yerr=standard_error,
+            color=colors[thickness], marker="o", linewidth=2, capsize=4,
+            label=name,
+        )
+        for temperature, temperature_name in enumerate(["low", "high"]):
+            wash.plot(
+                wash_minutes, cell_means[thickness, temperature],
+                color=colors[thickness],
+                linestyle="--" if temperature == 0 else "-",
+                marker="o", linewidth=1.6,
+                label=f"{name}, {temperature_name} temperature",
+            )
+    interaction.set(
+        xticks=[0, 1], xticklabels=["Low", "High"],
+        xlim=(-0.12, 1.12), ylim=(0, 35), xlabel="Wash temperature",
+        ylabel="Lustre", title="Fitted means and ±1 standard error",
+    )
+    wash.set(
+        xticks=wash_minutes, xlim=(17, 63), xlabel="Wash duration (minutes)",
+        title="Means of the two replicates in each cell",
+    )
+    interaction.legend(frameon=False, fontsize=9, loc="upper left")
+    wash.legend(frameon=False, fontsize=8, loc="center", bbox_to_anchor=(0.52, 0.32))
+    for ax in [interaction, wash]:
+        ax.grid(alpha=0.2)
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.suptitle("Plastic-film lustre: strong temperature–thickness interaction", fontsize=12)
+    fig.text(
+        0.5, 0.025,
+        "Reduced model: eight observations per fitted mean; its pooled residual variance gives SE = 0.50488.",
+        ha="center", fontsize=8.8, color="#354254",
+    )
+    fig.tight_layout(rect=(0, 0.06, 1, 0.93))
+    fig.savefig(Path(__file__).with_suffix(".png").name, facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

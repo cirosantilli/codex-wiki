@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>euler-characteristic-triangle-subdivision.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="euler-characteristic-triangle-subdivision.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/euler-characteristic-triangle-subdivision.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">euler-characteristic-triangle-subdivision.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/euler-characteristic-triangle-subdivision.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/euler-characteristic-triangle-subdivision.py">euler-characteristic-triangle-subdivision.py</a></b></div></nav></div><div class="p"><b>euler-characteristic-triangle-subdivision.py</b></div><div class="code"><div><pre><code>"""Draw a disk subdivision and its boundary; run from _media to save the PNG.
+
+Tested with Python 3.14, matplotlib 3.10.7 and numpy 2.3.5.
+"""
+from itertools import combinations
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.collections import PolyCollection
+
+
+def simplicial_counts(faces):
+    """Count distinct nonempty faces, including all lower-dimensional faces."""
+    cells = [set() for _ in range(max(map(len, faces)))]
+    for face in faces:
+        for size in range(1, len(face) + 1):
+            cells[size - 1].update(combinations(sorted(face), size))
+    return tuple(map(len, cells)), cells
+
+
+def main():
+    points = np.array([[0, 0], [2, 0], [1, np.sqrt(3)],
+                       [1, 0], [1.5, np.sqrt(3) / 2],
+                       [0.5, np.sqrt(3) / 2]])
+    examples = [
+        ("Filled triangle", [(0, 1, 2)], (3, 3, 1)),
+        ("Midpoint subdivision", [(0, 3, 5), (3, 1, 4),
+                                  (5, 4, 2), (3, 4, 5)], (6, 9, 4)),
+        ("Boundary only", [(0, 1), (1, 2), (0, 2)], (3, 3)),
+    ]
+    plt.rcParams.update({"font.size": 12, "figure.facecolor": "white"})
+    fig, axes = plt.subplots(1, 3, figsize=(10.8, 4.2))
+    for ax, (title, faces, expected) in zip(axes, examples):
+        counts, cells = simplicial_counts(faces)
+        assert counts == expected
+        if len(cells) == 3:
+            ax.add_collection(PolyCollection([points[list(f)] for f in sorted(cells[2])],
+                              facecolors=["#d8ebf6", "#c2dded", "#e6f2f8", "#accfde"],
+                              edgecolors="none"))
+        for edge in sorted(cells[1]):
+            ax.plot(*points[list(edge)].T, color="#254b63", linewidth=2)
+        vertices = [v[0] for v in sorted(cells[0])]
+        ax.scatter(*points[vertices].T, s=50, color="#254b63", zorder=4)
+        chi = sum((-1) ** i * c for i, c in enumerate(counts))
+        v, e = counts[:2]
+        f = counts[2] if len(counts) &gt; 2 else 0
+        ax.text(1, -0.37, f"V = {v}     E = {e}     F = {f}", ha="center")
+        ax.text(1, -0.65, rf"$\chi={v}-{e}+{f}={chi}$", ha="center", fontsize=15)
+        ax.set(title=title, xlim=(-0.2, 2.2), ylim=(-0.85, 2.05), aspect="equal")
+        ax.axis("off")
+    fig.suptitle("A finer mesh preserves the disk's Euler characteristic", fontsize=16)
+    fig.subplots_adjust(left=0.02, right=0.98, bottom=0.02, top=0.81, wspace=0.15)
+    fig.savefig(Path(__file__).stem + ".png", dpi=100, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

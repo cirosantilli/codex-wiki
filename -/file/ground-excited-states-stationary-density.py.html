@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>ground-excited-states-stationary-density.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="ground-excited-states-stationary-density.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/ground-excited-states-stationary-density.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">ground-excited-states-stationary-density.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/ground-excited-states-stationary-density.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/ground-excited-states-stationary-density.py">ground-excited-states-stationary-density.py</a></b></div></nav></div><div class="p"><b>ground-excited-states-stationary-density.py</b></div><div class="code"><div><pre><code>"""Exact infinite-well densities; not measured data.
+
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+Run from _media with MPLCONFIGDIR=/tmp/codex-wiki-matplotlib.
+Writes the matching PNG basename to the current working directory.
+"""
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "figure.facecolor": "white",
+                         "axes.facecolor": "white", "axes.spines.top": False,
+                         "axes.spines.right": False})
+    u = np.linspace(0, 1, 2001)
+    phi1, phi2 = np.sqrt(2) * np.sin(np.pi * u), np.sqrt(2) * np.sin(2 * np.pi * u)
+    theta = [0, np.pi / 2, np.pi]
+    colors = ["#245b92", "#17775b", "#ac4c10"]
+    labels = [r"$\theta=0$", r"$\theta=\pi/2$", r"$\theta=\pi$"]
+    styles = ["-", "--", ":"]
+    fig, axes = plt.subplots(1, 2, figsize=(10.8, 5.6), sharey=True)
+    for phase, color, label, style in zip(theta, colors, labels, styles):
+        pure = np.abs(phi2 * np.exp(-4j * phase / 3)) ** 2
+        coherent = np.abs((phi1 + np.exp(-1j * phase) * phi2) / np.sqrt(2)) ** 2
+        analytic = np.sin(np.pi * u) ** 2 + np.sin(2 * np.pi * u) ** 2
+        analytic += 2 * np.sin(np.pi * u) * np.sin(2 * np.pi * u) * np.cos(phase)
+        assert np.allclose(coherent, analytic)
+        assert np.isclose(np.trapezoid(pure, u), 1)
+        assert np.isclose(np.trapezoid(coherent, u), 1)
+        assert np.all(coherent &gt;= 0)
+        axes[0].plot(u, pure, color=color, ls=style, lw=3, label=label)
+        axes[1].plot(u, coherent, color=color, lw=2.7, label=label)
+    mixed = (phi1 ** 2 + phi2 ** 2) / 2
+    axes[1].plot(u, mixed, color="#353535", lw=1.6, ls="--", zorder=5,
+                 label="Incoherent mixture")
+    axes[0].set_title(r"One excited eigenstate: $\phi_2$", pad=13)
+    axes[1].set_title(r"Two energies: $(\phi_1+\phi_2)/\sqrt{2}$ initially", pad=13)
+    for ax in axes:
+        ax.set(xlim=(0, 1), ylim=(0, 4.2), xlabel=r"Position $u=x/L$")
+        ax.set_xticks([0, 0.25, 0.5, 0.75, 1])
+        ax.grid(alpha=0.17)
+        ax.legend(frameon=False, loc="upper right", fontsize=10,
+                  ncol=2 if ax is axes[1] else 1, columnspacing=1.0)
+    axes[0].set_ylabel(r"Dimensionless density $L|\psi(x,t)|^2$")
+    axes[0].text(0.03, 3.90, "All three densities coincide\nEnergy outcome: E₂ with certainty",
+                 va="top", fontsize=11)
+    axes[1].text(0.03, 4.00, "Fixed probabilities:\n½ at E₁, ½ at E₂", va="top", fontsize=11)
+    fig.suptitle("Stationary energy populations can coexist with changing position probabilities",
+                 y=0.975, fontsize=14)
+    fig.text(0.5, 0.083, r"$\theta=(E_2-E_1)t/\hbar=3E_1t/\hbar$ • "
+             "the mixture and θ = π/2 densities coincide", ha="center", fontsize=11)
+    fig.text(0.5, 0.035, "Exact analytic infinite-well model • each density integrates to one • not measured data",
+             ha="center", fontsize=11)
+    fig.subplots_adjust(left=0.08, right=0.98, top=0.80, bottom=0.23, wspace=0.19)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=100,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

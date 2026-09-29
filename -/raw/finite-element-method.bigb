@@ -1,0 +1,339 @@
+= Finite element method
+{wiki}
+
+= FEM
+{c}
+{synonym}
+
+The <finite element method> replaces an infinite-dimensional <weak formulation> by finitely many unknowns attached to a <finite element mesh>. Simple local functions, often <piecewise polynomial functions>, join to form a global approximation. The attraction is that each <finite element> can be integrated separately, while the assembled equations enforce a global balance. A <piecewise-linear hat function> only meets its immediate neighbors, so a large problem can have a <sparse matrix> rather than a dense one. Gilbert Strang's MIT lecture develops this connection from the one-dimensional <weak formulation> through local hats to the <stiffness matrix> and load integrals.https://ocw.mit.edu/courses/18-085-computational-science-and-engineering-i-fall-2008/676ba0a00eef45a6cb3823c4da61ee11_18-085F08-L18.pdf[Gilbert Strang, MIT 18.085, Lecture 18: Finite Elements in 1D, transcript pp. 2–8, 2008; accessed 2026-10-11]{ref}
+
+For the conforming <Galerkin method>, let $V$ be a real <Hilbert space>, $a$ a bounded <coercive bilinear form>, and $\ell$ a bounded <linear functional>. Given a <conforming finite element space> $V_h\subset V$, the continuous and discrete problems are
+$$
+\begin{aligned}
+u\in V:&\quad a(u,v)=\ell(v)&&\text{for every }v\in V,\\
+u_h\in V_h:&\quad a(u_h,v_h)=\ell(v_h)&&\text{for every }v_h\in V_h.
+\end{aligned}
+$$
+Writing $u_h=\sum_j c_j\phi_j$ in a <basis> of $V_h$ gives the <linear system>
+$$
+Kc=F,\qquad K_{ij}=a(\phi_j,\phi_i),\qquad F_i=\ell(\phi_i).
+$$
+Here $K$ is the <stiffness matrix> and $F$ is the vector of loads tested against the <basis> functions. The <Galerkin method> uses the same trial and test space in this construction. Finite element methods also use the <Petrov-Galerkin method>, with different trial and test spaces; testing against the trial space is therefore a property of this construction, rather than a definition of every <finite element method>.
+
+The <finite element solution of the one-dimensional Poisson equation> below gives every entry explicitly. Refining the <finite element mesh> then improves the approximation by adding local degrees of freedom. For a symmetric <coercive bilinear form>, <Galerkin orthogonality> makes the discrete solution the best approximation in the <energy norm>; the geometry of <orthogonal projection> explains why this local construction yields a globally meaningful answer.
+
+= Finite element solution of the one-dimensional Poisson equation
+{parent=Finite element method}
+{title2=$-u''=1$, $u(0)=u(1)=0$}
+
+Consider the <Poisson equation> on an <interval> with homogeneous <Dirichlet boundary conditions>:
+$$
+-u''(x)=1\quad(0<x<1),\qquad u(0)=u(1)=0.
+$$
+Two <integrations> and the endpoint conditions give the exact solution $u(x)=x(1-x)/2$. To approximate it, multiply by a <test function> $v$ that vanishes at both endpoints. <Integration by parts> gives
+$$
+\int_0^1(-u'')v\,dx
+=\bigl[-u'v\bigr]_0^1+\int_0^1u'v'\,dx
+=\int_0^1v\,dx.
+$$
+The boundary term is zero. Thus the <weak formulation> is to find $u\in V=H_0^1(0,1)$ such that
+$$
+a(u,v):=\int_0^1u'v'\,dx=\ell(v):=\int_0^1v\,dx\qquad(v\in V).
+$$
+The <zero-trace Sobolev space> $H_0^1(0,1)$ consists of square-integrable functions with square-integrable <weak derivatives> and zero endpoint values in their continuous representatives; it does not require a classical second derivative. This is why continuous <piecewise linear functions> are admissible despite corners. The <Poincaré inequality> makes $a$ a <coercive bilinear form> on $V$. Strang derives this one-dimensional <weak formulation>, the <piecewise-linear hat functions>, and their load and derivative-product integrals in the cited lecture; its endpoint example uses a free left endpoint, while both endpoints here are fixed.https://ocw.mit.edu/courses/18-085-computational-science-and-engineering-i-fall-2008/676ba0a00eef45a6cb3823c4da61ee11_18-085F08-L18.pdf[Strang, MIT 18.085, Lecture 18, transcript pp. 2–8: weak form, hat basis, and assembly]{ref}
+
+Take the uniform <finite element mesh> $x_j=jh$, $j=0,\ldots,n$, with $h=1/n$. The continuous $P_1$ trial space is
+$$
+V_h=\{v_h\in C([0,1]):v_h(0)=v_h(1)=0,\quad v_h|_{[x_j,x_{j+1}]}\text{ is affine for every }j\}.
+$$
+Here $P_1$ means <polynomials> of degree at most one on each <interval>. This is a <conforming finite element space> in $V$, with $n-1$ interior <piecewise-linear hat functions> $\phi_i$ as a <basis>. Their endpoint values enforce the <Dirichlet boundary conditions> automatically. Set $u_h=\sum_{i=1}^{n-1}c_i\phi_i$ and test the <weak formulation> against each $\phi_i$:
+$$
+K_{ij}=\int_0^1\phi_j'\phi_i'\,dx,\qquad
+F_i=\int_0^1\phi_i\,dx=h,\qquad Kc=F.
+$$
+Each interior hat has two slopes $1/h$ and $-1/h$, each over a length $h$. Its squared derivative therefore integrates to $2/h$. Adjacent hats have opposite slopes on their one shared <interval>, giving $-1/h$. All other derivative products vanish. The <stiffness matrix> is the <tridiagonal matrix>
+$$
+K_{ii}=\frac2h,\qquad K_{i,i+1}=K_{i+1,i}=-\frac1h,\qquad K_{ij}=0\quad(|i-j|>1).
+$$
+The load $F_i=h$ is the area of a triangle of base $2h$ and height one, including hats next to the boundary. Boundary hats are omitted because the boundary values are prescribed. The <piecewise-linear hat function> article explains how the same entries arise by adding local two-node contributions.
+
+With four <mesh> intervals, $h=1/4$, there are three unknowns:
+$$
+K=\begin{pmatrix}8&-4&0\\-4&8&-4\\0&-4&8\end{pmatrix},\qquad
+F=\begin{pmatrix}1/4\\1/4\\1/4\end{pmatrix},\qquad
+c=\begin{pmatrix}3/32\\1/8\\3/32\end{pmatrix}.
+$$
+For example, the first row gives $8(3/32)-4(1/8)=1/4$ and the middle gives $-4(3/32)+8(1/8)-4(3/32)=1/4$. The <coefficients> are the nodal values $u_h(x_i)=c_i$. At $x=3/8$, <linear interpolation> gives $u_h(3/8)=7/64=0.109375$, whereas $u(3/8)=15/128=0.1171875$: exactness at the nodes still leaves a visible error between them.
+
+In this model the <Galerkin method> solution equals the nodal approximation $I_hu$ obtained by <linear interpolation> on any <finite element mesh>. Indeed, on each <interval> $[a,b]$, $(I_hu)'$ is the average of $u'$ and $v_h'$ is constant. Therefore $\int_a^b(u'-(I_hu)')v_h'\,dx=0$. Summing proves <Galerkin orthogonality> for $I_hu$, and uniqueness gives $u_h=I_hu$. This argument relies on the constant diffusion coefficient, conformity and exact integration; nodal exactness is not a general promise for <finite element methods> with other operators or integration rules.
+
+On a uniform <mesh>, direct subtraction of the chord from the <parabola> gives, on every element $[a,b]$ of length $h$,
+$$
+e(x):=u(x)-u_h(x)=\frac{(x-a)(b-x)}2,\qquad
+e'(x)=\frac{a+b}2-x.
+$$
+The largest value error is at an element midpoint. Its size and the <energy norm> error are exactly
+$$
+\|e\|_{\infty}=\frac{h^2}{8},\qquad
+\|e\|_a^2=\int_0^1|e'|^2\,dx
+=n\int_{-h/2}^{h/2}t^2\,dt=\frac{h^2}{12},\qquad
+\|e\|_a=\frac{h}{\sqrt{12}}.
+$$
+Thus $h=1/4$ gives $\|e\|_\infty=1/128=0.0078125$ and $\|e\|_a=1/(4\sqrt{12})\approx0.0721688$. With eight elements, $h=1/8$, these become $1/512=0.001953125$ and $1/(8\sqrt{12})\approx0.0360844$. Halving the <mesh> spacing quarters the maximum value error but only halves the <energy norm> error: values and slopes converge at different rates. The figure shows the small value error at its own scale, where the four-to-one reduction becomes clear.
+
+\Image[finite-element-poisson-refinement.png]
+{title=Exact Poisson parabola and continuous piecewise-linear finite element solutions on four and eight intervals, with midpoint errors shown separately}
+
+= Semidiscrete finite element heat equation
+{parent=Finite element method}
+{title2=$M\dot c+Sc=F$}
+
+The spatial <Galerkin method> for the <heat equation> gives a <mass matrix> $M$ and a diffusion <stiffness matrix> $S$. With zero forcing, $\frac{d}{dt}(c^TMc)=-2c^TSc\leq0$. The <quadratic form> $c^TMc$ is the squared <L2 norm> of the represented finite-element function, proving an energy contraction. For nonzero forcing, the corresponding identity has the additional term $2c^TF$, which can be estimated using the <Cauchy-Schwarz inequality>.
+
+= Forward Euler limit for a consistent hat mass matrix
+{parent=Semidiscrete finite element heat equation}
+{title2=$0\leq\mu\leq\frac16\quad\text{uniformly over refinements}$}
+
+For a uniform piecewise-linear Galerkin heat discretization, the consistent <mass matrix> is $M=(h/6)\operatorname{tridiag}(1,4,1)$ and the <stiffness matrix> is $K=h^{-1}\operatorname{tridiag}(-1,2,-1)$. The generalized <eigenvalues> are $6(1-\cos\theta)/[h^2(2+\cos\theta)]$. Applying <forward Euler method> requires $k\lambda\leq2$, giving the displayed uniform bound for $\mu=k/h^2$. For $J$ intervals with Dirichlet endpoints the exact finite-grid upper bound is $(2-\cos(\pi/J))/[3(1+\cos(\pi/J))]$, which approaches $1/6$. Replacing the consistent <mass matrix> by a lumped one changes the <stability> restriction.
+
+= Finite element
+{parent=Finite element method}
+
+A finite element specifies a reference region, a finite-dimensional space of local trial functions, and degrees of freedom that uniquely determine each such function. Assembling compatible copies over a <finite element mesh> gives a global trial space. For a one-dimensional linear element, the region is an interval, the functions are <affine functions>, and the degrees of freedom are the endpoint values.
+
+= Conforming finite element space
+{parent=Finite element method}
+{title2=$V_h\subseteq V$}
+
+A conforming finite element space is a finite-dimensional <vector subspace> of the solution's variational space $V$. For a second-order problem with homogeneous <Dirichlet boundary conditions>, continuous piecewise-polynomial functions vanishing on the boundary form such a subspace of the <zero-boundary Sobolev space> $H_0^1(\Omega)$. Conformity allows exact <Galerkin orthogonality> and the <Céa lemma>.
+
+= Finite element mesh
+{parent=Finite element method}
+{title2=$\mathcal T_h$, $h=\max_j(x_{j+1}-x_j)$}
+
+= Mesh
+{synonym}
+
+A <finite element mesh> partitions a domain into simple regions called elements, such as <intervals>, <triangles> or <tetrahedra>. In a conforming partition, distinct element interiors are disjoint, their closures cover the domain closure, and any nonempty intersection is a common face, edge or vertex of both elements. Chen's author notes give this compatibility condition for simplicial <meshes>.https://webapps.math.uci.edu/~chenlong/226/Ch2FEM.pdf[Long Chen, Introduction to Finite Element Methods, §2.1, pp. 3–4; updated January 17, 2024]{ref} Local <piecewise polynomial functions> and local <integrals> are defined on these regions; compatible degrees of freedom join them into a global <conforming finite element space>. The assembled <stiffness matrix> and <mass matrix> then inherit the local overlap pattern.
+
+For the <finite element solution of the one-dimensional Poisson equation>, a <mesh> is simply an ordered list
+$$
+0=x_0<x_1<\cdots<x_n=1,\qquad
+\mathcal T_h=\{[x_j,x_{j+1}]:0\leq j<n\},\qquad
+h=\max_{0\leq j<n}(x_{j+1}-x_j).
+$$
+Nodes are the endpoints; elements are the intervening <intervals>. Four equal elements have five nodes but only three unknown nodal values after imposing the zero <Dirichlet boundary conditions>. A nonuniform partition such as $0,1/8,1/4,1/2,1$ has element lengths $1/8,1/8,1/4,1/2$ and $h=1/2$, so counting elements alone does not measure the largest unresolved scale.
+
+Refining a <finite element mesh> replaces some or all elements by smaller ones. For continuous <piecewise linear functions> in one dimension, retaining all old nodes gives nested <conforming finite element spaces> $V_h\subset V_{h/2}$ when every <interval> is bisected. The old approximation remains available, and the new interior nodes allow additional changes of slope. With a symmetric <coercive bilinear form> and exact integration, best approximation from <Galerkin orthogonality> means that the <energy norm> error cannot increase under such nested refinement.
+
+For the <finite element solution of the one-dimensional Poisson equation>, uniform refinement from four to eight elements increases the unknown count from three to seven. The exact formulas give maximum errors $0.0078125$ and $0.001953125$, and <energy norm> errors approximately $0.0721688$ and $0.0360844$. Refinement near a region of strong curvature can spend unknowns where the <linear interpolation> error matters most; convergence in a general problem still needs approximation and regularity assumptions such as those in the <finite element interpolation estimate>.
+
+= Shape-regular mesh
+{parent=Finite element mesh}
+
+= Shape regularity
+{synonym}
+
+A family of simplicial meshes is shape-regular when the ratio of each element's diameter to its inscribed-ball radius stays uniformly bounded. This excludes degenerating shapes and makes <finite element interpolation estimates> uniform in the mesh size. The element sizes may still vary substantially across the domain.
+
+= Finite element interpolation estimate
+{parent=Finite element method}
+
+On a <shape-regular mesh> in dimensions at most three, nodal piecewise-linear interpolation of $u\in H^2(\Omega)$ satisfies
+$$
+\|u-I_hu\|_{L^2(\Omega)}+h\|u-I_hu\|_{H^1(\Omega)}
+\leq Ch^2\|u\|_{H^2(\Omega)},
+$$
+where $h$ is the largest element diameter and $C$ is independent of $h$. For homogeneous <Dirichlet boundary conditions>, $I_hu$ belongs to the <conforming finite element space>. Scaling each element to a reference element gives the estimate; <shape regularity> bounds the scaling constants, while subtraction of an <affine function> leaves an error controlled by the second derivatives.
+
+= Mass matrix
+{parent=Finite element method}
+{title2=$M_{ij}=\int_\Omega\phi_i\phi_j$}
+
+The mass matrix is the <Gram matrix> of a <finite element> basis in the <L2 inner product>. Its coefficient <quadratic form> is the squared <L2 norm> of the represented trial function, so it is a <positive-definite matrix> for a linearly independent basis.
+
+= Mass eigenstate
+{parent=Mass matrix}
+{title2=$M|n\rangle=m_n|n\rangle$}
+
+A <mass eigenstate> diagonalizes the Hermitian <mass> operator or <mass matrix> and has a definite <mass>. In a flavor basis with off-diagonal <mass> terms, it is a linear combination of flavor states. For unstable particles, decay propagation instead involves an effective complex matrix; its <eigenvectors> need not inherit the orthogonality of a Hermitian <mass> problem.
+
+= Affine-weighted hat mass matrix
+{parent=Mass matrix}
+{title2=$W_{ij}=\int w(x)\phi_i(x)\phi_j(x)\,dx$}
+
+On a one-dimensional uniform <finite element mesh> of spacing $h$, let $w$ be an <affine function> and $\phi_i$ the interior <piecewise-linear hat functions>. The weighted <mass matrix> has entries
+$$
+W_{ii}=\frac{2h}{3}w(x_i),\qquad
+W_{i,i+1}=W_{i+1,i}=\frac h{12}\bigl(w(x_i)+w(x_{i+1})\bigr),
+$$
+and zero entries for nonadjacent indices. The diagonal product $\phi_i^2$ is symmetric about $x_i$ and integrates to $2h/3$; the neighbouring product is symmetric about $(x_i+x_{i+1})/2$ and integrates to $h/6$. The odd part of an <affine function> integrates to zero around each centre, giving the formulas. This evaluates a variable reaction term exactly without substituting a constant coefficient or a quadrature approximation.
+
+= Stiffness matrix
+{parent=Finite element method}
+{title2=$K_{ij}=a(\phi_j,\phi_i)$}
+
+The stiffness matrix represents a variational <bilinear form> $a$ in a <finite element> basis. A symmetric <coercive bilinear form> gives a <positive-definite matrix>. Local support of the <piecewise-linear hat functions> produces a sparse <matrix>, allowing efficient numerical solution.
+
+= Reaction-diffusion finite element matrix
+{parent=Stiffness matrix}
+{title2=$K=S+M$}
+
+For $-u''+u=f$ with homogeneous <Dirichlet boundary conditions>, the conforming <piecewise-linear hat functions> on a uniform grid give a diffusion <stiffness matrix> $S$ and a <mass matrix> $M$. Their nonzero entries are $S_{ii}=2/h$, $S_{i,i+1}=-1/h$, $M_{ii}=2h/3$, and $M_{i,i+1}=h/6$, with symmetric counterparts. The sum is a <positive-definite matrix> because its coefficient <quadratic form> is $\int((u_h')^2+u_h^2)$. For forcing $f(x)=x$, the load at $x_i$ is $hx_i$.
+
+= Energy conservation for semidiscrete Galerkin advection
+{parent=Finite element method}
+
+For periodic $u_t=u_x$, the conforming <Galerkin method> has $M\dot U=CU$, with <mass matrix> $M_{ij}=\int\phi_i\phi_j$ and $C_{ij}=\int\phi_i\phi_j'$. <Integration by parts> and periodicity give $C^T=-C$. Therefore
+$$
+\frac{d}{dt}(U^TMU)=2U^TCU=0.
+$$
+The conserved quantity is the squared <L2 norm> of the <finite element> function. On a uniform one-dimensional mesh of spacing $h$, the <piecewise-linear hat functions> give $M_{ii}=2h/3$, $M_{i,i\pm1}=h/6$, $C_{i,i+1}=1/2$ and $C_{i,i-1}=-1/2$.
+
+= Cubic Hermite finite element
+{c}
+{parent=Finite element method}
+
+A cubic Hermite finite element is piecewise cubic and joins with continuous first derivative. It is therefore conforming for fourth-order variational problems whose energy space lies in $H^2$.
+
+= Rayleigh-Ritz method
+{c}
+{parent=Finite element method}
+{wiki=Rayleigh–Ritz_method}
+
+= Ritz method
+{c}
+{synonym}
+
+The Ritz method minimizes a quadratic energy over a finite-dimensional trial space. For basis functions $\phi_j$ and bilinear form $a$, its linear system is $Ka=F$ with $K_{jk}=a(\phi_k,\phi_j)$ and $F_j=\langle f,\phi_j\rangle$.
+
+= Trial function
+{parent=Rayleigh-Ritz method}
+
+A trial function is a chosen candidate used to approximate a solution or evaluate a <variational principle>. For an <eigenvalue> upper bound from a <Rayleigh quotient>, it must be nonzero, have finite numerator and denominator, and lie in the appropriate variational domain. In a <Dirichlet problem> it satisfies the fixed endpoint values. Natural boundary conditions need not always be imposed on a trial in the quadratic-form domain, but a candidate violating an essential <boundary condition> does not give the stated bound.
+
+= Affine-parameter Sturm-Liouville eigenvalue bound
+{parent=Rayleigh-Ritz method}
+{title2=$\lambda_{\min}(\epsilon)\leq\lambda_{\min}(0)+\epsilon\langle U_0,L_1U_0\rangle$}
+
+For a self-adjoint <Sturm-Liouville operator> $L_\epsilon=L_0+\epsilon L_1$ with common boundary conditions and an $L^2$-normalized lowest <eigenfunction> $U_0$ of $L_0$, evaluating the <Rayleigh quotient> on $U_0$ gives the displayed upper bound. More generally the lowest eigenvalue is the infimum of affine functions of $\epsilon$, so it is concave in that parameter. The trial state must satisfy the boundary requirements of the variational domain; changing the operator without changing the trial function's normalization can still be legitimate when the weight is fixed.
+
+= Exponential-polynomial trial space for a mixed Sturm-Liouville problem
+{parent=Rayleigh-Ritz method}
+{title2=$y_n(x)=x^ne^{-nx},\quad y_n(0)=y_n'(1)=0$}
+
+For $-(p y')'=\lambda w y$ on $[0,1]$ with $p=(1+x)e^{2x}$, $w=e^{2x}$, $y(0)=0$ and $y'(1)=0$, the <Rayleigh quotient> is $\int p y'^2/\int w y^2$. The trial $y_1=xe^{-x}$ gives numerator $5/12$ and denominator $1/3$, hence $0<\lambda_{\min}\leq5/4$. Every displayed $y_n$ obeys the same mixed <boundary conditions>; so does $\sin[(m+1/2)\pi x]$. Adding any of these to the trial space cannot worsen the optimized upper bound. Matrix elements $A_{ij}=\int p y_i'y_j'$ and $M_{ij}=\int w y_iy_j$ give a finite-dimensional <generalized eigenvalue problem> $Av=\lambda Mv$. The case $n=1$ repeats the original trial and adds no variational freedom.
+
+= Ritz-Galerkin equivalence for a symmetric coercive form
+{c}
+{parent=Rayleigh-Ritz method}
+{title2=$J(v)-J(u)=\tfrac12a(v-u,v-u)$}
+
+For a bounded symmetric <coercive bilinear form> on a Hilbert space, a solution of $a(u,w)=\ell(w)$ minimizes $J(v)=a(v,v)/2-\ell(v)$. The displayed identity proves strict minimality and uniqueness. Restricting to a <conforming finite element space> makes the discrete <Ritz method> equivalent to the <Galerkin method>. <Galerkin orthogonality> gives exact best approximation in the <energy norm>; the <Céa lemma> translates it into a reference-norm estimate.
+
+= Symmetry and coercivity in quadratic energy minimization
+{parent=Ritz-Galerkin equivalence for a symmetric coercive form}
+{title2=$I(v)=a(v,v)-2\ell(v)$}
+
+A continuous symmetric <coercive bilinear form> $a$ on a real <Hilbert space> and a continuous <linear functional> $\ell$ give a unique minimum of $I$. The parallelogram identity makes any minimizing sequence Cauchy in the energy norm; coercivity and completeness give its limit. Differentiation gives $a(u,w)=\ell(w)$, and $I(v)-I(u)=a(v-u,v-u)$ proves uniqueness. A nonsymmetric operator instead differentiates to its symmetric part. Mere pointwise positivity without a lower bound in the chosen norm need not yield a minimizing vector.
+
+= Energy norm
+{parent=Rayleigh-Ritz method}
+
+A symmetric coercive bilinear form $a$ defines the energy norm $\|v\|_a=\sqrt{a(v,v)}$. In this norm the <Ritz method> is an orthogonal projection onto its finite-dimensional trial space.
+
+= Galerkin orthogonality
+{c}
+{parent=Finite element method}
+{title2=$a(u-u_h,v_h)=0$}
+
+Let $V_h\subset V$ be a <conforming finite element space>. Suppose the exact solution satisfies $a(u,v)=\ell(v)$ for every $v\in V$ and its <Galerkin method> approximation satisfies $a(u_h,v_h)=\ell(v_h)$ for every $v_h\in V_h$, using the same <bilinear form> and <linear functional>. Subtracting the two identities gives <Galerkin orthogonality>:
+$$
+a(u-u_h,v_h)=0\qquad(v_h\in V_h).
+$$
+This identity itself does not require symmetry. Its interpretation as an <orthogonal projection> in an <energy norm> does require a bounded symmetric <coercive bilinear form>: then $a$ is an <inner product>, $e=u-u_h$ is perpendicular to every available discrete correction, and
+$$
+\|u-v_h\|_a^2=\|u-u_h\|_a^2+\|u_h-v_h\|_a^2\qquad(v_h\in V_h).
+$$
+Consequently $u_h$ is the unique closest point in $V_h$ in the <energy norm>. This <Pythagorean theorem> in a function space explains the beauty of the <Galerkin method>: integrated local equations compute a global best approximation. The <Céa lemma> supplies the corresponding estimate in a chosen reference norm.
+
+For the <finite element solution of the one-dimensional Poisson equation>, $a(w,v)=\int_0^1w'v'\,dx$ and $\|w\|_a=\|w'\|_{L^2(0,1)}$. Testing the error against the $i$th <piecewise-linear hat function> on a uniform <mesh> gives
+$$
+\frac1h\int_{x_{i-1}}^{x_i}e'\,dx
+-\frac1h\int_{x_i}^{x_{i+1}}e'\,dx=0.
+$$
+In this model $e$ vanishes at every node, so each of these <integrals> is individually zero, although $e$ is positive inside every element. <Galerkin orthogonality> controls the derivative-weighted balance; it does not say that the pointwise error vanishes.
+
+The exact identity assumes conformity and exact evaluation of the continuous forms, including any <numerical integration> that is used. If assembly instead uses $a_h$ and $\ell_h$, subtraction gives the consistency defect
+$$
+a(u-u_h,v_h)=(\ell-\ell_h)(v_h)+(a_h-a)(u_h,v_h).
+$$
+Thus inexact <numerical integration> need not preserve the projection. In the <Petrov-Galerkin method> the error is tested against a different test space, and for a nonsymmetric <bilinear form> the displayed identity need not describe perpendicularity in any <energy norm>.
+
+= Céa's lemma
+{c}
+{parent=Galerkin orthogonality}
+{wiki}
+
+= Céa lemma
+{c}
+{synonym}
+
+For a continuous coercive bilinear form with continuity constant $M$ and coercivity constant $\alpha$, a conforming finite-element solution satisfies
+$$
+\|u-u_h\|_V\leq\frac M\alpha
+\inf_{v_h\in V_h}\|u-v_h\|_V.
+$$
+For a symmetric problem measured in its <energy norm>, the constant is one.
+
+For any $v_h\in V_h$, <Galerkin orthogonality> gives $a(e,e)=a(e,u-v_h)$, where $e=u-u_h$. Coercivity and continuity yield $\alpha\|e\|_V^2\leq M\|e\|_V\|u-v_h\|_V$. Divide by $\|e\|_V$ when it is nonzero and take the infimum. In the symmetric case, the <Cauchy-Schwarz inequality> in the <energy norm> gives the constant one.
+
+= Aubin–Nitsche duality argument
+{parent=Céa's lemma}
+{c}
+
+For a symmetric elliptic variational problem with <Galerkin orthogonality>, let $e=u-u_h$ and solve the dual problem $a(v,z)=(e,v)_{L^2}$ for every $v\in H_0^1(\Omega)$. If <elliptic regularity> gives $\|z\|_{H^2}\leq C\|e\|_{L^2}$, then a <finite element interpolation estimate> gives
+$$
+\|e\|_{L^2}^2=a(e,z-I_hz)
+\leq Ch\|e\|_{H^1}\|z\|_{H^2}
+\leq Ch\|e\|_{H^1}\|e\|_{L^2}.
+$$
+Thus $\|e\|_{L^2}\leq Ch\|e\|_{H^1}$. Combining this with the <Céa lemma> and an $O(h)$ <energy norm> error gives an $O(h^2)$ <L2 norm> error. The additional order depends on the dual regularity assumption, which can fail on unsuitable domains.
+
+= Piecewise-linear hat function
+{parent=Finite element method}
+{title2=$\phi_i(x_j)=\delta_{ij}$}
+
+= Hat function
+{synonym}
+
+= Chapeau function
+{synonym}
+
+A <piecewise-linear hat function> is a continuous <piecewise linear function> that selects one node of a <finite element mesh>: it is one there and zero at every other node. For an interior node $x_i$, its exact formula on a possibly nonuniform <mesh> is
+$$
+\phi_i(x)=\begin{cases}
+(x-x_{i-1})/(x_i-x_{i-1}),&x_{i-1}\leq x\leq x_i,\\
+(x_{i+1}-x)/(x_{i+1}-x_i),&x_i\leq x\leq x_{i+1},\\
+0,&\text{otherwise}.
+\end{cases}
+$$
+Its <support of a function> is $[x_{i-1},x_{i+1}]$. It rises on the left <interval> and falls on the right, producing its hat-shaped graph. The interior <hat functions> form a <basis> of the continuous $P_1$ <conforming finite element space> with homogeneous <Dirichlet boundary conditions>. Chen's author notes define this nodal <basis> and illustrate it in one and two dimensions.https://webapps.math.uci.edu/~chenlong/226/Ch2FEM.pdf[Chen, Introduction to Finite Element Methods, §3.1, pp. 5–6 and Figure 5: nodal hat basis]{ref} The nodal property $\phi_i(x_j)=\delta_{ij}$ makes the <coefficients> directly readable: if $v_h=\sum_i c_i\phi_i$, then $v_h(x_i)=c_i$. Unlike the global <Lagrange cardinal polynomials>, each of these functions is confined to two neighboring elements.
+
+For example, with $x_j=j/4$, the middle <hat function> is $\phi_2(x)=4x-1$ on $[1/4,1/2]$, $3-4x$ on $[1/2,3/4]$, and zero elsewhere. Hence $\phi_2(3/8)=1/2$, while $\phi_1(3/8)=1/2$ and $\phi_3(3/8)=0$. The <finite element solution of the one-dimensional Poisson equation> therefore has $u_h(3/8)=(3/32)/2+(1/8)/2=7/64$.
+
+Local assembly makes this locality computational. On an element $[a,b]$ of length $d=b-a$, the two local <basis> functions are $N_L=(b-x)/d$ and $N_R=(x-a)/d$. For the <Poisson equation> with unit forcing, their local <stiffness matrix> and load vector are
+$$
+K^{(e)}=\frac1d\begin{pmatrix}1&-1\\-1&1\end{pmatrix},\qquad
+F^{(e)}=\frac d2\begin{pmatrix}1\\1\end{pmatrix}.
+$$
+Add these four matrix entries and two loads to the rows and columns belonging to the element's endpoints, then impose the prescribed boundary values. An interior node receives contributions from its two neighboring elements. Writing $d_L=x_i-x_{i-1}$ and $d_R=x_{i+1}-x_i$ gives
+$$
+K_{ii}=\frac1{d_L}+\frac1{d_R},\qquad
+K_{i,i-1}=-\frac1{d_L},\qquad K_{i,i+1}=-\frac1{d_R},\qquad
+F_i=\frac{d_L+d_R}{2},
+$$
+with off-diagonal entries included only for interior neighbors. On a uniform <mesh> these reduce to $2/h$, $-1/h$ and $h$. Nonadjacent <hat functions> have no derivative overlap of positive length, so all distant entries vanish. This produces a <sparse matrix> with only three diagonals: the global coupling is built entirely from local two-node interactions.
+
+\Image[finite-element-hat-assembly.png]
+{title=Three interior hat functions on a four-interval mesh, with local stiffness and load contributions assembled into the three-unknown Poisson system}

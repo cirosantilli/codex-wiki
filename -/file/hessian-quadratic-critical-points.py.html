@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>hessian-quadratic-critical-points.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="hessian-quadratic-critical-points.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/hessian-quadratic-critical-points.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">hessian-quadratic-critical-points.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/hessian-quadratic-critical-points.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/hessian-quadratic-critical-points.py">hessian-quadratic-critical-points.py</a></b></div></nav></div><div class="p"><b>hessian-quadratic-critical-points.py</b></div><div class="code"><div><pre><code>"""Quadratic critical-point geometry; write PNG in the current directory."""
+
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    values = np.linspace(-1.5, 1.5, 301)
+    x, y = np.meshgrid(values, values)
+    q = x*x + 2*x*y + 3*y*y
+    hessian = np.array([[2., 2.], [2., 6.]])
+    eigenvalues, eigenvectors = np.linalg.eigh(hessian)
+    assert np.allclose(eigenvalues, [4-2*np.sqrt(2), 4+2*np.sqrt(2)])
+    assert np.allclose(q, (x+y)**2 + 2*y*y)
+    assert np.allclose(hessian @ eigenvectors, eigenvectors * eigenvalues)
+    samples = [
+        (q, r"$q=x^2+2xy+3y^2$", "Strict minimum", "Blues"),
+        (-q, r"$-q=-x^2-2xy-3y^2$", "Strict maximum", "Oranges_r"),
+        (x*x-y*y, r"$s=x^2-y^2$", "Saddle", "RdBu_r"),
+    ]
+    fig, axes = plt.subplots(1, 3, figsize=(12.7, 4.8), dpi=110)
+    fig.patch.set_facecolor("white")
+    for i, (ax, (z, formula, label, cmap)) in enumerate(zip(axes, samples)):
+        if i &lt; 2:
+            positive = np.array([.15, .35, .7, 1.4, 2.8, 5.6, 11.2])
+            levels = positive if i == 0 else -positive[::-1]
+            filled = np.linspace(0, 18, 25) if i == 0 else np.linspace(-18, 0, 25)
+        else:
+            levels = [-2, -1, -.5, 0, .5, 1, 2]
+            filled = np.linspace(-2.3, 2.3, 25)
+        ax.contourf(x, y, z, levels=filled, cmap=cmap, alpha=.6, extend="both")
+        contour = ax.contour(x, y, z, levels=levels, colors="#343434",
+                             linewidths=.75)
+        ax.clabel(contour, inline=True, fontsize=8, fmt="%g")
+        ax.plot(0, 0, "ko", ms=5)
+        directions = eigenvectors.T if i &lt; 2 else np.eye(2)
+        for direction in directions:
+            ax.plot([-1.3*direction[0], 1.3*direction[0]],
+                    [-1.3*direction[1], 1.3*direction[1]],
+                    color="#6b447d", ls="--", lw=1.2)
+        ax.set_aspect("equal")
+        ax.set_xlim(-1.5, 1.5)
+        ax.set_ylim(-1.5, 1.5)
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_title(formula + "\n" + label, fontsize=12, pad=10)
+        ax.set_xticks([-1, 0, 1])
+        ax.set_yticks([-1, 0, 1])
+    fig.suptitle("Hessian eigenvalue signs classify these quadratic critical points",
+                 fontsize=15)
+    fig.text(.5, .035,
+             "All three have value 0 at the origin. "
+             "Dashed lines show eigenvector directions; contour labels give function values.",
+             ha="center", fontsize=10.5)
+    fig.subplots_adjust(left=.055, right=.98, bottom=.20, top=.78, wspace=.25)
+    fig.savefig(Path.cwd() / "hessian-quadratic-critical-points.png",
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

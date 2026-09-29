@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>little-law-sample-path.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="little-law-sample-path.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/little-law-sample-path.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">little-law-sample-path.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/little-law-sample-path.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/little-law-sample-path.py">little-law-sample-path.py</a></b></div></nav></div><div class="p"><b>little-law-sample-path.py</b></div><div class="code"><div><pre><code>"""Draw a deterministic Little's-law example; write the PNG to the CWD.
+
+Tested with Python 3.14.4, matplotlib 3.10.7, and numpy 2.3.5.
+Run from _media: MPLBACKEND=Agg python3 ../little-law-sample-path.py
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.patches import Patch
+
+
+def main():
+    arrivals = np.array([0., 1., 4.])
+    starts = np.array([0., 2., 4.])
+    departures = np.array([2., 3., 5.])
+    times = np.array([0., 1., 2., 3., 4., 5., 6.])
+    midpoints = (times[:-1] + times[1:]) / 2
+    population = np.sum((arrivals[:, None] &lt;= midpoints)
+                        &amp; (midpoints &lt; departures[:, None]), axis=0)
+    area = np.dot(np.diff(times), population)
+    assert area == 5 == np.sum(departures - arrivals)
+    assert np.sum(starts - arrivals) == 1
+    assert np.sum(departures - starts) == 4
+
+    plt.rcParams.update({'font.size': 12, 'axes.titlesize': 14})
+    blue, orange = '#246da4', '#d0802a'
+    fig, (occupancy, visits) = plt.subplots(
+        2, 1, figsize=(8.4, 6.5), dpi=120, sharex=True,
+        gridspec_kw={'height_ratios': [1, 1.2]}, facecolor='white')
+    occupancy.stairs(population, times, fill=True, color=blue, alpha=.2)
+    occupancy.stairs(population, times, color=blue, linewidth=2.4)
+    for left, n in zip(times[:-1], population):
+        if n:
+            occupancy.text(left + .5, n / 2, str(n), ha='center', va='center',
+                           color='#16496f', fontsize=14, weight='bold')
+    occupancy.text(3.2, 1.9, 'Area = 5 customer-minutes\nL = 5/6 customer',
+                   fontsize=13, color='#16496f', va='center',
+                   bbox={'facecolor': 'white', 'edgecolor': 'none'})
+    occupancy.set(ylim=(0, 2.6), yticks=[0, 1, 2], ylabel='Customers N(t)',
+                  title='Count by time: height × duration')
+
+    for row, name, arrival, start, departure in zip(
+            [3, 2, 1], ['A', 'B', 'C'], arrivals, starts, departures):
+        if start &gt; arrival:
+            visits.broken_barh([(arrival, start - arrival)], (row - .22, .44),
+                              facecolors=orange)
+        visits.broken_barh([(start, departure - start)], (row - .22, .44),
+                          facecolors=blue)
+        visits.text((arrival + departure) / 2, row + .3,
+                    f'{departure - arrival:g} min in system',
+                    ha='center', fontsize=11)
+        visits.plot([arrival, departure], [row, row], 'o', color='#18364d',
+                    markersize=4)
+    visits.text(5.9, 2.65, '2 + 2 + 1 = 5\ncustomer-minutes', ha='right',
+                color='#16496f', fontsize=12)
+    visits.set(yticks=[1, 2, 3], yticklabels=['C', 'B', 'A'], ylim=(.3, 3.8),
+               xlim=(-.1, 6.1), xticks=times, xlabel='Time (minutes)',
+               ylabel='Customer', title='Count by customer: duration of each visit')
+    visits.legend(handles=[Patch(color=blue, label='Service: total 4 min'),
+                           Patch(color=orange, label='Waiting: total 1 min')],
+                  loc='lower left', frameon=False, fontsize=10)
+    for ax in (occupancy, visits):
+        ax.grid(axis='x', color='#dde3e8', linewidth=.8)
+        ax.set_axisbelow(True)
+        ax.spines[['top', 'right']].set_visible(False)
+    fig.suptitle("Little's law without random arrivals", fontsize=17, y=.98)
+    fig.text(.5, .035, '3 customers / 6 minutes × 5/3 minutes per customer = 5/6 customer',
+             ha='center', fontsize=11)
+    fig.subplots_adjust(left=.105, right=.975, top=.87, bottom=.14, hspace=.42)
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix('.png').name,
+                facecolor='white', transparent=False)
+    plt.close(fig)
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

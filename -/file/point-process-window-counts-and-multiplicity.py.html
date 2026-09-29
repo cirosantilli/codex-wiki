@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>point-process-window-counts-and-multiplicity.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="point-process-window-counts-and-multiplicity.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/point-process-window-counts-and-multiplicity.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">point-process-window-counts-and-multiplicity.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/point-process-window-counts-and-multiplicity.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/point-process-window-counts-and-multiplicity.py">point-process-window-counts-and-multiplicity.py</a></b></div></nav></div><div class="p"><b>point-process-window-counts-and-multiplicity.py</b></div><div class="code"><div><pre><code>"""Draw a point measure and its cumulative count; Python 3.14 / Matplotlib 3.10.7.
+
+Run from _media; the opaque PNG is written to the current working directory.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "figure.facecolor": "white"})
+    locations = np.array([0.4, 1.1, 1.8, 2.4, 3.0])
+    multiplicities = np.array([1, 2, 1, 1, 1])
+    fig, (pattern, count) = plt.subplots(
+        2, 1, figsize=(9, 5.8), sharex=True,
+        gridspec_kw={"height_ratios": [1, 1.4]}, layout="constrained",
+    )
+    fig.suptitle("A point measure counts repeated locations", fontsize=17)
+    for ax in (pattern, count):
+        ax.axvspan(0, 1.5, color="#dcecf8", zorder=0)
+        ax.axvspan(1.5, 3, color="#fff0d5", zorder=0)
+        ax.axvline(1.5, color="#666666", linestyle="--", linewidth=1)
+        ax.axvline(3, color="#666666", linestyle="--", linewidth=1)
+        ax.set_xlim(-0.15, 3.35)
+        ax.spines[["top", "right"]].set_visible(False)
+    pattern.axhline(0, color="#555555", linewidth=1)
+    for x, m in zip(locations, multiplicities):
+        pattern.scatter([x] * int(m), 0.12 * np.arange(m), s=75,
+                        color="#234e70", zorder=4)
+        pattern.text(x, -0.14, f"{x:g}", ha="center")
+    pattern.text(0.75, 0.49, r"$A=[0,1.5)$: count 3", ha="center", color="#234e70")
+    pattern.text(2.25, 0.49, r"$B=[1.5,3)$: count 2", ha="center", color="#8b5700")
+    pattern.annotate("multiplicity 2", xy=(1.1, 0.13), xytext=(1.5, 0.31),
+                     ha="center", fontsize=11,
+                     arrowprops={"arrowstyle": "-&gt;", "color": "#555555"})
+    pattern.text(3.0, 0.38, "outside\n$A\\cup B$", ha="center", fontsize=11)
+    pattern.set_ylim(-0.3, 0.7)
+    pattern.set_yticks([])
+    pattern.spines[["left", "bottom"]].set_visible(False)
+    pattern.tick_params(axis="x", bottom=False, labelbottom=False)
+
+    steps_x = np.r_[0, locations, 3.35]
+    steps_y = np.r_[0, np.cumsum(multiplicities), multiplicities.sum()]
+    count.step(steps_x, steps_y, where="post", linewidth=2.5, color="#234e70")
+    previous = np.r_[0, np.cumsum(multiplicities)[:-1]]
+    cumulative = np.cumsum(multiplicities)
+    count.scatter(locations, previous, facecolors="white", edgecolors="#234e70", zorder=4)
+    count.scatter(locations, cumulative, color="#234e70", zorder=5)
+    count.set_ylim(-0.25, 6.7)
+    count.set_yticks(range(7))
+    count.set_xticks([0, 0.4, 1.1, 1.5, 1.8, 2.4, 3, 3.3])
+    count.set_xlabel("Location / time t")
+    count.set_ylabel(r"$N(t)=\Pi((0,t])$")
+    count.grid(axis="y", alpha=0.22)
+    count.text(0.05, 6.28, "The double atom makes a jump of 2; the atom at t = 3 is included.",
+               fontsize=11)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=140,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

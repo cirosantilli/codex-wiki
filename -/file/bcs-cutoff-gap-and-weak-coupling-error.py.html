@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>bcs-cutoff-gap-and-weak-coupling-error.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="bcs-cutoff-gap-and-weak-coupling-error.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/bcs-cutoff-gap-and-weak-coupling-error.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">bcs-cutoff-gap-and-weak-coupling-error.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/bcs-cutoff-gap-and-weak-coupling-error.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/bcs-cutoff-gap-and-weak-coupling-error.py">bcs-cutoff-gap-and-weak-coupling-error.py</a></b></div></nav></div><div class="p"><b>bcs-cutoff-gap-and-weak-coupling-error.py</b></div><div class="code"><div><pre><code>"""Compare the exact zero-T constant-shell BCS gap with its weak limit.
+
+Python 3.14; NumPy 2.3.5; Matplotlib 3.10.7 (repository pyproject.toml).
+Run from _media with MPLBACKEND=Agg MPLCONFIGDIR=/tmp/codex-wiki-matplotlib.
+No measured points or fitted curves. Lambda stays strictly positive.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                         "axes.spines.right": False, "figure.facecolor": "white"})
+    lam = np.linspace(0.12, 1.2, 700)
+    gap = 1 / np.sinh(1 / lam)
+    weak = 2 * np.exp(-1 / lam)
+    error = 100 * np.exp(-2 / lam)
+    assert np.allclose((gap - weak) / gap, error / 100, rtol=1e-8)
+    fig, (top, bottom) = plt.subplots(2, 1, figsize=(8.2, 5.8), sharex=True,
+                                      gridspec_kw={"height_ratios": [1.25, 1]})
+    for ax in (top, bottom):
+        ax.axvspan(0.12, 0.3, color="#edf4f9")
+        ax.axvline(0.25, color="#7b8894", lw=0.9, ls=":")
+        ax.grid(alpha=0.18, which="major")
+        ax.set_xlim(0.12, 1.2)
+    top.semilogy(lam, gap, color="#14639b", lw=2.3,
+                 label=r"Exact cutoff model: $1/\sinh(1/\lambda)$")
+    top.semilogy(lam, weak, "--", color="#bd5918", lw=2,
+                 label=r"Weak coupling: $2e^{-1/\lambda}$")
+    top.plot(0.25, 1 / np.sinh(4), "o", color="#14639b", ms=5)
+    top.set(ylabel=r"$\Delta(0)/(\hbar\omega_D)$", ylim=(0.0003, 1.4),
+            title="A small attraction produces an exponentially small gap")
+    top.legend(loc="lower right", fontsize=10, framealpha=1)
+    bottom.semilogy(lam, error, color="#14639b", lw=2.3)
+    bottom.set(xlabel=r"Dimensionless coupling $\lambda=N_0V$",
+               ylabel="Underestimate (%)", ylim=(0.000003, 30))
+    bottom.scatter([0.25, 1], [100 * np.exp(-8), 100 * np.exp(-2)],
+                   s=23, color="#14639b", zorder=4)
+    bottom.annotate(r"$\lambda=0.25$: 0.03355%", (0.25, 100 * np.exp(-8)),
+                    (0.39, 0.0003), fontsize=10,
+                    arrowprops={"arrowstyle": "-&gt;", "color": "#69737e"})
+    bottom.annotate(r"$\lambda=1$: 13.53%", (1, 100 * np.exp(-2)),
+                    (0.76, 0.35), fontsize=10,
+                    arrowprops={"arrowstyle": "-&gt;", "color": "#69737e"})
+    bottom.text(0.62, 0.000007, r"Exact relative error: $e^{-2/\lambda}$", fontsize=10)
+    fig.subplots_adjust(left=0.14, right=0.97, top=0.90, bottom=0.22, hspace=0.17)
+    fig.text(0.5, 0.035, "Same sharp-cutoff model throughout; larger coupling tests the approximation,\n"
+             "not the validity of this model for strongly coupled materials.",
+             ha="center", fontsize=10, color="#414b54")
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=110,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

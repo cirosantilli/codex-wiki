@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>enzyme-catalysis-energy.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="enzyme-catalysis-energy.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/enzyme-catalysis-energy.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">enzyme-catalysis-energy.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/enzyme-catalysis-energy.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/enzyme-catalysis-energy.py">enzyme-catalysis-energy.py</a></b></div></nav></div><div class="p"><b>enzyme-catalysis-energy.py</b></div><div class="code"><div><pre><code>"""Draw illustrative catalytic free-energy barriers; write basename.png in cwd.
+
+Uses the repository's Python 3.14, NumPy and Matplotlib dependencies.
+The curves are constructed schematics, not fitted molecular data.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def profile(x, peak):
+    """Smooth each half between G(S)=0, G(peak)=peak, G(P)=-10."""
+    t = np.where(x &lt;= 0.5, 2 * x, 2 * x - 1)
+    smooth = t**2 * (3 - 2 * t)
+    return np.where(x &lt;= 0.5, peak * smooth, peak + (-10 - peak) * smooth)
+
+
+def main():
+    x = np.linspace(0, 1, 501)
+    orange, blue = "#b65f1b", "#176b92"
+    fig, ax = plt.subplots(figsize=(8.2, 4.9), layout="constrained")
+    fig.set_facecolor("white")
+    ax.set_facecolor("white")
+    for peak, color, label in [
+        (60, orange, "Uncatalysed route"),
+        (40, blue, "Enzyme-catalysed route"),
+    ]:
+        ax.plot(x, profile(x, peak), color=color, lw=2.7, label=label)
+        ax.plot(0.5, peak, "o", color=color, ms=5)
+        ax.annotate(f"{peak}", (0.5, peak), xytext=(8, 4),
+                    textcoords="offset points", color=color, fontsize=11)
+    for value in [0, -10]:
+        ax.axhline(value, color="#9da6ac", ls=":", lw=1)
+    for xpos, peak, color, label in [
+        (0.20, 60, orange, "Forward barrier: 60"),
+        (0.32, 40, blue, "Forward barrier: 40"),
+    ]:
+        ax.annotate("", (xpos, peak), (xpos, 0),
+                    arrowprops={"arrowstyle": "&lt;-&gt;", "color": color, "lw": 1.5})
+        ax.text(xpos - 0.017, peak / 2, label, rotation=90,
+                ha="right", va="center", color=color, fontsize=9,
+                bbox={"facecolor": "white", "edgecolor": "none", "pad": 1.5})
+    ax.annotate("", (0.93, 0), (0.93, -10),
+                arrowprops={"arrowstyle": "&lt;-&gt;", "color": "#343c44", "lw": 1.5})
+    ax.text(0.91, 9, "Same endpoint change\nΔG = −10 kJ/mol", ha="center",
+            va="bottom", fontsize=10)
+    ax.text(0.01, -15, "Reactants + free enzyme\nG = 0", ha="left", va="top", fontsize=10)
+    ax.text(0.99, -15, "Products + free enzyme\nG = −10 kJ/mol", ha="right", va="top", fontsize=10)
+    ax.set(xlim=(-0.02, 1.02), ylim=(-31, 78), xticks=[],
+           ylabel="Illustrative Gibbs free energy (kJ/mol)",
+           xlabel="Progress along a reaction route (not time)")
+    ax.set_title("A lower barrier, the same overall free-energy change", fontsize=13)
+    ax.legend(loc="upper left", frameon=False, fontsize=10)
+    ax.spines[["top", "right"]].set_visible(False)
+    fig.savefig(Path(Path(__file__).stem + ".png"), dpi=150,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+    print("Illustrative forward barriers: 60, 40 kJ/mol; reverse: 70, 50; ΔG: −10")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

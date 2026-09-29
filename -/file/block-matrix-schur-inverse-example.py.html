@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>block-matrix-schur-inverse-example.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="block-matrix-schur-inverse-example.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/block-matrix-schur-inverse-example.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">block-matrix-schur-inverse-example.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/block-matrix-schur-inverse-example.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/block-matrix-schur-inverse-example.py">block-matrix-schur-inverse-example.py</a></b></div></nav></div><div class="p"><b>block-matrix-schur-inverse-example.py</b></div><div class="code"><div><pre><code>"""Exact block inversion example; save the matching PNG in the working directory."""
+
+from fractions import Fraction as F
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+
+
+def verify():
+    m = [[F(2), F(0), F(1)], [F(0), F(3), F(2)], [F(1), F(2), F(5)]]
+    numerators = [[11, 2, -3], [2, 9, -4], [-3, -4, 6]]
+    inv = [[F(v, 19) for v in row] for row in numerators]
+    for a, b in ((m, inv), (inv, m)):
+        assert [[sum(a[i][k]*b[k][j] for k in range(3)) for j in range(3)]
+                for i in range(3)] == [[F(i == j) for j in range(3)] for i in range(3)]
+    answer = [F(23, 19), F(-1, 19), F(11, 19)]
+    assert [sum(m[i][j]*answer[j] for j in range(3)) for i in range(3)] == [3, 1, 4]
+    assert F(5)-F(1, 2)-F(4, 3) == F(19, 6)
+    return m, inv
+
+
+def matrix(ax, values, name):
+    colours = {(True, True): '#dceaf6', (True, False): '#ffe9cf',
+               (False, True): '#e7ddf1', (False, False): '#daf0e6'}
+    for i, row in enumerate(values):
+        for j, value in enumerate(row):
+            ax.add_patch(Rectangle((j, 2-i), 1, 1, facecolor=colours[(i &lt; 2, j &lt; 2)],
+                                   edgecolor='white', linewidth=1))
+            label = str(value.numerator) if value.denominator == 1 else f'{value.numerator}/{value.denominator}'
+            ax.text(j+.5, 2.5-i, label, fontsize=15, ha='center', va='center')
+    ax.plot([2, 2], [0, 3], color='#555555', linewidth=2)
+    ax.plot([0, 3], [1, 1], color='#555555', linewidth=2)
+    ax.set(xlim=(0, 3), ylim=(0, 3), aspect='equal', title=name)
+    ax.axis('off')
+
+
+def main():
+    m, inv = verify()
+    fig = plt.figure(figsize=(9.4, 4.2), dpi=125, layout='constrained', facecolor='white')
+    gs = fig.add_gridspec(2, 3, height_ratios=[5, 1], width_ratios=[3, 2.8, 3])
+    matrix(fig.add_subplot(gs[0, 0]), m, r'Original matrix $M$')
+    matrix(fig.add_subplot(gs[0, 2]), inv, r'Inverse $M^{-1}$')
+    ax = fig.add_subplot(gs[0, 1]); ax.axis('off')
+    ax.text(.5, .80, r'$A=\mathrm{diag}(2,3)$', ha='center', fontsize=14)
+    ax.text(.5, .64, r'$S=5-\frac{1}{2}-\frac{4}{3}=\frac{19}{6}$', ha='center', fontsize=16)
+    ax.annotate('', xy=(.98, .43), xytext=(.02, .43),
+                arrowprops={'arrowstyle': '-&gt;', 'lw': 2, 'color': '#333333'})
+    ax.text(.5, .26, r'Lower-right block: $S^{-1}=6/19$', ha='center', fontsize=11)
+    ax.text(.5, .13, r'Not $D^{-1}=1/5$', ha='center', fontsize=11)
+    note = fig.add_subplot(gs[1, :]); note.axis('off')
+    note.text(.5, .5, r'$M^{-1}(3,1,4)^T=(23,-1,11)^T/19$; both matrix products give $I_3$',
+              ha='center', va='center', fontsize=13)
+    fig.suptitle('Coupling changes the inverse of the retained block', fontsize=15)
+    fig.savefig(Path(__file__).with_suffix('.png').name, facecolor='white', transparent=False)
+    plt.close(fig)
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

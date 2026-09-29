@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>euler-characteristic-cube-boundary-and-interior.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="euler-characteristic-cube-boundary-and-interior.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/euler-characteristic-cube-boundary-and-interior.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">euler-characteristic-cube-boundary-and-interior.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/euler-characteristic-cube-boundary-and-interior.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/euler-characteristic-cube-boundary-and-interior.py">euler-characteristic-cube-boundary-and-interior.py</a></b></div></nav></div><div class="p"><b>euler-characteristic-cube-boundary-and-interior.py</b></div><div class="code"><div><pre><code>"""Compare original cubical cell counts for a boundary and its filled solid; emit to CWD."""
+from itertools import combinations, product
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import numpy as np
+
+
+def main():
+    vertices = np.array(list(product([-1, 1], repeat=3)))
+    edges = [(a, b) for a, b in combinations(range(8), 2) if np.count_nonzero(vertices[a] != vertices[b]) == 1]
+    faces = []
+    for axis in range(3):
+        for value in [-1, 1]:
+            fixed = np.array([p for p in vertices if p[axis] == value])
+            other = [a for a in range(3) if a != axis]
+            center = np.mean(fixed, axis=0)
+            order = np.argsort(np.arctan2(fixed[:, other[1]] - center[other[1]], fixed[:, other[0]] - center[other[0]]))
+            faces.append(fixed[order])
+    assert (len(vertices), len(edges), len(faces)) == (8, 12, 6)
+    fig = plt.figure(figsize=(10, 5.6), dpi=120, facecolor="white", layout="constrained")
+    grid = fig.add_gridspec(2, 2, height_ratios=[1.7, 1])
+    for col, (filled, color) in enumerate([(False, "#5798c9"), (True, "#e49c48")]):
+        ax = fig.add_subplot(grid[0, col], projection="3d")
+        ax.add_collection3d(Poly3DCollection(faces, facecolors=color, edgecolors="none", alpha=0.12 if not filled else 0.45))
+        for a, b in edges:
+            ax.plot(*vertices[[a, b]].T, color="#183c58", lw=1.5)
+        ax.scatter(*vertices.T, color="#183c58", s=15)
+        ax.set(xlim=(-1.15, 1.15), ylim=(-1.15, 1.15), zlim=(-1.15, 1.15))
+        ax.set_box_aspect((1, 1, 1))
+        ax.view_init(elev=20, azim=29)
+        ax.set_axis_off()
+        ax.set_title("Filled cube: include the interior" if filled else "Boundary only: exclude the interior", fontsize=12)
+        ax.text(0, 0, 0, "One open\n3-cell" if filled else "No\n3-cell", ha="center", va="center", color="#542a0f" if filled else "#183c58", fontsize=12)
+        ax = fig.add_subplot(grid[1, col])
+        counts = np.array([8, 12, 6, int(filled)])
+        signed = counts * np.array([1, -1, 1, -1])
+        assert sum(signed) == (1 if filled else 2)
+        ax.bar(range(4), signed, color=["#3679b3", "#b95745", "#3679b3", "#b95745"])
+        ax.axhline(0, color="#555555", lw=0.8)
+        ax.set(xticks=range(4), xticklabels=["0-cells", "1-cells", "2-cells", "3-cells"], ylim=(-14, 11), ylabel="Signed contribution")
+        for i, value in enumerate(signed):
+            ax.text(i, value + (0.45 if value &gt;= 0 else -0.45), f"{value:+d}", ha="center", va="bottom" if value &gt;= 0 else "top")
+        ax.set_title(r"$\chi=8-12+6-1=1$" if filled else r"$\chi=8-12+6=2$", fontsize=13)
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.suptitle("The three-dimensional interior changes what space is being counted", fontsize=14)
+    fig.savefig(Path(__file__).stem + ".png", facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

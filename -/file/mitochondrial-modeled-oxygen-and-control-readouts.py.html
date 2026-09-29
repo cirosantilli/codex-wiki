@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>mitochondrial-modeled-oxygen-and-control-readouts.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="mitochondrial-modeled-oxygen-and-control-readouts.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/mitochondrial-modeled-oxygen-and-control-readouts.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">mitochondrial-modeled-oxygen-and-control-readouts.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/mitochondrial-modeled-oxygen-and-control-readouts.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/mitochondrial-modeled-oxygen-and-control-readouts.py">mitochondrial-modeled-oxygen-and-control-readouts.py</a></b></div></nav></div><div class="p"><b>mitochondrial-modeled-oxygen-and-control-readouts.py</b></div><div class="code"><div><pre><code>"""Plot chosen exemplar slopes, never measured mitochondrial respiration data.
+
+Emit the matching PNG to the current working directory.
+Tested with Python 3.14, matplotlib 3.10.7 and numpy 2.3.5.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+MINUTES = np.arange(8, dtype=float)
+RATES = np.array([5, 25, 5, 25, 6, 32, 1], dtype=float)
+INITIAL_OXYGEN = 220.0
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "font.family": "DejaVu Sans"})
+    oxygen = np.r_[INITIAL_OXYGEN, INITIAL_OXYGEN - np.cumsum(RATES * np.diff(MINUTES))]
+    fig, (ax, flux) = plt.subplots(2, 1, figsize=(11.4, 7.4), dpi=100,
+                                 sharex=True, gridspec_kw={"height_ratios": [1.2, 1]},
+                                 facecolor="white")
+    fig.subplots_adjust(left=0.1, right=0.98, top=0.78, bottom=0.15, hspace=0.15)
+    fig.suptitle("MODELED oxygen traces — chosen values, not experimental data", y=0.97, fontsize=16)
+    fig.text(0.5, 0.92, "Closed 2 mL suspension • initial oxygen 220 µmol/L • negligible addition volume",
+             ha="center", fontsize=11)
+    events = [(1, "ADP pulse"), (2, "Pulse used"), (3, "Excess ADP"),
+              (4, "Oligomycin"), (5, "FCCP"), (6, "Antimycin A")]
+    colors = ["#edf2f7", "#e3f0e8", "#edf2f7", "#e3f0e8", "#fff0cf", "#f9e2dc", "#eeeeee"]
+    for i, color in enumerate(colors):
+        ax.axvspan(i, i + 1, facecolor=color, zorder=0)
+        flux.axvspan(i, i + 1, facecolor=color, zorder=0)
+    for time, label in events:
+        ax.axvline(time, color="#888888", lw=0.8, ls="--")
+        flux.axvline(time, color="#888888", lw=0.8, ls="--")
+        ax.annotate(label, xy=(time, 1.0), xycoords=("data", "axes fraction"),
+                    xytext=(0, 10), textcoords="offset points", rotation=38,
+                    ha="left", va="bottom", fontsize=10)
+    ax.plot(MINUTES, oxygen, color="#235789", lw=3)
+    ax.scatter(MINUTES, oxygen, s=20, color="#235789", zorder=3)
+    ax.set(ylabel="Oxygen concentration\n(µmol/L)", ylim=(105, 235), xlim=(0, 7))
+    ax.text(0.035, 0.14, "Steeper decline = faster oxygen consumption", transform=ax.transAxes,
+            fontsize=11, color="#235789")
+    flux.stairs(RATES, MINUTES, color="#235789", linewidth=2.7)
+    for i, rate in enumerate(RATES):
+        flux.text(i + 0.5, rate + 1.5, str(int(rate)), ha="center", fontsize=12, weight="bold")
+    flux.set(ylabel="Consumption slope magnitude\n(µmol/L/min)", xlabel="Model time (min)", ylim=(0, 39))
+    for a in (ax, flux):
+        a.spines[["top", "right"]].set_visible(False)
+        a.tick_params(axis="both", labelsize=10)
+    fig.text(0.5, 0.065, "Oligomycin remains present after FCCP: faster respiration can coexist with inhibited ATP synthase.",
+             ha="center", fontsize=11, weight="bold")
+    fig.text(0.5, 0.025, "Substrates assumed supplied • simplified addition sequence • no measured ATP or oxygen values reproduced",
+             ha="center", fontsize=10, color="#555555")
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=100,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

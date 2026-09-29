@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>huffman-code-length-and-entropy.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="huffman-code-length-and-entropy.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/huffman-code-length-and-entropy.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">huffman-code-length-and-entropy.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/huffman-code-length-and-entropy.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/huffman-code-length-and-entropy.py">huffman-code-length-and-entropy.py</a></b></div></nav></div><div class="p"><b>huffman-code-length-and-entropy.py</b></div><div class="code"><div><pre><code>"""Original weighted-length and entropy comparison; save PNG basename to cwd.
+
+Tested with Python 3.14.4 and Matplotlib 3.10.7 (repository dependencies).
+Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-mpl python3 ../huffman-code-length-and-entropy.py
+"""
+
+from fractions import Fraction
+from math import log2
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+
+
+def main():
+    probabilities = list(map(Fraction, ("0.4", "0.3", "0.2", "0.1")))
+    codes = ["0", "10", "110", "111"]
+    lengths = list(map(len, codes))
+    weighted = [p * length for p, length in zip(probabilities, lengths)]
+    mean = sum(weighted)
+    entropy = -sum(float(p) * log2(float(p)) for p in probabilities)
+    assert mean == Fraction(19, 10)
+    assert sum(Fraction(1, 2**length) for length in lengths) == 1
+    assert abs(entropy - 1.8464393446710154) &lt; 1e-12
+    colors = ["#2d6faa", "#168475", "#b16813", "#9059a0"]
+    plt.rcParams.update({"font.size": 11, "font.family": "DejaVu Sans"})
+    fig, (left, right) = plt.subplots(1, 2, figsize=(10, 4.6), layout="constrained", facecolor="white")
+    left.bar(range(4), list(map(float, weighted)), color=colors, width=0.65)
+    for i, (p, length, contribution) in enumerate(zip(probabilities, lengths, weighted)):
+        left.text(i, float(contribution) + 0.023, f"{float(p):.1f} × {length} = {float(contribution):.1f}", ha="center", fontsize=10)
+    left.set(xticks=range(4), xticklabels=[f"{s}: {c}" for s, c in zip("ABCD", codes)],
+             ylim=(0, 0.80), ylabel="Contribution to mean (bits per source symbol)",
+             title="Weight each codeword length by its probability")
+    left.text(0.5, 0.91, "0.4 + 0.6 + 0.6 + 0.3 = 1.9", transform=left.transAxes, ha="center", fontsize=12)
+    values = [entropy, float(mean), 2.0]
+    right.bar(range(3), values, color=["#93a3b5", "#168475", "#2d6faa"], width=0.60)
+    for i, value in enumerate(values):
+        right.text(i, value + 0.045, f"{value:.6f}" if i == 0 else f"{value:.1f}", ha="center", fontsize=12)
+    right.set(xticks=range(3), xticklabels=["Entropy\nlower bound", "Huffman\nmean", "Fixed\nlength"],
+              ylim=(0, 2.40), ylabel="Bits per source symbol", title="Compare the mean with its limits")
+    for ax in (left, right):
+        ax.set_facecolor("white")
+        ax.set_axisbelow(True)
+        ax.grid(axis="y", alpha=0.22)
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.suptitle("Huffman saves 5% of the fixed-length payload on average", fontsize=14)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=120, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

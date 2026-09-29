@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>carmichael-unit-orders-common-exponent.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="carmichael-unit-orders-common-exponent.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/carmichael-unit-orders-common-exponent.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">carmichael-unit-orders-common-exponent.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/carmichael-unit-orders-common-exponent.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/carmichael-unit-orders-common-exponent.py">carmichael-unit-orders-common-exponent.py</a></b></div></nav></div><div class="p"><b>carmichael-unit-orders-common-exponent.py</b></div><div class="code"><div><pre><code>"""Show exact powers, individual orders and the common unit exponent.
+
+Output PNG in the CWD. Tested with Python 3.14, matplotlib 3.10.7,
+and numpy 2.3.5.
+"""
+
+from math import gcd, lcm
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+import numpy as np
+
+
+def order(a, n):
+    return next(k for k in range(1, n) if pow(a, k, n) == 1)
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "axes.spines.top": False, "axes.spines.right": False})
+    fig, axes = plt.subplots(1, 2, figsize=(10.2, 6), dpi=120, facecolor="white")
+    for ax, n in zip(axes, [8, 15]):
+        units = [a for a in range(1, n) if gcd(a, n) == 1]
+        orders = [order(a, n) for a in units]
+        exponent = lcm(*orders)
+        values = np.array([[pow(a, k, n) for k in range(exponent + 1)] for a in units])
+        assert np.all(values[:, exponent] == 1)
+        assert not any(all(pow(a, k, n) == 1 for a in units) for k in range(1, exponent))
+        assert (exponent, len(units)) == ({8: (2, 4), 15: (4, 8)}[n])
+        ax.imshow(values == 1, cmap=ListedColormap(["#f1f3f5", "#cfe8fa"]), vmin=0, vmax=1, aspect="auto")
+        for i, row in enumerate(values):
+            for k, value in enumerate(row):
+                ax.text(k, i, str(value), ha="center", va="center", color="#1769aa" if value == 1 else "#333333", fontsize=13, fontweight="bold" if value == 1 else "normal")
+            ax.text(exponent + 0.7, i, str(orders[i]), ha="center", va="center", color="#333333", fontsize=13)
+        ax.set_xticks(range(exponent + 1))
+        ax.set_yticks(range(len(units)), units)
+        ax.set_xticks(np.arange(-0.5, exponent + 1, 1), minor=True)
+        ax.set_yticks(np.arange(-0.5, len(units), 1), minor=True)
+        ax.grid(which="minor", color="white", linewidth=2)
+        ax.tick_params(which="minor", bottom=False, left=False)
+        ax.set(xlabel=r"Exponent $k$", ylabel=r"Unit $a$", title=f"Powers modulo {n}")
+        ax.axvline(exponent - 0.5, color="#1769aa", linewidth=2)
+        ax.text(1.07, 1.06, "Order", transform=ax.transAxes, ha="center", fontsize=11)
+        ax.text(0.5, -0.16, rf"$\lambda({n})={exponent}$: common return" + "\n" + rf"$\varphi({n})={len(units)}$: number of units", transform=ax.transAxes, ha="center", va="top", fontsize=13)
+        ax.spines["right"].set_visible(False)
+    fig.suptitle("One exponent returns every unit to 1", fontsize=18, y=0.97)
+    fig.text(0.5, 0.885, r"Cells contain $a^k\;\mathrm{mod}\;n$; blue means 1. The final column is $k=\lambda(n)$.", ha="center", fontsize=12)
+    fig.subplots_adjust(left=0.075, right=0.91, top=0.79, bottom=0.23, wspace=0.65)
+    fig.savefig(Path(__file__).stem + ".png", facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

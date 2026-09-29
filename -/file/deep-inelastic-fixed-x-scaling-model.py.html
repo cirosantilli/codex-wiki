@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>deep-inelastic-fixed-x-scaling-model.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="deep-inelastic-fixed-x-scaling-model.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/deep-inelastic-fixed-x-scaling-model.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">deep-inelastic-fixed-x-scaling-model.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/deep-inelastic-fixed-x-scaling-model.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/deep-inelastic-fixed-x-scaling-model.py">deep-inelastic-fixed-x-scaling-model.py</a></b></div></nav></div><div class="p"><b>deep-inelastic-fixed-x-scaling-model.py</b></div><div class="code"><div><pre><code>"""Original synthetic DIS comparison; no measured data or fitted constants.
+
+Python 3.14, numpy 2.3.5, matplotlib 3.10.7. Run from _media; outputs basename.png.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "font.family": "DejaVu Sans"})
+    mass, x, q0_squared, lambda_squared = 0.938, 0.3, 2.0, 1.0
+    q_squared = np.linspace(2.0, 5.0, 301)
+    suppression = ((1 + q0_squared / lambda_squared) / (1 + q_squared / lambda_squared)) ** 4
+    fig, (ax, kin) = plt.subplots(1, 2, figsize=(10, 6), dpi=120, facecolor="white")
+    fig.subplots_adjust(left=0.085, right=0.98, top=0.78, bottom=0.30, wspace=0.35)
+    fig.suptitle("What a fixed-$x$ scaling test compares", fontsize=17, y=0.975)
+    fig.text(0.5, 0.895, "ORIGINAL MODEL CURVES • NOT MEASURED DATA • $x=0.3$", ha="center", fontsize=12)
+    ax.plot(q_squared, np.ones_like(q_squared), lw=2.5, color="#176eac", label="Ideal scaling: $S=1$")
+    ax.plot(q_squared, suppression, lw=2.5, color="#b64c10", label="Elastic-form-factor shape $A$")
+    ax.set(xlim=(2, 5), ylim=(0, 1.15), xlabel="$Q^2$ (GeV$^2$)", ylabel="Normalized response shape")
+    ax.set_title("Shape comparison", fontsize=12)
+    ax.legend(loc="center right", frameon=False, fontsize=10)
+    ax.annotate("$A(5)=1/16$", xy=(5, 1/16), xytext=(3.9, 0.25),
+                arrowprops={"arrowstyle": "-&gt;", "color": "#b64c10"}, color="#b64c10")
+    ax.grid(alpha=0.2)
+    for energy, color in [(10.0, "#7d3a8a"), (15.0, "#176eac"), (20.0, "#358047")]:
+        outgoing = energy - q_squared / (2 * mass * x)
+        sine_squared = q_squared / (4 * energy * outgoing)
+        assert np.all(outgoing &gt; 0) and np.all((0 &lt;= sine_squared) &amp; (sine_squared &lt;= 1))
+        kin.plot(q_squared, outgoing, lw=2, color=color, label=f"$E={energy:g}$ GeV")
+    w_squared = mass ** 2 + q_squared * (1 / x - 1)
+    assert np.min(w_squared) &gt; 4
+    kin.set(xlim=(2, 5), ylim=(0, 18), xlabel="$Q^2$ (GeV$^2$)", ylabel="Outgoing $E'$ (GeV)")
+    kin.set_title("Physical electron settings", fontsize=12)
+    kin.legend(frameon=False, fontsize=10)
+    kin.grid(alpha=0.2)
+    fig.text(0.5, 0.135, "$S=F_2(x,Q^2)/F_2(x,Q_0^2)$    $A=[(1+Q_0^2/\\Lambda^2)/(1+Q^2/\\Lambda^2)]^4$",
+             ha="center", fontsize=12)
+    fig.text(0.5, 0.075, "$Q_0^2=2$ GeV$^2$, $\\Lambda^2=1$ GeV$^2$ chosen for illustration. Elastic events themselves have $x=1$.",
+             ha="center", fontsize=10)
+    fig.text(0.5, 0.025, "The flat line is an idealization; QCD permits scaling violations. No cross-section normalization is implied.",
+             ha="center", fontsize=10, color="#56616a")
+    fig.savefig(Path(__file__).with_suffix(".png").name, facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

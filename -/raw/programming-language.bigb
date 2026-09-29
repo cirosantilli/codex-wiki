@@ -1,0 +1,726 @@
+= Programming language
+{wiki}
+
+A <programming language> specifies how programs are written and what their execution means. Its <type system> describes which operations may be combined; an <abstract syntax tree> records the structure on which these rules act. The examples under <type system> use a small teaching language with <integers>, Boolean values and <function types>.
+
+// Target: computer-science.bigb
+
+= List comprehension
+{parent=Programming language}
+{wiki}
+
+= FRACTRAN
+{c}
+{parent=Programming language}
+
+A programming language whose program is an ordered list of positive <rational numbers>. Starting with a <positive integer>, multiply by the first listed <fraction> that produces an <integer>, then repeat; halt if none applies. Encoding registers as <prime> exponents relates this operation to a <register machine>.
+
+= Bit mask
+{parent=Programming language}
+
+= Bitmask
+{synonym}
+
+A word selecting specified binary positions under a bitwise operation. To extract a stored bit at position $b$, logically shift by $b$ and combine with the mask `1`. Grouping thirty-two cells into one <Java> integer permits a compact representation of a <Conway Game of Life> board.
+
+// Destination: computer-science.bigb
+
+= Submask enumeration
+{parent=Bit mask}
+
+For a bit mask $m$, the update $s\gets(s-1)\mathbin{\&}m$ visits its nonzero submasks in decreasing order. Every submask uses only positions set in $m$, so a mask with $k$ set bits has $2^k$ submasks including zero.
+
+= Bitboard
+{parent=Bit mask}
+
+A bitboard represents occupied positions on a finite board by the bits of an <integer>. Bitwise operations combine occupancy masks and test whether pieces overlap.
+
+= Bitwise OR
+{parent=Bit mask}
+
+= Bitwise inclusive or
+{synonym}
+
+Bitwise OR combines binary representations position by position: an output bit is one exactly when at least one input bit is one. On <bit masks> representing sets, it computes their union.
+
+= Bit shift
+{parent=Programming language}
+
+A fixed-width left shift discards high bits and inserts low zeros. A logical right shift inserts high zeros; an arithmetic right shift propagates the sign bit. In <Java>, `<<`, `>>>` and `>>` distinguish these operations. Left shift by $k$ is multiplication by $2^k$ modulo the word modulus.
+
+// Destination: computer-science.bigb
+
+= Left bit shift
+{parent=Bit shift}
+
+A <bit shift> toward more significant positions, filling low positions with zeros. On an unbounded nonnegative <integer>, shifting left by $k$ places multiplies it by $2^k$; fixed-width representations may discard overflowing high bits.
+
+= Two's complement
+{parent=Programming language}
+{title2=$\mathbb Z/2^w\mathbb Z$}
+
+For a fixed word width $w$, signed integers have the same bit patterns as residues modulo $2^w$. The leading bit has negative positional weight in the signed interpretation. Reading the same bits as unsigned gives $2^w+x$ for a negative signed integer $x$.
+
+// Destination: computer-science.bigb
+
+= Hexadecimal
+{parent=Programming language}
+
+Base-sixteen representation, with digit values zero through fifteen conventionally written `0` through `9` and `a` through `f`. A group of four binary digits selects one hexadecimal digit.
+
+// Destination: computer-science.bigb
+
+= Abstract syntax tree
+{parent=Programming language}
+{wiki}
+{title2=AST}
+
+= AST
+{c}
+{synonym}
+
+An <abstract syntax tree> is a <rooted tree> recording the meaningful syntactic pieces of a program and how they fit together. A <program identifier> such as `x`, a <literal value> such as `2`, and a node representing <addition> have different roles. Their arrangement answers structural questions: which <program expression> supplies an operand, which name is a <variable assignment> target, and which construct encloses another. This makes an <abstract syntax tree> useful to a <compiler>, an <interpreter>, and the <type system> that checks a program.
+
+The word "abstract" describes what is omitted. <Lexical analysis> first recognizes <lexical tokens>, such as `x`, `=`, `2`, `+`, `3`, `*`, `4`. A concrete <parse tree> can retain <grammar derivation> structure, including punctuation and intermediate <context-free grammar> categories such as expression, term and factor. An <abstract syntax tree> usually keeps the operation and its operands without all those grammar scaffolds. Parentheses can determine its shape without surviving as separate nodes. A <parser> may construct the <abstract syntax tree> directly; it need not first allocate a concrete <parse tree>.
+
+An <abstract syntax tree> records <programming language syntax>, but does not by itself supply all <programming language semantics>. In `a+b`, the names do not reveal their current values, and `+` might perform <addition> of <integers> or concatenate strings. The <programming language> rules, name bindings, and operand types determine the meaning. In <Python>, successfully calling `ast.parse` also does not guarantee that later <compilation> will accept the result: parsing `return 42` succeeds, but compiling that statement outside a function fails. <Python 3.14 documentation/ast — Abstract syntax trees, Python 3.14 documentation>[ast.parse: parsing performs no scoping checks; the return 42 example]{ref}
+
+An <abstract syntax tree> is not <machine code>. Its nodes describe language constructs. A <compiler> can check and transform this structure before translating it into executable instructions; an <interpreter> can evaluate an appropriate tree directly. The little evaluator below demonstrates this distinction without pretending to implement an entire <programming language>.
+
+= Abstract syntax tree precedence example
+{parent=Abstract syntax tree}
+
+Consider <Python> programs `x=2+3*4` and `x=(2+3)*4`. <Operator precedence> places <multiplication> inside the right operand of <addition> in the first <abstract syntax tree>. The parentheses instead place <addition> inside the left operand of <multiplication> in the second. Their right-hand sides evaluate to $2+(3\cdot4)=14$ and $(2+3)\cdot4=20$. No rule that simply reads all operators left to right would recover both structures. https://docs.python.org/3.14/reference/expressions.html#operator-precedence[Python language reference, section 6.17, multiplicative operators bind more tightly than additive operators]{ref}
+
+\Image[abstract-syntax-tree-precedence.png]
+{id=image-abstract-syntax-tree-precedence}
+{title=Two <abstract syntax trees> for <variable assignment>: <operator precedence> gives `x=2+3*4` the value $14$, while parentheses give `x=(2+3)*4` the value $20$}
+
+These are schematic views of <Python> trees: `Module` is omitted, and the `Add`/`Mult` and `Store` markers are written inside their owning nodes. In the actual schema, `BinOp` has `left`, `op` and `right` fields; `Assign` has a list of `targets` and a `value`. `Name(id='x', ctx=Store())` marks the name as a <variable assignment> target. Reading `x` in a <program expression> instead uses `Load`. A <variable assignment> is a statement, not an <equation> asserting that two values are equal. <Abstract syntax schema for CPython 3.14>[CPython 3.14, Parser/Python.asdl: Module, Assign, BinOp, Constant, Name and expr_context constructors]{ref}
+
+A restricted recursive evaluator can follow those fields. It accepts only <integer> <literal values> and binary <addition>, <subtraction> and <multiplication>; the surrounding <variable assignment> remains a separate action. Using `type(value) is int` excludes Boolean constants, even though <Python> treats `bool` as a subclass of `int`.
+
+```
+import ast
+
+OPS = {ast.Add: lambda a, b: a + b,
+       ast.Sub: lambda a, b: a - b,
+       ast.Mult: lambda a, b: a * b}
+
+def evaluate(node):
+    if isinstance(node, ast.Constant) and type(node.value) is int:
+        return node.value
+    if isinstance(node, ast.BinOp) and type(node.op) in OPS:
+        return OPS[type(node.op)](evaluate(node.left), evaluate(node.right))
+    raise ValueError("outside the integer-expression language")
+
+for source in ("x=2+3*4", "x=(2+3)*4"):
+    tree = ast.parse(source, optimize=0)
+    statement = tree.body[0]
+    print(statement.targets[0].id, evaluate(statement.value))
+# x 14
+# x 20
+```
+
+The <children in a rooted tree> have ordered roles: `left` and `right` cannot be interchanged. For <subtraction>, `8-3` gives $5$ while `3-8` gives $-5$. <Operator associativity> also matters: `8-3-1` parses as `(8-3)-1`, giving $4$, whereas `8-(3-1)` gives $6$. Here the syntax groups operators to the left; this does not assert the mathematical <associativity> of <subtraction>. <Operator precedence> determines grouping, rather than a general permission to reorder execution. For example, <Python> evaluates the calls in `f()+g()*h()` in the order `f`, `g`, `h`, although the <multiplication> result must be ready before the outer <addition>. https://docs.python.org/3.14/reference/expressions.html#evaluation-order[Python language reference, sections 6.16 and 6.17: left-to-right evaluation and left grouping of additive operators]{ref}
+
+= Abstract syntax tree traversal
+{parent=Abstract syntax tree}
+
+An <abstract syntax tree> traversal systematically visits its nodes. A <depth-first traversal of a tree> that processes each child before its parent is called postorder. For the <program expression> `2+3*4`, the schematic postorder is `2, 3, 4, Mult, Add`. This order lets an evaluator obtain each operand value before applying its operation. A traversal of the entire <Python> schema additionally visits marker nodes such as `Add` and `Store`; this shorter list concerns only the expression nodes drawn in the figures. Visiting an <abstract syntax tree> is a structural operation, and is not a general model of execution: a conditional may select only one branch, while a structural visitor examines both.
+
+= Abstract syntax tree transformation
+{parent=Abstract syntax tree}
+
+An <abstract syntax tree> transformation replaces or rearranges nodes. It can simplify a <program expression>, insert instrumentation, or translate a language construct into simpler constructs. When intended to preserve <programming language semantics>, it must preserve the relevant observable behavior, including values, <side effects>, and failures. A changed tree can be structurally valid while changing the program's meaning.
+
+= Constant folding
+{parent=Abstract syntax tree transformation}
+{wiki}
+
+<Constant folding> replaces a <program expression> whose value is known during translation by a <literal value>. For `x=2+3*4`, first replace the <multiplication> subtree by `Constant(value=12)`, then replace the <addition> subtree by `Constant(value=14)`. The <variable assignment> and its `Store` target survive: the result still assigns to `x`. This illustrates why a bottom-up <abstract syntax tree traversal> is convenient: replacing one child can make its parent eligible for the next replacement.
+
+\Image[abstract-syntax-tree-constant-folding.png]
+{id=image-abstract-syntax-tree-constant-folding}
+{title=<Constant folding> and postorder <abstract syntax tree traversal> for `2+3*4`: replace $3\cdot4$ by $12$, then $2+12$ by $14$}
+
+Here is a deliberately small <Python> transformer. Calling `generic_visit` first transforms the children; returning a node replaces the visited node. The location helpers retain or supply the metadata expected for <compilation>. <Python 3.14 documentation/ast — Abstract syntax trees, Python 3.14 documentation>[NodeTransformer, generic_visit, copy_location and fix_missing_locations]{ref}
+
+```
+class FoldIntegers(ast.NodeTransformer):
+    def visit_BinOp(self, node):
+        self.generic_visit(node)
+        if (isinstance(node.left, ast.Constant)
+                and isinstance(node.right, ast.Constant)
+                and type(node.left.value) is int
+                and type(node.right.value) is int
+                and type(node.op) in OPS):
+            value = OPS[type(node.op)](node.left.value, node.right.value)
+            return ast.copy_location(ast.Constant(value=value), node)
+        return node
+
+tree = ast.parse("x=2+3*4", optimize=0)
+folded = ast.fix_missing_locations(FoldIntegers().visit(tree))
+namespace = {}
+exec(compile(folded, "<folded example>", "exec"), namespace)
+assert namespace["x"] == 14
+assert ast.unparse(folded) == "x = 14"
+```
+
+This transformer folds literal <integer> operands only. It leaves `a+3*4` as `a+12`, without inventing a value for the <program identifier> `a`. It leaves calls intact: replacing `0*f()` by `0` could discard a <side effect> or a failure. Nor does it reassociate <floating-point arithmetic>, where changing parentheses can change rounding. For the supported <integer arithmetic>, a short <structural induction> explains correctness: a retained <literal value> has the same value; at each folded binary node, the already-correct child values are combined by exactly the original operation in the original left/right order. This claim concerns the supported fragment's values, not unrestricted equivalence of arbitrary <Python> programs.
+
+= Abstract syntax tree source location
+{parent=Abstract syntax tree}
+
+An <abstract syntax tree> can retain source locations even while omitting punctuation nodes. <Python> records one-based line numbers and zero-based UTF-8 byte offsets, with the end offset exclusive. In `x=2+3*4`, the <multiplication> node spans offsets $4$ through $7$, and `ast.get_source_segment` returns `3*4`. A copied location on a folded `12` describes the original span, not text newly present in the source. Such metadata supports error messages and editing tools without making an <abstract syntax tree> a lossless record of formatting. <Python 3.14 documentation/ast — Abstract syntax trees, Python 3.14 documentation>[Node classes: lineno, col_offset, end_lineno and end_col_offset; get_source_segment and copy_location]{ref}
+
+// Target: computer-science.bigb
+
+= Programming language syntax
+{parent=Programming language}
+
+The rules for forming programs in a <programming language>. A <parser> checks and structures text according to these rules; an <abstract syntax tree> records the resulting constructs.
+
+= Lexical analysis
+{parent=Programming language syntax}
+{wiki}
+
+Recognition of <lexical tokens> in program text before or during <parsing>.
+
+= Lexical token
+{parent=Lexical analysis}
+
+A categorized piece of program text, such as a <program identifier>, a numeral denoting a <literal value>, or an operator symbol. Its spelling and category help a <parser> recognize the larger construct.
+
+= Parser
+{parent=Programming language syntax}
+
+A parser recognizes how text fits a <programming language syntax> and can construct a <parse tree> or <abstract syntax tree>.
+
+= Parsing
+{parent=Parser}
+
+The recognition process performed by a <parser>, producing a structural description of text according to a <programming language syntax>.
+
+= Program identifier
+{parent=Programming language syntax}
+
+A name used by a program, such as `x` in a <variable assignment>. An <abstract syntax tree> can record the name without determining which value it denotes.
+
+= Literal value
+{parent=Programming language syntax}
+
+A value written directly in program text, such as an <integer> numeral or a quoted string, rather than obtained through a <program identifier>. Distinct spellings can denote the same value.
+
+= Program expression
+{parent=Programming language syntax}
+
+A program construct that is evaluated to obtain a value, potentially with <side effects> or failure. An arithmetic <mathematical expression> is one example; its <abstract syntax tree> records how operands and operations nest.
+
+= Operator precedence
+{parent=Program expression}
+
+The syntactic priority that resolves grouping when different operators occur together without parentheses. It determines the <abstract syntax tree> shape before evaluation.
+
+= Operator associativity
+{parent=Operator precedence}
+
+The syntactic grouping convention for successive operators of the same precedence. Left grouping of <subtraction> makes `a-b-c` mean `(a-b)-c`; it does not make <subtraction> an <associative> operation.
+
+= Variable assignment
+{parent=Programming language syntax}
+
+A program action that associates a value with a target name. For <Python> `x=2+3*4`, evaluate the right-hand <program expression> and bind `x` to its result. https://docs.python.org/3.14/reference/simple_stmts.html#assignment-statements[Python language reference, section 7.2: assignment to an identifier and evaluation of the right-hand side]{ref}
+
+= Programming language semantics
+{parent=Programming language}
+
+The meaning of constructs in a <programming language>, including their permitted values and execution behavior. <Programming language syntax> organizes constructs; a <type system> and execution rules give further constraints and meaning.
+
+= Program state
+{parent=Programming language semantics}
+
+A description of the information needed to determine a program's next permitted step. In the <summation loop verification>, this includes the current <variable> values and the position in the instructions.
+
+= Integer overflow
+{parent=Programming language semantics}
+{wiki}
+
+An <integer arithmetic> result outside the range of its chosen representation. A <programming language> may specify wrapping, trapping or another behavior; a proof over mathematical <integers> must account for that difference.
+
+= Hoare logic
+{c}
+{parent=Programming language semantics}
+{wiki}
+
+A system of rules for proving <Hoare triples> by following a program's structure. <Variable assignment>, sequential composition and loops have corresponding proof obligations.
+
+= Hoare triple
+{c}
+{parent=Hoare logic}
+{title2=$\{P\}\ C\ \{Q\}$}
+
+A <partial correctness> claim connecting a <precondition> $P$, a program $C$ and a <postcondition> $Q$: every terminating execution begun with $P$ ends with $Q$. State separately whether <total correctness> is intended.
+
+= Compiler
+{parent=Programming language}
+{wiki}
+
+A <compiler> translates a program from one representation to another while aiming to preserve its <programming language semantics>. Its input might be <source code> or an <intermediate representation>; its output might be another <programming language>, <bytecode>, an <intermediate representation>, or <machine code>. Producing <machine code> is therefore one possible destination, rather than the definition of <compilation>. For example, the <LLVM> 20.1.0 tutorial translates an <abstract syntax tree> into an <intermediate representation> before introducing execution.<LLVM 20.1.0 documentation/3. Kaleidoscope: Code generation to LLVM IR>[LLVM 20.1.0 documentation; Implementing a language with LLVM, chapter 3, sections 3.1 and 3.5: AST to LLVM IR and the initial driver that prints IR]{ref}
+
+<Compilation> can use an <abstract syntax tree> for checking and transformations such as <constant folding> before producing <machine code>. These are useful possibilities, not a compulsory sequence of separate stages for every <compiler>. The central distinction is between translating a program and executing its operations: a <compiler> can translate `x*(2+3)-4` without knowing the input value of `x`, whereas an <interpreter> needs that value to produce this <program expression>'s result.
+
+Different representations expose different questions. <Source code> preserves what a programmer wrote; an <abstract syntax tree> exposes grouping; a <type system> checks permitted combinations; a <stack machine> makes operand movement explicit. Retaining <abstract syntax tree source locations> across <compilation> helps an error message identify the original construct even after <constant folding> has changed its shape. A malformed `x*(2+)-4` is a <programming language syntax> error; an unavailable `x` in the valid example is instead a missing input. Locating the failing rule is more helpful than treating both as an unexplained execution failure.
+
+= Compilation
+{parent=Compiler}
+
+<Compilation> is the translation process performed by a <compiler>, which may include checking and transforming an <abstract syntax tree>. Translation can finish before execution, or happen during execution through <just-in-time compilation>. Reusing the translated representation can avoid repeated <parsing> and repeated <constant folding> when only the inputs change. This does not guarantee a speedup: translation itself costs work, and the choice of representation and execution mechanism matters.
+
+\Image[compiler-representation-pipeline.png]
+{id=image-compiler-representation-pipeline}
+{title=One possible <compilation> pipeline for `x*(2+3)-4`, with execution from an <abstract syntax tree>, a <stack machine> instruction sequence, or <machine code>}
+
+= Compilation arithmetic example
+{parent=Compilation}
+
+Consider the <program expression> `x*(2+3)-4` in a deliberately small <programming language>. Its only <program identifier> is `x`, supplied as an <integer> input. Its <literal values> are nonnegative decimal numerals, interpreted as <integers>. Whitespace is ignored between <lexical tokens>. Its <context-free grammar> is:
+
+```
+expression ::= term (("+" | "-") term)*
+term       ::= factor ("*" factor)*
+factor     ::= numeral | "x" | "(" expression ")"
+numeral    ::= digit digit*
+digit      ::= "0" | "1" | "2" | "3" | "4"
+             | "5" | "6" | "7" | "8" | "9"
+```
+
+Here `*` outside quotation marks means zero or more repetitions. Repeated operators are grouped to the left, specifying <operator associativity>; `term` gives <multiplication> higher <operator precedence> than <addition> and <subtraction>. Parentheses override that grouping. There is no unary minus, <variable assignment>, function call, or <side effect> in this language. Evaluation obtains each left operand before its right operand and uses exact <integer arithmetic>, with no fixed-width overflow.
+
+<Lexical analysis> recognizes `x`, `*`, `(`, `2`, `+`, `3`, `)`, `-`, `4`. <Parsing> constructs the concrete <abstract syntax tree> `Sub(Mul(Name(x), Add(Int(2), Int(3))), Int(4))`. Parentheses have done their work by making `Add` a child of `Mul`; they need not survive as nodes. <Constant folding> changes this to `Sub(Mul(Name(x), Int(5)), Int(4))`. It cannot replace `Name(x)` by a <literal value> because the input is supplied at execution. The resulting <function> of the input is $f(x)=5x-4$.
+
+A <compiler> for our <stack machine> emits `LOAD x; PUSH 5; MUL; PUSH 4; SUB`. `LOAD x` pushes the current input; `PUSH n` pushes the <integer> <literal value> `n`. Each binary instruction removes the top item as its right operand, then the next item as its left operand, and pushes the result. The instruction sequence is an <intermediate representation> that an <interpreter> can execute; no <machine code> has been emitted. A compact binary encoding could make it <bytecode>, but these printed instruction names are only a readable notation.
+
+Why does this <compilation> preserve the result? A <structural induction> supplies a short proof outline. Translating a <literal value> or `x` appends its value to any initial <stack>. For a binary <abstract syntax tree> node, first translating the left child and then the right child appends the two operand values; the matching instruction replaces them by exactly the original operation's result. Previously present <stack> items remain intact. <Constant folding> also preserves the result because $2+3=5$ in the specified <integer arithmetic>. Together these facts explain agreement for every <integer> input, rather than merely agreement for one trial.
+
+= Just-in-time compilation
+{parent=Compilation}
+{wiki}
+
+= JIT
+{c}
+{synonym}
+
+<Compilation> performed during execution, often producing <machine code> for subsequent execution.
+
+= Intermediate representation
+{parent=Compiler}
+{wiki}
+
+A program representation used between input and final output, convenient for analysis, transformation or execution. An <abstract syntax tree> and <bytecode> can each serve this role.
+
+= Bytecode
+{parent=Intermediate representation}
+{wiki}
+
+An encoded instruction representation for a software execution mechanism. <Compilation> can produce <bytecode> that an <interpreter> executes.
+
+= LLVM
+{c}
+{parent=Compiler}
+{wiki}
+
+An infrastructure project providing reusable tools for <compilation> and <intermediate representations>.
+
+= Interpreter
+{disambiguate=computing}
+{parent=Programming language}
+{wiki}
+
+= Interpreter
+{synonym}
+
+An <interpreter> executes a program's operations according to its <programming language semantics>. It can recursively evaluate an <abstract syntax tree>, or follow an instruction sequence using an execution state such as a <stack> and an <instruction pointer>. It need not repeatedly read <source code> characters, and it need not use an <abstract syntax tree> at all.
+
+<Compilation> and interpretation can coexist. In <CPython>, <Python> <source code> is compiled into <bytecode> for execution by an <interpreter>; its <bytecode> is not promised to remain stable between releases.<Python 3.14 documentation/Glossary, Python 3.14 documentation>[Python 3.14 documentation; Python 3.14 glossary: bytecode and virtual machine entries; compilation, execution and release-specific bytecodes]{ref} The <Python> 3.14 `compile` function accepts text or an <abstract syntax tree> and can produce a code object, which `eval` or `exec` can execute.<Python 3.14 documentation/Built-in Functions, Python 3.14 documentation>[Python 3.14 documentation; Python 3.14 Built-in Functions: compile, accepted source forms, code objects and execution by eval or exec]{ref} These operations make translation and execution separately accessible without requiring them to live in different applications.
+
+<Just-in-time compilation> gives another combination: an interactive implementation can translate a submitted <program expression> into <machine code> and then execute it immediately. The <LLVM> 20.1.0 tutorial demonstrates this by adding an <intermediate representation> module to its <just-in-time compilation> facility, looking up the generated function, and calling it.<LLVM 20.1.0 documentation/4. Kaleidoscope: Adding JIT and Optimizer Support>[LLVM 20.1.0 documentation; Implementing a language with LLVM, chapter 4, section 4.4: HandleTopLevelExpression, addModule, lookup and calling the generated native function]{ref} Thus calling a <programming language> permanently "compiled" or "interpreted" hides an implementation choice: ask which representation is translated, which is executed, and when.
+
+= Interpreter arithmetic trace
+{parent=Interpreter (computing)}
+
+Use the <compilation arithmetic example> with input $x=7$. An <abstract syntax tree> <interpreter> first reads `x`, obtains $2+3=5$, forms $7\cdot5=35$, and finally computes $35-4=31$. Interpreting the folded <abstract syntax tree> skips the <addition> but gives the same result. The compiled <stack machine> instructions instead produce the following trace; the top of the <stack> is written on the right:
+
+```
+instruction    stack after instruction
+initial        []
+LOAD x         [7]
+PUSH 5         [7, 5]
+MUL            [35]
+PUSH 4         [35, 4]
+SUB            [31]
+```
+
+\Image[interpreter-tree-stack-trace.png]
+{id=image-interpreter-tree-stack-trace}
+{title=Execution of `x*(2+3)-4` at $x=7$: the original <abstract syntax tree> and the folded <stack machine> instructions both give $31$}
+
+The order in `SUB` is essential: reversing its two popped operands would give $4-35=-31$. The same stored instruction sequence works for input $x=-2$, yielding $(-2)\cdot5-4=-14$, without repeating <parsing> or <constant folding>. An <abstract syntax tree> <interpreter> can likewise reuse its already-parsed tree. Reusing a representation is therefore useful to both approaches; it does not itself distinguish <compilation> from interpretation.
+
+The pleasing part is that a nested <rooted tree> and a flat instruction sequence express the same computation. The <structural induction> in the <compilation arithmetic example> connects them by a precise <stack> property. This tiny language always terminates and has no <side effects>; richer <programming language semantics> require a correctness argument that also accounts for failures, externally visible actions, and possible nontermination.
+
+= Machine code
+{parent=Programming language}
+{wiki}
+
+Encoded instructions executed by a <central processing unit>. An <abstract syntax tree> instead describes <programming language> constructs and their nesting.
+
+= Python
+{c}
+{disambiguate=programming language}
+{parent=Programming language}
+{wiki}
+
+= Python
+{c}
+{synonym}
+
+A <programming language> whose standard-library `ast` module provides access to its <abstract syntax trees>. The examples here use its version 3.14 schema and literal <integer arithmetic>.
+
+= CPython
+{c}
+{parent=Python (programming language)}
+{wiki}
+
+The canonical implementation of <Python>, distributed through python.org.
+
+= Object-oriented programming
+{parent=Programming language}
+{wiki}
+
+// Target: computer-science.bigb
+
+= Encapsulation in object-oriented programming
+{parent=Object-oriented programming}
+
+In <object-oriented programming>, encapsulation packages an object's state with the operations that act on it and can restrict direct access to its implementation. It is the object-oriented use of <encapsulation (computer programming)>.
+
+= Class
+{disambiguate=programming}
+{parent=Object-oriented programming}
+{wiki}
+
+= Class in object-oriented programming
+{synonym}
+
+// Target: computer-science.bigb
+
+= Java
+{parent=Programming language}
+{wiki}
+{c}
+{disambiguate=programming language}
+
+= Java
+{c}
+{synonym}
+
+// Target: computer-science.bigb
+
+= Java interface
+{parent=Java (programming language)}
+{c}
+
+An interface specifies a type contract that independent classes can implement. Code accepting the interface can operate on multiple implementations, avoiding dependence on one concrete class. A class may implement several interfaces despite having only one direct class superclass.
+
+// Destination: computer-science.bigb
+
+= Private field in Java
+{parent=Java (programming language)}
+
+= Private fields in Java
+{synonym}
+
+A field declared `private` is hidden from ordinary external source-level access. Library methods can enforce invariants and change the representation without exposing storage to clients. Returning a mutable internal object can still undermine this <encapsulation in object-oriented programming>.
+
+// Destination: computer-science.bigb
+
+= Final class in Java
+{parent=Java (programming language)}
+
+A class declared `final` cannot be subclassed. This can protect an implementation contract against overriding in an untrusted subclass. It does not by itself make the class immutable, and it rules out subclass-based customization.
+
+// Destination: computer-science.bigb
+
+= Protected method in Java
+{parent=Java (programming language)}
+
+A `protected` method is accessible to code in its package and, subject to the cross-package receiver restriction, to subclasses elsewhere. It can expose a subclass customization hook without being a public client operation. Protected access is broader than subclass-only access.
+
+// Destination: computer-science.bigb
+
+= Java array
+{parent=Java (programming language)}
+{c}
+
+Java arrays are fixed-length objects. A two-dimensional array is an array of row-array references, so rows can have different lengths and must be allocated separately if not allocated by the initial expression.
+
+// Target: computer-science.bigb
+
+= Generics in Java
+{parent=Java (programming language)}
+{wiki}
+
+// Target: computer-science.bigb
+
+= Generic method in Java
+{parent=Generics in Java}
+
+A method declaring its own type parameters, for example `<T> List<T> singletonList(T value)`. The type parameter connects argument and result types and permits compile-time checking without casts at ordinary call sites. A method mentioning only a generic class's type parameter need not itself be a generic method.
+
+// Destination: computer-science.bigb
+
+= Generic type invariance
+{parent=Generics in Java}
+
+Even when `S` is a subtype of `T`, neither `G<S>` nor `G<T>` is generally a subtype of the other. This prevents unsafe writes into mutable generic containers. Wildcards express restricted views.
+
+// Target: computer-science.bigb
+
+= Type erasure
+{parent=Generics in Java}
+{wiki}
+
+// Target: computer-science.bigb
+
+= Exception handling
+{parent=Programming language}
+{wiki}
+
+// Target: computer-science.bigb
+
+= ML exception type
+{parent=Exception handling}
+{c}
+{title2=`exn`}
+
+In <Standard ML>, `exn` is an extensible datatype of exception packets. Fresh declarations introduce constructors, optionally with payloads; rebinding can alias an existing constructor; `raise` propagates a packet and `handle` performs dynamic pattern-based recovery.
+
+// Target: computer-science.bigb
+
+= Type system
+{parent=Programming language}
+{wiki}
+
+A <type system> assigns types to program expressions and supplies rules governing their use. A type constrains permitted operations: in our teaching <programming language>, `int` admits <integer> addition, `bool` supplies `true` and `false` for conditions, and a <function type> specifies an argument type and a result type. Storage as <bits> alone does not explain these distinctions; the <type system> determines whether an expression can serve as an argument, a condition or an operand.
+
+A <typing judgment> $\Gamma\vdash e:\tau$ says that expression $e$ has type $\tau$ under the assumptions in the <typing context> $\Gamma$. For example,
+$$
+\Gamma=\{x:\mathrm{int},y:\mathrm{int}\},\qquad \Gamma\vdash x+y:\mathrm{int}.
+$$
+The assumptions give each operand type `int`; the addition rule then gives the sum type `int`. Changing $y$ to type `bool` prevents this derivation. Our teaching <programming language> has distinct `int` and `bool` types and no implicit conversions between them.
+
+The conditional rule requires a Boolean condition and the same type for both branches:
+$$
+\frac{\Gamma\vdash c:\mathrm{bool}\qquad\Gamma\vdash e_1:\tau\qquad\Gamma\vdash e_2:\tau}{\Gamma\vdash\mathrm{if}\ c\ \mathrm{then}\ e_1\ \mathrm{else}\ e_2:\tau}.
+$$
+Thus `if true then 1 else 2` has type `int`, while `if true then 1 else false` is rejected: its branches would require $\tau=\mathrm{int}$ and $\tau=\mathrm{bool}$ simultaneously. Even a branch that will not execute is checked by this rule. This is a rule of this particular <type system>; a different <programming language> can choose different rules. https://softwarefoundations.cis.upenn.edu/plf-current/Types.html[Software Foundations, Programming Language Foundations, Type Systems: typing relation]{ref}
+
+The useful feature is compositional reasoning: after checking the parts, a rule explains how to check the whole. The <function type> diagram shows this for a call. <Type inference> can discover the required types automatically, and <type variables> let one express relationships that recur across many concrete types. The result is both a practical early error detector and a small, readable derivation explaining why an expression fits its intended use.
+
+The guarantee depends on the rules and execution model. <Type safety> can exclude specified failures such as adding a Boolean or calling an <integer> as a function. It does not by itself establish every desired runtime property or guarantee that execution terminates. A <type system> that permits unrestricted recursion can accept a computation that runs forever; <exception handling> also needs its own account of permitted outcomes.
+
+= Simple type
+{parent=Type system}
+{title2=$\tau$}
+
+In the examples here, a <simple type> is a finite expression built from the base types `int` and `bool` using <function types>:
+$$
+\tau::=\mathrm{int}\mid\mathrm{bool}\mid(\tau\to\tau).
+$$
+For example, $\mathrm{int}\to\mathrm{bool}$ describes a function accepting an <integer> and producing a Boolean value. During <type inference>, the grammar is extended with <type variables> such as $\alpha$ for types not yet determined. A <type scheme> additionally binds such <type variables>; it is distinct from the individual <simple type> used at one call.
+
+= Typing judgment
+{parent=Type system}
+{title2=$\Gamma\vdash e:\tau$}
+
+A <typing judgment> asserts that expression $e$ has type $\tau$ under a <typing context> $\Gamma$. A rule displays prerequisite <typing judgments> above a line and their conclusion below it. Repeatedly applying rules gives a derivation; the addition example under <type system> uses two assumptions and one addition rule.
+
+= Typing context
+{parent=Typing judgment}
+{title2=$\Gamma$}
+
+A <typing context> records the types assumed for available program names. In $\Gamma=\{x:\mathrm{int},y:\mathrm{int}\}$, looking up either name yields `int`. Checking a <lambda abstraction> extends the <typing context> with its argument's type for the body. In the <Hindley-Milner type system>, a <typing context> can also hold <type schemes> for names introduced by <let polymorphism>.
+
+= Type safety
+{parent=Type system}
+{wiki}
+
+For a specified <programming language> and execution model, <type safety> commonly follows from two properties: a closed expression satisfying a <typing judgment> is either a value or can take an execution step, and taking a step preserves its type. Proofs proceed by <structural induction> on derivations, using <capture-avoiding substitution> for function calls. Repeated preservation keeps the remaining expression typed; the first property then rules out getting stuck at an operation outside the model's permitted cases. This argument does not imply termination or correctness of an arbitrary specification. https://softwarefoundations.cis.upenn.edu/plf-current/Types.html[Software Foundations, Programming Language Foundations, Type Systems: progress, preservation and type soundness]{ref}
+
+= Type inference
+{parent=Type system}
+{wiki}
+
+<Type inference> discovers types consistent with a program's structure and <typing context>. In our examples, it introduces fresh <type variables>, generates <equations> from <typing judgments>, and solves them by <type unification>. For $f\,3$, if $f$ initially has unknown type $\alpha$ and the result has fresh type $\beta$, <lambda application> requires $\alpha=\mathrm{int}\to\beta$.
+
+= Type unification
+{parent=Type inference}
+
+<Type unification> finds a <type substitution> making specified type expressions equal, or reports incompatible constraints. In our <simple type> grammar, matching two <function types> reduces to matching their argument types and their result types. Distinct base types `int` and `bool` fail to match; solving a <type variable> against a nontrivial type expression uses the <occurs check>.
+
+// Target: computer-science.bigb
+
+= Type variable
+{parent=Type system}
+{wiki}
+{title2=$\alpha$}
+
+A <type variable> is a placeholder for a type. In a <function type> $\alpha\to\alpha$, the repeated <type variable> requires the argument and result types to agree; $\alpha\to\beta$ does not impose that agreement. A <type substitution> replacing $\alpha$ by `int` changes $\alpha\to\alpha$ to $\mathrm{int}\to\mathrm{int}$ everywhere within that instance.
+
+For the <identity function> written as the <lambda abstraction> $\lambda x.x$, assume $x:\alpha$ in the body. Looking up $x$ gives result type $\alpha$, so the abstraction rule gives $\lambda x.x:\alpha\to\alpha$. In the pure <Hindley-Milner type system>, `let identity = λx.x in ...` gives `identity` the <type scheme> $\forall\alpha.\alpha\to\alpha$ by <let polymorphism>. Each use receives fresh <type variables>: `identity 3` chooses `int` for its instance, and `identity true` chooses `bool` for a separate instance. These choices do not change the original <type scheme>.
+
+\Image[polymorphic-identity-instantiation.png]
+{title=Independent type instantiations of a let-bound identity function}
+{description=The <type scheme> stays general while two uses receive different <type substitutions>. Each use preserves the equality of its own argument and result types.}
+
+For example, `let identity = λx.x in let a = identity 3 in identity true` is valid and has type `bool`. By contrast, `(λf. let a = f 3 in f true) (λx.x)` is rejected by the <Hindley-Milner type system>: the <lambda abstraction> binds `f` to one monomorphic <function type>. The first call requires its argument type to be `int`, and the second requires that same type to be `bool`. Naming the first result with `let a` does not generalize `f`. The distinction makes reusable code possible while keeping the assumptions about a supplied argument consistent.
+
+// Target: computer-science.bigb
+
+= Type substitution
+{parent=Type variable}
+{title2=$S$}
+
+A <type substitution> replaces <type variables> by type expressions consistently. For example, $S=\{\alpha\mapsto\mathrm{int}\}$ gives $S(\alpha\to\alpha)=\mathrm{int}\to\mathrm{int}$. Applying a <type substitution> to a <type scheme> must respect its bound <type variables>; separate instantiation first replaces those bound placeholders by fresh ones.
+
+= Type scheme
+{parent=Type variable}
+{title2=$\forall\alpha.\tau$}
+
+A <type scheme> binds <type variables> that may be instantiated independently at different uses. The <identity function> has <type scheme> $\forall\alpha.\alpha\to\alpha$: choose one type per use, then use that same choice on both sides of its <function type>. A free <type variable> shared with the <typing context> is not automatically such an independently selectable parameter.
+
+= Occurs check
+{parent=Type variable}
+
+The <occurs check> tests whether a <type variable> occurs inside the expression proposed as its replacement during <type unification>. After discarding a trivial <equation> such as $\alpha=\alpha$, solving $\alpha=\tau$ by a <type substitution> requires that $\alpha$ not occur in $\tau$. Thus $\alpha=\mathrm{int}\to\beta$ is permitted when $\alpha$ and $\beta$ are distinct, but $\alpha=\alpha\to\beta$ is rejected in our finite <simple type> grammar.
+
+There is a short reason for the rejection. If a finite replacement $T$ for $\alpha$ existed, with replacement $B$ for $\beta$, the <equation> would become $T=T\to B$. The right side's <abstract syntax tree> has one new arrow node plus the nodes of $T$ and $B$, so it has strictly more nodes than $T$. Equal finite type expressions cannot have different sizes. <Recursive types> are a different design: they explicitly describe self-reference and specify how it interacts with <typing judgments>.
+
+= Recursive type
+{parent=Type system}
+{title2=$\mu\alpha.\tau$}
+
+A <recursive type> explicitly names a type in terms of itself. Notation $\mu\alpha.\tau$ binds $\alpha$ within $\tau$. A <programming language> must specify whether unfolding gives type equality or requires explicit operations; this is outside the finite <simple type> grammar used here. See Benjamin C. Pierce's treatment of <recursive types> in chapters 20–21. https://www.cis.upenn.edu/~bcpierce/tapl/contents.pdf[Pierce, Types and Programming Languages (2002), author-hosted contents, chapters 20–21]{ref}
+
+= Function type
+{parent=Type system}
+{wiki}
+{title2=$\tau_1\to\tau_2$}
+
+A <function type> $\tau_1\to\tau_2$ classifies functions that accept arguments of type $\tau_1$ and produce results of type $\tau_2$ if they return. For example, $\lambda x.x+1$ has <function type> $\mathrm{int}\to\mathrm{int}$ in our teaching <programming language>, while $\lambda b.\mathrm{if}\ b\ \mathrm{then}\ 1\ \mathrm{else}\ 2$ has <function type> $\mathrm{bool}\to\mathrm{int}$. A <function type> specifies how a function may be used; it does not guarantee that a call returns.
+
+\Image[function-typechecking-tree.png]
+{title=Checking an integer function call from its parts}
+{description=An addition rule checks the body of a <lambda abstraction>, the abstraction rule gives its <function type>, and <lambda application> checks the argument and obtains the result type. Arrows run from prerequisite <typing judgments> to their conclusions.}
+
+The two central <typing judgment> rules are
+$$
+\frac{\Gamma,x:\tau_1\vdash e:\tau_2}{\Gamma\vdash\lambda x.e:\tau_1\to\tau_2},\qquad
+\frac{\Gamma\vdash f:\tau_1\to\tau_2\qquad\Gamma\vdash a:\tau_1}{\Gamma\vdash f\,a:\tau_2}.
+$$
+The <lambda abstraction> rule checks the body under an extended <typing context>; the <lambda application> rule checks that the argument has exactly the required type. These rules describe our <simple type> examples. https://softwarefoundations.cis.upenn.edu/plf-current/Stlc.html[Software Foundations, Programming Language Foundations, The Simply Typed Lambda-Calculus: typing rules]{ref}
+
+For $(\lambda x.x+1)\,3$, assume $x:\mathrm{int}$; both $x$ and $1$ have type `int`, so $x+1$ has type `int`. The abstraction therefore has <function type> $\mathrm{int}\to\mathrm{int}$. Since $3$ has type `int`, the call has type `int` and evaluates to $4$. Replacing $3$ by `true` fails the argument requirement. This local derivation explains each step without running the program.
+
+Arrows associate to the right: $\tau_1\to\tau_2\to\tau_3$ means $\tau_1\to(\tau_2\to\tau_3)$, a function returning another function. For instance, $\lambda x.\lambda y.x+y$ has <function type> $\mathrm{int}\to(\mathrm{int}\to\mathrm{int})$. Supplying one <integer> yields a function awaiting the second. Functions can also be arguments: $(\mathrm{int}\to\mathrm{int})\to\mathrm{int}$ accepts an <integer>-to-<integer> function and has an <integer> result type.
+
+// Target: computer-science.bigb
+
+= Parametric polymorphism
+{parent=Type system}
+{wiki}
+
+A function or data structure is parameterized by types and can operate uniformly over their instantiations.
+
+// Target: computer-science.bigb
+
+= Hindley-Milner type system
+{parent=Type system}
+{c}
+{wiki=Hindley–Milner_type_system}
+
+The pure <Hindley-Milner type system> combines <function types>, <type inference> and <let polymorphism>. It solves constraints by <type unification> and generalizes eligible <type variables> at `let` bindings. Robin Milner's 1978 paper presents <Algorithm W> and proves its soundness for the paper's language; it also acknowledges Roger Hindley's earlier work on finding general types. https://www.pure.ed.ac.uk/ws/files/15143545/1_s2.0_0022000078900144_main.pdf[Milner, A Theory of Type Polymorphism in Programming (1978), introduction and sections 3.5, 4.1–4.2]{ref}
+
+= Algorithm W
+{parent=Hindley-Milner type system}
+{c}
+
+<Algorithm W> performs <type inference> by traversing the program's <abstract syntax tree>, introducing fresh <type variables>, combining <type substitutions> obtained by <type unification>, and generalizing eligible `let` bindings. It distinguishes fresh instances of a <type scheme> from the shared monomorphic types of parameters to a <lambda abstraction>.
+
+= Let polymorphism
+{parent=Hindley-Milner type system}
+
+<Let polymorphism> gives an eligible `let`-bound name a <type scheme>, allowing fresh instantiation at each use. In the pure <Hindley-Milner type system>, generalize the inferred type's <type variables> that are free in that type and not free in the current <typing context>. The <identity function> example under <type variable> meets this condition. A <lambda abstraction>'s parameter receives one monomorphic type shared by its uses. Languages with mutation, such as <Standard ML> with <ML reference types>, need additional restrictions on generalization.
+
+= Imperative programming
+{parent=Programming language}
+{wiki}
+
+= Side effect
+{disambiguate=computer science}
+{parent=Imperative programming}
+{wiki}
+
+= Side effect
+{synonym}
+
+// Target: computer-science.bigb
+
+= Functional programming
+{parent=Programming language}
+{wiki}
+
+= Pure function
+{parent=Functional programming}
+{wiki}
+
+A procedure whose result depends only on its explicit argument values and which has no observable <side effects>. For terminating calls with reusable results, this makes the value condition of the <memoization cache contract> particularly simple.
+
+// Target: computer-science.bigb
+
+= Structural recursion
+{parent=Functional programming}
+{wiki}
+
+Recursion following the constructors of a finite inductive datatype. Correctness is naturally proved by <structural induction>.
+
+// Target: computer-science.bigb
+
+= Standard ML
+{parent=Programming language}
+{c}
+{wiki}
+
+= SML
+{c}
+{synonym}
+
+A strict functional <programming language> with <parametric polymorphism>, algebraic datatypes, <exception handling> and mutable references.
+
+// Target: computer-science.bigb
+
+= ML reference type
+{parent=Standard ML}
+{c}
+{title2=`'a ref`}
+
+A mutable cell holding a value of type `'a`. `ref` allocates a cell, `!` reads it and `:=` updates it. Aliases share the same cell; the value restriction prevents unsafe polymorphic mutable storage.
+
+// Target: computer-science.bigb
+
+= Source code
+{parent=Programming language}
+{wiki}
+
+A program written in the input notation of a <compiler> or <interpreter>, before the particular translation being discussed.

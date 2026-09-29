@@ -1,0 +1,610 @@
+= Operating system
+{wiki}
+
+An <operating system> manages the resources that let programs run and cooperate. <Operating-system processes> organize running work, <virtual memory> supplies protected <address spaces>, and a <file system> supplies named <files> that can outlive the <operating-system process> that created them. The <operating-system kernel> enforces the core mechanisms; <system calls> let programs request its services. Separating these responsibilities makes it possible to share a <file> while keeping the participating <operating-system processes>' <address spaces> isolated. https://pages.cs.wisc.edu/~remzi/OSTEP/file-intro.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 39, introduction: processes, address spaces and persistent storage]{ref}
+
+A concrete example makes the separation useful: two <operating-system processes> can each use <file descriptor> `3`, yet refer to different <files>; two different names can instead refer to the same <file> through <hard links>. Neither a name nor a small <integer> identifies an object without its context. <Virtual memory> has a related distinction: the same <virtual address> in different <address spaces> can designate different <physical addresses>.
+
+<Unix> provides an influential example of this design. In their July 1974 paper, Dennis M. Ritchie and Ken Thompson date its earliest version to approximately 1969–70 and describe <operating-system processes>, a hierarchical <file system>, and <inodes> separating <directory entries> from <file metadata>. This is a documented historical example, rather than a claim that every <operating system> uses <Unix> conventions. https://www.cs.cmu.edu/~15712/papers/ritchie74.pdf[Ritchie and Thompson, The UNIX Time-Sharing System, Communications of the ACM 17(7), 1974, sections 1, 3 and 4]{ref}
+
+= POSIX
+{parent=Operating system}
+{c}
+
+The Portable Operating System Interface standards specify interfaces and observable behaviour for portable programs, including <file descriptors>, <hard links> and <unlinking an open file>. Their requirements do not prescribe one on-storage <inode> layout. The worked examples below use <POSIX> <Unix> semantics for ordinary <files>. https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap03.html[The Open Group, POSIX.1-2024, definitions of files, directories and file descriptors]{ref}
+
+// Target: computer-science.bigb
+
+= Unix
+{parent=Operating system}
+{c}
+
+An operating-system family with process, file and pipe abstractions. The traditional discretionary file-permission model separates owner, group and other users and read, write and execute rights. Individual Unix systems can add richer <access control lists> and other protection mechanisms.
+
+// Destination: computer-science.bigb
+
+= Windows XP
+{parent=Operating system}
+{c}
+
+A member of the Windows NT operating-system family. Executive services such as object, memory and input-output management execute in privileged kernel mode. Its object-level <access control lists> and subject tokens permit finer authorization policies than traditional owner-group-other file permissions.
+
+// Destination: computer-science.bigb
+
+= Polled input-output
+{parent=Operating system}
+
+In <polled input-output>, the <CPU> explicitly checks a device's status to discover whether work is ready or an operation has completed. Repeatedly checking in a tight loop is busy polling; periodic checks can instead leave time for other work. <Interrupt-driven input-output> changes how readiness is discovered, while <DMA> changes how payload data moves. https://pages.cs.wisc.edu/~remzi/OSTEP/file-devices.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 36, sections 36.3–36.5: polling, interrupts and DMA]{ref}
+
+Use the model drawn under <interrupt-driven input-output>: device events occur at times $2,5,9$, while polls occur at $0,2,4,6,8,10,12$. Assume each event remains pending until detected and an event simultaneous with a poll is visible to that poll. The detection times are $2,6,10$, giving delays $0,1,1$. Four of the seven checks find no new event. These are event-detection delays, not completion times for servicing the events.
+
+More generally, for polls at $0,\Delta,2\Delta,\ldots$ with $\Delta>0$, an event at time $t\geq0$ is first detected at
+$$
+d(t)=\Delta\left\lceil\frac{t}{\Delta}\right\rceil,\qquad 0\leq d(t)-t<\Delta.
+$$
+The <ceiling function> chooses the first poll at or after the event. To verify the bound, that poll is less than one interval beyond $t$; if $t$ is itself a poll time, the delay is zero by the stated visibility convention. This argument assumes instantaneous checks, persistent pending status and an uninterrupted poll schedule. It does not describe missed transient events or a <CPU> too busy to maintain that schedule.
+
+The attraction of <polled input-output> is simple control and the possibility of processing several ready items in one visit. Busy polling spends <CPU> time even when nothing is ready, but short waits or frequent events can make avoiding repeated <interrupt> entry worthwhile. The right choice depends on actual checking, notification and service costs. See <interrupt-driven input-output> for a documented combination of both strategies. https://pages.cs.wisc.edu/~remzi/OSTEP/file-devices.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 36, section 36.4: polling and interrupt tradeoffs]{ref}
+
+// Destination: computer-science.bigb
+
+= Access matrix
+{parent=Operating system}
+
+An authorization table with subjects or protection domains as rows, objects as columns, and sets of allowed operations as entries. An <access control list> stores an object column; a capability list stores a subject row. This representation is not a numerical linear map and has no ordinary floating-point matrix inverse.
+
+// Destination: computer-science.bigb
+
+= Capability
+{parent=Access matrix}
+{disambiguate=computer security}
+
+= Security capability
+{synonym}
+
+An unforgeable reference carrying authority to perform specified operations on an object. In <seL4>, the <operating-system kernel> stores <security capabilities> in protected slots; an <integer> naming a slot is not itself freely forgeable authority. Guessing another <operating-system process>'s slot number does not give access to its <security capability>. <Capabilities tutorial by seL4 Project>[Capabilities tutorial, Background: What is a capability?; CNodes and CSlots]{ref}
+
+= Reply capability
+{parent=Capability (computer security)}
+
+A <security capability> authorizing a reply to a particular waiting caller. In the <seL4> tutorial's <IPC> model, a call establishes one-time reply authority, allowing a <user-space service> to return to the correct client. The exact representation depends on the <operating-system kernel> configuration. <IPC tutorial by seL4 Project>[IPC tutorial, Background: System calls, seL4_Call and reply capabilities]{ref}
+
+\Include[file-system]{parent=Operating system}
+
+= Synchronous processor exception
+{parent=Operating system}
+
+A processor event attributable to instruction execution, such as a <page fault> during a memory access or a divide exception on <x86>. This causal connection distinguishes it from the asynchronous device <interrupts> discussed here. It also differs from a programming language's <exception handling>, which specifies how program-level exceptions propagate. https://docs.kernel.org/arch/x86/entry_64.html[Linux kernel documentation, Kernel Entries: architecturally defined exceptions]{ref}
+
+= Device driver
+{parent=Operating system}
+{wiki}
+
+Software supplying device-specific operations behind an <operating system> interface. For these examples its responsibilities include <DMA> setup and completion handling, or checking status for <polled input-output>. https://pages.cs.wisc.edu/~remzi/OSTEP/file-devices.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 36, section 36.7: the driver abstraction]{ref}
+
+= Interrupt
+{parent=Operating system}
+{wiki}
+
+An <interrupt> redirects <CPU> execution to an <interrupt handler> in response to an event. Here the main case is an asynchronous hardware <interrupt>: a timer or device requests attention independently of the instruction currently being executed. A device completing a receive operation can announce that its data is ready while the <CPU> is running another program. <Interrupt-driven input-output> illustrates this with an explicit timeline. https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 6, section 6.3: timer interrupts and regaining control]{ref}
+
+A <synchronous processor exception>, such as a <page fault> caused by a particular memory access, is tied to instruction execution. A <system call> is an intentional program request for an <operating-system kernel> service. These routes can share entry machinery, and an instruction named a software interrupt can implement a <system call>, but this does not make that request an asynchronous device event. For example, the <Linux kernel> on <x86> documents separate entries for external <interrupts>, divide exceptions, `syscall` and `int 0x80`. https://docs.kernel.org/arch/x86/entry_64.html[Linux kernel documentation, Kernel Entries: interrupt, exception and system-call entry points]{ref}
+
+The usual device route is a request through an <interrupt controller>, architecture-specific entry, and dispatch to an <interrupt handler>. In the <Linux kernel>, generic handling separates controller operations from flow handling and <device driver> callbacks. Requests can arrive through a pin or a message, and several devices can share a request source. Routing, priorities and <interrupt masking> determine which requests can be delivered; notification therefore need not mean immediate execution of the <interrupt handler>. https://docs.kernel.org/core-api/genericirq.html[Linux kernel documentation, generic IRQ handling: abstraction layers and interrupt control flow]{ref}https://docs.kernel.org/core-api/irq/concepts.html[Linux kernel documentation, What is an IRQ?: pin and packet requests, shared sources]{ref}
+
+The <CPU> and entry code preserve the state needed to resume interrupted execution, including the <instruction pointer>. Handling may enter a higher <processor privilege level> when interrupting ordinary program execution, but an <interrupt> can also arrive while privileged code is already running. The protected entry route and handler placement depend on the architecture and <operating system>; a <microkernel> need not place all <device driver> work where a <monolithic kernel> does. An <interrupt> entry is also distinct from a <context switch> to another <operating-system process>. https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 6, sections 6.2–6.3: protected entry, saved state and switching]{ref}https://docs.kernel.org/arch/x86/entry_64.html[Linux kernel documentation, Kernel Entries: entry from user mode and already executing kernel code]{ref}
+
+// Target: computer-science.bigb
+
+= Interrupt-driven input-output
+{parent=Interrupt}
+
+In <interrupt-driven input-output>, a device signals an <interrupt> when attention is needed, letting the <CPU> avoid repeatedly checking an idle device. The <interrupt handler> determines what happened and arranges the required work; notification itself does not move the payload. <DMA> can supply that separate data-transfer mechanism.
+
+For a toy comparison, let events occur at times $2,5,9$. Ideal <interrupt> notification happens at those same times, while <polled input-output> at $0,2,4,6,8,10,12$ detects them at $2,6,10$. The polling delays are $0,1,1$; ideal notification delays are all zero. Events are assumed to remain pending, with a simultaneous event visible to a poll. The chart is a model, not a measurement: it excludes <interrupt> delivery and dispatch latency, <interrupt handler> service time, and polling overhead. Its zero-delay row is not a real-hardware guarantee.
+
+\Image[interrupt-versus-polling-timeline.png]
+{title=Ideal <interrupt> notification versus periodic <polled input-output> for three persistent device events}
+
+The useful idea is to spend attention when something changes. Sparse events can leave long stretches for useful <CPU> work instead of busy checks. At high event rates, repeated entry and service overhead can consume that saving. Batching notifications can reduce their frequency while delaying some events; switching to <polled input-output> during active periods is another option. No strategy is universally faster. https://pages.cs.wisc.edu/~remzi/OSTEP/file-devices.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 36, section 36.4: interrupt costs and coalescing]{ref}
+
+The <Linux kernel>'s NAPI mechanism is a concrete combination: an <interrupt> normally schedules event processing, which polls for work with a receive budget. Further <interrupts> remain masked during that polling, and are enabled again when polling finishes. NAPI also supports busy polling; the exact processing context and configuration vary. This is a documented <Linux kernel> design, not a requirement on every <operating system>. https://docs.kernel.org/networking/napi.html[Linux kernel documentation, NAPI: basic operation, datapath API, scheduling and IRQ masking]{ref}
+
+= Interrupt handler
+{parent=Interrupt}
+{wiki}
+
+Code entered to handle an <interrupt>. It identifies and acknowledges relevant device state and arranges service, possibly deferring work. The <Linux kernel>'s generic flow layer and <device driver> callback have distinct responsibilities. https://docs.kernel.org/core-api/genericirq.html[Linux kernel documentation, generic IRQ handling: interrupt control flow and default flow implementations]{ref}
+
+= Interrupt controller
+{parent=Interrupt}
+
+Hardware managing and routing <interrupt> requests to a <CPU>, with architecture-dependent masking and priority rules. The <Linux kernel> encapsulates its operations separately from generic flow handlers. https://docs.kernel.org/core-api/genericirq.html[Linux kernel documentation, generic IRQ handling: chip-level hardware encapsulation]{ref}
+
+// Destination: computer-science.bigb
+
+= Interrupt masking
+{parent=Interrupt}
+
+Disabling selected asynchronous interrupt delivery, normally under privileged control. It does not necessarily disable processor exceptions, nonmaskable interrupts or activity on other processors.
+
+// Target: computer-science.bigb
+
+= Processor privilege level
+{parent=Operating system}
+
+// Target: computer-science.bigb
+
+= Multics
+{parent=Operating system}
+{c}
+{wiki}
+
+// Target: computer-science.bigb
+
+= Multiprogramming
+{parent=Operating system}
+{wiki}
+
+Keeping several <operating-system processes> available so <process scheduling> can run another when one waits. Increasing their number can increase the combined <working set> demand beyond the available <page frames>, producing <memory thrashing> rather than more useful <CPU> work.
+
+\Include[virtual-memory]{parent=Operating system}
+
+= Set-user-ID execution
+{parent=Operating system}
+
+Execution of a suitable executable with effective user identity set to its owner. A privileged executable writable by untrusted users permits code replacement and privilege escalation.
+
+// Target: computer-science.bigb
+
+= Protection domain
+{parent=Operating system}
+
+A boundary within which code exercises a particular set of permissions. An <address space> describes accessible <virtual addresses>; a <protection domain> also concerns authority over other objects, such as <software threads> and <IPC endpoints>. Two <address spaces> may deliberately share a writable <memory page>, so separation of <address spaces> alone does not make their contents independent.
+
+= User-space service
+{parent=Operating system}
+
+An <operating system> service executing at an application's <processor privilege level>, outside the <operating-system kernel>. A <microkernel> can host a <file system> or <device driver> this way. Its granted <security capabilities> and <memory protection> determine its authority; the label <user-space service> does not imply that it has little authority.
+
+= Separation of mechanism and policy
+{parent=Operating system}
+
+Distinguishing the operations a system can enforce from the choices about how to use them. In a <microkernel>, a protected <IPC> operation can deliver requests while a <user-space service> decides which <files> a caller may read. The division is a design choice: every real mechanism still has rules and limits.
+
+= Inter-process communication
+{parent=Operating system}
+
+= IPC
+{synonym}
+{c}
+
+Communication between <operating-system processes>, including controlled message delivery and deliberately shared <computer memory>. A <microkernel> supplies <IPC> across <protection domains>, allowing <user-space services> to cooperate without making all their private <computer memory> accessible to each other.
+
+= IPC endpoint
+{parent=Inter-process communication}
+{c}
+
+A communication object on which <software threads> send or receive <IPC> messages. In <seL4>, an <IPC endpoint> is an <operating-system kernel> object with waiting senders or receivers; access requires a suitable <security capability>. <IPC tutorial by seL4 Project>[IPC tutorial, Background: endpoint queues]{ref}
+
+= Kernel
+{parent=Operating system}
+{wiki}
+{disambiguate=operating system}
+
+= Operating-system kernel
+{synonym}
+
+The <operating-system kernel> is the core of an <operating system>, controlling access to resources and supplying mechanisms used by <operating-system processes>. <Processor privilege levels> let it enforce boundaries that ordinary programs cannot simply overwrite. The <operating-system kernel> connects <process scheduling>, <virtual memory> and <file system> operations; a <system call> requests a service across that boundary. A <monolithic kernel> and a <microkernel> divide services differently, so the location of every <file system> service is a design choice.
+
+For the toy <file system>, opening `a` resolves its <directory entry> to <inode> 42, establishes an <open file description>, and returns <file descriptor> `3`. Later reads use that <file descriptor> to reach the existing <open file description>, without resolving the spelling `a` again. This explains how <unlinking an open file> preserves access: the open reference survives the <directory entry>. The per-<operating-system process> table interpreting `3` is maintained by the <operating-system kernel>; `3` itself is the small <integer> passed by the program, not <inode> 42. https://pubs.opengroup.org/onlinepubs/9799919799/functions/open.html[The Open Group, POSIX.1-2024, open: file descriptor to open file description to file]{ref}
+
+= System call
+{parent=Kernel (operating system)}
+
+A request from a program for an <operating-system kernel> service. In the <Unix> examples here, opening, reading, linking and unlinking <files> request controlled changes or access to <operating system> resources. The <operating-system kernel> checks the request and performs the permitted operation; an interface specified by <POSIX> does not by itself dictate every internal implementation detail.
+
+= Fork
+{parent=System call}
+{disambiguate=system call}
+{wiki}
+
+A <system call> creating a child <operating-system process> from a parent. The <Linux kernel> documents <copy-on-write> for ordinary inherited private <memory pages>, with separate <address spaces> but shared <open file descriptions> for inherited <file descriptors>. <fork(2) — Linux manual page>{ref}
+
+= Linux kernel
+{parent=Kernel (operating system)}
+{c}
+
+A concrete <operating-system kernel> whose documented <file system> interface distinguishes a name-associated `dentry`, an object-associated `inode`, and a `file` object created for an open instance. An <inode> can have several name-associated objects. This illustrates the distinction among <directory entries>, <inodes> and <open file descriptions>; it does not imply identical structures in every <operating system>. https://docs.kernel.org/filesystems/vfs.html[Linux kernel documentation, Overview of the Linux Virtual File System: directory entries, inode objects and file objects]{ref}
+
+// Target: computer-science.bigb
+
+= Monolithic kernel
+{parent=Kernel (operating system)}
+
+A kernel design in which major operating-system services execute within one privileged address space and can call one another directly. Avoiding cross-domain communication can improve performance, while increasing the trusted code base and the reach of a faulty service.
+
+// Destination: computer-science.bigb
+
+= Microkernel
+{parent=Kernel (operating system)}
+
+An <operating-system kernel> design retaining essential protected mechanisms while moving services into <user-space services>. <Address spaces>, <software threads> and <IPC> form a useful small foundation: the <operating-system kernel> protects private state and controls communication, while a <file system> service interprets requests about <files>. This <separation of mechanism and policy> permits different service implementations to use the same protected interface. <On micro-kernel construction by Jochen Liedtke>[Liedtke, On micro-kernel construction, section 2, pp. 238–240: minimality criterion, address spaces, threads and IPC; section 3, pp. 240–241: user-level services]{ref}
+
+The useful question is which authority a service needs. A <device driver> may require access to a device while having no permission to overwrite an unrelated application's <computer memory>. A <microkernel> makes such <protection domains> possible; their actual boundaries depend on the chosen <memory protection> and <security capabilities>.
+
+= Microkernel file-read example
+{parent=Microkernel}
+
+Consider an original toy <file system> service in <address space> B and a client in <address space> A, on one <CPU>. The service holds a five-<byte> cached <file> containing `LIME` followed by a newline. The client already has service handle `9`, permission to read that <file>, and a <security capability> to send requests to <IPC endpoint> E. Handle `9` is interpreted by the service; it is neither a <virtual address> nor an <operating-system kernel> object identifier. All relevant <memory pages> are resident, and this read needs no <device driver>.
+
+\Image[microkernel-file-read-message-path.png]
+{title=A cached <file> read uses <IPC> between separate <address spaces>, with authority checked by the <microkernel>}
+
+* The client submits `READ(7, 9, 0, 4)`: request identifier `7`, handle `9`, <byte> offset `0`, and requested length `4`. A <system call> enters the <microkernel>; the <security capability> is checked before delivery on <IPC endpoint> E. The client waits for a reply.
+* A waiting service <software thread> receives the request. The service checks the handle's read permission and the requested range, then obtains the first four <bytes> from its cached <file>. The <microkernel> transports the request; the service supplies its <file system> meaning.
+* The service uses <reply capability> authority to return `OK(7, 4, LIME)`. The client resumes, checks the request identifier and returned length, and copies those four <bytes> into its own local buffer. There were two logical <IPC> messages: request and reply. The four arrows show delivery stages, not four separate requests.
+
+This protocol is an illustrative design, not an actual <seL4> <file system> interface. Its call/reply structure follows <seL4>'s documented <IPC>: `seL4_Call` waits using reply authority, and small payloads can travel in <processor registers>. <IPC tutorial by seL4 Project>[IPC tutorial, Background: System calls; IPC Buffer; Data transfer]{ref}
+
+An ordinary pointer in A refers to A's <address space>. Sending its numeric value does not make B's private <computer memory> appear there. This example explicitly transfers <bytes>. Sharing a mapped <memory page> instead would require intentional <memory protection> permissions and a protocol for ownership and <synchronization>; passing a pointer alone establishes neither.
+
+The same <IPC> mechanism could carry `WRITE`, but this client could still be refused by the service's read-only handle policy. Conversely, possession of an <IPC endpoint> <security capability> permits communication without automatically granting access to every <file> the service manages. The <separation of mechanism and policy> appears twice: endpoint authority gates delivery, and the service's handle policy gates the requested operation.
+
+= Microkernel service failure isolation
+{parent=Microkernel}
+
+Suppose the <user-space service> stops after receiving request `7`, before replying. Assume that its private <memory pages> are not writable mappings of the client's or an unrelated service's <computer memory>, and that it lacks <security capabilities> to change their <software threads>. A failed store in the service cannot directly overwrite that private state through ordinary <CPU> <address translation>. Those assumptions establish a particular isolation boundary, not a successful read.
+
+\Image[microkernel-service-failure-authority-boundaries.png]
+{title=<Memory protection> and <security capabilities> limit a stopped service's reach; recovery needs an additional design}
+
+The client can remain blocked waiting for request `7`. An unrelated runnable service may continue if <process scheduling> and resources permit, but clients that depend on the stopped service still lose access to its service. A separately authorized recovery manager would need to detect the failure, rebuild the service's state and arrange communication with its replacement. The <microkernel> architecture by itself supplies none of those application-specific recovery decisions.
+
+A missing reply also does not reveal whether a service crashed, is delayed by <process scheduling>, or entered an infinite computation. For a read, retrying after recovery may be straightforward; for a modifying operation, absence of a reply does not prove that the modification never happened. Recovery must account for ambiguous completed operations and any required <file-system crash consistency>.
+
+The boundary changes with authority. A deliberately shared writable <memory page> allows the service to change its shared contents; a <security capability> controlling another <software thread> permits the corresponding control operations. A <device driver> with uncontrolled <DMA> can bypass ordinary <CPU> <memory protection>. Thus service placement and actual permissions must be considered together. <What the Proofs Assume by seL4 Project>[What the Proofs Assume, The Assumptions: DMA and memory-mapped device registers]{ref}
+
+= Microkernel communication cost
+{parent=Microkernel}
+
+For the <microkernel file-read example>, distinguish <system call> entry/exit, <security capability> lookup, payload transfer, <process scheduling> and <context switches> from the service's actual <file> lookup and read work. Entering a privileged <processor privilege level> and switching to a different <address space> are different events. A change of <address space> can affect the <translation lookaside buffer>; running different code and touching different <computer memory> can cause <cache misses>. Neither event implies that every <translation lookaside buffer> entry or <cache line> must be discarded.
+
+A larger copied payload requires more transfer work; sharing <memory pages> can avoid copying that bulk data but introduces mapping and <synchronization> work. A service that requests another service adds another <IPC> exchange. If the cached <file> data were absent, communication with a <device driver> and the <input-output> wait would also matter. Blocking behind other requests affects observed response time even when the individual <IPC> operations are cheap.
+
+These are cost sources, not timings or a universal ranking against a <monolithic kernel>. Implementation and <CPU> details matter: the construction analysis separates protected entry costs, <address space> switching, <translation lookaside buffer> effects and <memory cache> effects. <On micro-kernel construction by Jochen Liedtke>[Liedtke, On micro-kernel construction, section 4.1, pp. 241–244: kernel-user switches, address-space switches, and discussion of hardware-dependent cache and TLB effects]{ref}
+
+= seL4
+{parent=Microkernel}
+{c}
+
+A <microkernel> using <security capabilities> to control access to <operating-system kernel> objects, including <IPC endpoints> and <software threads>. An <IPC endpoint> connects cooperating <user-space services>; its <security capabilities> are distinct from the service-defined handle `9` in the <microkernel file-read example>. <Capabilities tutorial by seL4 Project>[Capabilities tutorial, Background: What is a capability?]{ref}
+
+= seL4 verification scope
+{parent=seL4}
+{c}
+
+<Formal verification> uses machine-checked <formal proofs> to establish <functional correctness>: the C implementation of verified <seL4> configurations conforms to its <formal specification>. <Binary correctness> connects compiled machine code to that C behaviour where supported. Separate security <formal proofs> cover integrity, resource-access availability and confidentiality under their configuration requirements; these properties are not all available in every configuration. For example, the documented confidentiality theorem separates scheduler security domains rather than arbitrary pairs of <software threads>. <seL4 Proofs by seL4 Project>[seL4 Proofs, High-level Proof Statements: Functional correctness; Binary correctness; Security; System initialisation; platform/configuration qualification]{ref}
+
+The documented assumptions include correct hardware, selected handwritten machine-interface code, correct boot state, <translation lookaside buffer> and <memory cache> management, and noninterfering or trusted <DMA>. The confidentiality result covers information channels in its model; the assumptions page explicitly excludes timing channels from that coverage. <What the Proofs Assume by seL4 Project>[What the Proofs Assume, The Assumptions: Assembly, Hardware, Hardware management, Boot code, DMA, Information side-channels]{ref}
+
+Return to `READ(7, 9, 0, 4)`. Correct <IPC> delivery does not establish that the service looked up the right <file>, returned `LIME`, or ever replied. A service can produce an incorrect payload while the <operating-system kernel> exactly follows its <formal specification>. The <formal proofs> therefore do not automatically prove all <user-space services>, nor turn the resource-access availability theorem into a guarantee that this <file> read completes. The verified foundation supports further <algorithm correctness> and system reasoning; the service protocol and its recovery obligations still need their own justification.
+
+// Destination: computer-science.bigb
+
+= Kernel preemption
+{parent=Kernel (operating system)}
+
+Allows a running kernel execution to be involuntarily suspended for another schedulable context. Interrupt delivery and voluntary blocking are separate mechanisms.
+
+// Target: computer-science.bigb
+
+= Process scheduling
+{parent=Operating system}
+
+<Process scheduling> chooses which runnable <operating-system process> or <software thread> uses a <CPU> next, and when it gives up that <CPU>. Runnable means able to execute now; work waiting for an <input-output> operation is not eligible until that wait ends. A <ready queue> records eligible work. The policy chooses a recipient; a <context switch> supplies the mechanism for transferring execution. Sharing a single <CPU> lets a long calculation and an interactive program both make progress, although only one execution stream runs on that <CPU> at an instant.
+
+Consider three single-<software thread> <operating-system processes> on one <CPU>, with abstract time units, zero <context switch> or scheduler overhead, and no <input-output> blocking. Their arrival times and <CPU bursts> are $(a_A,b_A)=(0,5)$, $(a_B,b_B)=(1,3)$ and $(a_C,b_C)=(2,1)$. Each <CPU burst> is all the execution that its task needs. With <FCFS>, the current task runs to completion: A occupies $[0,5)$, B $[5,8)$ and C $[8,9)$. With <round-robin scheduling> and <scheduling quantum> $q=2$, the intervals are A $[0,2)$, B $[2,4)$, C $[4,5)$, A $[5,7)$, B $[7,8)$ and A $[8,9)$. At a boundary, arrivals join the <ready queue> before the unfinished task whose <scheduling quantum> has expired; this fixes the otherwise ambiguous ordering at time 2.
+
+\Image[scheduling-fcfs-versus-round-robin.png]
+{title=<FCFS> and <round-robin scheduling> share the same nine units of useful <CPU> work differently}
+
+The following triples always list A, B, C. Completion is an absolute time; <scheduling turnaround time>, <scheduling waiting time> and <scheduling response time> are durations measured from the relevant events.
+
+|| Policy
+|| Completion times
+|| <Scheduling turnaround times>
+|| <Scheduling waiting times>
+|| <Scheduling response times>
+
+| <FCFS>
+| $(5,8,9)$
+| $(5,7,7)$
+| $(0,4,6)$
+| $(0,4,6)$
+
+| <Round-robin scheduling>, $q=2$
+| $(9,8,5)$
+| $(9,7,3)$
+| $(4,4,2)$
+| $(0,1,2)$
+
+For example, B first runs at time 2 under <round-robin scheduling>, so its <scheduling response time> is $2-1=1$. It finishes at time 8, giving <scheduling turnaround time> $8-1=7$ and <scheduling waiting time> $7-3=4$. Under <FCFS>, C waits $8-2=6$ before its sole execution interval. Under <round-robin scheduling>, A waits during $[2,5)$ and $[7,8)$, totaling $3+1=4$. Both timelines do exactly $5+3+1=9$ units of useful <CPU> work; changing the order changes who benefits first.
+
+The appeal is that shared progress can improve responsiveness: B and C get their first <CPU> service sooner under <round-robin scheduling>, while A completes later. The <arithmetic mean> of the <scheduling response times> falls from $10/3$ to $1$; the <arithmetic mean> of the <scheduling turnaround times> is $19/3$ for both policies in this particular example. These are different goals, and this workload establishes no universal ranking. Giving each continuously runnable task repeated turns is a practical form of fairness. A smaller <scheduling quantum> can shorten waits between turns, but makes <context switches> more frequent when competitors remain runnable. If each full slice performs $q$ units of useful work and incurs a fixed switching cost $s$, the overhead fraction in that simplified repeated cycle is $s/(q+s)$. Real costs and workloads determine the choice. https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched.pdf[Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau, Operating Systems: Three Easy Pieces, chapter 7, sections 7.2–7.3 and 7.6–7.7: metrics, FCFS and round robin]{ref}
+
+= Ready queue
+{parent=Process scheduling}
+
+A collection of runnable <operating-system processes> or <software threads> waiting for a <CPU>. A running task is not waiting in the <ready queue>, and a task waiting for <input-output> is not runnable. <FCFS> and <round-robin scheduling> can use a <FIFO queue>; other policies can organize eligible work differently, for example with a <priority queue>.
+
+= CPU burst
+{parent=Process scheduling}
+{c}
+{title2=$b_i$}
+
+An interval of useful <CPU> execution needed before a task finishes or must wait, for example for <input-output>. A real <operating-system process> can need many <CPU bursts>; the example under <process scheduling> assigns each task just one <CPU burst>, possibly split across several turns by <round-robin scheduling>.
+
+= Round-robin scheduling
+{parent=Process scheduling}
+
+= RR
+{c}
+{synonym}
+
+Serve the front of a <FIFO queue> of runnable tasks for at most one <scheduling quantum>. If the task finishes or must wait for <input-output>, it leaves the <CPU> earlier; if it remains runnable after consuming its allowance, append it to the rear of the <ready queue>. In the example under <process scheduling>, the <ready queue> at time 2 is B, C, A: B arrived at time 1, C joins at the boundary, then A is requeued. That one convention determines the subsequent order.
+
+= Scheduling quantum
+{parent=Round-robin scheduling}
+{title2=$q$}
+
+The maximum amount of <CPU> execution allotted in one turn by <round-robin scheduling>. A task can finish before consuming its <scheduling quantum>. When other tasks remain runnable, a shorter <scheduling quantum> provides more frequent turns at the cost of more frequent <context switches>.
+
+= Scheduling preemption
+{parent=Process scheduling}
+
+Taking the <CPU> away from a still-runnable task before it voluntarily yields or finishes. <Round-robin scheduling> uses <scheduling preemption> when a <scheduling quantum> expires, commonly using a timer <interrupt> to regain control. <Kernel preemption> is the more specific question of whether an execution already within the <operating-system kernel> can be suspended for another runnable context.
+
+= Scheduling response time
+{parent=Process scheduling}
+{title2=$R_i=f_i-a_i$}
+
+The delay from a task's arrival $a_i$ until its first execution $f_i$: $R_i=f_i-a_i$. This measures access to initial <CPU> service, rather than completion of an entire user request. For C under <round-robin scheduling> in <process scheduling>, $R_C=4-2=2$; its <scheduling turnaround time> is instead $5-2=3$.
+
+= Scheduling turnaround time
+{parent=Process scheduling}
+{title2=$T_i=c_i-a_i$}
+
+The duration from a task's arrival $a_i$ until its completion $c_i$: $T_i=c_i-a_i$. It includes execution and all intervening waits. For A under <round-robin scheduling> in <process scheduling>, $T_A=9-0=9$, despite a <scheduling response time> of zero.
+
+= Scheduling waiting time
+{parent=Process scheduling}
+{title2=$W_i$}
+
+The total duration a task spends runnable but waiting for a <CPU>, including later waits after <scheduling preemption>. Under the zero-overhead, no-<input-output>-blocking assumptions of <process scheduling>, elapsed time partitions into useful execution and such waiting, so $W_i=T_i-b_i$, where $T_i$ is <scheduling turnaround time> and $b_i$ is the total <CPU burst>. Thus C under <round-robin scheduling> has $W_C=3-1=2$. If a task also spends time blocked on <input-output>, that blocked duration belongs to <scheduling turnaround time> but must not be counted as <scheduling waiting time>.
+
+// Target: computer-science.bigb
+
+= Context switch
+{parent=Process scheduling}
+{wiki}
+
+A <context switch> transfers <CPU> execution from one <operating-system process> or <software thread> to another while preserving enough <execution context> for the suspended task to resume. The <operating-system kernel> saves the outgoing task's <processor registers>, including its resume <program counter> and <stack pointer>, and restores the incoming task's saved state. Hardware entry and software switching divide this work differently across architectures; the diagram groups them into logical save and load steps. During the transition the same <CPU> executes the <operating-system kernel>'s scheduler and switching code. https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf[Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau, Operating Systems: Three Easy Pieces, chapter 6, section 6.3: saving and restoring context]{ref}
+
+For a schematic switch from A to B, let A's resume <program counter> be $p_A$, its <stack pointer> $u_A$, and one illustrative data <processor register> contain 7. B's saved values are $p_B,u_B,42$. Saving A retains $(p_A,u_A,7)$ in A's <execution context>; loading B establishes $(p_B,u_B,42)$ before B resumes. These are selected fields, not a complete architecture-specific <execution context>. Later restoring A recovers its 7 even though B has used the same physical <processor register> for 42.
+
+\Image[context-switch-state-transfer.png]
+{title=One <CPU> over time: save A's <execution context>, run the scheduler, and restore B's <execution context>}
+
+The useful invariant is that each suspended task retains its own resume state, so another task's use of the <processor registers> does not erase it. This is what makes repeated turns under <round-robin scheduling> possible. Saving an <execution context> does not copy the entire <address space>. Switching between <software threads> of one <operating-system process> can retain the same <address space>; switching between <operating-system processes> with different <address spaces> may also require changing the <memory management unit>'s translation context, such as the active <page table> and associated <address space identifier>, depending on the architecture. Their contents remain in <computer memory>. https://pages.cs.wisc.edu/~remzi/OSTEP/threads-intro.pdf[Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau, Operating Systems: Three Easy Pieces, chapter 26, introduction: thread contexts and shared address spaces]{ref}
+
+Entering the <operating-system kernel> through an <interrupt>, <synchronous processor exception> or <system call> does not automatically imply a <context switch> to another task. The handler may return to the same task; <process scheduling> determines whether another runnable task should take over. A <context switch> consumes time, and a changed <memory cache> or <translation lookaside buffer> working environment can add subsequent costs. Those costs are excluded from the toy <process scheduling> timelines, which are calculations rather than <operating system> benchmarks. https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 6, section 6.3: continue the current process or switch]{ref}https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 7, section 7.7: direct and indirect switching costs]{ref}
+
+= Execution context
+{parent=Context switch}
+
+State needed to resume a suspended execution stream, including saved <processor registers> and its position in a <call stack>. An <operating-system kernel> can keep parts in a per-task record and parts on a kernel <call stack>. An <execution context> identifies and preserves that stream's state; it is not a duplicate of all the <computer memory> reachable through its <address space>.
+
+// Target: computer-science.bigb
+
+= Process
+{parent=Operating system}
+{wiki}
+{disambiguate=computing}
+
+= Operating-system process
+{synonym}
+
+An <operating-system process> is an execution instance of a program, with an <address space>, one or more <software threads> carrying <execution contexts>, and <operating system> resources such as <file descriptors>. A program describes instructions; an executable <file> stores a form that can be loaded for execution. Starting the same executable twice can create two <operating-system processes>, each with its own evolving state. A <operating-system process> can be waiting for <input-output> or waiting for a turn on the <CPU>, rather than executing at every instant. https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-intro.pdf[Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau, Operating Systems: Three Easy Pieces, chapter 4, sections 4.1, 4.3–4.4: program, process and execution states]{ref}
+
+For example, start the same counter program as <operating-system processes> A and B. In this toy mapping, both use <virtual address> `0x1234` for a counter `x`, but A reads `x = 7` while B reads `x = 42`. The number `0x1234` is interpreted through the current <address space>, so it need not denote the same contents in both <operating-system processes>. Writing A's ordinary private counter does not change B's counter. Compare <virtual memory> for an explicit mapping to different <physical addresses>.
+
+\Image[process-and-thread-address-spaces.png]
+{title=Separate <operating-system processes> can interpret the same <virtual address> differently; <software threads> in one process share an <address space>}
+
+Separate <virtual memory> <address spaces> provide a usual default isolation boundary, not a claim that all <computer memory> is universally private. Deliberately shared mappings let <operating-system processes> communicate through the same stored data. Even logically private contents need not occupy distinct <page frames> at every moment: read-only program code can be shared, and <copy-on-write> can keep a common <memory page> until a write requires a private copy. The distinction is between which accesses and changes are permitted and which physical storage is currently reused. https://pages.cs.wisc.edu/~remzi/OSTEP/vm-complete.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 23, section 23.1, Other Neat Tricks: copy-on-write and shared mappings]{ref}https://pubs.opengroup.org/onlinepubs/009695099/functions/shm_open.html[The Open Group, POSIX shared-memory object interface, shm_open: multiple processes can refer to the same shared memory object]{ref}
+
+This abstraction lets independent activities reuse the same executable while keeping their changing state separate. <Process scheduling> distributes <CPU> time; <virtual memory> interprets and protects addresses; <file descriptors> connect an execution to open resources. The useful design is controlled independence with explicit ways to share. Creating <operating-system processes>, maintaining their mappings and performing <context switches> require time and <computer memory>; isolation alone gives no universal performance guarantee.
+
+= File descriptor
+{parent=Process (computing)}
+
+A nonnegative <integer> identifying an open access in one <operating-system process>. The program passes its value to operations such as reading and closing; the <operating-system kernel> interprets it through that <operating-system process>'s descriptor table. In the toy example, table entry `3` refers to an <open file description> for <inode> 42. Another <operating-system process>'s entry `3` can reach a different <file>, and a closed <file descriptor> value can be reused. https://pages.cs.wisc.edu/~remzi/OSTEP/file-intro.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 39, section 39.3: per-process file descriptors]{ref}
+
+= Open file description
+{parent=File descriptor}
+
+A record of an open access to a <file>, including its current position and access mode. Each <file descriptor> reaches one <open file description>, but several <file descriptors> can share it. Separately opening the same ordinary <file> creates separate <open file descriptions> with independent positions while still reaching the same <inode>. Thus <file descriptors>, <open file descriptions> and <hard links> have different counts. https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_258[The Open Group, POSIX.1-2017, section 3.258: open file description]{ref}
+
+// Target: computer-science.bigb
+
+= Thread
+{parent=Process (computing)}
+{wiki}
+{disambiguate=computing}
+
+= Software thread
+{synonym}
+
+A <software thread> is an execution stream within a <operating-system process>. Each <software thread> has its own <execution context>, including <processor registers>, an <instruction pointer>, and a <call stack> selected by its <stack pointer>. <Software threads> in the same <operating-system process> share its <address space>, global variables, dynamically allocated storage (the memory heap), and resources such as <file descriptors>. Separate register states let two <software threads> pause at different instructions and later resume correctly. A <context switch> saves and restores those states; it does not copy the entire shared <address space>. https://pages.cs.wisc.edu/~remzi/OSTEP/threads-intro.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 26, introduction and figure 26.1: thread contexts and shared address space]{ref}https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap03.html#tag_03_189[The Open Group, POSIX.1-2024, sections 3.189–3.190: Live Process and Live Thread, shared resources and addressable storage]{ref}
+
+In the right half of the diagram under <operating-system process>, T1 and T2 access the same counter `x` at <virtual address> `0x1234`. Their <call stacks> occupy separate regions of the same <address space>, and their saved <processor registers> can contain different values. A <software thread>'s own <call stack> means the stack used for its calls, not a hardware protection boundary against another <software thread>. Another <software thread> with a suitable address can access that stack's live data, subject to the program's lifetime and <synchronization> rules. Sharing an <address space> enables easy communication and makes accidental interference possible.
+
+Concurrency means that several activities can make progress over overlapping intervals; parallel execution means that several activities execute at the same instant. On one <CPU> execution slot, <process scheduling> can interleave <software threads> without simultaneous execution. Multiple processor cores can run eligible <software threads> in parallel, but merely creating <software threads> does not ensure parallel execution or a speedup.
+
+Consider an explicitly abstract interleaving model: shared `x` starts at $0$, and each of T1 and T2 performs three indivisible logical steps in its own order: load `x` into its own register `r`, add $1$ to `r`, then store `r` into `x`. Each load sees the latest preceding store in the displayed order. These model assumptions specify the example; they do not describe every programming language or every hardware memory model. In serial order T1 finishes all three steps before T2 starts, so T2 loads $1$ and stores $2$.
+
+An overlapping order instead gives T1 load $0$, T2 load $0$, T1 add to get `r1 = 1`, T2 add to get `r2 = 1`, T1 store $1$, and T2 store $1$. The load/store subsequence is therefore T1 load $0$, T2 load $0$, T1 store $1$, T2 store $1$: final $x=1$, although each <software thread> incremented its register correctly. The second store replaces the first with the same value, losing one intended update. This <race condition> is possible even with interleaving on a single <CPU>.
+
+\Image[thread-lost-update-interleaving.png]
+{title=Two abstract load/add/store increments retain separate registers but can leave the shared counter at $1$ instead of the serial result $2$}
+
+This is not an unprotected C implementation example. Conflicting unsynchronized accesses to an ordinary non-atomic C object from different <software threads> can constitute a data race, which has undefined behavior; the abstract trace is not a prediction of that program's allowed outcomes. https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf[ISO/IEC JTC1/SC22/WG14, committee draft N1570, 12 April 2011, section 5.1.2.4 paragraph 25: data races and undefined behavior]{ref}
+
+The repair explains why <synchronization> matters: <mutual exclusion> around the whole load/add/store sequence prevents the other <software thread> from starting an increment halfway through it. Alternatively, an appropriate <atomic operation> can make the complete increment one indivisible read-modify-write. In the toy model, either repair makes the two increments take effect in an order, producing $0+1+1=2$. Making only each load and each store an <atomic operation> still permits the displayed lost update. https://pages.cs.wisc.edu/~remzi/OSTEP/threads-locks.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 28, sections 28.1–28.2 and 28.11: locks around updates and atomic fetch-and-add]{ref}
+
+The attraction is independently progressing activities with direct access to shared data: a user-interface <software thread> can handle input while another waits for <input-output>, and workers can divide independent pieces of a large calculation among available cores. The first benefit can exist on one <CPU>; the second requires suitable work and execution resources. <Context switches>, <synchronization>, register-state records and extra <call stacks> consume time or <computer memory>, so the useful partition depends on the workload. https://pages.cs.wisc.edu/~remzi/OSTEP/threads-intro.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 26, section 26.1: parallel work and overlapping input-output with other activity]{ref}
+
+= Race condition
+{parent=Thread (computing)}
+
+A dependence of behavior on the relative timing or ordering of concurrent activities. In the abstract example under <software thread>, two increments can leave $x=1$ or $x=2$ depending on their interleaving. A C data race is a language-defined conflict with undefined behavior, rather than a name for every <race condition>.
+
+= Synchronization
+{parent=Thread (computing)}
+{disambiguate=computing}
+
+= Synchronization
+{synonym}
+
+Coordinating concurrent activities so that required ordering and visibility rules hold. <Mutual exclusion> is one form of <synchronization>; waiting for another <software thread> to finish is another.
+
+= Mutual exclusion
+{parent=Synchronization (computing)}
+
+<Mutual exclusion> allows at most one participating <software thread> at a time to execute a protected <critical section>. A <mutex> is an object used to enforce that rule; the <critical section> is the region of the program that needs the rule. Several different <critical sections> can use the same <mutex> to protect the same shared data. The benefit is reasoning about a complete update without another cooperating <software thread> observing or changing its intermediate state.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Locks>[pp. 1–2: lock ownership and critical sections]{ref}
+
+For a small <lost update>, shared `x` initially equals $0$. Each of two <software threads>, T1 and T2, uses its own local `r` and performs these three steps:
+```
+r = read(x)
+r = r + 1
+write(x, r)
+```
+Assume <sequential consistency>: each step is indivisible, each <software thread> keeps the displayed order, and a read sees the latest preceding write to `x`. In the <thread interleaving> T1 read, T2 read, T1 add, T2 add, T1 write, T2 write, both local values become $1$ and both writes store $1$. Final $x=1$ instead of $2$: a <lost update> despite two correctly executed local additions. Separate indivisible reads and writes are insufficient; the complete read, modify and write must be protected.
+
+\Image[mutual-exclusion-lost-update-timelines.png]
+{title=A <lost update> and its repair by <mutual exclusion> around the complete increment}
+
+The <binomial coefficient> $\binom{6}{3}=20$ counts the <thread interleavings> preserving the two three-step orders: choose T1's three positions, with the remaining positions belonging to T2. Exhaustive enumeration gives final $x=1$ in 18 orders and $x=2$ in the two serial orders. These counts are not probabilities: no random scheduler has been specified. With the same <mutex> acquired before reading and released after writing, only the two complete increment orders remain, and both give $2$. Alternatively, an <atomic read-modify-write> increment updates `x` in one indivisible step. Protecting only the write still allows both <software threads> to read $0$ beforehand.
+
+<Mutual exclusion> is a <safety property>: two participants must never be inside the protected <critical section> together. Eventual entry for every persistent requester is a <liveness property>, expressed here as <starvation freedom>. A protocol that never admits anyone satisfies the first requirement while failing the second. Nor does a <mutex> alone promise which waiting <software thread> enters next, or that a producer runs before a consumer. Such application ordering needs an additional <synchronization> protocol.<Defining Liveness by Bowen Alpern and others>[pp. 181–182: mutual exclusion, finite witnesses to safety violations, and eventual service]{ref}
+
+The <sequential consistency> assumptions delimit this calculation. In C++, unsynchronized conflicting accesses to an ordinary shared object can be a <data race>, which makes behavior undefined; the 20 schedules are not a prediction for that program. An <atomic operation> with relaxed ordering also supplies no <acquire-release synchronization> for other data. A real <mutex> must supply both exclusive entry and the required <happens-before> ordering between its users.<Working Draft, Standard for Programming Language C++ (N4861)>{ref}
+
+= Critical section
+{parent=Mutual exclusion}
+{wiki}
+
+A region whose accesses must obey a shared <synchronization> protocol. For the <lost update> in <mutual exclusion>, the <critical section> includes the read and the local addition as well as the write. Choosing its boundary means identifying the complete operation whose intermediate state must be protected. Every conflicting access must participate in a compatible protocol; merely declaring a <mutex> does not protect accesses that bypass it.
+
+= Mutex
+{parent=Mutual exclusion}
+
+An object with acquire and release operations that provides exclusive ownership to a participating <software thread>. Several source-code regions can acquire the same <mutex>; two different <mutex> objects do not exclude each other's users. The caller should enter its <critical section> only after successful acquisition and release ownership on every exit path. A <mutex> may make a waiting <software thread> sleep or use a <spinlock>; the interface and the waiting mechanism are distinct.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Locks>{ref}
+
+= Spinlock
+{parent=Mutex}
+{wiki}
+
+A mechanism that waits for ownership by repeatedly trying while consuming <CPU> execution time. A <spinlock> built from <test-and-set> can enforce <mutual exclusion> without guaranteeing <starvation freedom>. Progress also requires the owner to run and release: if a waiting <software thread> monopolizes the only <CPU> while the owner is suspended, exclusive entry alone cannot help.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Locks>[pp. 8–9: preemption requirement and lack of fairness guarantees]{ref}
+
+= Test-and-set
+{parent=Spinlock}
+{wiki}
+
+An <atomic read-modify-write> that returns a flag's old value while setting it. In a <sequential consistency> model with the flag initially $0$, `exchange(flag, 1)` permits entry only when it returns $0$; an owner resets the flag to $0$ on release. Between releases only one exchange can observe $0$. By contrast, separate `read(flag)` and `write(flag, 1)` steps allow both contenders to read $0$ before either writes $1$. The indivisibility of the exchange is an assumed primitive, not something proved by writing its steps as ordinary assignments.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Locks>{ref}
+
+= Thread interleaving
+{parent=Mutual exclusion}
+
+An ordered execution obtained by mixing steps of several <software threads> while retaining each one's own step order. In the <sequential consistency> model of <mutual exclusion>, an indivisible step finishes before the next begins. Selecting the step boundaries is part of the model: an <atomic read-modify-write> increment has one boundary, whereas a separate read, local addition and write have three. Enumerating all such orders checks this specified model, not an arbitrary <memory model> or a real <mutex> implementation.
+
+= Lost update
+{parent=Thread interleaving}
+
+A change that is overwritten by another update based on an older value. In <mutual exclusion>, both <software threads> read $0$ and later write $1$, so one intended increment is lost. This <race condition> can occur with individually atomic reads and writes and therefore need not involve a <data race>. Its repair must cover the complete update, using a <critical section> or an appropriate <atomic read-modify-write>.
+
+= Safety property
+{parent=Synchronization (computing)}
+
+A requirement whose violation has a finite execution prefix that no continuation can repair. Two <software threads> simultaneously inside a protected <critical section> already violate <mutual exclusion>; later leaving does not erase that violation. This contrasts with a <liveness property>, for which a long finite wait alone does not establish failure.<Defining Liveness by Bowen Alpern and others>[pp. 181–182: finite irremediable prefixes]{ref}
+
+= Liveness property
+{parent=Synchronization (computing)}
+
+A requirement of eventual progress, with no finite prefix ruling out its eventual satisfaction. For <starvation freedom>, a persistent requester must eventually enter its <critical section>. Establishing such a <liveness property> requires explicit scheduling and protocol assumptions in addition to <mutual exclusion>. Exhaustive finite <thread interleaving> checks alone do not establish eventual service for repeatedly competing <software threads>.<Defining Liveness by Bowen Alpern and others>[p. 182: every finite prefix can still be extended to satisfy a liveness property]{ref}
+
+= Starvation freedom
+{parent=Liveness property}
+
+For acquisition of a <mutex>, the guarantee that every persistent requester eventually succeeds, under specified scheduling assumptions and with owners eventually releasing. Some <software threads> repeatedly succeeding while another waits forever violates <starvation freedom> without violating <mutual exclusion>. A finite bound on the wait, and service in arrival order, are additional requirements.
+
+= Deadlock
+{parent=Synchronization (computing)}
+{wiki}
+
+A group of participants cannot proceed because each waits for a resource whose release depends on another participant in the group. Consider two initially free <mutex> objects A and B. T1 acquires A then tries B; T2 acquires B then tries A. If each obtains its first <mutex>, both wait permanently for the other, with release reachable only after the second acquisition. Each <mutex> still enforces <mutual exclusion>.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Common Concurrency Problems>[pp. 5–7, figures 32.6–32.7: opposing acquisition orders and circular wait]{ref}
+
+\Image[mutual-exclusion-lock-order-state-space.png]
+{title=Reachable states for opposite <mutex> acquisition orders and for one shared <lock ordering>}
+
+Each <software thread> performs four indivisible operations: acquire its first <mutex>, acquire its second, release the second, release the first. An unavailable acquisition blocks; neither participant releases early. A state records each participant's completed-operation count and both owners. Exhaustive exploration finds 19 reachable states with opposite orders, including exactly one nonterminal state with no enabled operation: both counts are $1$, T1 owns A, and T2 owns B. Giving both participants the order A then B leaves 16 reachable states and no such blocked state. Unshown grid positions are unreachable. These are tiny <sequential consistency> models, without timeouts, cancellation, recursive acquisition or other resources.
+
+= Deadlock freedom
+{parent=Deadlock}
+
+Absence of a reachable <deadlock>. In the finite acquisition model under <deadlock>, reaching a nonterminal state with no enabled operation is a finite witness to failure, so this formulation is a <safety property>. Sometimes the phrase is used for eventual acquisition by some requester, a <liveness property>; the intended requirement must be stated. Neither formulation by itself promises <starvation freedom> for every requester.
+
+= Lock ordering
+{parent=Deadlock}
+
+A shared order governing acquisition of distinct <mutex> objects. To prevent circular waiting, choose a strict <total order> and acquire only a higher-ranked <mutex> while retaining lower-ranked ones. In the two-object <deadlock> example, every participant acquires A before B. An outline of the argument is that ranks would strictly increase around any alleged waiting cycle, yet return to the starting rank, a contradiction. The rule must include acquisitions hidden inside called routines. It excludes this kind of <deadlock>, not arbitrary waiting on other resources or failure to schedule an owner.<Operating Systems: Three Easy Pieces by Remzi H. Arpaci-Dusseau and others/Common Concurrency Problems>[pp. 7–8: consistent acquisition ordering and hidden calls]{ref}
+
+= Memory model
+{parent=Synchronization (computing)}
+
+Rules specifying which shared-data observations and operation orders are allowed. <Sequential consistency> is the model used in the two diagrams. A language <memory model> can permit weaker ordering and impose additional conditions on conflicting accesses. Correct use of an indivisible flag must therefore be checked against that <memory model>, including <happens-before> relationships for the data guarded by the flag.
+
+= Sequential consistency
+{parent=Memory model}
+{wiki}
+
+Execution behaves as if steps occurred in one <total order> preserving each participant's program order; reads observe the latest preceding writes in that order. This is the definition given in the 1979 paper https://www.microsoft.com/en-us/research/wp-content/uploads/2016/12/How-to-Make-a-Multiprocessor-Computer-That-Correctly-Executes-Multiprocess-Programs.pdf[How to Make a Multiprocessor Computer That Correctly Executes Multiprocess Programs], printed p. 690. It permits many <thread interleavings>, including the <lost update> under <mutual exclusion>; ordering individual accesses does not combine them into one <atomic operation>.
+
+= Data race
+{parent=Memory model}
+
+For the C++ case used here, conflicting accesses by different <software threads>, at least one non-atomic, with neither ordered before the other by <happens-before>. Such a <data race> has undefined behavior. A <race condition> is broader: the <lost update> with separate atomic reads and writes depends on their order while avoiding a <data race>.<Working Draft, Standard for Programming Language C++ (N4861)>[pp. 79–80: conflicting actions and undefined behavior]{ref}
+
+= Happens-before
+{parent=Memory model}
+{title2=$\to_{\mathrm{hb}}$}
+
+An ordering <binary relation> used by a <memory model> to constrain observation of shared data. For the <mutex> example, T1's write precedes its release, that release synchronizes with T2's successful acquisition, and that acquisition precedes T2's read. Together these steps order the write before the read. Wall-clock timing alone does not establish <happens-before>.<Working Draft, Standard for Programming Language C++ (N4861)>{ref}
+
+= Acquire-release synchronization
+{parent=Happens-before}
+
+A release on an atomic object can synchronize with an acquire that reads the released value, establishing <happens-before> for surrounding accesses. A <test-and-set> <spinlock> needs suitable acquisition and release semantics for its guarded data; relaxed flag operations alone do not supply that relationship. This is a separate question from the flag's indivisibility.<Working Draft, Standard for Programming Language C++ (N4861)>[pp. 1524–1525: relaxed ordering and release/acquire synchronization]{ref}
+
+= Atomic operation
+{parent=Synchronization (computing)}
+
+An operation that takes effect indivisibly relative to the specified competing accesses. An atomic increment protects the whole read-modify-write; separate atomic loads and stores do not make their combined sequence an <atomic operation>.
+
+// Target: computer-science.bigb
+
+= Atomic read-modify-write
+{parent=Atomic operation}
+
+An <atomic operation> that reads a shared object's value and changes it as one indivisible action. For an increment from $0$, the two operations under <mutual exclusion> produce $1$ then $2$ in either <software thread> order. A <test-and-set> is another example. The operation's ordering guarantees for other data still depend on the <memory model> and its selected <acquire-release synchronization> semantics.

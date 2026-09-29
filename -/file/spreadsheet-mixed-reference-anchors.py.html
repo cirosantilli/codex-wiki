@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>spreadsheet-mixed-reference-anchors.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="spreadsheet-mixed-reference-anchors.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/spreadsheet-mixed-reference-anchors.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">spreadsheet-mixed-reference-anchors.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/spreadsheet-mixed-reference-anchors.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/spreadsheet-mixed-reference-anchors.py">spreadsheet-mixed-reference-anchors.py</a></b></div></nav></div><div class="p"><b>spreadsheet-mixed-reference-anchors.py</b></div><div class="code"><div><pre><code>"""Draw an original mixed-reference multiplication table; emit PNG in CWD.
+
+Tested with Python 3.14, matplotlib 3.10.7 and numpy 2.3.5.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+
+
+INK = "#233448"
+LEFT = "#206dba"
+TOP = "#8a43a2"
+TARGET = "#288451"
+
+
+def main():
+    plt.rcParams["text.parse_math"] = False
+    fig, ax = plt.subplots(figsize=(10, 6), dpi=120)
+    fig.patch.set_facecolor("white")
+    ax.set(xlim=(0, 12), ylim=(0, 7.2))
+    ax.axis("off")
+    ax.text(0.25, 6.89, "Mixed references: one anchor for each coordinate",
+            fontsize=17, weight="bold", color=INK)
+    ax.text(0.25, 6.48, "Fill =$A2*B$1 from B2 across and down through B2:D4", fontsize=12, color=INK)
+    x0, top, width, height = 0.55, 5.76, 1.65, 0.95
+    for c, letter in enumerate("ABCD"):
+        ax.text(x0 + (c + 0.5) * width, top + 0.22, letter, ha="center", fontsize=12, weight="bold", color=INK)
+    for r in range(1, 5):
+        y = top - r * height
+        ax.text(x0 - 0.2, y + height / 2, str(r), ha="center", va="center", fontsize=12, weight="bold", color=INK)
+        for c in range(4):
+            x = x0 + c * width
+            colour, content, textcolour = "white", "", INK
+            if r == 1 and c:
+                colour, content, textcolour = "#f2e7f8", str(c + 4), TOP
+            elif r &gt; 1 and c == 0:
+                colour, content, textcolour = "#e7f0fa", str(r), LEFT
+            elif r &gt; 1 and c:
+                colour = "#e4f3e9"
+                content = f"=$A{r}*{'ABCD'[c]}$1\nvalue: {r * (c + 4)}"
+            ax.add_patch(Rectangle((x, y), width, height, facecolor=colour,
+                                   edgecolor="#b8c3ce", linewidth=0.8))
+            ax.text(x + width / 2, y + height / 2, content, ha="center", va="center",
+                    fontsize=10.5 if r &gt; 1 and c else 14, color=textcolour,
+                    fontfamily="DejaVu Sans Mono" if r &gt; 1 and c else "DejaVu Sans")
+    for c, r, colour in [(0, 4, LEFT), (3, 1, TOP), (3, 4, TARGET), (1, 2, TARGET)]:
+        ax.add_patch(Rectangle((x0 + c * width, top - r * height), width, height,
+                               fill=False, edgecolor=colour, linewidth=2.5))
+    bottom = top - 4 * height
+    xa, xd = x0 + width / 2, x0 + 3.5 * width
+    ax.plot([xd, xd, xa], [bottom - 0.02, bottom - 0.35, bottom - 0.35], color=LEFT, lw=2)
+    ax.annotate("", xy=(xa, bottom - 0.02), xytext=(xa, bottom - 0.35),
+                arrowprops={"arrowstyle": "-&gt;", "color": LEFT, "lw": 2})
+    ax.text(3.85, bottom - 0.74, "$A4: stay in column A; follow row 4", ha="center", fontsize=11, color=LEFT)
+    right = x0 + 4 * width
+    y1, y4 = top - height / 2, top - 3.5 * height
+    ax.plot([right + 0.02, right + 0.38, right + 0.38], [y4, y4, y1], color=TOP, lw=2)
+    ax.annotate("", xy=(right + 0.02, y1), xytext=(right + 0.38, y1),
+                arrowprops={"arrowstyle": "-&gt;", "color": TOP, "lw": 2})
+    ax.text(8.08, 5.62, "COPY B2 → D4", fontsize=12, color=TARGET, weight="bold")
+    ax.text(8.08, 5.14, "+2 columns, +2 rows", fontsize=11, color=INK)
+    ax.text(8.08, 4.59, "$A2 → $A4", fontsize=14, color=LEFT, fontfamily="DejaVu Sans Mono")
+    ax.text(8.08, 4.24, "Column fixed; row changes", fontsize=10.5, color=LEFT)
+    ax.text(8.08, 3.70, "B$1 → D$1", fontsize=14, color=TOP, fontfamily="DejaVu Sans Mono")
+    ax.text(8.08, 3.35, "Row fixed; column changes", fontsize=10.5, color=TOP)
+    ax.text(8.08, 2.80, "D4: =$A4*D$1", fontsize=13, color=TARGET, fontfamily="DejaVu Sans Mono")
+    ax.text(8.08, 2.39, "4 × 7 = 28", fontsize=14, color=TARGET, weight="bold")
+    ax.text(0.55, 0.53, "The left boundary supplies each row factor.  The top boundary supplies each column factor.", fontsize=11, color=INK)
+    ax.text(0.55, 0.15, "Without anchors, =A2*B1 copied from B2 to D4 becomes =C4*D3, which reads interior results.", fontsize=10.5, color=INK)
+    fig.subplots_adjust(left=0.015, right=0.985, top=0.99, bottom=0.025)
+    fig.savefig(Path(__file__).stem + ".png", facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,879 @@
+= Paper 5
+{scope}
+
+https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2007/PaperIA_5.pdf
+
+= 1
+{parent=Paper 5}
+{scope}
+{title2=Foundations of Computer Science}
+
+= a
+{parent=1}
+{scope}
+
+= Solution
+{parent=a}
+
+For integer <linked lists>, compare their heads and copy the smaller head, retaining the other list for the next step:
+```
+fun merge ([], ys) = ys
+  | merge (xs, []) = xs
+  | merge (xs as x :: xt, ys as y :: yt) =
+      if x <= y then x :: merge (xt, ys)
+      else y :: merge (xs, yt);
+```
+This <merge algorithm> preserves duplicates and chooses the left list on a tie, making it stable when elements have an ordering key. Each recursive step decreases the combined length. For correctness, the chosen head is no greater than either remaining head and therefore no greater than any remaining element; <structural induction> then proves that the result is ordered and contains exactly the elements of both inputs. For other element types, replace the integer comparison by a supplied ordering function. **Merge repeatedly emits the smaller head and reuses the remaining list when the other becomes empty.**
+
+= b
+{parent=1}
+{scope}
+
+= Solution
+{parent=b}
+
+Split the list into two contiguous halves, sort each recursively, and use the <merge algorithm> from part (a):
+```
+fun mergesort [] = []
+  | mergesort [x] = [x]
+  | mergesort xs =
+      let
+        val k = List.length xs div 2
+        val left = List.take (xs, k)
+        val right = List.drop (xs, k)
+      in
+        merge (mergesort left, mergesort right)
+      end;
+```
+`List.length` counts elements, `List.take(xs,k)` returns the first $k$ elements and `List.drop(xs,k)` returns the remaining suffix. Since $0<k<n$ when $n\ge2$, both recursive inputs are smaller and differ in length by at most one. <Mathematical induction> on length proves that each half is sorted without losing elements, and the correctness of the <merge algorithm> proves the same for the combined result. Contiguous splitting and left-biased equal-key merging preserve the original relative order of equal keys. **This is a stable top-down <merge sort>.**
+
+= c
+{parent=1}
+{scope}
+
+= Solution
+{parent=c}
+
+Assume head comparison and construction of one list cell take constant time. In the <merge algorithm>, every comparison removes one head from the recursive inputs, and evaluation stops as soon as either is empty. For lengths $m,n>0$, at most $m+n-1$ comparisons and the same number of newly constructed cells are required; the untouched suffix is shared. Inputs which keep both lists nonempty until the last comparison attain this bound. Thus
+$$
+\boxed{T_{\rm merge}(m,n)=O(m+n),\quad\text{with worst case }\Theta(m+n).}
+$$
+An initially empty input makes this particular implementation constant-time; not every pair requires linear work.
+
+The balanced <merge sort> spends $\Theta(n)$ time per call on list length, splitting and merging. Hence its <time complexity> satisfies
+$$
+T(n)=T(\lfloor n/2\rfloor)+T(\lceil n/2\rceil)+\Theta(n),\qquad T(0),T(1)=\Theta(1).
+$$
+At each recursion level the lengths of its disjoint subproblems sum to $n$, so the work per level is $\Theta(n)$, and balanced splitting gives $\Theta(\log n)$ levels. Consequently
+$$
+\boxed{T_{\rm mergesort}(n)=\Theta(n\log n)\quad(n\ge2).}
+$$
+The length and splitting traversals change the constant factor, not this asymptotic order; repeatedly inserting elements into a sorted list would not give the same complexity.
+
+= 2
+{parent=Paper 5}
+{scope}
+{title2=Operating Systems}
+
+= a
+{parent=2}
+{scope}
+
+= Solution
+{parent=a}
+
+The <working set> $W(t,\Delta)$ is the set of virtual pages referenced by an <operating-system process> within a recent window of $\Delta$ execution time or memory references. Its size estimates the number of frames needed for the process's current locality of execution. It is a set of recently used pages, not the entirety of the process's address space.
+
+An <operating system> can estimate it from reference bits or fault history and try to keep those pages resident. <Process scheduling> and admission control should avoid simultaneously running processes whose combined working sets exceed physical memory; suspending some processes or reducing multiprogramming then allows the rest to make useful progress. If too many active pages compete for too few frames, repeated <page faults> produce <memory thrashing>. **Working sets connect memory allocation to the choice of processes allowed to run.**
+
+= b
+{parent=2}
+{scope}
+
+= Solution
+{parent=b}
+
+Both kinds of <context switch> save and restore registers, a program counter, stack pointer and scheduler state. Switching between <operating-system processes> additionally changes the address-space and protection context, including the page-table root. Cached translations must be invalidated or distinguished by address-space identifiers, and the new process may have a different memory and cache locality.
+
+<Software threads> of one process share its address space and most resources, so a thread switch normally preserves the page-table root and valid cached translations; only the execution context, stack and thread-specific state need change. Thus **a process switch requires address-space management which a same-process thread switch usually avoids**. Tagged translation caches can reduce the extra cost, so a complete <translation lookaside buffer> flush is not an inevitable feature of every process switch.
+
+= c
+{parent=2}
+{scope}
+
+= Solution
+{parent=c}
+
+First, suppressing <kernel preemption> simplifies protection of shared kernel data on a uniprocessor: another ordinary kernel execution cannot be scheduled in the middle of a short update which temporarily breaks an invariant. Fewer paths require preemption-specific locking and reentrancy handling, making the <operating-system kernel> easier to implement correctly.
+
+Second, it avoids involuntary kernel <context switches> and their scheduler, register-save and cache-disruption costs, and can make the execution of short kernel operations more predictable. The tradeoff is greater scheduling latency if a kernel operation runs too long. **Simpler synchronization and lower switching overhead are the two reasons.** Non-preemptive kernel code can still receive <interrupts> or block voluntarily, and multiprocessor execution still requires synchronization; non-preemption is not a substitute for all locking.
+
+= d
+{parent=2}
+{scope}
+
+= Solution
+{parent=d}
+
+<Set-user-ID execution> of a suitable executable makes its effective user identity that of the owner. When that owner is root, running it can give root privileges even to an otherwise unprivileged caller. World-write permission destroys the trust boundary: any user can alter the privileged executable, potentially substituting code which performs arbitrary privileged operations. World-execute permission then makes the compromised program available to everyone.
+
+World-read access can reveal implementation details or embedded secrets, but reading alone is not the decisive privilege-escalation flaw; properly designed public set-user-ID utilities need not keep their code secret. Some Unix kernels clear the set-user-ID bit after an unprivileged modification. That is a mitigation, not a reason to maintain a world-writable privileged program: if the bit persists or is restored without validating the changed code, the privilege escalation remains. **Root-owned privileged executables must not be writable by untrusted users.**
+
+= 3
+{parent=Paper 5}
+{scope}
+{title2=Programming in Java}
+
+= a
+{parent=3}
+{scope}
+
+= Solution
+{parent=a}
+
+A generic class, interface or method in <Java> is parameterized by one or more types. <Generics in Java> allow one implementation of a collection or algorithm to be reused with different reference types while checking the allowed values and results statically. For example:
+```
+Vector<String> names = new Vector<String>();
+names.add("Ada");
+String first = names.get(0);
+
+class Box<T> {
+    private T value;
+    public void put(T x) { value = x; }
+    public T get() { return value; }
+}
+```
+The type parameter is declared inside angle brackets, as in `Box<T>`, and supplied as a type argument, as in `Box<String>`. A generic method places its parameter list before its return type, for example `static <T> T identity(T x)`. Bounds such as `<T extends Number>` restrict type arguments, and wildcards such as `? extends Number` or `? super Integer` describe restricted views. Primitive values require wrapper types such as `Integer` rather than a type argument `int`. **Generics provide reusable code with compile-time checking of element types.**
+
+= b
+{parent=3}
+{scope}
+
+= Solution
+{parent=b}
+
+Replace type parameters by their erasures, normally `Object` or the first declared bound, and insert checked casts where an erased result is used as its former specific type. A simple <generics in Java> example becomes:
+```
+// Generic version
+Vector<String> names = new Vector<String>();
+names.add("Ada");
+String s = names.get(0);
+
+// Non-generic version
+Vector names = new Vector();
+names.add("Ada");
+String s = (String) names.get(0);
+```
+The two fragments are alternatives, not consecutive declarations in one scope. For a user-defined `Box<T>`, replace fields, parameters and returns of type `T` by `Object`, and cast the retrieved result. Bounded parameters instead erase to their bound. A full translation must also preserve method dispatch where erasure changes overridden signatures, using suitable forwarding methods; this is the principle of <type erasure>, not simply deleting every pair of angle brackets.
+
+The raw collection permits accidental insertion of an unrelated object, which may fail much later at a cast. The generic collection rejects such insertion during compilation, documents its contract at the declaration, and eliminates repetitive casts at use sites. **The generic version catches more errors earlier and expresses the programmer's intended element type directly.** Generic types are largely erased at runtime, so their advantage is static checking rather than a new runtime vector representation. The translation mechanism is specified by the \a[https://docs.oracle.com/javase/specs/jls/se8/html/jls-4.html#jls-4.6][Java language specification].
+
+= c
+{parent=3}
+{scope}
+
+= Solution
+{parent=c}
+
+The inference is false in both directions. Although `String` is a subtype of `Object`, <generic type invariance> means that neither `Vector<String>` nor `Vector<Object>` is a subtype of the other. If a string vector could be used as an object vector, an arbitrary object could be inserted into storage promised to contain strings. Conversely, an object vector may already contain an `Integer`, so it cannot satisfy the contract of a string vector.
+
+Both parameterizations are subtypes of the ordinary class `Object`, but this does not create a subtype relation between their element parameterizations. For a view accepting vectors with different element types, `Vector<?>` is appropriate; a `Vector<? extends Object>` similarly allows retrieval as `Object` without arbitrary non-null insertion. A `Vector<? super String>` accepts insertion of strings but does not promise that retrieved elements are strings. **The stated subclass relationship does not hold: mutable generic vectors are invariant.**
+
+= 4
+{parent=Paper 5}
+{scope}
+{title2=Numbers and Sets}
+
+= Solution
+{parent=4}
+
+Define the <binomial coefficient> $\binom nk$ to be the number of $k$-element subsets of an $n$-element set. Equivalently, count ordered selections and divide by the $k!$ orders of each subset to obtain $\binom nk=n!/[k!(n-k)!]$, with $\binom n0=\binom nn=1$.
+
+Fix one distinguished element. The $k$-subsets not containing it are counted by $\binom{n-1}{k}$; those containing it correspond bijectively to $(k-1)$-subsets of the remaining $n-1$ elements. These are disjoint and exhaustive classes, proving <Pascal's identity>:
+$$
+\boxed{\binom{n-1}{k}+\binom{n-1}{k-1}=\binom nk.}
+$$
+For the summation, use <mathematical induction> on $k$, retaining an arbitrary fixed $n\ge0$. At $k=0$, both sides equal one. Suppose $\sum_{j=0}^k\binom{n+j}{j}=\binom{n+k+1}{k}$. Adding the next term and applying <Pascal's identity> gives
+$$
+\sum_{j=0}^{k+1}\binom{n+j}{j}=\binom{n+k+1}{k}+\binom{n+k+1}{k+1}=\binom{n+k+2}{k+1}.
+$$
+This is the required statement for $k+1$, completing the induction, including $n=0$. Hence the <hockey-stick identity> in this form is
+$$
+\boxed{\displaystyle\sum_{j=0}^k\binom{n+j}{j}=\binom{n+k+1}{k}\quad(n,k\ge0).}
+$$
+
+= 5
+{parent=Paper 5}
+{scope}
+{title2=Foundations of Computer Science}
+
+= a
+{parent=5}
+{scope}
+
+= i
+{parent=a}
+{scope}
+
+= Solution
+{parent=i}
+
+Assuming `p` is an ordinary total Boolean predicate, replace success by `true` and the search's failure exception by `false`:
+```
+fun gordonPlain p Lf = true
+  | gordonPlain p (Br (x, left, right)) =
+      p x andalso
+      (gordonPlain p left orelse gordonPlain p right);
+```
+The <Standard ML> handler in the printed function belongs to the `else` expression: it tries the left subtree and, only if that search raises `Blair`, tries the right. It does not catch a failing label test at the current node. This scope follows the \a[https://smlfamily.github.io/sml97-defn.pdf][Standard ML grammar, Appendix B]. Short-circuit `andalso` rejects the current label before visiting either child; short-circuit `orelse` visits the right child only after the left search fails. <Structural induction> on the <binary tree> proves that `tony` returns `true` exactly when `gordonPlain` does, and otherwise raises the exception converted by `gordon` to `false`. **The exception-free test is the root predicate conjoined with the disjunction of the two subtree tests.**
+
+The total-predicate assumption matters: if `p` itself raises `Blair`, the original handler can catch it, whereas an implementation with no <exception handling> cannot in general convert that event to a Boolean result. The displayed replacement implements the intended Boolean tree property, not an exception-catching wrapper for arbitrary exceptional predicates.
+
+= ii
+{parent=a}
+{scope}
+
+= Solution
+{parent=ii}
+
+For a finite <binary tree>, `gordon p t` expresses **the existence of a root-to-`Lf` path on which every branch-node label satisfies `p`**. The empty tree has a length-zero path and returns `true`. At `Br(x,left,right)`, such a path exists precisely when `p x` holds and at least one child admits such a path. This is the recursive Boolean equation derived in part (i).
+
+The property is neither “all labels in the tree satisfy `p`” nor “some label satisfies `p`”. A bad label in an unchosen subtree does not prevent success, but a bad root label prevents every root-to-leaf path. The traversal performs a left-first search for a qualifying path.
+
+= b
+{parent=5}
+{scope}
+
+= Solution
+{parent=b}
+
+The <ML exception type> `exn` contains exception packets and is an extensible datatype: an `exception` declaration introduces a fresh constructor, optionally with an argument. For example:
+```
+exception Empty;
+exception BadIndex of int;
+```
+`Empty` has type `exn`, and `BadIndex` has type `int -> exn`. These packets are ordinary values which can be passed, returned or stored. `raise` propagates a packet; the resulting expression can have whatever result type its surrounding context requires, because normal evaluation does not return from the raise.
+
+In <exception handling>, `expression handle pattern => recovery` evaluates the recovery for a matching exception packet and otherwise propagates the packet outward. The normal expression and recovery must have the same result type. Handlers are dynamically nested, and exceptions raised in the recovery are not handled again by that same handler. A variable pattern catches every packet, whereas a constructor pattern selects a particular exception. Separate fresh exception declarations create distinct identities even if their printed names coincide; exception rebinding instead aliases an existing constructor. **`exn` packages exceptional information; `raise` and `handle` determine its control-flow effect.**
+
+= c
+{parent=5}
+{scope}
+
+= Solution
+{parent=c}
+
+If `f : 'a -> 'b`, then the success constructor applied to `f x` has type `'b result`, and the exception alternative has that same type. Therefore
+```
+what : ('a -> 'b) -> 'a -> 'b result
+```
+The zero comparison fixes the labels to type `int`, and `tony` with this predicate accepts an `int tree` and normally produces a Boolean. The requested expression consequently has type
+```
+int tree -> bool result
+```
+so **the wrapper maps an integer tree to a packaged Boolean result or exception packet**.
+
+For `ta`, the packet `Ian true` means that a normal successful search occurred: `ta` has at least one root-to-`Lf` path all of whose branch labels are nonzero. It can be `Lf`; if nonempty, its root must be nonzero, but labels away from the successful path need not be. For example, `Br(1,Lf,Br(0,Lf,Lf))` succeeds despite containing a zero.
+
+For `tb`, `Cherie Blair` means that the search raised the designated exception. Every root-to-`Lf` path has a zero-labeled branch somewhere. Thus `tb` is nonempty, but its root need not be zero: `Br(1,Br(0,Lf,Lf),Br(0,Lf,Lf))` fails. With the supplied total comparison predicate, `tony` can return only `true` or raise `Blair`, never return `false`. **`ta` admits an all-nonzero path; `tb` admits none.**
+
+= 6
+{parent=Paper 5}
+{scope}
+{title2=Foundations of Computer Science}
+
+= a
+{parent=6}
+{scope}
+
+= Solution
+{parent=a}
+
+An <ML reference type> `'a ref` describes a mutable cell holding a value of type `'a`. The operations are `ref : 'a -> 'a ref` for allocation, `! : 'a ref -> 'a` for dereferencing and `:= : 'a ref * 'a -> unit` for assignment. An immutable variable binding can name a mutable cell; assigning to the cell does not change what the binding denotes. Two names may alias the same cell, so an update through either is visible through the other.
+```
+val counter = ref 0;
+val alias = counter;
+counter := !counter + 1;
+```
+Both dereferences now give one. A reference's stored type remains fixed; the value restriction prevents allocating one unrestricted polymorphic cell and then using incompatible instantiations.
+
+<Imperative programming> uses sequencing `(e1; e2; ...; en)` to perform effects left to right, with the final expression supplying the result. Conditional expressions choose one branch. `while condition do body` repeatedly checks a Boolean condition and performs a unit-valued body, returning `()` on termination. <Standard ML> has no required primitive `for` loop, but recursion or a reference with `while` supplies one. For example:
+```
+fun sumTo n =
+    let val i = ref 1
+        val total = ref 0
+    in
+        while !i <= n do
+          (total := !total + !i; i := !i + 1);
+        !total
+    end;
+```
+**References provide mutable state; sequencing, conditionals and loops control its updates.**
+
+= b
+{parent=6}
+{scope}
+
+= Solution
+{parent=b}
+
+Carry the list as an immutable accumulator instead of storing it in a reference:
+```
+fun snackerPure m =
+    let
+      fun collect (Snack x, acc) = x :: acc
+        | collect (Lunch (a, b), acc) =
+            collect (b, collect (a, acc))
+        | collect (Feast (a, b, c), acc) =
+            collect (c, collect (b, collect (a, acc)))
+    in
+      collect (m, [])
+    end;
+```
+For any initial accumulator `acc`, <structural induction> shows that `collect(m,acc)` equals the final reference content obtained by traversing `m` left to right and prepending each snack to a reference initially containing `acc`. At `Lunch` and `Feast`, the accumulator passed to each child is the result of all earlier children, exactly matching the imperative sequencing. Thus the result is the **reverse of the left-to-right list of snack labels**, just as for the original `snacker`; returning the ordinary left-to-right list would be incorrect. The code uses no mutable cells and is polymorphic, with type `'a meal -> 'a list`.
+
+= c
+{parent=6}
+{scope}
+
+= Solution
+{parent=c}
+
+Apply <structural recursion> to the original meal, preserving its internal constructors and replacing each leaf:
+```
+fun gluttony (Snack _) replacement = replacement
+  | gluttony (Lunch (a, b)) replacement =
+      Lunch (gluttony a replacement, gluttony b replacement)
+  | gluttony (Feast (a, b, c)) replacement =
+      Feast (gluttony a replacement, gluttony b replacement,
+             gluttony c replacement);
+```
+The type is `'a meal -> 'b meal -> 'b meal`: original snack labels are discarded, so the replacement can have a different label type. The constructors introduced by the replacement are not recursively processed; only snacks of the original tree are substituted. The immutable replacement can be shared among occurrences without changing the represented value. **Every original `Snack` is replaced, while the original internal meal structure is retained.**
+
+= d
+{parent=6}
+{scope}
+
+= Solution
+{parent=d}
+
+Carry the number of original snacks still to skip, returning it together with the reconstructed subtree. Zero means that the replacement has already happened:
+```
+fun glut k meal replacement =
+    let
+      fun visit (t, 0) = (t, 0)
+        | visit (Snack x, j) =
+            if j = 1 then (replacement, 0)
+            else (Snack x, j - 1)
+        | visit (Lunch (a, b), j) =
+            let val (a1, j1) = visit (a, j)
+                val (b1, j2) = visit (b, j1)
+            in (Lunch (a1, b1), j2) end
+        | visit (Feast (a, b, c), j) =
+            let val (a1, j1) = visit (a, j)
+                val (b1, j2) = visit (b, j1)
+                val (c1, j3) = visit (c, j2)
+            in (Feast (a1, b1, c1), j3) end
+    in
+      if k < 1 then raise Subscript
+      else
+        let val (answer, remaining) = visit (meal, k)
+        in if remaining = 0 then answer else raise Subscript end
+    end;
+```
+The successive bindings explicitly establish left-to-right counting. Before the target is reached, each original snack decreases the counter by one; at the target the subtree becomes `replacement` and the counter becomes zero. Subsequent subtrees are returned unchanged, and newly inserted snacks are never counted. <Structural induction> on the helper's subtree establishes this invariant and proves the specified one-based substitution. The result has type `int -> 'a meal -> 'a meal -> 'a meal`. Since unaltered original snacks remain, their label type must agree with the replacement's label type.
+
+The behavior for an invalid index is not specified in the PDF; this implementation deliberately raises `Subscript` for $k\le0$ or too few snacks. For valid input, **exactly the $k$th original snack in left-to-right order is replaced**. Sharing untouched immutable subtrees is semantically equivalent to a fresh structural copy.
+
+= 7
+{parent=Paper 5}
+{scope}
+{title2=Operating Systems}
+
+= a
+{parent=7}
+{scope}
+
+= Solution
+{parent=a}
+
+A 4096-byte page has a 12-bit offset. Each 1024-entry <page table> needs a 10-bit index, so partition the virtual address as
+$$
+\boxed{\underbrace{a_{31}\cdots a_{22}}_{\text{directory index: 10 bits}}\quad\underbrace{a_{21}\cdots a_{12}}_{\text{page-table index: 10 bits}}\quad\underbrace{a_{11}\cdots a_0}_{\text{byte offset: 12 bits}}.}
+$$
+The current process's page-table root points to the first-level directory. The processor first looks for a cached translation of the virtual page in the <translation lookaside buffer>. On a hit it checks the cached access permissions and combines the physical frame base with the unchanged byte offset.
+
+On a miss, use bits 31--22 to select a directory entry. Its frame address identifies the relevant second-level <page table>. Bits 21--12 select the entry giving the data page's physical frame and permissions. With four-byte entries in the usual layout, the entry addresses are directory-base plus four times the first index, and second-level-table-base plus four times the second index. After validity and permission checks, form
+$$
+\boxed{\text{physical address}=4096\times\text{physical frame number}+(a\bmod4096).}
+$$
+Populate the translation cache so subsequent accesses avoid the two table reads. A missing or disallowed entry causes a <page fault>. The <operating system> can supply a valid absent page, update the mapping and restart the instruction, or reject a prohibited access. Table entries and processor state are protected from ordinary user modification. The address-space identifier or root-context rules prevent a cached translation from a different process being used accidentally.
+
+= b
+{parent=7}
+{scope}
+
+= Solution
+{parent=b}
+
+A <page table> entry normally supplies validity and access controls. A present/valid bit distinguishes a usable resident translation from an absent or unmapped page; an absent entry forces a <page fault>. A user/supervisor control restricts access to privileged execution or permits user access. Read/write control permits writing or enforces read-only access, protecting code, constants or shared mappings; an attempted forbidden write faults.
+
+Where the architecture supports it, execute permission or a non-executable bit separates instruction fetch from data reads, so writable data need not be executable. Some processors offer separate read, write and execute controls; in the classic 32-bit non-PAE x86 layout matching the stated two-level geometry, there is no independent page execute-disable bit, and a read-only page can still be read and executed. Permissions of every level involved in the page walk must permit the access; the leaf entry cannot override an upper-level restriction.
+
+Accessed/reference and dirty/modified bits are also expected, but they are management information rather than permission bits. They record use and writes for replacement and writeback decisions. Cache-control bits similarly govern memory behavior rather than access authorization. **Validity, privilege and write permission are fundamental; execute permission is architecture-dependent.**
+
+= c
+{parent=7}
+{scope}
+
+= Solution
+{parent=c}
+
+<Paging> divides a virtual address space into fixed-size pages mapped independently to fixed-size physical frames. It avoids external fragmentation of physical memory, although the last page of an allocation can contain unused space. Pages are principally allocation units and need not coincide with meaningful program objects.
+
+<Memory segmentation> instead presents logical variable-sized regions such as code, a stack or a data object. An address contains a segment identifier and an offset; a segment descriptor gives a base, limit and permissions. The offset is checked against the limit. Pure contiguous physical segmentation can suffer external fragmentation and may need relocation or compaction, but its object-level boundaries aid protection and sharing.
+
+Combine the two by mapping a segment offset to a linear virtual address and then using <paging> for physical allocation, or by having each segment descriptor refer to its own <page table>. Cache descriptors and translations so ordinary references do not repeatedly traverse all tables. Segment pages may occupy noncontiguous frames, while bounds and rights remain defined at segment granularity. **Segmentation supplies logical objects and bounds; paging supplies efficient noncontiguous physical storage.**
+
+= d
+{parent=7}
+{scope}
+
+= Solution
+{parent=d}
+
+Reserve a large sparse region of the 64-bit <virtual memory> space for each open file, returning its base address or a segment handle. Access byte $j$ through the address base plus $j$. Choose nonoverlapping page-aligned reservations, retain a file-identifier/offset/length mapping descriptor and apply file access rights as memory permissions. A conceptual division into high-order file-slot bits and low-order offset bits is possible, but the split is a design choice and must leave adequate maximum file size and slot count.
+
+Use sparse multilevel <page tables>: reserving an address interval must not allocate physical storage or a dense table for every possible byte. A first access produces a <page fault>, locates the corresponding file page in the filesystem/page cache, reads it if absent, installs a mapping and restarts the instruction. Several processes mapping the same file page can share the same physical frame, maintaining one coherent cached copy. Read-only mappings forbid stores; writable mappings mark dirty pages for eventual writeback, with an explicit synchronization operation when durability is required.
+
+Opening and mapping records the virtual reservation; closing or unmapping removes it and performs required writeback. Extension may enlarge the mapping and file according to the API, while access beyond the logical end or after truncation must be checked and reported rather than silently exposing another object. The spare bytes of the last page need an explicit convention, since page-granularity hardware alone cannot enforce every byte-level file limit. Sharing, concurrent edits and stale handles require suitable locking, mapping invalidation and lifecycle rules. **Demand-paged <memory-mapped files> realize the <Multics> view without reading entire files or allocating their whole address reservations in RAM.** A nominal 64-bit address type does not guarantee that every hardware implementation exposes all $2^{64}$ addresses, so reservations use the supported range.
+
+= 8
+{parent=Paper 5}
+{scope}
+{title2=Operating Systems}
+
+= a
+{parent=8}
+{scope}
+
+= Solution
+{parent=a}
+
+A <processor privilege level> distinguishes user execution from the privileged <operating-system kernel>. In user state, privileged instructions such as changing page-table control registers, reconfiguring devices or altering protected interrupt controls are forbidden and trap if attempted. Memory accesses are also checked against user-access permissions. Supervisor state permits the kernel to manage these resources; protected transition mechanisms keep user programs from merely setting the privilege bit themselves.
+
+<Interrupt masking> controls delivery of maskable asynchronous <interrupts>. Enabled interrupts allow devices and timers to transfer control to the kernel between instructions; disabling them permits short critical operations without those particular interruptions. It does not normally disable synchronous exceptions, faults or nonmaskable interrupts. These two kinds of status bits are independent: privilege determines which instructions and accesses are authorized, whereas the interrupt mask determines which asynchronous events can preempt execution. **Privilege protects the machine; interrupt enablement controls asynchronous entry.**
+
+= b
+{parent=8}
+{scope}
+
+= Solution
+{parent=b}
+
+A system call or other synchronous trap from user code enters the privileged handler, saving the prior execution status; entry may also mask interrupts depending on the architecture. A device or timer <interrupt> similarly saves the interrupted context, selects the privileged interrupt handler and commonly adjusts the interrupt mask to control nesting. A return-from-trap or return-from-interrupt instruction restores the saved status, ordinarily returning to user state with interrupts enabled.
+
+These are three distinct transition situations. In addition, the <operating-system kernel> can explicitly enable or disable interrupts around a critical section using privileged instructions. The exact entry mask is architecture-dependent; entering supervisor state does not logically require interrupts to remain disabled throughout the handler.
+
+= c
+{parent=8}
+{scope}
+
+= i
+{parent=c}
+{scope}
+
+= Solution
+{parent=i}
+
+**Yes: supervisor execution with interrupts enabled is normal and useful.** Much of the <operating-system kernel> can execute with interrupts enabled so that timers, device completions and other urgent events receive prompt service. Disabling them for every potentially long system call would cause excessive latency and could prevent receipt of the very event needed for progress.
+
+Handlers and shared data must then be protected against interrupt-time reentrancy. Disable relevant interrupts only for short critical sequences or use an appropriate synchronization mechanism; on multiple processors, local <interrupt masking> alone does not protect against another processor. Interrupt enablement and <kernel preemption> are different: an interrupt can be serviced without allowing an arbitrary process context to preempt the interrupted kernel operation.
+
+= ii
+{parent=c}
+{scope}
+
+= Solution
+{parent=ii}
+
+In an ordinary general-purpose <operating system>, **untrusted user code should not be allowed to disable the system's timer and device interrupts**. Otherwise a nonterminating program could prevent scheduling and device service. User mode is not a reason to permit arbitrary writes to protected interrupt controls.
+
+A restricted trusted environment can nevertheless make this combination useful: a kernel may permit a short, bounded user-level real-time or device operation to run without maskable interrupts, or provide a virtualized per-task interrupt mask which delays that task's notifications while leaving system service active. Such permission must not let an untrusted task disable global service indefinitely. On a uniprocessor a short hardware-masked interval can reduce interruption latency, but it does not prevent faults, nonmaskable interrupts or activity on other cores. Thus the combination is meaningful in controlled cases, not a normal synchronization technique for arbitrary user programs.
+
+= d
+{parent=8}
+{scope}
+
+= Solution
+{parent=d}
+
+An <inode> is a filesystem object record, identified by its inode number. It contains file type and mode bits, owner/group identifiers, link count, file size, timestamps and the information locating data blocks. It normally does not contain the filename: directory entries map names to inode numbers, allowing several names to refer to one inode. In the traditional Unix layout, there are direct block pointers and single-, double- and triple-indirect pointers. A single-indirect block points to data blocks; a double-indirect block points to single-indirect blocks; the triple-indirect level adds one further pointer layer.
+
+Let $D$ be the number of direct pointers. Before triple indirection is needed, the file can use $D$ directly addressed data blocks, 512 singly addressed data blocks and $512^2$ doubly addressed data blocks. Indirection blocks consume disk space but are not part of the file's logical byte contents. Hence
+$$
+\boxed{\text{maximum file size without triple indirection}=4096\big(D+512+512^2\big)\text{ bytes}.}
+$$
+The PDF does not specify $D$. With the common twelve-direct-pointer convention, this is $4096(12+512+512^2)=1{,}075{,}888{,}128$ bytes; with ten direct pointers, substitute $D=10$. The formula, rather than an unstated choice of direct-pointer count, determines the answer for the given inode layout. Actual filesystems can use other pointer organizations such as extents.
+
+= e
+{parent=8}
+{scope}
+
+= Solution
+{parent=e}
+
+<NTFS> offers several capabilities absent from <FAT32>. Four relevant advantages are **per-file security, recoverable metadata updates, larger files and transparent compression**. In detail, <access control lists> and ownership allow different users to have different rights on individual objects; <file-system journaling> helps recover a consistent metadata structure after a crash; file sizes can exceed FAT32's limit of $2^{32}-1$ bytes per file; and built-in compression can reduce the storage needed without changing application file access.
+
+Encryption, quotas and sparse-file support are additional examples, but are not needed for the four requested points. Metadata journaling is not the same as guaranteeing that every recent data write survives a failure, and superiority in these capabilities does not mean universal superiority in compatibility or simplicity. The supported features are compared in \a[https://learn.microsoft.com/en-us/windows/win32/fileio/filesystem-functionality-comparison][the filesystem functionality documentation].
+
+= 9
+{parent=Paper 5}
+{scope}
+{title2=Programming in Java}
+
+= a
+{parent=9}
+{scope}
+
+= Solution
+{parent=a}
+
+A <Java array> can hold references to row arrays. For example,
+```
+double[][] grid = new double[rows][columns];
+grid[2][3] = 4.5;
+```
+allocates the outer array and all equal-length rows, with numeric entries initially zero. A ragged alternative is
+```
+double[][] grid = new double[rows][];
+for (int r = 0; r < rows; r++)
+    grid[r] = new double[r + 1];
+```
+The second form initially has null row references, so each row must be allocated before access. Rows need not have equal lengths, and a two-dimensional array of objects initially contains null object references rather than constructed cell objects. **Java represents a two-dimensional array as an array of arrays.**
+
+= b
+{parent=9}
+{scope}
+
+= i
+{parent=b}
+{scope}
+
+= Solution
+{parent=i}
+
+Use a `Spreadsheet` class owning a private rectangular <Java array> of cells. Each immutable internal `Cell` contains a private tag `Kind` with values `EMPTY`, `LABEL`, `NUMBER`, `FORMULA`, and the corresponding payload: a string, a double or a formula reference. The tag determines which payload is meaningful, and the spreadsheet's setters create valid combinations rather than letting callers change fields independently. The cell object need not be public; public methods can expose its kind and label when needed for display.
+
+Provide public `setEmpty(r,c)`, `setLabel(r,c,text)`, `setNumber(r,c,x)` and `setFormula(r,c,f)` methods, each checking its target coordinates and invalidating cached results. A public `valueAt(r,c)` supplies the numerical value, treating out-of-grid, empty and label cells as zero, and a public `recalculate()` brings all valid formulas up to date. Keep cached numeric results and evaluation-state flags private; they are derived data rather than editable cell content.
+
+Define a public `Formula` interface with `double evaluate(Lookup values, int row, int column)`. `Lookup` supplies only `valueAt(r,c)`, so a formula can read dependencies without needing direct access to cells or a mutation API. An immutable `AddFormula` stores four integer offsets, two row/column pairs. It evaluates the two coordinates relative to the formula's own position and returns their sum. New formula kinds implement the same interface, avoiding changes to the storage representation or a large central switch over all formula operations.
+
+The private <spreadsheet dependency evaluation> mechanism provides the `Lookup` implementation, checks cycles and caches evaluated cells. Formula evaluation is required to be side-effect-free with fixed dependencies during a recalculation. This separates <encapsulation in object-oriented programming> from extension: callers can change a cell through public setters and add new formula implementations, while internal cell invariants and cached values remain protected. **Use tagged cell contents, an extensible formula interface and spreadsheet-owned evaluation state.**
+
+= ii
+{parent=b}
+{scope}
+
+= Solution
+{parent=ii}
+
+Use recursive dependency evaluation with <memoization>. After an edit, invalidate all cell states. To evaluate one formula, recursively obtain its dependencies before storing its own result. This is a <depth-first search> of the dependency graph; a visiting mark identifies a cycle, and a done mark avoids repeated evaluation of a shared dependency. The following single class implements the design, with public nested interfaces for formula extensions:
+```
+public final class Spreadsheet {
+    public enum Kind { EMPTY, LABEL, NUMBER, FORMULA }
+
+    public interface Lookup {
+        double valueAt(int row, int col);
+    }
+    public interface Formula {
+        double evaluate(Lookup values, int row, int col);
+    }
+    public static final class AddFormula implements Formula {
+        private final int dr1, dc1, dr2, dc2;
+        public AddFormula(int dr1, int dc1, int dr2, int dc2) {
+            this.dr1 = dr1; this.dc1 = dc1;
+            this.dr2 = dr2; this.dc2 = dc2;
+        }
+        public double evaluate(Lookup values, int r, int c) {
+            return values.valueAt(r + dr1, c + dc1)
+                 + values.valueAt(r + dr2, c + dc2);
+        }
+    }
+    private static final class Cell {
+        private final Kind kind;
+        private final String label;
+        private final double number;
+        private final Formula formula;
+        private Cell(Kind k, String s, double n, Formula f) {
+            kind = k; label = s; number = n; formula = f;
+        }
+    }
+    private static final Cell EMPTY =
+        new Cell(Kind.EMPTY, null, 0.0, null);
+    private final int rows, cols;
+    private final Cell[][] cells;
+    private final double[][] cache;
+    private final byte[][] state;
+    private final Lookup view = new Lookup() {
+        public double valueAt(int r, int c) {
+            return Spreadsheet.this.valueAt(r, c);
+        }
+    };
+
+    public Spreadsheet(int rows, int cols) {
+        if (rows < 0 || cols < 0) throw new IllegalArgumentException();
+        this.rows = rows; this.cols = cols;
+        cells = new Cell[rows][cols];
+        cache = new double[rows][cols];
+        state = new byte[rows][cols];
+        for (int r = 0; r < rows; r++)
+            for (int c = 0; c < cols; c++) cells[r][c] = EMPTY;
+    }
+    private boolean inside(int r, int c) {
+        return r >= 0 && r < rows && c >= 0 && c < cols;
+    }
+    private void check(int r, int c) {
+        if (!inside(r, c)) throw new IndexOutOfBoundsException();
+    }
+    private void invalidate() {
+        for (int r = 0; r < rows; r++)
+            for (int c = 0; c < cols; c++) state[r][c] = 0;
+    }
+    private void put(int r, int c, Cell cell) {
+        check(r, c); cells[r][c] = cell; invalidate();
+    }
+    public void setEmpty(int r, int c) { put(r, c, EMPTY); }
+    public void setLabel(int r, int c, String text) {
+        if (text == null) throw new IllegalArgumentException();
+        put(r, c, new Cell(Kind.LABEL, text, 0.0, null));
+    }
+    public void setNumber(int r, int c, double x) {
+        put(r, c, new Cell(Kind.NUMBER, null, x, null));
+    }
+    public void setFormula(int r, int c, Formula f) {
+        if (f == null) throw new IllegalArgumentException();
+        put(r, c, new Cell(Kind.FORMULA, null, 0.0, f));
+    }
+    public Kind kindAt(int r, int c) {
+        check(r, c); return cells[r][c].kind;
+    }
+    public String labelAt(int r, int c) {
+        check(r, c); return cells[r][c].label;
+    }
+    public double valueAt(int r, int c) {
+        if (!inside(r, c)) return 0.0;
+        if (state[r][c] == 2) return cache[r][c];
+        if (state[r][c] == 1)
+            throw new IllegalStateException("Cyclic formula dependency");
+        state[r][c] = 1;
+        try {
+            Cell cell = cells[r][c];
+            double answer;
+            switch (cell.kind) {
+            case NUMBER: answer = cell.number; break;
+            case FORMULA: answer = cell.formula.evaluate(view, r, c); break;
+            default: answer = 0.0;
+            }
+            cache[r][c] = answer;
+            state[r][c] = 2;
+            return answer;
+        } catch (RuntimeException error) {
+            state[r][c] = 0;
+            throw error;
+        }
+    }
+    public void recalculate() {
+        invalidate();
+        for (int r = 0; r < rows; r++)
+            for (int c = 0; c < cols; c++) valueAt(r, c);
+    }
+}
+```
+The outer loop's order need not be a <topological ordering>, since recursion evaluates dependencies first. After an edit, callers can invoke `recalculate`; ordinary `valueAt` calls also calculate lazily from the invalidated state. Empty and label cells contribute zero without destroying their display content. Relative references are interpreted at the formula's location, and off-grid references contribute zero as required.
+
+For an acyclic graph, <mathematical induction> over a <topological ordering> proves that each cached value equals the evaluation of current cell contents. Each cell becomes done at most once in a pass, so the <time complexity> is $O(V+E)$ for $V$ cells and $E$ dependency references, plus formula arithmetic. The stack depth is at most the longest dependency path. A more elaborate implementation can record reverse dependencies and invalidate only cells affected by an edit.
+
+The PDF gives no policy for circular formulas. Repeated numerical sweeps are not a general solution: a cell defined as itself plus one has no finite value, while a cell defined as itself plus zero has no unique value. The implementation therefore reports a cycle instead of looping or presenting an arbitrary stale value. **An acyclic dependency graph is evaluated once per cell; circular dependencies are detected and rejected.**
+
+= 10
+{parent=Paper 5}
+{scope}
+{title2=Programming in Java}
+
+= a
+{parent=10}
+{scope}
+
+= Solution
+{parent=a}
+
+Represent the two constructors of the type grammar by subclasses of `MLType`: a `TypeVar` node and an `Arrow` node containing two types. Use immutable fields so a completed type expression cannot acquire cycles through later mutation. The static factory allocates a fresh object and gives it a fresh identifier shared across the whole hierarchy:
+```
+import java.math.BigInteger;
+
+public abstract class MLType {
+    private MLType() { }
+    private static BigInteger next = BigInteger.ONE;
+
+    public static synchronized TypeVar createNewTypeVar() {
+        TypeVar answer = new TypeVar(next);
+        next = next.add(BigInteger.ONE);
+        return answer;
+    }
+    public static final class TypeVar extends MLType {
+        private final BigInteger id;
+        private TypeVar(BigInteger id) { this.id = id; }
+    }
+    public static final class Arrow extends MLType {
+        private final MLType from, to;
+        public Arrow(MLType from, MLType to) {
+            if (from == null || to == null)
+                throw new IllegalArgumentException();
+            this.from = from; this.to = to;
+        }
+    }
+}
+```
+The nested classes are public for use by clients, while their fields are private; `TypeVar` can be created only through the factory. Client code uses `MLType.TypeVar` and `MLType.Arrow`. A <type variable> is identified by its unique node, and a <function type> by its domain and codomain nodes; repeated occurrences of one logical variable share the same `TypeVar` object.
+
+The monotonically increasing `BigInteger` identifier avoids fixed-width counter overflow, and synchronization prevents two simultaneous calls from receiving the same identifier. Actual allocation remains subject to available memory. This is an <abstract syntax tree> representation, possibly sharing subexpressions. **Fresh variable nodes and recursive arrow nodes represent every type in the given grammar.**
+
+= b
+{parent=10}
+{scope}
+
+= Solution
+{parent=b}
+
+Introduce a checked exception class, for example in its own source file:
+```
+public final class ItDoesDependOn extends Exception {
+    private final MLType.TypeVar variable;
+    public ItDoesDependOn(MLType.TypeVar variable) {
+        this.variable = variable;
+    }
+    public MLType.TypeVar getVariable() { return variable; }
+}
+```
+Declare the required abstract method in `MLType`:
+```
+public abstract void mustNotDependOn(TypeVar a)
+    throws ItDoesDependOn;
+```
+Within the nested `TypeVar` class implement it by an identity check:
+```
+public void mustNotDependOn(TypeVar a) throws ItDoesDependOn {
+    if (this == a) throw new ItDoesDependOn(a);
+}
+```
+Within the nested `Arrow` class implement it recursively:
+```
+public void mustNotDependOn(TypeVar a) throws ItDoesDependOn {
+    from.mustNotDependOn(a);
+    to.mustNotDependOn(a);
+}
+```
+The parameter denotes an actual non-null <type variable> returned by the factory; checking object identity distinguishes different variables without confusing their printed names. <Structural induction> on the <abstract syntax tree> proves the <occurs check>: a variable node contains the queried variable exactly when the identities match, and an arrow contains it exactly when either component does. The first detected occurrence throws and propagates the checked exception; normal return proves absence. Both subclass methods must declare the exception, and callers must catch or declare it.
+
+For $(\alpha\to\beta)\to(\beta\to\gamma)$, either recursive branch detects each of $\alpha,\beta,\gamma$, whereas a distinct $\delta$ is absent and the call returns. **A recursive identity-based occurs check throws exactly when the queried variable occurs.**
+
+= c
+{parent=10}
+{scope}
+
+= Solution
+{parent=c}
+
+Add a public override of `toString` in each concrete subclass. In `TypeVar`:
+```
+public String toString() {
+    return "t" + id.toString();
+}
+```
+In `Arrow`:
+```
+public String toString() {
+    return "(" + from.toString() + " -> " + to.toString() + ")";
+}
+```
+Inherited dynamic dispatch selects the proper method at every node of the <abstract syntax tree>. Full parentheses distinguish the domain and codomain nesting without relying on a reader's precedence convention. Repeated occurrences of one <type variable> use the same identifier, and distinct factory variables have distinct identifiers. For example, with the first three factory variables, the type from part (b) prints as `((t1 -> t2) -> (t2 -> t3))`. **The recursive textual form preserves both arrow structure and variable identity.**
+
+= 11
+{parent=Paper 5}
+{scope}
+{title2=Numbers and Sets}
+
+= Solution
+{parent=11}
+
+For finite sets $A_1,\ldots,A_m$, the <inclusion-exclusion principle> states
+$$
+\boxed{\left|\bigcup_{i=1}^mA_i\right|=\sum_{\varnothing\ne I\subseteq\{1,\ldots,m\}}(-1)^{|I|+1}\left|\bigcap_{i\in I}A_i\right|.}
+$$
+To prove it, count one element at a time. An element belonging to exactly $r\ge1$ of the sets occurs in $\binom rj$ of their $j$-fold intersections, so its total coefficient on the right is $\sum_{j=1}^r(-1)^{j+1}\binom rj=1$, using $(1-1)^r=0$. An element in no set has coefficient zero. Every element of the union is therefore counted once, proving the identity.
+
+For the keypad, an initial zero can never be entered: it has no preceding pair of ones and the first key is not two. Define four classes of valid four-digit sequences. Let $A$ contain sequences starting with two, with the last three digits arbitrary; let $B$ contain sequences with no zeros; let $C$ contain sequences of the form $110d$ with $d\in\{1,\ldots,9\}$; and let $D$ contain sequences $d110$ with $d\in\{1,\ldots,9\}$.
+
+These classes exhaust the valid codes. A sequence starting with two is unrestricted thereafter. Otherwise a zero cannot occur in position two, a zero in position three requires the first two digits to be ones, and a zero in position four requires digits two and three to be ones. Positions three and four cannot both be zero, since the last zero would then lack the required preceding pair. Thus a code outside $A$ either belongs to $B$ or has precisely one of the zero patterns covered by $C,D$.
+
+Their sizes are
+$$
+|A|=10^3=1000,\quad |B|=9^4=6561,\quad |C|=9,\quad |D|=9.
+$$
+The only nonempty pairwise intersections are $A\cap B$, consisting of first digit two and three nonzero remaining digits, and $A\cap D$, containing the single code $2110$. Hence $|A\cap B|=9^3=729$ and $|A\cap D|=1$. All other pairwise intersections vanish, and therefore so do all intersections of three or four classes. Applying <inclusion-exclusion> gives
+$$
+\boxed{|A\cup B\cup C\cup D|=1000+6561+9+9-729-1=6849.}
+$$
+This counts sequences actually enterable under the history-dependent zero-key rule, rather than simply counting sequences which contain the substring $110$.
+
+= 12
+{parent=Paper 5}
+{scope}
+{title2=Numbers and Sets}
+
+= i
+{parent=12}
+{scope}
+
+= Solution
+{parent=i}
+
+Suppose $p$ is a <prime number>, $p\mid xy$ and $p\nmid x$. Since the only positive divisors of $p$ are one and $p$, the <greatest common divisor> of $p$ and $x$ is one. By <Bézout's identity>, integers $u,v$ exist with $up+vx=1$. Multiplying by $y$ gives $upy+vxy=y$. Both terms on the left are divisible by $p$, so $p\mid y$. Thus <Euclid lemma> gives
+$$
+\boxed{p\mid xy\ \Longrightarrow\ p\mid x\ \text{or}\ p\mid y.}
+$$
+The <fundamental theorem of arithmetic> says that every positive integer greater than one is a product of <prime numbers>, uniquely up to their order. Existence follows by strong <mathematical induction>: if $n$ is prime it already has a factorization; otherwise $n=ab$ with $1<a,b<n$, and the factorizations of $a,b$ combine to factor $n$.
+
+For uniqueness, suppose $p_1\cdots p_r=q_1\cdots q_s$ are two prime factorizations. Repeated application of <Euclid lemma> makes $p_1$ divide one of the $q_j$, so primality forces $p_1=q_j$. Reorder that factor to the front, cancel it and repeat. Neither side can retain extra primes when the other has become one, since every prime exceeds one. The two multisets are therefore identical. For a negative integer there is additionally the uniquely determined sign; one has the empty positive factorization, and zero is excluded. **The prime-product divisibility lemma is the step which makes factorization unique.**
+
+= ii
+{parent=12}
+{scope}
+
+= Solution
+{parent=ii}
+
+The <Fermat-Euler theorem> states that for integers $m\ge1$ and $a$ with $\gcd(a,m)=1$,
+$$
+\boxed{a^{\varphi(m)}\equiv1\pmod m,}
+$$
+where <Euler's totient function> $\varphi(m)$ counts the residue classes coprime to $m$. The case $m=1$ is trivial. For $m\ge2$, list a reduced residue system $r_1,\ldots,r_{\varphi(m)}$. Multiplication by $a$ permutes these classes: each $ar_i$ is coprime to $m$, and $ar_i\equiv ar_j$ implies $r_i\equiv r_j$ since $a$ has a multiplicative inverse modulo $m$. Multiplying the permuted residues gives
+$$
+a^{\varphi(m)}\prod_i r_i\equiv\prod_i r_i\pmod m.
+$$
+The product is itself coprime to $m$ and can be cancelled using its inverse, proving the theorem.
+
+The integer 359 is prime: none of the primes $2,3,5,7,11,13,17$, all the primes not exceeding $\sqrt{359}<19$, divides it. Therefore $\varphi(359)=358$ and 60 is coprime to 359. Using the supplied congruence and the <Fermat-Euler theorem>,
+$$
+\boxed{10^{179}\equiv(60^2)^{179}=60^{358}\equiv1\pmod{359}.}
+$$
+Now express the decimal expansion by long division. Put $r_0=1$ and for $n\ge1$ define
+$$
+10r_{n-1}=359a_n+r_n,\qquad 0\le a_n\le9,\quad0\le r_n<359.
+$$
+Thus $r_n\equiv10^n\pmod{359}$, and none of these remainders is zero. The congruence $10^{179}\equiv1$ implies $r_{n+179}\equiv r_n$; since both are the unique representatives between zero and 358, they are equal. A digit is determined by the preceding remainder, namely $a_n=\lfloor10r_{n-1}/359\rfloor$, so
+$$
+\boxed{a_{n+179}=a_n\quad\text{for every }n\ge1.}
+$$
+This proves the required pure periodicity from the first digit. In fact its least period is 179: the <multiplicative order> of 10 modulo 359 divides the prime 179 and is not one, since $10\not\equiv1\pmod{359}$. The connection between the remainder recurrence and the period is the <decimal period from multiplicative order>.

@@ -1,0 +1,210 @@
+= Data compression
+{wiki}
+
+<Data compression> represents data using fewer <bits> than a specified original representation. The saving can reduce storage in a <file system> and reduce the number of <bits> sent through a <communication channel>. At a fixed transmission rate, fewer <bits> arrive sooner; this makes better use of a fixed transmission budget. Both the encoded data and the instructions needed to interpret them contribute to the size of a stored file.
+
+There are two different promises. <Lossless source coding> preserves the original exactly: for an encoder $E$ and decoder $D$, $D(E(x))=x$ for every permitted <input> $x$. Thus $E$ must be an <injective function>. <Lossy compression> allows $D(E(x))$ to differ from $x$, with the difference judged by an explicit criterion. A program or numerical record may require exact recovery; a preview image may tolerate altered <pixels> in return for fewer <bits>.
+
+The appeal of <lossless source coding> is that repetition can be described rather than copied. <Run-length encoding> says "repeat this value twelve times"; a <prefix code> can give more frequent symbols shorter descriptions. These are distinct ways to exploit structure, and neither promises savings for every <input>. <Image compression> supplies especially visible examples of both <lossless source coding> and <lossy compression>.
+
+Claude E. Shannon's 1948 paper made the role of <probability distributions> precise. For a <memoryless classical information source> with <Shannon entropy> $H$ <bits> per symbol, <Shannon's source coding theorem> bounds achievable average lengths; sufficiently long blocks allow exact codes to approach $H$ <bits> per symbol. This is a statement about a specified source and average lengths, not a promise to shorten every message.<A Mathematical Theory of Communication by Claude Shannon>[Theorem 9 and its coding constructions]{ref}
+
+= Universal lossless shortening is impossible
+{parent=Data compression}
+
+Fix $n\geq1$. There is no <injective function> from all length-$n$ <binary strings> to <binary strings> of length strictly less than $n$. There are $2^n$ possible <inputs>, but even allowing the empty string gives only
+$$
+\sum_{k=0}^{n-1}2^k=2^n-1
+$$
+possible shorter <outputs>. The <finite geometric series> and <pigeonhole principle> leave at least two <inputs> sharing an <output>, which prevents exact decoding. For $n=3$, eight <inputs> compete for the empty string and the six strings `0`, `1`, `00`, `01`, `10`, `11`.
+
+This counting argument includes any <file header> or other information sent to the decoder. An <algorithm> chosen separately for each <input> must also be identified to the receiver; its description is not free. A useful compressor saves space on some <inputs> while leaving others unchanged or making them longer. <Lossy compression> avoids the exact-recovery requirement by deliberately allowing several <inputs> to share an <output>.
+
+= Lossy compression
+{parent=Data compression}
+{wiki}
+
+<Lossy compression> reduces a representation while permitting irreversible changes to the original. The encoder can map distinct <inputs> to the same <output>, so its decoder cannot recover both originals exactly. The useful question becomes how much storage is saved for an acceptable amount of distortion: <mean squared error> is one numerical criterion, but it does not by itself measure how noticeable a visual change is.
+
+For example, storing the <arithmetic mean> of four <grayscale> <pixels> retains their average shade while discarding their arrangement. Blocks $\left(\begin{smallmatrix}0&100\\100&0\end{smallmatrix}\right)$ and $\left(\begin{smallmatrix}50&50\\50&50\end{smallmatrix}\right)$ both produce 50. The former has detail and the latter is uniform, yet the decoder receives the same value. <Lossy block averaging> makes this ambiguity, its <bit> saving and its <mean squared error> exact.
+
+= Lossy block averaging
+{parent=Lossy compression}
+{title2=$q_{ij}=\lfloor m_{ij}+1/2\rfloor$}
+
+This toy <image compression> method stores one rounded <arithmetic mean> for each disjoint $2\times2$ block of <grayscale> <pixels>. The <quantization (signal processing)> rule is round to the nearest <integer>, with exact halves rounded upward. Each stored value is an unsigned eight-<bit> <integer>. Reconstruction fills the original block with that value, a form of <nearest-neighbor interpolation>. Averaging already discards information; rounding can discard more.
+
+Here is an exact $16\times16$ source <array>. Index rows and columns by $r,c\in\{0,\ldots,15\}$ and define
+$$
+\begin{aligned}
+b_{rc}&=40+10\lfloor r/2\rfloor+12\lfloor c/2\rfloor,\\
+x_{rc}&=b_{rc}+20(-1)^{r+c}+\mathbf{1}_{\{r\text{ even},\ c\text{ even}\}}.
+\end{aligned}
+$$
+The <floor function> makes $b$ constant within each block; the <indicator function> adds 1 only to its upper-left <pixel>. All values are <integers> from 20 to 215. Each block therefore has the exact form
+$$
+\begin{pmatrix}b+21&b-20\\b-20&b+20\end{pmatrix},\qquad m=b+\tfrac14,\qquad q=\lfloor m+\tfrac12\rfloor=b.
+$$
+For example, the upper-left block $\left(\begin{smallmatrix}61&20\\20&60\end{smallmatrix}\right)$ has <arithmetic mean> $161/4=40.25$ and is stored as 40. The block immediately to its right $\left(\begin{smallmatrix}73&32\\32&72\end{smallmatrix}\right)$ is stored as 52. The complete stored $8\times8$ <array> is specified by $q_{ij}=40+10i+12j$ for $0\leq i,j\leq7$. Its first row is $40,52,64,76,88,100,112,124$; its last is $110,122,134,146,158,170,182,194$.
+
+This toy <file format> again has eight-<bit> width and height fields followed by a one-<bit> mode: 0 means raw eight-<bit> <grayscale> <pixels>, 1 means the rounded block <arithmetic means>. This profile accepts only width and height 16. The decoder knows the block size and reconstruction rule from the format, reads the 64 stored values in row order, and repeats each across its corresponding $2\times2$ block. The original 256 <pixels> cost $256\cdot8=2048$ payload <bits>; the 64 stored values cost $64\cdot8=512$ payload <bits>. The reduction is $75\%$. These payload counts exclude the common 17-<bit> <file header>; complete sizes are 2065 and 529 <bits>, or 2072 and 536 <bits> after final zero padding to eight-<bit> units. There is no stored codebook or additional prediction rule.
+
+The empirical <mean squared error> averages squared differences over the 256 original <pixel> positions:
+$$
+\operatorname{MSE}=\frac1{256}\sum_{r=0}^{15}\sum_{c=0}^{15}(x_{rc}-\widehat x_{rc})^2
+=\frac{21^2+20^2+20^2+20^2}{4}=410.25.
+$$
+Every block has the same four errors, so this value is exact in squared stored shade units. If the unrounded <arithmetic mean> $b+1/4$ could be reconstructed, the error would instead be $410.1875$; eight-<bit> <quantization (signal processing)> adds $0.0625$. That hypothetical comparison does not count fractional means as free eight-<bit> values.
+
+The broad shade pattern survives, while the alternating bright and dark <pixels> vanish. Indeed, a second source with every block constant at $b$ produces the identical stored <array> $q$: exact decoding of both sources is impossible. This makes the storage benefit and the lost detail visible at once. Block averaging is useful for a coarse preview when the individual <pixels> are dispensable; choosing an acceptable <mean squared error> or visual result is part of the application, not a guarantee supplied by the encoder.
+
+\Image[lossy-block-image-comparison.png]
+{title=Rounded 2 by 2 block means reduce the payload by 75 percent while destroying fine detail}
+
+= Run-length encoding
+{parent=Data compression}
+{wiki}
+
+= RLE
+{c}
+{synonym}
+
+<Run-length encoding> replaces each maximal consecutive group of equal values, called a run, by its value and length. Decoding repeats each value the specified number of times. It is <lossless source coding>: no values are discarded. For a <binary string>, successive maximal runs alternate between 0 and 1, so storing the first <bit> and all run lengths is enough.
+
+Take this $8\times8$ <raster image>, with 0 black and 1 white, read left to right across each row and then top to bottom:
+```
+00000000
+00001111
+11110000
+00001111
+11110000
+00001111
+11110000
+00000000
+```
+Reading the whole image as one 64-<bit> <binary string> gives exactly seven runs:
+$$
+(\text{value},\text{length})=(0,12),(1,8),(0,8),(1,8),(0,8),(1,8),(0,12).
+$$
+The lengths sum to $12+8+8+8+8+8+12=64$. Repeating the alternating values for these lengths and splitting after every eighth <pixel> reconstructs every displayed row exactly.
+
+Here is a complete toy <file format>. Its <file header> is an eight-<bit> unsigned width, an eight-<bit> unsigned height, then a one-<bit> mode: 0 means raw <pixels>, 1 means <run-length encoding>. Fields are written most significant <bit> first; this profile accepts only width and height 8, so both decoders know to stop at 64 <pixels>. Raw mode contains 64 <bits>. <RLE> mode contains the initial <bit>, followed by seven-<bit> unsigned run lengths in the range 1 to 64. Zero and lengths above 64 are invalid; a decoder rejects a run that would exceed the remaining <pixel> count. It stops when the decoded lengths sum to 64, so no run-count field or end marker is needed.
+
+For this image, the complete <RLE> serialization is:
+```
+00001000 00001000 1 | 0 | 0001100 0001000 0001000 0001000 0001000 0001000 0001100
+```
+Spaces and vertical bars are explanatory separators, not stored characters. The seven-<bit> fields directly store the lengths; 64 would be `1000000`. The payload costs $1+7\cdot7=50$ <bits>, versus 64 raw <bits>. The 17-<bit> <file header> has the same size in either mode, giving complete sizes of 67 versus 81 <bits>. If packed into eight-<bit> units, append zero padding only at the end: the sizes become 72 versus 88 <bits>. These are sizes of this toy representation, not sizes of <PNG> files.
+
+The field design matters. Restarting <RLE> on every row costs eight initial <bits> plus four <bits> per run when lengths are stored directly: three <bits> represent only 0 through 7, whereas a row can have length 8. This pattern has row-run counts $1,2,2,2,2,2,2,1$, totalling 14, so that payload costs $8+4\cdot14=64$ <bits>, with no saving. Storing length minus one would instead fit lengths 1 through 8 into three <bits>, but is a different declared <file format>. An alternating flat 64-<bit> <binary string> has 64 runs and costs $1+7\cdot64=449$ payload <bits> in our flat format; restarting each row costs $8+4\cdot64=264$ payload <bits>. A one-run image costs only eight payload <bits>. These extremes explain when <RLE> is useful: long uninterrupted regions make short instructions, while frequent changes make instructions expensive.
+
+<Prefix codes> of unequal lengths can replace fixed-width run lengths, provided the decoder knows the code and any necessary code description is counted. <Run-length encoding> names a technique, not one universal serialization. For a real implementation, Microsoft's bitmap documentation specifies `BI_RLE8` with count and value fields plus special commands, rather than our initial-<bit> convention.https://learn.microsoft.com/en-us/windows/win32/gdi/bitmap-compression[Microsoft, Bitmap Compression, BI_RLE8 encoded and absolute modes]{ref}
+
+\Image[run-length-image-compression.png]
+{title=Seven runs serialize an 8 by 8 binary image and reconstruct every pixel exactly}
+
+= Deflate
+{c}
+{parent=Data compression}
+{wiki}
+
+<Deflate> is the <lossless source coding> method specified for <PNG> compression. It can describe repeated stretches of earlier data, going beyond the single-value repetitions of <run-length encoding>.<Portable Network Graphics (PNG) Specification (Third Edition) by Mark Adler and others>[W3C, PNG Specification, Third Edition, section 10.1, compression method 0]{ref}
+
+The format combines <Deflate backreferences>, which describe repeated stretches, with <Deflate Huffman coding>, which represents the resulting instructions using <prefix codes>. <Deflate block framing> tells the decoder which codes apply and where decoding stops. RFC 1951, https://www.rfc-editor.org/rfc/rfc1951[DEFLATE Compressed Data Format Specification version 1.3] (May 1996), defines the format; different encoders can choose different instructions for the same <input>.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, heading and sections 2 and 4: format and encoder choices]{ref}
+
+This separation is useful: discovering a repeated phrase and choosing short <codewords> solve different problems. A repeated phrase can contain many distinct <bytes>, while unequal <codeword lengths> can help even when no phrase repeats. Neither mechanism removes <Deflate compression overhead> or guarantees a saving on every <input>.
+
+= Deflate literal byte
+{c}
+{parent=Deflate}
+
+A <Deflate literal byte> instructs the decoder to append one specified <byte> directly to the <output>. For example, three <Deflate literal bytes> with values 65, 66 and 67 produce `ABC`. These values are symbols in the <Deflate Huffman coding> stage, rather than necessarily eight raw stored <bits> each. A <Deflate backreference> instead describes a copy from earlier <output>.
+
+= Deflate backreference
+{c}
+{parent=Deflate}
+{title2=$(\ell,d)$}
+
+= Deflate length-distance pair
+{c}
+{synonym}
+
+A <Deflate backreference> specifies a length $\ell$ and backward distance $d$, measured in decoded <bytes>. If $n$ <bytes> have already been produced, append $\ell$ <bytes> starting at <output> index $n-d$, counting indices from zero. The permitted ranges are $3\leq\ell\leq258$ and $1\leq d\leq32768$. Without a supplied initial history, $d\leq n$ is also required. The distance refers to decoded history, not a position in the compressed <input>.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, sections 3.2.3 and 3.2.5: available history, overlap, length and distance ranges]{ref}
+
+For the twelve <bytes> `ABCABCABCABC`, an illustrative instruction sequence is three <Deflate literal bytes> `A`, `B`, `C`, followed by the <Deflate backreference> $(\ell,d)=(9,3)$. <Run-length encoding> sees twelve single-<byte> runs because neighbouring values differ; the <Deflate backreference> describes a repeated three-<byte> pattern instead. Conversely, a <Deflate literal byte> `A` followed by $(7,1)$ produces `AAAAAAAA`: distance one can express a single-value repetition. These are chosen instructional examples, not claims about an encoder's chosen instructions or complete serialized streams.
+
+= Deflate overlapping copy
+{c}
+{parent=Deflate backreference}
+
+In a <Deflate overlapping copy>, $\ell>d$: some source <bytes> are created by the very copy being decoded. For each step $i=0,\ldots,\ell-1$, read the current <output> at index $n+i-d$ and append that <byte> at index $n+i$. Because $d\geq1$, the source index is always smaller than the destination index, so the needed <byte> exists when it is read.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, section 3.2.3, printed p. 11: overlapping string references]{ref}
+
+For `ABC` followed by $(9,3)$, the source indices are $0,1,2,3,4,5,6,7,8$ and the destination indices are $3,4,5,6,7,8,9,10,11$. Steps 0 through 2 copy the original `ABC`; steps 3 through 5 copy the `ABC` just appended; steps 6 through 8 copy the next newly appended `ABC`. Thus the final <output> is exactly `ABCABCABCABC`. Taking a snapshot of the original three-<byte> source slice would produce only three <bytes>; that operation does not implement the specified nine-<byte> copy.
+
+\Image[deflate-overlapping-copy-trace.png]
+{title=Nine successive copies at distance three extend ABC to ABCABCABCABC using newly produced bytes}
+
+The reusable idea is a short description of periodic continuation: the decoder repeatedly looks a fixed distance behind its growing <output>. A <Deflate backreference> can also reach across a <Deflate block framing> boundary. Changing the block's <Huffman codes> does not by itself erase the decoded history.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, sections 2 and 3.2.3: independent block codes, references across blocks]{ref}
+
+= Deflate Huffman coding
+{c}
+{parent=Deflate}
+
+For a compressed block, <Deflate Huffman coding> uses one <alphabet> for <Deflate literal bytes>, length symbols and the end-of-block symbol, and another <alphabet> for distance symbols. Values 0 through 255 denote <Deflate literal bytes>, 256 ends the block, and 257 through 285 select lengths. A <Deflate backreference> is encoded as a length symbol, any length extra <bits>, a distance symbol, then any distance extra <bits>. Those extra <bits> select an offset within the symbol's prescribed range; they are not additional <codewords>.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, section 3.2.5, length and distance tables]{ref}
+
+In the illustrative $(9,3)$ <Deflate backreference>, length 9 uses symbol 263 and distance 3 uses symbol 2; neither needs extra <bits>. Under the fixed <Huffman codes>, `A`, `B` and `C` each cost eight <bits>, symbol 263 costs seven, and distance symbol 2 costs five. Adding the seven-<bit> end-of-block symbol and three-<bit> block header gives $3+3\cdot8+7+5+7=46$ <bits>, packed into six <bytes> for a single final block. This is a cost calculation for the explicitly chosen instructions, not a displayed compressed stream.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, sections 3.2.5 and 3.2.6: length 9, distance 3 and fixed code lengths]{ref}
+
+Dynamic blocks transmit <codeword lengths> from which the decoder reconstructs the prescribed <prefix codes>. The code descriptions themselves use a smaller <Huffman code> and repeat instructions for successive <codeword lengths>, including runs of zero lengths. Here <run-length encoding> describes repeated code lengths, a separate role from copying repeated data <bytes>. Fixed blocks use predefined <Huffman codes> and avoid transmitting those descriptions.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, sections 3.2.2, 3.2.6 and 3.2.7: code reconstruction, fixed codes and dynamic code-length repeats]{ref}
+
+= Deflate block framing
+{c}
+{parent=Deflate}
+
+Each block starts with a one-<bit> `BFINAL` flag and a two-<bit> `BTYPE` field. The `BTYPE` values are 0 for stored data, 1 for fixed <Huffman codes>, 2 for dynamic <Huffman codes>, and 3 for an invalid reserved value. For compressed blocks, symbol 256 ends the current block; `BFINAL = 1` says this is the last block. An end-of-block symbol does not mean a literal zero <byte>, and in a nonfinal block it does not end the whole stream.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, section 3.2.3: header, block types and decoding loop]{ref}
+
+\Image[deflate-token-block-pipeline.png]
+{title=Deflate separates literal and copy instructions from Huffman coding and final-block framing; stored blocks bypass both stages}
+
+A stored block instead skips to the next <byte> boundary, reads the sixteen-<bit> `LEN` and its sixteen-<bit> one's complement `NLEN`, then copies exactly `LEN` raw <bytes>. Its length field replaces the compressed block's end-of-block symbol. A compressed block need not end at a <byte> boundary, so the next block header can start inside the current <byte>.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, sections 3.2.3 and 3.2.4: alignment, LEN, NLEN and stored data]{ref}
+
+The diagram shows logical fields, not a serialization into <bits>. RFC 1951 specifies <bit> packing separately, including different conventions for <codewords> and other fields (section 3.1.1). For <PNG>, the filtered image data is compressed inside a zlib wrapper with its own header and checksum; raw <Deflate> and a complete <PNG> file therefore have different framing.<Portable Network Graphics (PNG) Specification (Third Edition) by Mark Adler and others>[PNG Specification, Third Edition, sections 10.1 and 10.2: zlib wrapper and filtered image data]{ref}
+
+= Deflate compression overhead
+{c}
+{parent=Deflate}
+
+Short <inputs> can spend much of their size on <Deflate block framing>, the end-of-block symbol and, for dynamic blocks, <Deflate Huffman coding> descriptions. A repeated phrase is useful only if its <Deflate backreference> costs less than the <Deflate literal bytes> it replaces. <Huffman coding> adapts instruction costs; it does not make either references or code descriptions free.
+
+For an exact expansion example, take the 256 <bytes> with values $0,1,\ldots,255$, each appearing once. A single fixed block containing only <Deflate literal bytes> costs $144\cdot8+112\cdot9+7+3=2170$ <bits>, or 272 <bytes> after final packing. One stored block starting at a <byte> boundary instead costs five overhead <bytes> plus the 256 data <bytes>, or 261 <bytes>. Both exceed the 256-<byte> <input>; these counts follow the specified layouts and are not measurements of an encoder's automatic choice. The example illustrates <universal lossless shortening is impossible>.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, sections 3.2.3, 3.2.4 and 3.2.6: header, stored layout and fixed literal lengths]{ref}
+
+The following independent experiment obtains an actual raw <Deflate> stream using the standard library's `zlib` module, then checks exact recovery. Negative `wbits` selects raw framing; the three lines of compressed-data handling make no assumptions about which <Deflate backreferences> the library selects.<Python 3.14 documentation/zlib — Compression compatible with gzip (Python 3.14 documentation)>[Python 3.14 zlib documentation, compressobj, decompress and negative wbits]{ref}
+```
+import zlib
+data = b"ABCABCABCABC"
+encoder = zlib.compressobj(level=6, wbits=-15)
+packed = encoder.compress(data) + encoder.flush()
+assert zlib.decompress(packed, wbits=-15) == data
+print(len(data), len(packed), packed.hex())
+```
+The printed <bytes> describe this library run. Exact roundtrip recovery is the check; a particular compressed length or instruction choice is not a guarantee for other <inputs> or library versions.
+
+= Image compression
+{parent=Data compression}
+{wiki}
+
+<Image compression> applies <data compression> to pictures, usually represented by <raster images>. Nearby <pixels> often have related shades; an encoder can exploit that structure. A flat region invites <run-length encoding>, while <lossy block averaging> trades fine detail for fewer stored samples. The choice depends on whether exact <pixel> values matter and on the patterns in the image.
+
+<Lossless source coding> recovers the encoded <pixel> values exactly, including sharp text or numerical image data. <Lossy compression> preserves an approximation and can remove features that later <image processing> might need. A visually smooth result is therefore a different promise from exact recovery. Neither method has a universal compression ratio: the chosen <file format>, its <file header> and the particular image all matter.
+
+<PNG> is a real format with <lossless source coding> of its encoded image data. Its specified compression uses <Deflate> on reversibly filtered rows, rather than our toy <RLE> format. The <lossy block averaging> example is also a teaching format, not a description of <PNG>. A lossy preprocessing step followed by saving as <PNG> preserves the already changed <pixels>, not the earlier original.<Portable Network Graphics (PNG) Specification (Third Edition) by Mark Adler and others>[W3C, PNG Specification, Third Edition (2025), section 10, Compression]{ref}
+
+= PNG
+{c}
+{parent=Image compression}
+{wiki}
+
+= Portable Network Graphics
+{c}
+{synonym}
+
+<PNG> is a <file format> for <raster images> with <lossless source coding> of the encoded image data. Its first W3C Recommendation, dated 1 October 1996, described a portable replacement for earlier image formats; this situates the design in exchanging images reliably between systems.https://www.w3.org/TR/REC-png-961001[W3C, PNG (Portable Network Graphics) Specification, 1 October 1996, status and abstract]{ref}

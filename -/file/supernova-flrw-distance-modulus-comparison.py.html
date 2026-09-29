@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>supernova-flrw-distance-modulus-comparison.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="supernova-flrw-distance-modulus-comparison.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/supernova-flrw-distance-modulus-comparison.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">supernova-flrw-distance-modulus-comparison.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/supernova-flrw-distance-modulus-comparison.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/supernova-flrw-distance-modulus-comparison.py">supernova-flrw-distance-modulus-comparison.py</a></b></div></nav></div><div class="p"><b>supernova-flrw-distance-modulus-comparison.py</b></div><div class="code"><div><pre><code>"""Stipulated FLRW curves; no observations. Python 3.14, NumPy 2.3, Matplotlib 3.10.
+
+Integrals use NumPy Gauss-Legendre quadrature. An independent composite Simpson
+rule and closed-form matter-only/Milne distances check normalization and curvature.
+"""
+from pathlib import Path
+import json
+import numpy as np
+import matplotlib.pyplot as plt
+
+C_KM_S = 299792.458
+H0_KM_S_MPC = 70.0
+MODELS = [(0.3,0.7,'Flat matter + vacuum; q₀ = −0.55','#17658a','-'),
+          (0.3,0.0,'Open matter only; q₀ = 0.15','#ad5318','-'),
+          (1.0,0.0,'Einstein–de Sitter; q₀ = 0.50','#754d91','-'),
+          (0.0,0.0,'Milne (empty, coasting); q₀ = 0','#555e67','--')]
+
+
+def expansion(z, om, ol):
+    return np.sqrt(om*(1+z)**3+(1-om-ol)*(1+z)**2+ol)
+
+
+def transverse(chi, ok):
+    if abs(ok)&lt;1e-14:
+        return chi
+    if ok&gt;0:
+        return np.sinh(np.sqrt(ok)*chi)/np.sqrt(ok)
+    return np.sin(np.sqrt(-ok)*chi)/np.sqrt(-ok)
+
+
+def distance(z, om, ol, order=64):
+    z=np.asarray(z,dtype=float)
+    x,w=np.polynomial.legendre.leggauss(order)
+    chi=z/2*np.sum(w/expansion(z[...,None]*(x+1)/2,om,ol),axis=-1)
+    return C_KM_S/H0_KM_S_MPC*(1+z)*transverse(chi,1-om-ol)
+
+
+def independent_simpson(z, om, ol, intervals=65536):
+    # Composite Simpson has a different sampling grid and weighting from Gauss.
+    grid=np.linspace(0,z,intervals+1)
+    f=1/expansion(grid,om,ol)
+    chi=z/(3*intervals)*(f[0]+f[-1]+4*f[1:-1:2].sum()+2*f[2:-1:2].sum())
+    return C_KM_S/H0_KM_S_MPC*(1+z)*transverse(chi,1-om-ol)
+
+
+def check_models():
+    largest_relative_error=0.0
+    rows=[]
+    for z in [.01,.05,.1,.5,1.0,1.2]:
+        for om,ol,*_ in MODELS:
+            dl=float(distance(z,om,ol)); independent=float(independent_simpson(z,om,ol))
+            err=abs(dl-independent)/dl
+            largest_relative_error=max(largest_relative_error,err)
+            assert err&lt;2e-12,(z,om,ol,err)
+            if ol==0:
+                # Mattig formula; the Milne limit is evaluated separately.
+                analytic=C_KM_S/H0_KM_S_MPC*(z+z*z/2) if om==0 else C_KM_S/H0_KM_S_MPC*2/om**2*(om*z+(om-2)*(np.sqrt(1+om*z)-1))
+                assert abs(dl-analytic)/dl&lt;2e-10,(z,om,dl,analytic)
+            if z==.5:
+                rows.append({'z':z,'Omega_m':om,'Omega_Lambda':ol,'dL_Mpc':dl,'mu_mag':float(5*np.log10(dl)+25)})
+    r=float(distance(.5,.3,.7)/distance(.5,.3,0))
+    # Low-z Taylor approximation must approach the full relation cubically.
+    errors=[]
+    for z in [.01,.005,.0025]:
+        approx=C_KM_S/H0_KM_S_MPC*(z+.775*z*z)
+        errors.append(abs(approx-float(distance(z,.3,.7))))
+    assert all(7.9&lt;a/b&lt;8.1 for a,b in zip(errors[:-1],errors[1:])),errors
+    return {'Gauss_vs_Simpson_max_relative_error':largest_relative_error,
+            'matter_only_checks':'Mattig formula including Einstein-de Sitter; exact Milne limit',
+            'z_0_5':rows,'distance_ratio_flat_to_open':r,'flux_ratio_flat_to_open':r**-2,
+            'cosmography_absolute_errors_Mpc':errors}
+
+
+def main():
+    checks=check_models()
+    z=np.linspace(.01,1.2,360)
+    fig,(ax,res)=plt.subplots(2,1,figsize=(11,8),dpi=100,sharex=True,
+                              gridspec_kw={'height_ratios':[2,1]},facecolor='white')
+    reference=distance(z,.3,0)
+    for om,ol,label,color,style in MODELS:
+        dl=distance(z,om,ol)
+        ax.plot(z,5*np.log10(dl)+25,label=label,color=color,ls=style,lw=2.3)
+        res.plot(z,5*np.log10(dl/reference),color=color,ls=style,lw=2.3)
+    for panel in (ax,res):
+        panel.set_facecolor('white');panel.spines[['top','right']].set_visible(False)
+        panel.grid(alpha=.18);panel.axvline(.5,color='#9ba6ae',lw=1,ls=':')
+    ax.set(ylabel='Distance modulus μ (mag)',ylim=(33,45),xlim=(0,1.2))
+    ax.legend(loc='lower right',frameon=False,fontsize=10.5)
+    ax.text(.025,.95,r'$H_0=70\ \mathrm{km\,s^{-1}\,Mpc^{-1}}$; radiation neglected',transform=ax.transAxes,va='top',fontsize=11)
+    res.set(ylabel='μ − μ(open matter) (mag)',xlabel='Redshift z',ylim=(-.41,.34))
+    delta=5*np.log10(distance(.5,.3,.7)/distance(.5,.3,0))
+    res.annotate(f'z = 0.5: Δμ = {delta:.5f} mag',xy=(.5,delta),xytext=(.66,.09),
+                 arrowprops={'arrowstyle':'-&gt;','color':'#17658a'},color='#17658a',fontsize=11)
+    fig.suptitle('How assumed expansion histories separate in brightness',fontsize=18,x=.07,ha='left',y=.97,weight='bold')
+    fig.text(.07,.915,'Calculated FLRW models only • no survey measurements or fitted parameters',fontsize=12,color='#596875')
+    fig.text(.07,.025,'Same standardized absolute magnitude in all models; a common H₀ change shifts every μ equally.',fontsize=11)
+    fig.subplots_adjust(left=.095,right=.97,top=.875,bottom=.105,hspace=.08)
+    fig.savefig(Path(__file__).stem+'.png',facecolor='white',dpi=100)
+    plt.close(fig)
+    print(json.dumps(checks,indent=2))
+
+
+if __name__=='__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

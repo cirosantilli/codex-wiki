@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>ph-logarithmic-scale.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="ph-logarithmic-scale.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/ph-logarithmic-scale.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">ph-logarithmic-scale.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/ph-logarithmic-scale.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/ph-logarithmic-scale.py">ph-logarithmic-scale.py</a></b></div></nav></div><div class="p"><b>ph-logarithmic-scale.py</b></div><div class="code"><div><pre><code>"""Draw ph-logarithmic-scale.png in the current working directory.
+
+Activity definition of pH; concentration labels assume an ideal dilute solution.
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+Build from the repository root: make _media/ph-logarithmic-scale.png
+"""
+
+import math
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    ph = np.linspace(2, 6, 401)
+    activity = np.power(10.0, -ph)
+    np.testing.assert_allclose(-np.log10(activity), ph, rtol=0, atol=1e-14)
+    np.testing.assert_allclose(np.power(10.0, -np.arange(2, 7))[:-1]
+                               / np.power(10.0, -np.arange(2, 7))[1:], 10)
+    assert -math.log10(0.001) == 3
+    assert -math.log10(0.001 / 10) == 4
+    # Compare the neglect of water with the exact ideal strong-acid model.
+    # Charge balance h = C + [OH-] and h[OH-] = Kw, in mol/L units.
+    kw = 1e-14
+    exact_ph = [-math.log10((c + math.sqrt(c * c + 4 * kw)) / 2)
+                for c in (1e-3, 1e-4)]
+    np.testing.assert_allclose(exact_ph, [3, 4], rtol=0, atol=5e-7)
+
+    plt.rcParams.update({"font.size": 14, "savefig.facecolor": "white"})
+    fig, ax = plt.subplots(figsize=(8.8, 5.6), facecolor="white")
+    fig.subplots_adjust(left=0.15, right=0.96, top=0.79, bottom=0.23)
+    fig.suptitle("pH: equal steps mean factors of ten", fontsize=21, y=0.96)
+    fig.text(0.5, 0.86, r"$\mathrm{pH}=-\log_{10}a_{\mathrm{H}^+}$"
+             "     |     Activity is dimensionless", ha="center", fontsize=15)
+    ax.semilogy(ph, activity, color="#286c9c", lw=3)
+    for p in range(2, 7):
+        ax.plot([p], [10.0 ** -p], "o", color="#286c9c", ms=7)
+    ax.annotate("Ideal strong acid\n0.001 mol/L → pH 3", xy=(3, 1e-3),
+                xytext=(2.1, 2.3e-4), fontsize=13,
+                arrowprops={"arrowstyle": "-&gt;", "color": "#444444"})
+    ax.annotate("Tenfold dilution\n0.0001 mol/L → pH 4", xy=(4, 1e-4),
+                xytext=(4.35, 7e-4), fontsize=13,
+                arrowprops={"arrowstyle": "-&gt;", "color": "#444444"})
+    ax.set(xlim=(1.9, 6.1), ylim=(7e-7, 1.5e-2), xticks=range(2, 7),
+           yticks=[10.0 ** -p for p in range(2, 7)], xlabel="pH",
+           ylabel=r"Hydrogen-ion activity $a_{\mathrm{H}^+}$")
+    ax.minorticks_off()
+    ax.spines[["top", "right"]].set_visible(False)
+    ax.grid(color="#dddddd", lw=0.7)
+    fig.text(0.5, 0.10, "Concentration labels: ideal dilute model; water ionization neglected.",
+             ha="center", fontsize=12, color="#444444")
+    fig.text(0.5, 0.045, "This plotted interval is not a limit on possible pH values.",
+             ha="center", fontsize=12, color="#444444")
+    fig.savefig(Path(__file__).stem + ".png", dpi=100, facecolor="white", transparent=False)
+    plt.close(fig)
+    print("Verified pH 3 → 4 for tenfold dilution; tenfold activity per pH step.")
+    print(f"Including ideal water ionization at Kw=1e-14: pH {exact_ph[0]:.9f}, "
+          f"{exact_ph[1]:.9f}; approximation errors &lt; 5e-7 pH units.")
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

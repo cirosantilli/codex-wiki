@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>coupled-rl-voltage-pulse-and-energy.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="coupled-rl-voltage-pulse-and-energy.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/coupled-rl-voltage-pulse-and-energy.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">coupled-rl-voltage-pulse-and-energy.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/coupled-rl-voltage-pulse-and-energy.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/coupled-rl-voltage-pulse-and-energy.py">coupled-rl-voltage-pulse-and-energy.py</a></b></div></nav></div><div class="p"><b>coupled-rl-voltage-pulse-and-energy.py</b></div><div class="code"><div><pre><code>"""Closed-return coupled RL model: exactly specified currents and energy budget."""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+L = .1  # H, each self-inductance
+M = .06  # H, positive mutual inductance in the stated current convention
+R = 10.  # ohm, each loop resistance
+V = 1.  # V, applied to loop 1 during the pulse
+DURATION = .12  # s; the primary circuit stays closed when the drive becomes zero
+
+
+def step_currents(time):
+    t = np.maximum(np.asarray(time), 0.)
+    plus = np.exp(-t / ((L + M) / R))
+    minus = np.exp(-t / ((L - M) / R))
+    return V / (2 * R) * np.array([2 - plus - minus, minus - plus])
+
+
+def pulse_currents(time):
+    return step_currents(time) - step_currents(np.asarray(time) - DURATION)
+
+
+def energy_budget(time):
+    t_on = np.clip(np.asarray(time), 0., DURATION)
+    t_after = np.maximum(np.asarray(time) - DURATION, 0.)
+    tau_p, tau_m = (L + M) / R, (L - M) / R
+    supplied = V**2 / R * (t_on - .5 * tau_p * (-np.expm1(-t_on / tau_p))
+                          - .5 * tau_m * (-np.expm1(-t_on / tau_m)))
+    def integral_squared_step(t, tau):
+        return t - 2 * tau * (-np.expm1(-t / tau)) + .5 * tau * (-np.expm1(-2 * t / tau))
+    heat = V**2 / (2 * R) * (integral_squared_step(t_on, tau_p)
+                             + integral_squared_step(t_on, tau_m))
+    s_end = V / R * (-np.expm1(-DURATION / tau_p))
+    d_end = V / R * (-np.expm1(-DURATION / tau_m))
+    heat += R / 4 * (s_end**2 * tau_p * (-np.expm1(-2 * t_after / tau_p))
+                    + d_end**2 * tau_m * (-np.expm1(-2 * t_after / tau_m)))
+    i1, i2 = pulse_currents(time)
+    stored = .5 * L * (i1**2 + i2**2) + M * i1 * i2
+    return supplied, heat, stored
+
+
+def main():
+    t = np.linspace(-.01, .25, 4001)
+    i1, i2 = pulse_currents(t)
+    supplied, heat, stored = energy_budget(t)
+    fig, axes = plt.subplots(2, 2, figsize=(10.5, 6.6), layout="constrained")
+    a, b, c, d = axes.ravel()
+    a.plot(t * 1000, np.where((t &gt;= 0) &amp; (t &lt; DURATION), V, 0), color="#555555")
+    a.set(title="Voltage pulse; primary return stays closed", xlabel="Time (ms)", ylabel="Drive (V)", ylim=(-.08, 1.15))
+    b.plot(t * 1000, i1 * 1000, label="Primary current", color="#d55e00")
+    b.plot(t * 1000, i2 * 1000, label="Secondary current", color="#0072b2")
+    b.set(title="Receiver responds during changes", xlabel="Time (ms)", ylabel="Current (mA)")
+    b.legend(fontsize=9)
+    short = np.linspace(0, .045, 1000)
+    secondary = step_currents(short)[1]
+    tp, tm = (L + M) / R, (L - M) / R
+    peak_time = tp * tm / (tp - tm) * np.log(tp / tm)
+    c.plot(short * 1000, secondary * 1000, color="#0072b2")
+    c.scatter([peak_time * 1000], [step_currents(peak_time)[1] * 1000], color="#333333", zorder=4)
+    c.set(title="Step response has two decay times", xlabel="Time after voltage step (ms)", ylabel="Secondary current (mA)")
+    c.text(.95, .12, r"$\tau_+=16$ ms, $\tau_-=4$ ms", transform=c.transAxes, ha="right", fontsize=10)
+    d.plot(t * 1000, stored * 1000, label="Stored magnetic energy", color="#009e73", lw=2.7)
+    d.plot(t * 1000, (supplied - heat) * 1000, "--", label="Source work minus heat", color="#cc79a7", lw=1.6)
+    d.set(title="Independent energy expressions agree", xlabel="Time (ms)", ylabel="Energy (mJ)")
+    d.legend(fontsize=9)
+    for ax in axes.ravel():
+        ax.grid(alpha=.2)
+        ax.axhline(0, color="#555555", lw=.6)
+    fig.suptitle(r"Chosen linear model: $L_1=L_2=0.1$ H, $M=0.06$ H, $R_1=R_2=10\,\Omega$", fontsize=13)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=140, facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

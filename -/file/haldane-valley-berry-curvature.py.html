@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>haldane-valley-berry-curvature.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="haldane-valley-berry-curvature.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/haldane-valley-berry-curvature.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">haldane-valley-berry-curvature.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/haldane-valley-berry-curvature.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/haldane-valley-berry-curvature.py">haldane-valley-berry-curvature.py</a></b></div></nav></div><div class="p"><b>haldane-valley-berry-curvature.py</b></div><div class="code"><div><pre><code>"""Original lattice Berry-curvature comparison, no experimental data.
+
+Run from _media; Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7.
+Bond length=t1=1, embedding gauge and lower-band A=i&lt;u|du&gt; convention.
+"""
+
+from pathlib import Path
+import importlib.util
+import sys
+
+sys.dont_write_bytecode = True
+import matplotlib.pyplot as plt
+from matplotlib.colors import TwoSlopeNorm
+import numpy as np
+
+spec = importlib.util.spec_from_file_location(
+    "haldane_model", Path(__file__).with_name("haldane-chern-phase-and-valley-gaps.py"))
+model = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(model)
+
+
+def draw():
+    plt.rcParams.update({"font.size": 11, "figure.facecolor": "white", "axes.facecolor": "white"})
+    fig, axes = plt.subplots(1, 2, figsize=(10.2, 4.5), layout="constrained")
+    n = 341
+    s, t = np.meshgrid(np.linspace(-.5, .5, n), np.linspace(-.5, .5, n), indexing="ij")
+    k = s[..., None] * model.RECIPROCAL[0] + t[..., None] * model.RECIPROCAL[1]
+    mu = 3 * np.sqrt(3) * .08
+    cases = [(0, .08, np.pi / 2), (mu, 0, 0)]
+    values = [model.curvature(k, *case) for case in cases]
+    vmax = max(float(np.max(abs(value))) for value in values)
+    norm = TwoSlopeNorm(vmin=-vmax, vcenter=0, vmax=vmax)
+    for ax, z, title in zip(axes, values, [
+        "Opposite valley masses: $C=-1$\n" + r"$M=0$, $t_2=0.08$, $\phi=\pi/2$",
+        "Equal valley masses: $C=0$\n" + r"$M=3\sqrt{3}(0.08)$, $t_2=0$"
+    ]):
+        im = ax.pcolormesh(s, t, z, cmap="RdBu_r", norm=norm, shading="auto", rasterized=True)
+        for tau, label in [(1, "$K_+$"), (-1, "$K_-$")]:
+            sx, sy = -tau / 3, tau / 3
+            ax.scatter(sx, sy, s=110, facecolor="none", edgecolor="black", lw=1)
+            ax.annotate(label, (sx, sy), xytext=(9, 0), textcoords="offset points", va="center")
+        ax.set(xlabel=r"$s_1$ in $\mathbf{k}=s_1\mathbf{g}_1+s_2\mathbf{g}_2$", ylabel=r"$s_2$", title=title, aspect="equal", xticks=[-.5, 0, .5], yticks=[-.5, 0, .5])
+    fig.colorbar(im, ax=axes, shrink=.81, label=r"Lower-band Berry curvature $\Omega_-(\mathbf{k})/a^2$")
+    fig.suptitle("Equal valley-gap magnitudes do not fix topology", fontsize=14)
+    fig.supxlabel(r"Original lattice calculation, $a=t_1=1$; both cases have valley gaps $6\sqrt{3}(0.08)\simeq0.831$", fontsize=10)
+    fig.savefig(Path(__file__).stem + ".png", dpi=120, facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    draw()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

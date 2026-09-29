@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>seidel-coma-pupil-ring-mapping.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="seidel-coma-pupil-ring-mapping.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/seidel-coma-pupil-ring-mapping.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">seidel-coma-pupil-ring-mapping.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/seidel-coma-pupil-ring-mapping.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/seidel-coma-pupil-ring-mapping.py">seidel-coma-pupil-ring-mapping.py</a></b></div></nav></div><div class="p"><b>seidel-coma-pupil-ring-mapping.py</b></div><div class="code"><div><pre><code>"""Plot normalized primary coma: pupil rings mapped by grad(w).
+
+Tested with Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7.
+Run from _media; writes an opaque white PNG to the working directory.
+No physical lens prescription, diffraction calculation, or measured data.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def ray_map(u, v, h=1.0):
+    """w = h*u*(u*u+v*v); normalized transverse error = grad(w)."""
+    return h * (3 * u * u + v * v), 2 * h * u * v
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                         "axes.spines.right": False, "figure.facecolor": "white"})
+    fig, (pupil, image) = plt.subplots(1, 2, figsize=(10.4, 5.2))
+    fig.subplots_adjust(left=.075, right=.98, bottom=.26, top=.80, wspace=.35)
+    fig.suptitle("Primary coma: one pupil ring becomes one displaced circle", y=.98)
+    fig.text(.5, .87, r"$w=h\,u(u^2+v^2)$,  $h=1$;   $(X,Y)=(3u^2+v^2,\,2uv)$",
+             ha="center")
+    theta = np.linspace(0, 2*np.pi, 721)
+    radii = [.25, .5, .75, 1.0]
+    colors = ["#007f86", "#d98a00", "#7c51a1", "#2458a4"]
+    for rho, color in zip(radii, colors):
+        u, v = rho*np.cos(theta), rho*np.sin(theta)
+        x, y = ray_map(u, v)
+        pupil.plot(u, v, color=color, lw=1.7, label=fr"$\rho={rho:g}$")
+        image.plot(x, y, color=color, lw=1.7)
+        image.plot(2*rho*rho, 0, "+", color=color, ms=7)
+    u, v = np.sqrt(.5), np.sqrt(.5)
+    x, y = ray_map(u, v)
+    pupil.plot([u, -u], [v, -v], "o", color="#222222", ms=6)
+    pupil.text(u+.05, v, "A", fontsize=11)
+    pupil.text(-u-.18, -v, "B", fontsize=11)
+    image.plot(x, y, "o", color="#222222", ms=6)
+    image.annotate("A and B land together", (x, y), xytext=(1.15, 1.26),
+                   arrowprops={"arrowstyle": "-&gt;", "color": "#555555"}, fontsize=10)
+    fig.text(.485, .56, "gradient\nmapping →", ha="center", fontsize=10)
+    image.plot(0, 0, "o", color="#222222", ms=4)
+    image.annotate("central ray", (0, 0), xytext=(.12, -.55), fontsize=10,
+                   arrowprops={"arrowstyle": "-&gt;", "color": "#555555"})
+    pupil.set(xlim=(-1.15, 1.15), ylim=(-1.15, 1.15), xlabel="u = pupil x / radius",
+              ylabel="v = pupil y / radius", title="Circular pupil")
+    image.set(xlim=(-.12, 3.18), ylim=(-1.25, 1.45), xlabel="X: normalized image error",
+              ylabel="Y: normalized image error", title="Ray intersections in the image plane")
+    handles, labels = pupil.get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", ncol=4,
+               bbox_to_anchor=(.5, .10), frameon=False)
+    for ax in (pupil, image):
+        ax.set_aspect("equal")
+        ax.axhline(0, color="#dddddd", lw=.8, zorder=0)
+        ax.axvline(0, color="#dddddd", lw=.8, zorder=0)
+    fig.text(.5, .025, "Ring radius and centre shift grow as pupil radius squared.\n"
+             "Normalized geometrical model; no instrument dimensions or diffraction.",
+             ha="center", fontsize=10)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=120,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

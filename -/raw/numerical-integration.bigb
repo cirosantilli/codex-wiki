@@ -1,0 +1,250 @@
+= Numerical integration
+{wiki}
+{title2=$I(f)=\int_a^bf(x)\,dx$}
+
+<Numerical integration> approximates a <definite integral> using finitely many sampled <function> values. For an <integrand> $f$ on a finite <interval> $[a,b]$, $a<b$, a <quadrature rule> has the form
+$$
+I(f)=\int_a^bf(x)\,dx,\qquad Q(f)=\sum_{j=1}^m w_jf(x_j)\approx I(f).
+$$
+The <quadrature nodes> $x_j$ tell us where to evaluate $f$; the <quadrature weights> $w_j$ turn those values into an approximation to the accumulated signed area. The exact <definite integral> depends on the <integrand> throughout the <interval>, whereas the <quadrature rule> sees only these samples. Integrating a chosen <interpolant> exactly still generally approximates the original <integrand>'s <integral>.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others/5.6 Numerical integration>[Fundamentals of Numerical Computation by Tobin A. Driscoll and others; Definition 5.6.1 and §5.6.1, equations 5.6.2–5.6.5: weighted samples and integration of an interpolant]{ref}
+
+The <fundamental theorem of calculus> evaluates $I(f)$ as $F(b)-F(a)$ when an <antiderivative> $F$ is available. <Numerical integration> is useful when no convenient <antiderivative> is known, or each evaluation of the <integrand> requires an expensive computation. The task then becomes choosing informative <quadrature nodes> and controlling the <quadrature error> with as few evaluations as possible. Fixed data also permit a <quadrature rule>, but refinement cannot supply new information between observations.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others/5.6 Numerical integration>[Fundamentals of Numerical Computation by Tobin A. Driscoll and others; Opening discussion, Example 5.6.1 and the paragraph following Definition 5.6.1: antiderivatives, numerical evaluation and fixed data]{ref}
+
+For an exact comparison, take the <polynomial> $f(x)=x^2$ on $[0,1]$. Its <antiderivative> $x^3/3$ gives $I(f)=1/3$. On a <partition of an interval> into $n\geq1$ equal panels, the <composite midpoint quadrature rule> uses $n$ midpoint samples, each with <quadrature weight> $1/n$; the <composite trapezoidal rule> uses $n+1$ endpoint samples, with outer <quadrature weights> $1/(2n)$ and interior <quadrature weights> $1/n$. The existing derivations under these two <quadrature rules> give
+$$
+M_n(f)=\frac13-\frac{1}{12n^2},\qquad T_n(f)=\frac13+\frac{1}{6n^2}.
+$$
+In particular, $M_1=1/4$ and $T_1=1/2$ already bracket $1/3$; two panels give $M_2=5/16$ and $T_2=3/8$. The <convex function> $x^2$ explains the opposite signs. A midpoint <rectangle> can cross the curve within its panel, so its total signed area, rather than pointwise ordering, determines the underestimate.
+
+\Image[quadrature-sample-weights-and-panels.png]
+{title=One and two panels for <numerical integration> of $x^2$: midpoint and endpoint samples with their <quadrature weights>}
+
+Define the signed <approximation error> as $E_n=Q_n(f)-I(f)$. In this example the <absolute errors> are $1/(12n^2)$ and $1/(6n^2)$: doubling $n$ reduces each by exactly four. A plot with both axes on a <logarithmic scale> therefore has slope $-2$, expressing order two with respect to panel refinement. This is an exact calculation for this <polynomial>, including $n=1$, rather than an observed rate extrapolated from a few computed answers.
+
+\Image[quadrature-quadratic-errors-and-slope.png]
+{title=Exact <absolute errors> for midpoint and trapezoidal <numerical integration> of $x^2$: slope $-2$ and a factor-four reduction}
+
+For a general <integrand>, the <composite midpoint quadrature rule> and <composite trapezoidal rule> give second-order <quadrature error> bounds when $f$ has two continuous <derivatives> on $[a,b]$ and a known bound on $|f''|$. These hypotheses describe behavior between samples. A formal error formula containing an unknown <derivative> is not a numerical accuracy certificate or a justified sample count. <Finite samples do not certify quadrature accuracy> makes the missing information explicit. Errors in the evaluations and <roundoff error> must also be considered; <noise sensitivity of a quadrature rule> treats the former.
+
+More elaborate choices exploit other information: <Gaussian quadrature> obtains high <polynomial> exactness from carefully chosen <quadrature nodes>, and <Simpson's rule> uses a quadratic <interpolant>. Adaptive <numerical integration> compares approximations and concentrates samples where they disagree, often saving evaluations. Such a difference is an error estimate, not a certified bound without further assumptions: both approximations can miss the same feature.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others/5.7 Adaptive integration>[Fundamentals of Numerical Computation by Tobin A. Driscoll and others; §5.7.1, equation 5.7.4: a difference-based error estimate; §5.7.2: interval bisection; Example 5.7.2 and concluding discussion: requested accuracy is not guaranteed]{ref}
+
+= Finite samples do not certify quadrature accuracy
+{parent=Numerical integration}
+{title2=$p(x)=\prod_{j=1}^m(x-x_j)^2$}
+
+For any finite set of <quadrature nodes> $x_1,\ldots,x_m$ in $[a,b]$, $a<b$, consider the <polynomial>
+$$
+p(x)=\prod_{j=1}^m(x-x_j)^2,\qquad A=\int_a^bp(x)\,dx>0.
+$$
+Every sample is zero, so every <quadrature rule> at these <quadrature nodes> gives $Q(p)=0$. Yet $p$ is nonnegative and strictly positive away from its finitely many <polynomial roots>; its <continuity> makes the <integral> positive. Consequently the <smooth functions> $0$ and $g(x)=p(x)/A$ have identical samples but <definite integrals> $0$ and $1$. Multiplying $g$ by any positive constant makes the difference arbitrarily large. This is an information limit, even with exact arithmetic; merely assuming smoothness without quantitative bounds does not remove it. The related <degree ceiling for quadrature exactness> uses the same squared nodal <polynomial> to limit <polynomial> exactness.
+
+For example, the endpoint <quadrature nodes> $0,1$ give $p(x)=x^2(1-x)^2$, $A=1/30$, and $g(x)=30x^2(1-x)^2$. Both the zero <function> and $g$ produce zero under the one-panel <trapezoidal rule>, although $I(g)=1$. More generally, any estimate based only on their shared samples has <absolute error> at least $1/2$ for one of these two <integrands>, by the <triangle inequality>.
+
+The obstruction also applies to a deterministic adaptive procedure that terminates after finitely many evaluations on the zero <function>: form $p$ using every <quadrature node> it visited. On $g$, the same zero responses lead to the same choices and answer. Certified <quadrature error> control therefore needs additional information, such as a known bound on relevant <derivatives>, rather than agreement among sampled approximations alone.
+
+= Boole's rule
+{c}
+{parent=Numerical integration}
+{title2=$\int_{-1}^1p=(7p(-1)+32p(-1/2)+12p(0)+32p(1/2)+7p(1))/45$}
+
+Integrate the five <Lagrange interpolation polynomials> at the equally spaced nodes to obtain the displayed rule. It is exact for <polynomials> through degree four, and symmetry also makes it exact in degree five. Symmetric endpoint, inner-node and midpoint weights $a,b,c$ satisfy $2a+2b+c=2$, $2a+b/2=2/3$, $2a+b/8=2/5$, giving $a=7/45$, $b=32/45$, $c=12/45$.
+
+= Quadrature rule
+{parent=Numerical integration}
+{title2=$Q(f)=\sum_{i=1}^{m}w_i f(x_i)$}
+
+A <quadrature rule> approximates an <integral> by a finite weighted sum of sampled <function> values:
+$$
+I_\rho(f)=\int_a^b\rho(x)f(x)\,dx\approx Q(f)=\sum_{i=1}^m w_i f(x_i).
+$$
+The <quadrature nodes> $x_i$ specify where to sample, and the <quadrature weights> $w_i$ specify how much each sample contributes. The density $\rho(x)$ specifies the target <integral>, whereas the discrete <quadrature weights> belong to the approximation. Ordinary <numerical integration> has $\rho=1$. <Gaussian quadrature> and the <midpoint quadrature rule> choose interior <quadrature nodes>; the <trapezoidal rule> includes endpoints.<NIST Digital Library of Mathematical Functions/3.5 Quadrature, subsection (iv) Interpolatory Quadrature Rules>[§3.5(iv), equation 3.5.15 and the following discussion of nodes and weights]{ref}
+
+For ordinary <numerical integration>, exactness on the <constant function> $1$ requires $\sum_iw_i=b-a$; exactness on $x$ additionally requires $\sum_iw_ix_i=(b^2-a^2)/2$. These two checks make the <quadrature rule> exact for every <affine function>. For example, both the <midpoint quadrature rule> and <trapezoidal rule> give $6$ for $\int_0^2(2x+1)\,dx$. Testing progressively higher <polynomial degrees> defines the <degree of precision of a quadrature rule>. Exactness describes a class of <integrands>, rather than promising exact results for every <function>.
+
+<Composite midpoint quadrature rules> and <composite trapezoidal rules> apply a simple <quadrature rule> on every panel of a <partition of an interval>. This buys accuracy by shrinking the panels while keeping the elementary formula fixed. For <continuous functions> sampled exactly, their <quadrature errors> tend to zero as the largest panel width tends to zero. The familiar second-order bounds require stronger assumptions about <derivatives>. The signed <approximation error> used here is $Q(f)-I_\rho(f)$; some sources define <quadrature error> with the opposite sign, so the convention must accompany any formula.
+
+= Quadrature node
+{parent=Quadrature rule}
+{title2=$x_i$}
+
+A <quadrature node> is a point at which the <integrand> is sampled by a <quadrature rule>. Under the <affine map> $x=(a+b)/2+(b-a)t/2$ from $[-1,1]$ to $[a,b]$, a reference <quadrature node> $t_i$ becomes $x_i=(a+b)/2+(b-a)t_i/2$; for ordinary <numerical integration>, the corresponding <quadrature weight> is multiplied by $(b-a)/2$.
+
+= Quadrature weight
+{parent=Quadrature rule}
+{title2=$w_i$}
+
+A <quadrature weight> multiplies a sampled <integrand> value in a <quadrature rule>. For ordinary <numerical integration>, its units match those of the integration variable. Positive <quadrature weights> that sum to $b-a$ make $Q(f)/(b-a)$ a weighted average of the samples; signed <quadrature weights> can magnify sample perturbations, as quantified by <noise sensitivity of a quadrature rule>.
+
+= Degree of precision of a quadrature rule
+{parent=Quadrature rule}
+{title2=$d$}
+
+The <degree of precision of a quadrature rule> is the largest integer $d$ such that $Q(p)=I_\rho(p)$ for every <polynomial> $p$ of <polynomial degree> at most $d$. By <linearity>, checking the <monomials> $1,x,\ldots,x^d$ suffices. Exactness for one higher-degree <polynomial> alone does not raise this degree: every lower <polynomial degree> must also be covered.
+
+= Noise sensitivity of a quadrature rule
+{parent=Quadrature rule}
+{title2=$|\Delta Q|\leq\delta\sum_i|w_i|$}
+
+If the observed samples are $y_i=f(x_i)+\varepsilon_i$, the resulting <quadrature rule> changes by $\Delta Q=\sum_iw_i\varepsilon_i$. Bounded sample perturbations $|\varepsilon_i|\leq\delta$ therefore satisfy
+$$
+|\Delta Q|\leq\delta\sum_i|w_i|.
+$$
+For ordinary <numerical integration> with nonnegative <quadrature weights> exact on <constant functions>, the bound is $(b-a)\delta$, independent of panel refinement. A common bias $\varepsilon_i=\delta$ attains it: the <quadrature error> due to the <function> approximation may vanish while this sample error persists. Interpolating a fixed data set onto a finer grid likewise does not create new observations or remove its uncertainty.
+
+With new samples whose errors are <independent random variables> of zero <expectation> and common <variance> $\sigma^2$, a different model gives
+$$
+\operatorname{Var}(\Delta Q)=\sigma^2\sum_iw_i^2.
+$$
+For equal panels this is $\sigma^2(b-a)^2/n$ for the <composite midpoint quadrature rule> and $\sigma^2h^2(n-1/2)$ for the <composite trapezoidal rule>. These <variance> reductions require the stated independence and unbiasedness assumptions; a common bias or correlated sample errors need not shrink. The two displayed perturbation formulas follow directly from the <triangle inequality> and the <variance additivity for independent random variables>, respectively.
+
+= Newton-Cotes closed quadrature
+{c}
+{parent=Quadrature rule}
+{title2=$w_j=\int_0^s L_j(t)\,dt$}
+
+= Closed Newton-Cotes quadrature
+{synonym}
+
+Integrate the <Lagrange polynomial> through values at all equally spaced nodes $0,\ldots,s$, including both endpoints. The resulting <quadrature rule> is exact through degree $s$. For even $s$, the node <polynomial> $\prod_{j=0}^s(t-j)$ is odd about $s/2$, so its integral vanishes and exactness extends through degree $s+1$. The weights need not remain positive as the number of nodes increases.
+
+= Simpson's rule
+{c}
+{parent=Quadrature rule}
+{wiki}
+{title2=$\int_{a}^{a+2h}f\approx\frac h3[f(a)+4f(a+h)+f(a+2h)]$}
+
+<Simpson's rule> approximates a <definite integral> by integrating the <quadratic polynomial> obtained by <polynomial interpolation> at two endpoints and their <midpoint>. For an <interval> $[a,b]$ with $a<b$, write $m=(a+b)/2$ and $h=(b-a)/2$. The three <quadrature nodes> are $a,m,b$, and the <quadrature rule> is
+$$
+S(f)=\frac h3\bigl[f(a)+4f(m)+f(b)\bigr].
+$$
+Thus its <quadrature weights> are $h/3,4h/3,h/3$. Their sum is $2h=b-a$, as required for exactness on <constant functions>. This is the three-node <Newton-Cotes closed quadrature>; its <degree of precision of a quadrature rule> is three, even though the interpolating <polynomial> has <polynomial degree> at most two.<NIST Digital Library of Mathematical Functions/3.5 Quadrature, subsection (ii) Simpson’s Rule>[NIST Digital Library of Mathematical Functions; §3.5(ii), equation 3.5.6: elementary Simpson rule and its fourth-derivative remainder]{ref}
+
+For an original worked example, take the <cubic polynomial> $f(x)=x^3-2x+4$ on the <interval> $[-1,2]$. Here $m=1/2$ and $h=3/2$, so the <function evaluations> give
+$$
+f(-1)=5,\qquad f(1/2)=\frac{25}{8}=3.125,\qquad f(2)=8.
+$$
+<Simpson's rule> gives
+$$
+S(f)=\frac12\left(5+4\cdot\frac{25}{8}+8\right)=\frac{51}{4}=12.75.
+$$
+An <antiderivative> supplies an independent exact <definite integral>:
+$$
+\int_{-1}^{2}(x^3-2x+4)\,dx
+=\left[\frac{x^4}{4}-x^2+4x\right]_{-1}^{2}
+=\frac{51}{4}.
+$$
+The <quadratic polynomial> through the same <quadrature nodes> is $p_2(x)=\tfrac32x^2-\tfrac12x+3$. It differs from $f$ between the <quadrature nodes>, but its <definite integral> agrees exactly. The picture shows why: the signed <polynomial interpolation error> has two lobes with opposite <integrals>.
+
+\Image[simpson-cubic-error-cancellation.png]
+{title=An original cubic and its quadratic interpolant have the same integral because the two interpolation-error lobes have signed integrals plus and minus 81 over 64}
+
+Three <function evaluations> therefore capture more information about an <integral> than about the whole <function>. When an <antiderivative> is unavailable, <composite Simpson's rule> repeats this inexpensive local construction over a <partition of an interval>. For a sufficiently smooth <function>, halving the node spacing reduces its <truncation error> by approximately a factor of sixteen.
+
+= Adaptive Simpson's method
+{parent=Simpson's rule}
+
+= Adaptive Simpson integration
+{synonym}
+
+= Adaptive Simpson
+{synonym}
+
+= Cubic exactness of Simpson's rule
+{parent=Simpson's rule}
+{title2=$S(p)=\int_a^b p(x)\,dx\quad(\deg p\leq3)$}
+
+<Polynomial interpolation> makes <Simpson's rule> exact for every <polynomial> of <polynomial degree> at most two. To understand the extra <polynomial degree>, centre the coordinate at the <midpoint>: $y=x-m$, with endpoints $-h,h$. For any <cubic polynomial> $p$, let $p_2$ be its interpolating <quadratic polynomial>. The <polynomial> $p-p_2$ vanishes at all three <quadrature nodes>, so
+$$
+p(x)-p_2(x)=A(x-a)(x-m)(x-b)=A y(y^2-h^2),
+$$
+where $A$ is the coefficient of $x^3$ in $p$. As a <function> of $y$, this is an <odd function>, whose <integral> over the symmetric <interval> $[-h,h]$ is zero. Hence integrating $p_2$ also integrates $p$ exactly. This is the symmetry mechanism in the <nodal-polynomial criterion for quadrature exactness>.
+
+In the worked example, the <polynomial> difference factors as
+$$
+f(x)-p_2(x)=(x+1)(x-1/2)(x-2)
+=y^3-\frac94y.
+$$
+Its <definite integrals> on $[-1,1/2]$ and $[1/2,2]$ are respectively $81/64$ and $-81/64$. Their cancellation concerns signed <integrals>, rather than pointwise accuracy of <polynomial interpolation>.
+
+The <degree of precision of a quadrature rule> stops at three: on the same <interval>, the <monomial> $x^4$ gives $S(x^4)=69/8$, whereas $\int_{-1}^{2}x^4\,dx=33/5$. Their difference, exact <integral> minus approximation, is $-81/40$.
+
+= Composite Simpson's rule
+{parent=Simpson's rule}
+{title2=$S_n$}
+
+<Composite Simpson's rule> applies <Simpson's rule> to consecutive pairs of equal subintervals. Choose a positive even <integer> $n\geq2$, put $h=(b-a)/n$, and take <quadrature nodes> $x_j=a+jh$ for $j=0,\ldots,n$. There are $n$ subintervals, $n/2$ two-subinterval panels, and $n+1$ <quadrature nodes>. Then
+$$
+S_n=\frac h3\left[f(x_0)+4\sum_{j=1}^{n/2}f(x_{2j-1})+2\sum_{j=1}^{n/2-1}f(x_{2j})+f(x_n)\right].
+$$
+The second <sum> is empty when $n=2$, recovering one panel. The <quadrature weights>, before multiplication by $h/3$, are $1,4,2,4,\ldots,2,4,1$. Every interior even-indexed <quadrature node> is an endpoint of two panels, so its two endpoint contributions add to two; every odd-indexed <quadrature node> is a <midpoint> with weight four. An odd $n$ cannot be covered by these pairs. The displayed formula requires equal spacing.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others/5.6 Numerical integration>[Fundamentals of Numerical Computation by Tobin A. Driscoll and others; §5.6, equations 5.6.20–5.6.21: elementary and composite Simpson formulas]{ref}
+
+For the <exponential function> on the <interval> $[0,1]$, the exact <integral> is $I=e-1$. With $n=2$, the formula gives $S_2\approx1.718861151876593$, an overestimate of about $5.793234175\times10^{-4}$. With $n=128$, it gives $S_{128}\approx1.718281828494607$, an overestimate of about $3.556140064\times10^{-11}$. The figure shows the intermediate refinements and compares every computed <absolute error> with the <error bound for composite Simpson's rule>.
+
+\Image[composite-simpson-exponential-convergence.png]
+{title=Computed composite Simpson errors for the exponential function on zero to one approach fourth-order convergence; the dashed curve is the rigorous bound e over 180 n to the fourth power}
+
+For this <exponential function>, a <geometric series> also gives a compact independent formula. With $q=e^h$ and $h=1/n$, summing the $n/2$ panel contributions yields
+$$
+S_n=(e-1)\frac{h(1+4q+q^2)}{3(q^2-1)}.
+$$
+A <Taylor series> at $h=0$ gives
+$$
+S_n-I=(e-1)\left(\frac{h^4}{180}-\frac{h^6}{1512}+O(h^8)\right).
+$$
+The <Big O notation> describes the remaining terms as $h$ tends to zero. Consequently $(S_n-I)/(S_{2n}-I)$ tends to sixteen: the computed ratios increase from about $15.65169$ to $15.99965$. Fourth-order <truncation error> is also obtained by <Richardson extrapolation> of the <composite trapezoidal rule>.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others/5.6 Numerical integration>[Fundamentals of Numerical Computation by Tobin A. Driscoll and others; §5.6.2, equations 5.6.14–5.6.15: Simpson extrapolation and fourth-order error]{ref}
+
+= Error bound for composite Simpson's rule
+{parent=Composite Simpson's rule}
+{title2=$|I-S_n|\leq M(b-a)h^4/180$}
+
+Suppose $f$ has a fourth <derivative> that is a <continuous function> on the <interval> $[a,b]$, and $|f^{(4)}(x)|\leq M$ there. With $I=\int_a^b f(x)\,dx$, the signed <quadrature error> here is $I-S_n$. Then, for some <point> $\xi\in(a,b)$,
+$$
+I-S_n=-\frac{b-a}{180}h^4 f^{(4)}(\xi),\qquad
+|I-S_n|\leq\frac{M(b-a)}{180}h^4.
+$$
+In particular, a strictly positive fourth <derivative> makes $I-S_n<0$: <composite Simpson's rule> overestimates the <integral>.<NIST Digital Library of Mathematical Functions/3.5 Quadrature, subsection (ii) Simpson’s Rule>[NIST Digital Library of Mathematical Functions; §3.5(ii), equations 3.5.6–3.5.8: continuous fourth derivative, elementary remainder, composite formula and signed error]{ref}
+
+The bound's scale follows by adding the panel errors. A panel of width $2h$ has signed <quadrature error> $-h^5 f^{(4)}(\xi_j)/90$ and <absolute error> at most $Mh^5/90$. There are $(b-a)/(2h)$ panels, so the <triangle inequality> gives $M(b-a)h^4/180$. The <intermediate value theorem> for the continuous fourth <derivative> replaces the average of the panel values $f^{(4)}(\xi_j)$ by a single value $f^{(4)}(\xi)$, giving the signed formula.
+
+The underlying single-panel calculation can be seen through the <Peano kernel theorem>. On the <interval> $[0,2]$, define the raw <Peano kernel> $K(t)=L[(x-t)_+^3]$, where $L$ is <integral> minus <Simpson's rule> and $(x-t)_+=\max(x-t,0)$ is the <positive part>. Then $K(t)=-t^3(4-3t)/12$ for $0\leq t\leq1$ and $K(t)=-(2-t)^3(3t-2)/12$ for $1\leq t\leq2$. It is strictly negative inside the <interval> and has <integral> $-1/15$. Thus
+$$
+L(f)=\frac1{3!}\int_0^2 K(t)f^{(4)}(t)\,dt,\qquad
+|L(f)|\leq\frac{\|f^{(4)}\|_\infty}{90}.
+$$
+The <uniform norm> $\|f^{(4)}\|_\infty$ bounds the fourth <derivative>. The <polynomial> $f(x)=x^4/24$ attains equality. Scaling to endpoint spacing $h$ multiplies the coefficient by $h^5$, giving the sharp single-panel bound $h^5\|f^{(4)}\|_\infty/90$. The normalized <Peano kernel> is $K/3!$, so the external <factorial> must be omitted when using that normalization.
+
+For the <exponential function> on $[0,1]$, $f^{(4)}(x)=e^x$, so $M=e$ and the bound is $e/(180n^4)$. Its leading actual <absolute error> is $(e-1)/(180n^4)$, smaller than the bound because a uniform upper bound on the fourth <derivative> does not use its variation across the <interval>. The theorem bounds <truncation error> with exact <function evaluations>; sample errors and <roundoff error> are additional contributions, as described by <noise sensitivity of a quadrature rule>.
+
+= Convergence of positive quadrature on continuous functions
+{parent=Quadrature rule}
+
+On a compact interval, positive <quadrature rule> weights whose sum is the interval length define uniformly bounded functionals on <continuous functions>. If the rules eventually integrate every fixed <polynomial> exactly, the <Weierstrass approximation theorem> proves convergence for every <continuous function>.
+
+= Nodal-polynomial criterion for quadrature exactness
+{parent=Quadrature rule}
+
+An $(n+1)$-node <quadrature rule> already exact through degree $n$ is exact through degree $n+1+k$ exactly when its nodal polynomial
+$$
+Q_{n+1}(x)=\prod_{i=0}^n(x-x_i)
+$$
+is orthogonal to every polynomial of degree at most $k$.
+
+= Degree ceiling for quadrature exactness
+{parent=Quadrature rule}
+
+No $(n+1)$-node quadrature rule for a positive interval weight can be exact through degree $2n+2$, because it evaluates the nonnegative nodal square $Q_{n+1}^2$ as zero although its integral is positive.
+
+= Positivity of quadrature weights from degree 2n exactness
+{parent=Quadrature rule}
+
+If an $(n+1)$-node quadrature rule for a positive interval weight is exact through degree $2n$, every weight is positive. Indeed, applying the rule to the square of the corresponding degree-$n$ Lagrange cardinal polynomial isolates that weight.
+
+= Convergence of positive quadrature rules
+{parent=Quadrature rule}
+
+If each $(n+1)$-node quadrature rule is exact through degree $n$ and has positive weights, then it converges on every continuous function. The <Weierstrass approximation theorem> reduces the error to the uniform polynomial-approximation error, while exactness on constants controls the sum of the weights.
+
+= Moment matching
+{parent=Quadrature rule}
+
+A quadrature rule is exact through degree $d$ precisely when its node weights reproduce the first $d+1$ moments of the integration measure.

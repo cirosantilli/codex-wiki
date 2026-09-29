@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>bellman-ford-negative-edge-passes.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="bellman-ford-negative-edge-passes.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/bellman-ford-negative-edge-passes.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">bellman-ford-negative-edge-passes.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/bellman-ford-negative-edge-passes.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/bellman-ford-negative-edge-passes.py">bellman-ford-negative-edge-passes.py</a></b></div></nav></div><div class="p"><b>bellman-ford-negative-edge-passes.py</b></div><div class="code"><div><pre><code>"""Draw Bellman–Ford's negative-edge example; emit the PNG in the CWD.
+
+Tested with Python 3.14, matplotlib 3.10.7 and numpy 2.3.5.
+"""
+
+from math import inf
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, FancyArrowPatch
+
+
+VERTICES = ("S", "A", "B", "C", "T")
+EDGES = (("S", "A", 4), ("S", "B", 5), ("A", "B", -2),
+         ("B", "C", 3), ("C", "T", 2), ("A", "T", 8))
+SCAN = tuple(reversed(EDGES))
+
+
+def trace():
+    labels = dict.fromkeys(VERTICES, inf)
+    labels["S"] = 0
+    rows = [labels.copy()]
+    for _ in range(4):
+        for u, v, weight in SCAN:
+            if labels[u] != inf:
+                labels[v] = min(labels[v], labels[u] + weight)
+        rows.append(labels.copy())
+    return rows
+
+
+def main():
+    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 12})
+    fig = plt.figure(figsize=(10, 7), dpi=120, facecolor="white")
+    fig.suptitle("Bellman–Ford: a negative edge, no negative cycle",
+                 fontsize=17, weight="bold", y=0.97)
+    ax = fig.add_axes((0.05, 0.54, 0.90, 0.36))
+    ax.set(xlim=(-0.7, 8.7), ylim=(-1.65, 1.65), aspect="equal")
+    ax.axis("off")
+    positions = {v: (2 * i, 0) for i, v in enumerate(VERTICES)}
+    for u, v, weight in EDGES:
+        color = "#b72532" if weight &lt; 0 else "#226b88"
+        curvature = 0.50 if (u, v) == ("A", "T") else 0
+        if (u, v) == ("S", "B"):
+            curvature = -0.52
+        arrow = FancyArrowPatch(positions[u], positions[v],
+                                connectionstyle=f"arc3,rad={curvature}",
+                                arrowstyle="-|&gt;", mutation_scale=18,
+                                linewidth=2.3, color=color,
+                                shrinkA=21, shrinkB=21)
+        ax.add_patch(arrow)
+        midpoint = ((positions[u][0] + positions[v][0]) / 2, 0.33)
+        if (u, v) == ("S", "B"):
+            midpoint = (2, 1.30)
+        elif (u, v) == ("A", "T"):
+            midpoint = (5, -1.36)
+        ax.text(*midpoint, str(weight).replace("-", "−"), ha="center",
+                va="center", fontsize=14, color=color,
+                bbox={"facecolor": "white", "edgecolor": "none", "pad": 2})
+    for v, (x, y) in positions.items():
+        ax.add_patch(Circle((x, y), 0.27, facecolor="white",
+                            edgecolor="#263b48", linewidth=1.6, zorder=3))
+        ax.text(x, y, v, ha="center", va="center", fontsize=14,
+                weight="bold", zorder=4)
+    fig.text(0.5, 0.53, "In-place scan: A→T, C→T, B→C, A→B, S→B, S→A",
+             ha="center", fontsize=12)
+    fig.text(0.5, 0.489, "Labels after each complete pass; blue cells decreased in that pass",
+             ha="center", fontsize=11, color="#425665")
+    table_ax = fig.add_axes((0.08, 0.12, 0.84, 0.34))
+    table_ax.axis("off")
+    rows = trace()
+    cells = [["initial" if i == 0 else f"pass {i}"] +
+             ["∞" if row[v] == inf else str(row[v]) for v in VERTICES]
+             for i, row in enumerate(rows)]
+    table = table_ax.table(cellText=cells, colLabels=("",) + VERTICES,
+                           cellLoc="center", loc="center", bbox=(0, 0, 1, 1))
+    table.auto_set_font_size(False)
+    table.set_fontsize(13)
+    for (i, j), cell in table.get_celld().items():
+        cell.set_edgecolor("#ccd8df")
+        if i == 0:
+            cell.set_facecolor("#263b48")
+            cell.set_text_props(color="white", weight="bold")
+        elif j == 0:
+            cell.set_facecolor("#f0f3f5")
+        elif i &gt; 1 and rows[i - 1][VERTICES[j - 1]] &lt; rows[i - 2][VERTICES[j - 1]]:
+            cell.set_facecolor("#dceff8")
+            cell.set_text_props(color="#125675", weight="bold")
+    fig.text(0.5, 0.052, "Best route: S→A→B→C→T       cost = 4 − 2 + 3 + 2 = 7",
+             ha="center", fontsize=13)
+    fig.savefig(Path(__file__).stem + ".png", facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

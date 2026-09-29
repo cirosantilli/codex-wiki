@@ -1,0 +1,231 @@
+= Discrete Fourier transform
+{wiki}
+{title2=$X_k=\sum_{n=0}^{N-1}x_ne^{-2\pi ink/N}$}
+
+= DFT
+{c}
+{synonym}
+
+The <discrete Fourier transform> turns a finite list of samples into the weights of its <discrete Fourier modes>. The goal is to reveal a simple oscillatory recipe hidden in complicated-looking data, while retaining enough information to reconstruct every sample exactly. In <signal processing>, those weights identify sampled <frequencies> and <wave phases>; in <numerical analysis>, they simplify <circular convolution> and the <discrete sine transform Poisson solver>.
+
+Start with eight real samples, indexed by $n=0,\ldots,7$:
+$$
+x_n=1+\cos\left(\frac{2\pi n}{8}\right)+\frac12\sin\left(\frac{4\pi n}{8}\right).
+$$
+Writing $a=\sqrt2/2$, the actual list is
+$$
+x=\left(2,\frac32+a,1,\frac12-a,0,\frac32-a,1,\frac12+a\right).
+$$
+The <discrete Fourier transform> recovers the recipe as
+$$
+X=(8,4,-2i,0,0,0,2i,4).
+$$
+The constant contributes $X_0=8$; the <cosine> contributes $X_1=X_7=4$; the half-sized <sine> contributes $X_2=-2i$ and $X_6=2i$. All other <coefficients> vanish exactly. The imaginary <coefficients> carry the <sine>'s <wave phase>, which a plot of <absolute values> alone would hide.
+
+\Image[dft-frequency-decomposition.png]
+{title=Eight samples become a constant, a cosine pair, and a sine pair in the discrete Fourier transform}
+
+Precisely, for a positive <integer> $N$ and a <vector> $x\in\mathbb C^N$, the forward <discrete Fourier transform> and <inverse discrete Fourier transform> used here are
+$$
+X_k=\sum_{n=0}^{N-1}x_n\exp\left(-\frac{2\pi ink}{N}\right),\qquad k=0,\ldots,N-1,
+$$
+$$
+x_n=\frac1N\sum_{k=0}^{N-1}X_k\exp\left(\frac{2\pi ink}{N}\right),\qquad n=0,\ldots,N-1.
+$$
+Thus the forward exponent has a minus sign and no scale factor; the inverse exponent has a plus sign and the factor $1/N$. The <coefficients> in the reconstruction are $X_k/N$, rather than $X_k$. In the example, $X_0/8=1$, the pair $4/8$ reconstructs the <cosine>, and the pair $-2i/8,2i/8$ reconstructs the half-sized <sine>. These conventions agree with the scaled <Fourier coefficients> in MIT's authored notes.https://ocw.mit.edu/courses/6-02-introduction-to-eecs-ii-digital-communication-systems-fall-2012/06d7972059805d20e6a7db3a52ec23f2_MIT6_02F12_chap13.pdf[Hari Balakrishnan, Christopher Terman, and George Verghese, MIT 6.02 notes, Chapter 13, equations (13.15)–(13.16), 2012]{ref}
+
+The proof idea is <orthogonality of roots of unity>: for <integers> $k,\ell\in\{0,\ldots,N-1\}$,
+$$
+\sum_{n=0}^{N-1}e^{2\pi in(k-\ell)/N}=\begin{cases}N,&k=\ell,\\0,&k\ne\ell.\end{cases}
+$$
+Distinct <discrete Fourier modes> cancel in this finite <geometric series>. Substituting the forward formula into the <inverse discrete Fourier transform> leaves only the desired sample. The same <orthogonality> makes the normalized <discrete Fourier modes> an <orthonormal basis> and gives the <discrete Parseval identity>, in the present convention,
+$$
+\sum_{n=0}^{N-1}|x_n|^2=\frac1N\sum_{k=0}^{N-1}|X_k|^2.
+$$
+For the eight-sample example, direct squaring gives $\sum_nx_n^2=13$, while $\sum_k|X_k|^2=64+16+4+4+16=104$, so $104/8=13$. This identity preserves the squared <L2 norm> after accounting for normalization. The existing <discrete Parseval identity> instead scales the forward <discrete Fourier transform> by $N^{-1/2}$, producing a <unitary matrix> and equal squared <L2 norms> without the factor $1/N$.
+
+For real input, <discrete Fourier conjugate symmetry> pairs positive and negative <frequencies>. The label $k$ is a residue modulo $N$: $k=7$ when $N=8$ represents the same <discrete Fourier mode> as $k=-1$, since $e^{2\pi i7n/8}=e^{-2\pi in/8}$. It therefore represents negative <frequency> $-1/8$ cycles per sample. If samples are $\Delta t$ seconds apart, the corresponding signed <frequency> is $-1/(8\Delta t)$ cycles per second. Similarly, index $6$ represents $-2$, while index $4$ is its own negative modulo $8$.
+
+The <discrete Fourier transform> is an invertible map between two finite <vectors>. The continuous <Fourier transform> instead describes a <function> on the real line by an <integral> over a continuous <frequency> variable. A finite list of samples does not determine the full continuous <frequency spectrum>: <aliasing of discrete Fourier modes> already supplies distinct waveforms with identical observations. Applying the inverse formula at arbitrary <integer> indices gives the <periodic extension of a finite sequence>, repeating the recorded block every $N$ samples. This is a property of that representation, rather than evidence that the physical <signal> repeats beyond the recording. Laurent Demanet's MIT notes place the <discrete Fourier transform> alongside the continuous <Fourier transform> and <Fourier series> to explain the role of sampling and repetition.https://math.mit.edu/icg/resources/teaching/18.330/18.330-Mar21.pdf[Laurent Demanet, Introduction to Numerical Analysis, MIT 18.330, §§6.2–6.3, pp. 57–60, March 22, 2012]{ref}
+
+The beauty is that a change of <basis> exposes cancellation and structure without losing data. Direct evaluation needs $N$ sums of $N$ terms; a <fast Fourier transform> computes the same <discrete Fourier transform> with far less work. Computational speed and the mathematical meaning of the <coefficients> are separate questions.
+
+= Number-theoretic transform
+{parent=Discrete Fourier transform}
+{title2=$\widehat a_j=\sum_{i=0}^{L-1}a_i\omega^{ij}$}
+
+= NTT
+{synonym}
+{c}
+
+A number-theoretic transform is a <discrete Fourier transform> computed in <modular arithmetic>. In a <finite field> with $p$ elements, choose a <primitive root of unity> $\omega$ of order $L$ dividing $p-1$. The transform above is inverted using $\omega^{-1}$ and $L^{-1}$. With sufficient zero padding, it computes <polynomial> products exactly modulo $p$, avoiding <floating-point arithmetic> rounding.
+
+= Fourier frequency resolution
+{c}
+{parent=Discrete Fourier transform}
+{title2=$\Delta f=1/T_{\mathrm{obs}}$}
+
+For $N$ equally spaced samples at <sampling rate> $f_s$, the <discrete Fourier transform> has <frequency> bins spaced by $f_s/N=1/T_{\mathrm{obs}}$. A rectangular observation window broadens a sinusoid into a <sinc function> profile whose nearest zeros are $1/T_{\mathrm{obs}}$ from its central <frequency>. This sets a conventional scale for distinguishing nearby spectral components. It is not a universal lower bound on the uncertainty of <frequency estimation> for an isolated tone: a specified signal model and noise level can allow precision finer than the bin spacing. Padding with zeros interpolates the spectral display without increasing the observation duration.
+
+= Discrete Fourier conjugate symmetry
+{parent=Discrete Fourier transform}
+{title2=$X_{(-k)\bmod N}=\overline{X_k}$}
+
+For real samples, taking the <complex conjugate> of the forward <discrete Fourier transform> changes the exponent's sign and proves the displayed symmetry. Hence $X_0$ is real; for even $N$, $X_{N/2}$ is also real. In the eight-sample example, $X_7=\overline{X_1}=4$ and $X_6=\overline{X_2}=2i$. This is the finite counterpart of <conjugate symmetry of trigonometric polynomial coefficients>. It reduces storage for real <signals> and provides a quick consistency check on a computed <discrete Fourier transform>.
+
+= Periodic extension of a finite sequence
+{parent=Discrete Fourier transform}
+{title2=$x_{n+N}=x_n$}
+
+A block $x_0,\ldots,x_{N-1}$ determines a repeating <sequence> by setting $x_n=x_{n\bmod N}$ for every <integer> $n$. The <inverse discrete Fourier transform> gives this extension because each <discrete Fourier mode> satisfies $e^{2\pi ik(n+N)/N}=e^{2\pi ikn/N}$. The extension explains why <circular convolution> wraps indices around the block. It specifies values at discrete indices; a continuous curve between samples requires an additional choice of <interpolation>.
+
+= Aliasing of discrete Fourier modes
+{parent=Discrete Fourier transform}
+{title2=$e^{2\pi i(m+qN)n/N}=e^{2\pi imn/N}$}
+
+For <integers> $m,q,n$, adding $qN$ to a <frequency> index changes the <complex exponential> by $e^{2\pi iqn}=1$. Thus different continuous <Fourier modes> become identical <discrete Fourier modes> on the sampling grid. This is <aliasing>, caused by sampling before any <discrete Fourier transform> is computed.
+
+For $N=8$, compare the continuous <functions> $\cos(2\pi mt)$ and $\sin(2\pi mt)$ with $m=1$ and $m=9$, sampled at $t=n/8$, $n=0,\ldots,7$. With $a=\sqrt2/2$, both <cosines> give exactly the first row and both <sines> give exactly the second:
+$$
+\begin{array}{c|rrrrrrrr}
+n&0&1&2&3&4&5&6&7\\\hline
+\cos(2\pi n/8)=\cos(18\pi n/8)&1&a&0&-a&-1&-a&0&a\\
+\sin(2\pi n/8)=\sin(18\pi n/8)&0&a&1&a&0&-a&-1&-a
+\end{array}
+$$
+The nine-cycle <sine> agrees in sign as well as magnitude with the one-cycle <sine>: the <frequency> indices differ by $8$, rather than by a sign reversal. Consequently, either <cosine> produces the same <discrete Fourier transform>, $X_1=X_7=4$ with all other <coefficients> zero; either <sine> produces $X_1=-4i$, $X_7=4i$, with all other <coefficients> zero.
+
+\Image[discrete-sampling-frequency-aliasing.png]
+{title=One-cycle and nine-cycle cosine and sine waves have exactly the same eight samples}
+
+An observed low <frequency> therefore does not establish that physical high <frequencies> are absent. To exclude such alternatives, the <Nyquist–Shannon sampling theorem> requires a specified class of <bandlimited functions>. For arbitrary pure <sinusoids> with <frequencies> at most $B$, choose sampling rate $f_s>2B$; equality needs care because $\sin(2\pi(f_s/2)t)$ vanishes at every $t=n/f_s$. The finite-energy <L2 space> version of the <Nyquist–Shannon sampling theorem> permits equality under its own hypotheses. In either case, exact continuous reconstruction generally requires the entire infinite sample <sequence>; eight observed samples alone do not supply it. Demanet derives the grid <aliasing> condition as a difference by an <integer> multiple of the sampling <angular frequency>.https://math.mit.edu/icg/resources/teaching/18.330/18.330-Mar21.pdf[Laurent Demanet, MIT 18.330 notes, §6.2, Definition 11, p. 57: aliases on a grid, 2012]{ref}
+
+= Prime Fourier matrix minor theorem
+{parent=Discrete Fourier transform}
+{title2=$\det[\zeta^{r_ic_j}]\ne0$}
+
+For a prime $p$, distinct row and column residues and $\zeta=e^{2\pi i/p}$, every square <discrete Fourier transform> submatrix is nonsingular. Sort the selected column exponents decreasingly as $b_i$ and write $b_i=\lambda_i+N-i$. Its <determinant> factors by the <bialternant formula> into a nonzero <Vandermonde determinant> and $s_\lambda(\zeta^{r_1},\ldots,\zeta^{r_N})$. Modulo $1-\zeta$, this Schur factor is $s_\lambda(1^N)$ in $\mathbb F_p$. The <Schur evaluation at all ones> product has numerator and denominator differences strictly between zero and $p$, so its residue is nonzero. The Schur factor, and hence the minor, cannot vanish.
+
+= Finite-field discrete Fourier transform
+{parent=Discrete Fourier transform}
+{title2=$\widehat c_\ell=\sum_{j=0}^{n-1}c_j\omega^{j\ell}$}
+
+If $\omega$ is a primitive $n$th root in a <finite field> and the field <characteristic> does not divide $n$, the inverse transform is $c_j=n^{-1}\sum_{\ell=0}^{n-1}\widehat c_\ell\omega^{-j\ell}$. The identity $\sum_{j=0}^{n-1}\omega^{jm}=0$ unless $n\mid m$, when the sum is $n$, proves inversion. For a <primitive cyclic Reed-Solomon code>, encoding assigns the $k$ unconstrained transform values and makes the remaining values zero; received transform values at those zeros are <syndromes>.
+
+= Discrete Parseval identity
+{parent=Discrete Fourier transform}
+{title2=$\sum_m|U_m|^2=\sum_k|\widehat U_k|^2$}
+
+With normalization $\widehat U_k=N^{-1/2}\sum_mU_me^{-2\pi imk/N}$, the <discrete Fourier transform> is a <unitary matrix>. Orthogonality of the roots-of-unity vectors gives the displayed identity. Multiplying both sides by the grid spacing gives the corresponding discrete <L2 norm>. Modal contraction therefore proves grid-norm contraction without a mesh-dependent change-of-basis constant.
+
+= Fourier representation of a Kronecker delta
+{c}
+{parent=Discrete Fourier transform}
+{title2=$\delta_{nm}=(2\pi)^{-1}\int_0^{2\pi}e^{i(n-m)\theta}\,d\theta$}
+
+Orthogonality of integer-frequency <Fourier modes> gives this identity: the integral is one for $n=m$ and zero otherwise. It converts integer step-count constraints into products of generating functions, as in the <dilute-hopping lattice propagator>.
+
+= Fourier frequency
+{parent=Discrete Fourier transform}
+{title2=$\lambda_j=2\pi j/T$}
+
+$\lambda_j=2\pi j/T$ is a frequency of the length-$T$ <discrete Fourier transform>. Distinct interior frequencies give orthogonal sine and cosine vectors; for a Gaussian <white noise> record this makes the corresponding Fourier components independent.
+
+= Inverse discrete Fourier transform
+{parent=Discrete Fourier transform}
+{wiki}
+
+The inverse discrete Fourier transform reconstructs samples from their <discrete Fourier transform>. Under one common normalization,
+$$
+x_\ell=\frac1n\sum_{j=0}^{n-1}Y_je^{2\pi i j\ell/n};
+$$
+moving the factor $1/n$ between the forward and inverse transforms gives other standard conventions.
+
+= Discrete Fourier mode
+{parent=Discrete Fourier transform}
+
+On a cyclic index set of length $n$, the $k$th discrete Fourier mode is the vector with $j$th coordinate $e^{2\pi ikj/n}$. Its real and imaginary parts are the corresponding cosine and sine modes.
+
+= Fast Fourier transform
+{parent=Discrete Fourier transform}
+{c}
+{wiki}
+
+= FFT
+{c}
+{synonym}
+
+A <fast Fourier transform> is an efficient <algorithm> for computing the <discrete Fourier transform> or <inverse discrete Fourier transform>. The <discrete Fourier transform> specifies the mathematical result; a <fast Fourier transform> specifies how to compute it. Different <fast Fourier transform> <algorithms> reorganize the same finite sums, with the selected sign and normalization. The <Cooley-Tukey FFT algorithm> is one important family of <fast Fourier transforms>, using factorization of the record length.https://ocw.mit.edu/courses/6-02-introduction-to-eecs-ii-digital-communication-systems-fall-2012/06d7972059805d20e6a7db3a52ec23f2_MIT6_02F12_chap13.pdf[Balakrishnan, Terman, and Verghese, MIT 6.02 notes, §13.2.6, p. 194: the FFT computes the existing transform, 2012]{ref}
+
+For a power-of-two length, the radix-two <Cooley-Tukey FFT algorithm> has <time complexity> $O(N\log N)$ in arithmetic operations, compared with $O(N^2)$ for evaluating every sum independently; these are <Big O notation> growth rates rather than machine timings. It returns the same eight <coefficients> $(8,4,-2i,0,0,0,2i,4)$ in the example. In exact arithmetic this reorganization introduces no approximation; actual implementations still incur <roundoff error>.
+
+= Good-Thomas algorithm
+{parent=Fast Fourier transform}
+{c}
+
+= Prime-factor algorithm
+{synonym}
+
+= Cooley-Tukey FFT algorithm
+{parent=Fast Fourier transform}
+{c}
+{wiki=Cooley–Tukey_FFT_algorithm}
+
+= Cooley--Tukey fast Fourier transform
+{c}
+{synonym}
+
+The radix-two Cooley--Tukey algorithm recursively splits a discrete Fourier transform into transforms of the even-indexed and odd-indexed samples. For a power-of-two length this evaluates the transform in $O(m\log m)$ arithmetic operations.
+
+The saving comes from reusing the two shorter <discrete Fourier transforms> for both halves of the output, through an <FFT butterfly>. For $N=2^p$, each level of the <even--odd fast Fourier transform recursion> needs work proportional to $N$, and there are $p=\log_2N$ levels. This gives the $O(N\log N)$ <time complexity> without changing the <discrete Fourier transform> being computed.
+
+James W. Cooley and John W. Tukey published *An Algorithm for the Machine Calculation of Complex Fourier Series* in *Mathematics of Computation* 19 (1965), pp. 297–301. Their original paper factors a composite length as $N=r_1\cdots r_p$, derives an operation count $N(r_1+\cdots+r_p)$, and discusses powers of two and in-place storage. Its opening explicitly builds on earlier <algorithms> by I. J. Good; the 1965 paper is a landmark computational formulation, rather than the invention of the underlying <Fourier analysis>. Its positive-exponent convention also illustrates why a <fast Fourier transform>'s exponent sign must be specified.https://janmr.com/files/papers/cooley-tukey.pdf[Cooley and Tukey 1965, original paper, pp. 297–300, equations (1)–(12); scan of the published article]{ref}
+
+= FFT butterfly
+{parent=Cooley-Tukey FFT algorithm}
+{c}
+{title2=$(a,b)\mapsto(a+wb,a-wb)$}
+
+An <FFT butterfly> combines corresponding outputs of two half-sized transforms using a twiddle factor $w$. Sharing the product $wb$ costs one complex multiplication and two additions. For the unnormalized positive-exponent inverse <discrete Fourier transform> of length $2m$, use $w=e^{2\pi i\ell/(2m)}$ at index $\ell$.
+
+= Even--odd fast Fourier transform recursion
+{parent=Cooley-Tukey FFT algorithm}
+
+For $\omega_m=e^{-2\pi i/m}$ and length-$m/2$ transforms $E_k,O_k$ of the even and odd samples,
+$$Y_k=E_k+\omega_m^kO_k,
+\qquad Y_{k+m/2}=E_k-\omega_m^kO_k.$$
+
+= Discrete cosine transform
+{parent=Discrete Fourier transform}
+{wiki}
+
+The type-II discrete cosine transform of $x_0,\ldots,x_{N-1}$ is
+$$Z_k=\sum_{n=0}^{N-1}x_n\cos\left(\frac{\pi}{N}\left(n+\frac12\right)k\right).$$
+
+= Discrete cosine transform from an even-reflected discrete Fourier transform
+{parent=Discrete cosine transform}
+
+Reflect $x$ evenly to length $2N$ by $y_n=x_n$ and $y_{2N-1-n}=x_n$. If $Y$ is the discrete Fourier transform of $y$, then
+$$Z_k=\frac12e^{-\pi ik/(2N)}Y_k.$$
+This reduction computes the cosine transform with one fast Fourier transform and $O(N)$ additional work.
+
+= Discrete sine transform
+{parent=Discrete Fourier transform}
+{wiki}
+
+One half-grid sine-transform convention is
+$$\widetilde Z_k=\sum_{n=0}^{N-1}x_n
+\sin\left(\frac{\pi}{N}\left(n+\frac12\right)(k+1)\right).$$
+
+= Discrete sine transform Poisson solver
+{parent=Discrete sine transform}
+{title2=$\widehat u_{k\ell}=\widehat f_{k\ell}/\lambda_{k\ell}$}
+
+For $-\Delta u=f$ on a square with homogeneous <Dirichlet boundary conditions>, the five-point <finite difference> operator on a mesh $h=1/N$ is diagonalized by $\sin(\pi ki/N)\sin(\pi\ell j/N)$. Its eigenvalues are $\lambda_{k\ell}=4h^{-2}[\sin^2(\pi k/(2N))+\sin^2(\pi\ell/(2N))]$. A two-dimensional <discrete sine transform>, division by these nonzero eigenvalues and the inverse transform give the solution. Odd extension realizes each one-dimensional transform by a <fast Fourier transform> of length $2N$, making the total cost $O(N^2\log N)$ and storage $O(N^2)$. These finite-difference eigenvalues should not be confused with the continuous spectral eigenvalues $\pi^2(k^2+\ell^2)$.
+
+= Discrete sine transform from a sign-modulated discrete cosine transform
+{parent=Discrete sine transform}
+
+If $\xi_n=(-1)^nx_n$ and $C_j(\xi)$ is its type-II cosine transform, then
+$$\widetilde Z_k=C_{N-1-k}(\xi).$$
+Thus a sign modulation, one fast cosine transform, and output reversal give an $O(N\log N)$ sine-transform algorithm.

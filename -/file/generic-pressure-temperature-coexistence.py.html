@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>generic-pressure-temperature-coexistence.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="generic-pressure-temperature-coexistence.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/generic-pressure-temperature-coexistence.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">generic-pressure-temperature-coexistence.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/generic-pressure-temperature-coexistence.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/generic-pressure-temperature-coexistence.py">generic-pressure-temperature-coexistence.py</a></b></div></nav></div><div class="p"><b>generic-pressure-temperature-coexistence.py</b></div><div class="code"><div><pre><code>"""Draw a generic dimensionless PT coexistence cartoon, not material data.
+
+Tested with Python 3.14.4, NumPy 2.3.5 and Matplotlib 3.10.7.
+Run from _media; writes this script's basename.png to the working directory.
+The stipulated curves describe topology only, not an equation of state.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "axes.spines.top": False,
+                         "axes.spines.right": False})
+    fig, ax = plt.subplots(figsize=(8, 5.5), dpi=120, facecolor="white")
+    fig.subplots_adjust(left=0.10, right=0.98, bottom=0.16, top=0.87)
+    theta = np.linspace(0.25, 4.15, 850)
+    pressure = np.linspace(0.08, 6.7, 750)
+    t, p = np.meshgrid(theta, pressure)
+    liquid = np.array([0.88, 0.95, 0.92])
+    gas = np.array([1.0, 0.94, 0.86])
+    # Smooth background beyond the endpoint; no extra fluid boundary.
+    width = np.maximum(0.02, 1.5 * (t - 3.0))
+    weight = 0.5 * (1.0 + np.tanh((p - (2.0 * t - 1.0)) / width))
+    weight[t &lt;= 3.0] = (p[t &lt;= 3.0] &gt; (2.0 * t[t &lt;= 3.0] - 1.0))
+    weight[t &lt; 1.0] = 0.0  # No stable liquid below the stipulated triple temperature.
+    rgb = gas + weight[..., None] * (liquid - gas)
+    solid = ((p &gt;= 1.0) &amp; (t &lt; 1.0 + 0.1 * (p - 1.0))) | (
+        (p &lt; 1.0) &amp; (t &lt;= 1.0) &amp; (p &gt; np.exp(t - 1.0)))
+    rgb[solid] = [0.91, 0.93, 0.96]
+    ax.imshow(rgb, origin="lower", extent=(0.25, 4.15, 0.08, 6.7),
+              aspect="auto", interpolation="nearest", zorder=0)
+    sub_t = np.linspace(0.25, 1.0, 200)
+    vap_t = np.linspace(1.0, 3.0, 300)
+    melt_p = np.linspace(1.0, 6.7, 250)
+    ax.plot(sub_t, np.exp(sub_t - 1.0), color="#303a47", lw=2.3)
+    ax.plot(vap_t, 2.0 * vap_t - 1.0, color="#303a47", lw=2.3)
+    ax.plot(1.0 + 0.1 * (melt_p - 1.0), melt_p, color="#303a47", lw=2.3)
+    ax.scatter([1.0, 3.0], [1.0, 5.0], s=[55, 65], color="#202631", zorder=5)
+    ax.text(0.64, 3.65, "Solid", ha="center", weight="bold", color="#34485f")
+    ax.text(2.12, 5.7, "Liquid", ha="center", weight="bold", color="#176749")
+    ax.text(2.95, 1.6, "Gas", ha="center", weight="bold", color="#965b13")
+    ax.text(3.65, 6.05, "Connected\nfluid region", ha="center", fontsize=11)
+    arrow = {"arrowstyle": "-", "color": "#555555", "lw": 1}
+    ax.annotate("Triple point (1, 1)\nThree distinct phases", (1, 1), (1.55, 0.45),
+                fontsize=10, arrowprops=arrow)
+    ax.annotate("Critical point (3, 5)\nLiquid and gas merge", (3, 5), (3.12, 3.6),
+                fontsize=10, arrowprops=arrow)
+    ax.text(0.34, 0.22, "Sublimation", fontsize=10)
+    ax.text(1.19, 3.6, "Melting", rotation=83, fontsize=10)
+    ax.text(1.74, 3.16, "Liquid–gas coexistence", rotation=31, fontsize=10)
+    ax.set(xlim=(0.25, 4.15), ylim=(0.08, 6.7),
+           xlabel=r"Temperature coordinate $\theta=T/T_*$",
+           ylabel=r"Pressure coordinate $\pi=p/p_*$")
+    ax.set_xticks([1, 2, 3, 4])
+    ax.set_yticks([1, 2, 3, 4, 5, 6])
+    fig.suptitle("One-component pressure–temperature phase diagram", fontsize=15, y=0.97)
+    fig.text(0.5, 0.91, "Original dimensionless cartoon • no measured data or equation of state",
+             ha="center", fontsize=10, color="#505050")
+    fig.text(0.5, 0.035, "Curves: sublimation  π = exp(θ − 1); vaporization  π = 2θ − 1; melting  θ = 1 + 0.1(π − 1)",
+             ha="center", fontsize=9)
+    fig.savefig(Path.cwd() / f"{Path(__file__).stem}.png", facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

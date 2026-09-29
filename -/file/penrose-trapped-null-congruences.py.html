@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>penrose-trapped-null-congruences.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="penrose-trapped-null-congruences.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/penrose-trapped-null-congruences.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">penrose-trapped-null-congruences.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/penrose-trapped-null-congruences.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/penrose-trapped-null-congruences.py">penrose-trapped-null-congruences.py</a></b></div></nav></div><div class="p"><b>penrose-trapped-null-congruences.py</b></div><div class="code"><div><pre><code>"""Draw local null-normal beam geometry; Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7.
+
+Run from _media: MPLBACKEND=Agg MPLCONFIGDIR=/tmp/codex-wiki-matplotlib
+python ../penrose-trapped-null-congruences.py
+The drawing is schematic; the metric/sign checks below are independent of it.
+"""
+
+import json
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
+import numpy as np
+
+
+def check_geometry():
+    """Contract normals using the (v,r) metric, then differentiate sphere area."""
+    rows = []
+    for radius in (3.0, 2.0, 1.5):
+        f = 1.0 - 2.0 / radius  # M=1
+        metric = np.array([[-f, 1.0], [1.0, 0.0]])
+        outgoing = np.array([1.0, f / 2.0])
+        ingoing = np.array([0.0, -1.0])
+        assert abs(outgoing @ metric @ outgoing) &lt; 1e-14
+        assert abs(ingoing @ metric @ ingoing) &lt; 1e-14
+        assert abs(outgoing @ metric @ ingoing + 1.0) &lt; 1e-14
+        expansions = []
+        for normal in (outgoing, ingoing):
+            h = 1e-5
+            # Independent centered difference of log(area), not expansion formula.
+            area_plus = 4.0 * np.pi * (radius + h * normal[1]) ** 2
+            area_minus = 4.0 * np.pi * (radius - h * normal[1]) ** 2
+            numeric = (np.log(area_plus) - np.log(area_minus)) / (2.0 * h)
+            exact = 2.0 * normal[1] / radius
+            assert abs(numeric - exact) &lt; 2e-10
+            for scale in (0.3, 2.0, 7.0):
+                assert np.sign(scale * exact) == np.sign(exact)
+            expansions.append(exact)
+        rows.append({"r_over_M": radius, "theta_plus_times_M": expansions[0],
+                     "theta_minus_times_M": expansions[1]})
+    assert rows[0]["theta_plus_times_M"] &gt; 0
+    assert rows[1]["theta_plus_times_M"] == 0
+    assert all(rows[2][key] &lt; 0 for key in
+               ("theta_plus_times_M", "theta_minus_times_M"))
+    return {"null_normals_and_cross_normalization": "passed",
+            "area_finite_difference": "passed", "positive_rescaling_signs": "passed",
+            "spheres": rows}
+
+
+def draw():
+    plt.rcParams.update({"font.size": 12, "figure.facecolor": "white"})
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5.7), dpi=120)
+    colors = ("#1766a5", "#be4b16")
+    u = np.linspace(0, 1, 100)
+    for ax, trapped in zip(axes, (False, True)):
+        widths = (1 - 0.30 * u if trapped else 1 + 0.45 * u,
+                  1 - 0.60 * u)
+        for width, color in zip(widths, colors):
+            for sign in (-1, 1):
+                x = sign * width
+                ax.plot(x, 0.45 + 2.1 * u, color=color, lw=2.3)
+                j, k = 52, 65
+                ax.annotate("", (x[k], 0.45 + 2.1*u[k]),
+                            (x[j], 0.45 + 2.1*u[j]),
+                            arrowprops={"arrowstyle": "-&gt;", "color": color, "lw": 2.3})
+            ax.add_patch(Ellipse((0, 2.55), 2*width[-1], 0.23,
+                                 fill=False, edgecolor=color, lw=2.3))
+        ax.add_patch(Ellipse((0, 0.45), 2, 0.26, facecolor="#eeeeee",
+                             edgecolor="#333333", zorder=5))
+        ax.text(0, 0.10, "initial closed surface S", ha="center")
+        ax.text(0, 3.22, "Both future beams shrink" if trapped else
+                "One future beam grows", ha="center", weight="bold")
+        ax.text(0, 2.92, r"$\theta_+&lt;0,\quad\theta_-&lt;0$" if trapped else
+                r"$\theta_+&gt;0,\quad\theta_-&lt;0$", ha="center", fontsize=15)
+        ax.text(0, -0.25, "future trapped" if trapped else "ordinary exterior sphere",
+                ha="center", weight="bold")
+        ax.set(xlim=(-1.8, 1.8), ylim=(-0.40, 3.5))
+        ax.axis("off")
+    axes[0].annotate("future", xy=(-1.70, 2.4), xytext=(-1.70, 1.4),
+                     ha="center", rotation=90,
+                     arrowprops={"arrowstyle": "-&gt;", "color": "#333333"})
+    fig.suptitle("Trapping concerns transverse area of both null families", fontsize=17)
+    fig.text(0.5, 0.13, "Blue: outgoing null normals     Orange: ingoing null normals",
+             ha="center", fontsize=12)
+    fig.text(0.5, 0.065, "Schematic beam widths, not spacetime coordinates. Ellipses represent 2D sections.\n"
+             "A shrinking outgoing beam can still follow a future-directed light ray.",
+             ha="center", fontsize=11)
+    fig.subplots_adjust(top=0.88, bottom=0.22, wspace=0.20, left=0.05, right=0.98)
+    path = Path(__file__).with_suffix(".png").name
+    fig.savefig(path, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    print(json.dumps(check_geometry(), indent=2))
+    draw()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>buffer-cache-block-state-transitions.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="buffer-cache-block-state-transitions.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/buffer-cache-block-state-transitions.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">buffer-cache-block-state-transitions.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/buffer-cache-block-state-transitions.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/buffer-cache-block-state-transitions.py">buffer-cache-block-state-transitions.py</a></b></div></nav></div><div class="p"><b>buffer-cache-block-state-transitions.py</b></div><div class="code"><div><pre><code>"""Exact serialized buffer-state rules; writes matching PNG to the CWD.
+
+Tested with Python 3.14.4, Matplotlib 3.10.7 and NumPy 2.3.5.
+This teaching model excludes cancellation, failures and concurrent I/O.
+"""
+from collections import deque
+import json
+from pathlib import Path
+
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+
+
+def successors(state, bound=2):
+    if state is None:
+        return [('reserve', (0, 0, 1))]
+    v, dirty, refs = state
+    result = []
+    if refs &lt; bound:
+        result.append(('acquire or pin', (v, dirty, refs + 1)))
+    if v and refs:
+        result.append(('release or unpin', (v, dirty, refs - 1)))
+        result.append(('modify', (1, 1, refs)))
+    if not v and refs:
+        result.append(('fill', (1, 0, refs)))
+    if v and dirty:
+        result.append(('writeback', (1, 0, refs)))
+    if v and not dirty and not refs:
+        result.append(('evict', None))
+    return result
+
+
+def reachable():
+    seen = {None}
+    queue = deque([None])
+    edges = []
+    while queue:
+        source = queue.popleft()
+        for action, target in successors(source):
+            edges.append((source, action, target))
+            if target not in seen:
+                seen.add(target)
+                queue.append(target)
+    assert len(seen) == 9
+    for source, action, target in edges:
+        if target is not None:
+            v, dirty, refs = target
+            assert 0 &lt;= dirty &lt;= v &lt;= 1 and 0 &lt;= refs &lt;= 2
+            assert v or refs &gt; 0
+        if action == 'evict':
+            assert source == (1, 0, 0)
+    return seen, edges
+
+
+def main():
+    states, edges = reachable()
+    fig, ax = plt.subplots(figsize=(10, 5.7), dpi=120)
+    fig.patch.set_facecolor('white')
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    ax.axis('off')
+    fig.subplots_adjust(left=.015, right=.985, top=.86, bottom=.05)
+    fig.suptitle('One cached block: contents and lifetime are separate', fontsize=16, y=.96)
+    fig.text(.5, .895, 'Exact rules of the serialized model; all I/O succeeds', ha='center', fontsize=11)
+    boxes = [(.12, 'Absent\nno key', '#f0f0f0'),
+             (.37, 'Reserved\nv = 0, D = 0\nr ≥ 1', '#f4ebc7'),
+             (.62, 'Valid clean\nv = 1, D = 0', '#d9eaf2'),
+             (.87, 'Valid dirty\nv = 1, D = 1', '#f6d9c6')]
+    for x, text, color in boxes:
+        ax.add_patch(FancyBboxPatch((x-.1, .62), .2, .22, boxstyle='round,pad=0.008', facecolor=color, edgecolor='#46515a'))
+        ax.text(x, .73, text, ha='center', va='center', fontsize=12)
+    def arrow(start, end, label, pos, rad=0):
+        ax.add_patch(FancyArrowPatch(start, end, arrowstyle='-|&gt;', mutation_scale=13,
+                                     connectionstyle=f'arc3,rad={rad}', lw=1.6, color='#334754'))
+        ax.text(*pos, label, ha='center', va='center', fontsize=10,
+                bbox=dict(facecolor='white', edgecolor='none', pad=2))
+    arrow((.225,.74),(.265,.74),'reserve\nr ← 1',(.245,.91))
+    arrow((.475,.74),(.515,.74),'fill\nv ← 1',(.495,.91))
+    arrow((.725,.79),(.765,.79),'modify\nr &gt; 0',(.745,.91))
+    arrow((.765,.64),(.725,.64),'writeback\nD ← 0',(.745,.52),rad=-.5)
+    arrow((.57,.61),(.12,.61),'evict only if r = 0',(.33,.43),rad=-.55)
+    ax.text(.87,.40,'No dirty → absent edge:\nwrite back before reuse.',ha='center',fontsize=11)
+    ax.axhline(.30, color='#c7cdd2', lw=1)
+    ax.text(.5,.255,'Reference transitions keep v and D unchanged',ha='center',fontsize=12,weight='bold')
+    ax.text(.5,.17,'acquire / pin:  r → r + 1       release / unpin:  r → r − 1  (v = 1, r &gt; 0)',ha='center',fontsize=12)
+    ax.text(.5,.085,'r counts holders and pins. Any r &gt; 0 forbids eviction, even when clean.',ha='center',fontsize=11)
+    ax.text(.5,.015,'Writeback retains an internal reference during I/O; its net change to r is zero.',ha='center',fontsize=10)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + '.png'), facecolor='white', transparent=False)
+    plt.close(fig)
+    print(json.dumps({'reachable_states': len(states), 'transitions': len(edges),
+                      'states': sorted([s for s in states if s is not None]),
+                      'absent_state': True, 'invariants_passed': True}))
+
+
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

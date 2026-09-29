@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>scanning-tunneling-height-electronic-contrast.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="scanning-tunneling-height-electronic-contrast.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/scanning-tunneling-height-electronic-contrast.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">scanning-tunneling-height-electronic-contrast.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/scanning-tunneling-height-electronic-contrast.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/scanning-tunneling-height-electronic-contrast.py">scanning-tunneling-height-electronic-contrast.py</a></b></div></nav></div><div class="p"><b>scanning-tunneling-height-electronic-contrast.py</b></div><div class="code"><div><pre><code>"""Compare two exactly degenerate STM toy surfaces.
+
+Python 3.14, numpy 2.3.5, matplotlib 3.10.7. Run from _media.
+All distances below are in nm; all profiles and scales are chosen, not measured.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def main():
+    x = np.linspace(0, 2, 801)
+    kappa, a, s0 = 10.0, 0.020, 0.50
+    q = np.cos(2 * np.pi * x)
+    h_a, h_b = a * q, np.zeros_like(x)
+    rho_a, rho_b = np.ones_like(x), np.exp(2 * kappa * a * q)
+    z_a = h_a + np.log(rho_a) / (2 * kappa) + s0
+    z_b = h_b + np.log(rho_b) / (2 * kappa) + s0
+    i0 = np.exp(-2 * kappa * s0)
+    current_a = rho_a * np.exp(-2 * kappa * (s0 - h_a)) / i0
+    current_b = rho_b * np.exp(-2 * kappa * (s0 - h_b)) / i0
+    np.testing.assert_allclose(z_a, z_b, atol=1e-14)
+    np.testing.assert_allclose(current_a, current_b, atol=1e-14)
+    assert np.all(rho_b &gt; 0) and np.all(z_b - h_b &gt; 0)
+    plt.rcParams.update({"font.size": 11, "font.family": "DejaVu Sans"})
+    fig, axs = plt.subplots(2, 2, figsize=(10, 7), dpi=120, facecolor="white")
+    blue, orange = "#23629a", "#bf5719"
+
+    def pair(ax, ya, yb):
+        ax.plot(x, ya, color=blue, lw=2.8, label="A: corrugated, ρ = 1")
+        ax.plot(x, yb, color=orange, lw=2.0, ls="--", label="B: flat, varying ρ")
+
+    pair(axs[0, 0], h_a, h_b)
+    axs[0, 0].set(title="Chosen geometric heights", ylabel="h (nm)", ylim=(-0.027, 0.033))
+    axs[0, 0].legend(loc="upper right", fontsize=9)
+    pair(axs[0, 1], rho_a, rho_b)
+    axs[0, 1].set(title="Chosen electronic factors", ylabel="ρ (dimensionless)", ylim=(0.58, 1.62))
+    pair(axs[1, 0], z_a, z_b)
+    axs[1, 0].set(title="Same recorded height at constant current", ylabel="z (nm)", ylim=(0.472, 0.535))
+    axs[1, 0].text(0.5, 0.92, "Both: z = 0.50 + 0.020 cos(2πx)",
+                   transform=axs[1, 0].transAxes, ha="center", fontsize=9)
+    pair(axs[1, 1], current_a, current_b)
+    axs[1, 1].axhline(1, color="#555555", ls=":", lw=1.4)
+    axs[1, 1].text(0.5, 0.92, "At fixed z = 0.50 nm: both exp[0.4 cos(2πx)]",
+                   transform=axs[1, 1].transAxes, ha="center", fontsize=9)
+    axs[1, 1].text(0.5, 0.025, "Dotted: feedback holds I / I₀ = 1",
+                   transform=axs[1, 1].transAxes, ha="center", fontsize=9)
+    axs[1, 1].set(title="Same current contrast at fixed height", ylabel="I / I₀", ylim=(0.55, 1.65))
+    for ax in axs.flat:
+        ax.set(xlabel="Lateral position x (nm)", xlim=(0, 2))
+        ax.grid(alpha=0.2)
+        ax.spines[["top", "right"]].set_visible(False)
+    fig.suptitle("An STM height map does not uniquely determine geometric height", fontsize=15, y=0.98)
+    fig.text(0.5, 0.027, "Chosen toy model: I = C ρ exp[−2κ(z−h)],  κ = 10 nm⁻¹,  I₀ / C = exp(−10)\n"
+             "ρB = exp[0.4 cos(2πx)] &gt; 0; constant barrier, low fixed bias; no measured data",
+             ha="center", va="center", fontsize=10)
+    fig.subplots_adjust(left=0.085, right=0.98, bottom=0.14, top=0.88, hspace=0.52, wspace=0.28)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

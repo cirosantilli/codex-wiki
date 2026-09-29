@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>cloud-chamber-expansion-and-nucleation-model.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="cloud-chamber-expansion-and-nucleation-model.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/cloud-chamber-expansion-and-nucleation-model.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">cloud-chamber-expansion-and-nucleation-model.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/cloud-chamber-expansion-and-nucleation-model.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/cloud-chamber-expansion-and-nucleation-model.py">cloud-chamber-expansion-and-nucleation-model.py</a></b></div></nav></div><div class="p"><b>cloud-chamber-expansion-and-nucleation-model.py</b></div><div class="code"><div><pre><code>"""Original stipulated water-vapor model, not historical data.
+
+Python 3.14, matplotlib 3.10.7, numpy 2.3.5. Run from _media.
+No ion-dependent nucleation calculation or measured detector calibration.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+T0 = 293.15
+P0 = 2339.0
+GAMMA = 1.40
+LM = 45000.0
+R = 8.314
+SIGMA = 0.075
+VL = 2.99e-29
+KB = 1.380649e-23
+
+
+def state(expansion):
+    temperature = T0 * np.asarray(expansion) ** (1.0 - GAMMA)
+    actual = P0 * np.asarray(expansion) ** (-GAMMA)
+    saturation = P0 * np.exp(LM / R * (1.0 / T0 - 1.0 / temperature))
+    return temperature, actual, saturation, actual / saturation
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "font.family": "DejaVu Sans"})
+    fig, axes = plt.subplots(1, 3, figsize=(13, 4.9), layout="constrained", facecolor="white")
+    fig.suptitle("Expansion promotes supersaturation; a neutral drop still faces a barrier", fontsize=15)
+    expansion = np.linspace(1, 1.17, 350)
+    temperature, actual, saturation, ratio = state(expansion)
+    blue, orange = "#247caa", "#bb641c"
+
+    ax = axes[0]
+    ax.plot(expansion, actual / 1000, color=blue, lw=2.4, label=r"Actual $p_v$")
+    ax.plot(expansion, saturation / 1000, color=orange, lw=2.4, label=r"Equilibrium $p_{\rm sat}$")
+    ax.fill_between(expansion, saturation / 1000, actual / 1000, color=blue, alpha=.09)
+    ax.set(title="A  Cooling beats dilution", xlabel=r"Expansion ratio $V/V_0$", ylabel="Water-vapor pressure (kPa)", ylim=(.6, 2.5))
+    ax.legend(frameon=False, loc="lower left", fontsize=10)
+    ax.text(.97, .96, "293.15 K → 275.31 K", transform=ax.transAxes, ha="right", va="top", fontsize=10)
+
+    ax = axes[1]
+    ax.plot(expansion, ratio, color=blue, lw=2.4)
+    ax.axhline(1, color="#657581", lw=1, ls="--")
+    selected = state(1.15)
+    ax.scatter([1.15], [selected[3]], color=blue, s=35, zorder=3)
+    ax.annotate("1.15: S = 2.3772", (1.15, selected[3]), xytext=(1.025, 2.57),
+                fontsize=10, arrowprops={"arrowstyle": "-&gt;", "color": blue})
+    ax.set(title="B  Supersaturated vapor", xlabel=r"Expansion ratio $V/V_0$", ylabel=r"Saturation ratio $S=p_v/p_{\rm sat}$", ylim=(.85, 2.85))
+    ax.text(.05, .08, "No droplet depletion\nor latent-heat feedback", transform=ax.transAxes, fontsize=10, color="#526573")
+
+    ax = axes[2]
+    radius = np.linspace(0, 3.6e-9, 500)
+    for lam, color in [(1.10, orange), (1.15, blue)]:
+        t, _, _, s = state(lam)
+        driving = KB * t * np.log(s)
+        free_energy = 4 * np.pi * SIGMA * radius**2 - (4 * np.pi / 3) * radius**3 * driving / VL
+        critical = 2 * SIGMA * VL / driving
+        barrier = 4 * np.pi * SIGMA * critical**2 / 3
+        ax.plot(radius * 1e9, free_energy / (KB * t), color=color, lw=2, label=fr"$V/V_0={lam:.2f}$")
+        ax.scatter([critical * 1e9], [barrier / (KB * t)], s=25, color=color, zorder=3)
+    ax.set(title="C  Neutral-drop comparison", xlabel="Drop radius (nm)", ylabel=r"Formation free energy $\Delta G/(k_B T)$", ylim=(-100, 370), xlim=(0, 3.6))
+    ax.axhline(0, color="#657581", lw=1)
+    ax.legend(frameon=False, fontsize=10)
+    ax.text(.05, .08, "Dots: critical nuclei\nIon hydration omitted", transform=ax.transAxes, fontsize=10, color="#526573")
+
+    for ax in axes:
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(alpha=.18)
+    fig.supxlabel("Stipulated water constants • ideal adiabatic carrier gas • constant latent heat and surface tension • no measured traces", fontsize=10)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=120, facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

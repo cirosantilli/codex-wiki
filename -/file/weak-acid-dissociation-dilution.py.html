@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>weak-acid-dissociation-dilution.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="weak-acid-dissociation-dilution.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/weak-acid-dissociation-dilution.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">weak-acid-dissociation-dilution.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/weak-acid-dissociation-dilution.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/weak-acid-dissociation-dilution.py">weak-acid-dissociation-dilution.py</a></b></div></nav></div><div class="p"><b>weak-acid-dissociation-dilution.py</b></div><div class="code"><div><pre><code>"""Synthetic ideal aqueous HA model; Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7.
+
+Run from _media with MPLBACKEND=Agg and a writable MPLCONFIGDIR.
+No material data or measured observations are represented.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+KA = 1e-5
+KW = 1e-14
+
+
+def equilibrium(c):
+    """Solve charge balance for dimensionless h = [H3O+]/(1 mol/L)."""
+    lo, hi = np.sqrt(KW), c + np.sqrt(KW)
+    for _ in range(90):
+        h = (lo + hi) / 2
+        if h - KW / h - c * KA / (h + KA) &gt; 0:
+            hi = h
+        else:
+            lo = h
+    h = (lo + hi) / 2
+    return h, c * KA / (h + KA), c * h / (h + KA), KW / h
+
+
+def main():
+    c = np.logspace(-2, -10, 401)
+    states = np.array([equilibrium(value) for value in c])
+    h, a, ha, oh = states.T
+    np.testing.assert_allclose(a + ha, c, rtol=2e-15)
+    np.testing.assert_allclose(a + oh, h, rtol=2e-14)
+    np.testing.assert_allclose(h * a / ha, KA, rtol=3e-15)
+    np.testing.assert_allclose(h * oh, KW, rtol=2e-15)
+    # Independent polynomial-root solution, scaled to avoid tiny coefficients.
+    for ci, hi in zip(c[::5], h[::5], strict=True):
+        scale = max(np.sqrt(KA * ci), np.sqrt(KW))
+        roots = np.roots([1, KA / scale, -(KW + KA * ci) / scale**2,
+                          -KA * KW / scale**3])
+        positive = [r.real * scale for r in roots
+                    if abs(r.imag) &lt; 1e-12 and r.real &gt; 0]
+        assert len(positive) == 1
+        np.testing.assert_allclose(positive[0], hi, rtol=2e-12)
+    assert np.all(np.diff(a / c) &gt; 0)
+    assert np.all(np.diff(-np.log10(h)) &gt; 0)
+    assert np.all(h &gt;= np.sqrt(KW))
+
+    plt.rcParams.update({"font.size": 11, "figure.facecolor": "white",
+                         "axes.facecolor": "white"})
+    fig, axes = plt.subplots(1, 2, figsize=(9.6, 4.9), layout="constrained")
+    fig.suptitle("Dilution: more dissociation, less hydronium", fontsize=16)
+    axes[0].semilogx(c, 100 * a / c, color="#007f8b", lw=2.5,
+                    label="Full ideal balance")
+    axes[0].axhline(100 * KA / (KA + np.sqrt(KW)), color="#666666", ls=":",
+                   label="Infinite-dilution limit: 99.01%")
+    axes[0].set(ylabel=r"Dissociated acid, $100[A^-]/C_T$ (%)", ylim=(0, 105))
+    no_water = 2 * KA * c / (KA + np.sqrt(KA**2 + 4 * KA * c))
+    axes[1].semilogx(c, -np.log10(h), lw=2.5, color="#007f8b",
+                    label="Full ideal balance")
+    axes[1].semilogx(c, -np.log10(no_water), ls="--", color="#aa5a00",
+                    label="Quadratic: neglect water")
+    axes[1].semilogx(c, -np.log10(np.sqrt(KA * c)), ls=":", color="#8042a0",
+                    label="Square root: also neglect depletion")
+    axes[1].axhline(7, color="#666666", lw=1)
+    axes[1].text(2e-10, 7.15, "Neutral water", ha="right", fontsize=10)
+    axes[1].set(ylabel="Calculated pH", ylim=(3, 10.3))
+    for ax in axes:
+        ax.set(xlabel=r"Total acid $C_T$ (mol L$^{-1}$)", xlim=(1e-2, 1e-10))
+        ax.set_xticks([1e-2, 1e-4, 1e-6, 1e-8, 1e-10])
+        ax.grid(alpha=0.2)
+        ax.legend(fontsize=8.5, loc="best")
+    fig.supxlabel(r"Dilution increases to the right  →   |   Synthetic $K_a=10^{-5}$, $K_w=10^{-14}$; fixed temperature",
+                  fontsize=10)
+    fig.savefig(Path.cwd() / (Path(__file__).stem + ".png"), dpi=120,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

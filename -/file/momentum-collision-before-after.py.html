@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>momentum-collision-before-after.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="momentum-collision-before-after.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/momentum-collision-before-after.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">momentum-collision-before-after.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/momentum-collision-before-after.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/momentum-collision-before-after.py">momentum-collision-before-after.py</a></b></div></nav></div><div class="p"><b>momentum-collision-before-after.py</b></div><div class="code"><div><pre><code>"""Compare stipulated isolated one-dimensional collision outcomes.
+
+Tested with Python 3.14.4, NumPy 2.3.5, Matplotlib 3.10.7.
+Write momentum-collision-before-after.png to the current working directory.
+"""
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
+import numpy as np
+
+
+def main():
+    masses = np.array([2.0, 1.0])
+    velocities = np.array([[3.0, 0.0], [1.0, 4.0], [2.0, 2.0]])
+    momenta = velocities * masses
+    kinetic = 0.5 * masses * velocities**2
+    internal_gain = kinetic[0].sum() - kinetic.sum(axis=1)
+    np.testing.assert_allclose(momenta.sum(axis=1), [6.0, 6.0, 6.0])
+    np.testing.assert_allclose(kinetic.sum(axis=1), [9.0, 9.0, 6.0])
+    np.testing.assert_allclose(internal_gain, [0.0, 0.0, 3.0])
+    print("Momentum totals (kg m/s):", momenta.sum(axis=1).tolist())
+    print("Kinetic totals (J):", kinetic.sum(axis=1).tolist())
+    print("Internal energy gains (J):", internal_gain.tolist())
+
+    plt.rcParams.update({"font.size": 12, "savefig.facecolor": "white"})
+    blue, orange, grey = "#276b9b", "#cf7323", "#e2e5e9"
+    colors = [blue, orange]
+    labels = ["Before", "Elastic\nafter", "Sticking\nafter"]
+    positions = np.arange(3)
+    fig, axes = plt.subplots(1, 3, figsize=(11.5, 6.0), facecolor="white")
+    fig.subplots_adjust(left=0.065, right=0.985, bottom=0.27,
+                        top=0.73, wspace=0.38)
+    fig.suptitle("Same total momentum, different collision outcomes",
+                 fontsize=18, y=0.965)
+    fig.text(0.5, 0.87,
+             "Isolated pair: mass 1 = 2 kg, mass 2 = 1 kg; rightward is positive",
+             ha="center", fontsize=12)
+    fig.text(0.5, 0.82,
+             "Incoming velocities: 3 m/s and 0 m/s. These are stipulated ideal examples.",
+             ha="center", fontsize=11)
+
+    width = 0.32
+    for i, color in enumerate(colors):
+        bars = axes[0].bar(positions + (i - 0.5) * width,
+                           velocities[:, i], width, color=color)
+        axes[0].bar_label(bars, labels=[f"{v:g}" for v in velocities[:, i]],
+                          padding=4, fontsize=12)
+    axes[0].set(title="Velocities (m/s)", ylim=(0, 4.9), yticks=[0, 1, 2, 3, 4])
+
+    for ax, values in zip(axes[1:], [momenta, kinetic], strict=True):
+        bottoms = np.zeros(3)
+        for i, color in enumerate(colors):
+            ax.bar(positions, values[:, i], 0.62, bottom=bottoms, color=color)
+            for x, bottom, value in zip(positions, bottoms, values[:, i], strict=True):
+                if value &gt; 0:
+                    ax.text(x, bottom + value / 2, f"{value:g}", ha="center",
+                            va="center", color="white", fontsize=13, weight="bold")
+            bottoms += values[:, i]
+    axes[1].set(title="Momentum (kg m/s)", ylim=(0, 7.8), yticks=[0, 2, 4, 6])
+    for x in positions:
+        axes[1].text(x, 6.35, "Total 6", ha="center", fontsize=11)
+
+    axes[2].bar(positions, internal_gain, 0.62, bottom=kinetic.sum(axis=1),
+                color=grey, edgecolor="#69727e", hatch="///")
+    axes[2].text(2, 7.5, "3", ha="center", va="center", fontsize=13, weight="bold")
+    axes[2].set(title="Energy accounting (J)", ylim=(0, 11.4), yticks=[0, 3, 6, 9])
+    for x, energy in zip(positions, kinetic.sum(axis=1), strict=True):
+        axes[2].text(x, 9.5, f"K = {energy:g}", ha="center", fontsize=11)
+
+    for ax in axes:
+        ax.set_xticks(positions, labels)
+        ax.set_xlim(-0.65, 2.65)
+        ax.set_facecolor("white")
+        ax.set_axisbelow(True)
+        ax.grid(axis="y", alpha=0.17)
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.tick_params(axis="x", length=0, pad=8)
+        ax.title.set_fontsize(13)
+    fig.legend(handles=[Patch(facecolor=blue, label="Body 1 (2 kg)"),
+                        Patch(facecolor=orange, label="Body 2 (1 kg)"),
+                        Patch(facecolor=grey, edgecolor="#69727e", hatch="///",
+                              label="Gain in internal energy")],
+               loc="lower center", bbox_to_anchor=(0.5, 0.095), ncol=3,
+               frameon=False, fontsize=11)
+    fig.text(0.5, 0.04,
+             "Sticking transfers 3 J from kinetic to internal energy; the isolated pair keeps all its energy.",
+             ha="center", fontsize=11)
+    fig.savefig("momentum-collision-before-after.png", dpi=120,
+                facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

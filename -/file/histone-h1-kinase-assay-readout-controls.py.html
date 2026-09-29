@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>histone-h1-kinase-assay-readout-controls.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="histone-h1-kinase-assay-readout-controls.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/histone-h1-kinase-assay-readout-controls.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">histone-h1-kinase-assay-readout-controls.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/histone-h1-kinase-assay-readout-controls.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/histone-h1-kinase-assay-readout-controls.py">histone-h1-kinase-assay-readout-controls.py</a></b></div></nav></div><div class="p"><b>histone-h1-kinase-assay-readout-controls.py</b></div><div class="code"><div><pre><code>"""Draw a primary-assay workflow, with no simulated biological measurements.
+
+Run from _media with Python 3.14 and matplotlib 3.10.7.
+"""
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+
+
+def check_accounting():
+    # Invented molecular counts for the independent bookkeeping example.
+    populations = ({"unbound": 40, "inhibited": 50, "active": 10},
+                   {"unbound": 40, "inhibited": 20, "active": 40})
+    assert [sum(p.values()) for p in populations] == [100, 100]
+    assert [p["inhibited"] + p["active"] for p in populations] == [60, 60]
+    assert populations[1]["active"] / populations[0]["active"] == 4
+    alpha, interval, blank = 3, 5, 7
+    signals = [blank + alpha*p["active"]*interval for p in populations]
+    assert (signals[1]-blank)/(signals[0]-blank) == 4
+    # Dividing raw signals fails to recover the active-population ratio.
+    assert signals[1]/signals[0] != 4
+
+
+def main():
+    check_accounting()
+    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 12})
+    fig, ax = plt.subplots(figsize=(11.4, 7.2), dpi=100, facecolor="white")
+    ax.set(xlim=(0, 11.4), ylim=(0, 7.2))
+    ax.axis("off")
+    ink = "#24374a"
+
+    def box(x, y, w, h, text, face="#e9f1fa", fontsize=11):
+        ax.add_patch(FancyBboxPatch((x-w/2, y-h/2), w, h,
+                                   boxstyle="round,pad=0.07", lw=1.5,
+                                   facecolor=face, edgecolor=ink))
+        ax.text(x, y, text, ha="center", va="center", color=ink,
+                fontsize=fontsize, linespacing=1.45)
+
+    def arrow(start, end):
+        ax.add_patch(FancyArrowPatch(start, end, arrowstyle="-|&gt;",
+                                    mutation_scale=15, lw=1.7, color=ink))
+
+    ax.text(5.7, 6.89, "Histone H1 labeling measures catalytic action during an assay",
+            ha="center", fontsize=15, weight="bold", color=ink)
+    ax.text(5.7, 6.48, "Workflow of Deibler &amp; Kirschner (2010); no measured intensities drawn",
+            ha="center", fontsize=11, color=ink)
+    box(1.43, 5.40, 2.15, 1.35, "HeLa S3 extract\n+ cyclin B1\n20 min incubation")
+    box(4.30, 5.40, 2.45, 1.35, "Aliquot + H1\n+ γ-³²P ATP\n15 min assay reaction")
+    box(7.30, 5.40, 2.20, 1.35, "Stop reaction\nSDS-PAGE\nDry gel")
+    box(10.02, 5.40, 2.02, 1.35, "Phosphorimager\nQuantify label\nin H1 band")
+    for start, end in ((2.61, 2.98), (5.62, 6.11), (8.50, 8.94)):
+        arrow((start, 5.40), (end, 5.40))
+
+    ax.text(0.45, 4.27, "Reported controls answer different questions", fontsize=13,
+            color=ink, weight="bold")
+    box(2.02, 3.62, 3.02, 0.67, "No added cyclin B", face="#f3f3f3")
+    ax.text(3.90, 3.62, "Baseline used for fold normalization; can include kinase activity",
+            va="center", fontsize=11, color=ink)
+    box(2.02, 2.74, 3.02, 0.67, "+ RO-3306 inhibitor", face="#faeceb")
+    ax.text(3.90, 2.74, "Reduced H1 labeling supports a major CDK1 contribution",
+            va="center", fontsize=11, color=ink)
+
+    ax.text(0.45, 1.98, "Three measurements to keep distinct", fontsize=13,
+            color=ink, weight="bold")
+    box(2.03, 1.12, 3.03, 0.95, "Total-CDK1 immunoblot\nProtein amount", face="#f3f3f3")
+    box(5.70, 1.12, 3.03, 0.95, "Site-specific immunoblot\nA phosphorylation state", face="#f3f3f3")
+    box(9.37, 1.12, 3.03, 0.95, "H1 labeling readout\nSubstrate modification", face="#e6f4eb")
+    ax.text(5.7, 0.23, "Extracts mix compartments; H1 is a supplied substrate, not a universal readout of mitosis.",
+            ha="center", fontsize=11, color=ink)
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+    fig.savefig(Path(__file__).stem + ".png", facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

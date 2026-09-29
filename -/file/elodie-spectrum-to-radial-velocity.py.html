@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>elodie-spectrum-to-radial-velocity.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="elodie-spectrum-to-radial-velocity.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../-/raw/main.css">
+<link rel="icon" href="../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../" class="brand"><img class="openai-logo" src="../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/elodie-spectrum-to-radial-velocity.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">elodie-spectrum-to-radial-velocity.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/elodie-spectrum-to-radial-velocity.py"><img src="../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../-/dir">(root)</a> / <a href="../../-/raw/elodie-spectrum-to-radial-velocity.py">elodie-spectrum-to-radial-velocity.py</a></b></div></nav></div><div class="p"><b>elodie-spectrum-to-radial-velocity.py</b></div><div class="code"><div><pre><code>"""Original measurement-chain diagram; Python 3.14, numpy 2.3.5, matplotlib 3.10.7.
+
+Run from _media; the output filename follows this generator's basename.
+All profiles and velocities below are illustrative, not observed ELODIE data.
+"""
+
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+
+
+def main():
+    plt.rcParams.update({"font.size": 11, "axes.spines.top": False,
+                         "axes.spines.right": False})
+    fig = plt.figure(figsize=(10, 7), facecolor="white")
+    flow = fig.add_axes((0.02, 0.53, 0.96, 0.36))
+    flow.set(xlim=(0, 10), ylim=(0, 3))
+    flow.axis("off")
+    blue, orange = "#176497", "#ba531b"
+
+    def box(x, y, w, h, label, color):
+        flow.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.06",
+                                     facecolor="white", edgecolor=color, linewidth=1.6))
+        flow.text(x+w/2, y+h/2, label, ha="center", va="center", fontsize=10)
+
+    def arrow(a, b, color=blue):
+        flow.add_patch(FancyArrowPatch(a, b, arrowstyle="-|&gt;", mutation_scale=13,
+                                      color=color, linewidth=1.7))
+
+    box(0.1, 1.7, 1.55, 0.85, "Telescope\n+ starlight", blue)
+    box(0.1, 0.18, 1.55, 0.85, "Reference lamp\n(known lines)", orange)
+    box(2.25, 1.7, 1.5, 0.85, "Star fiber", blue)
+    box(2.25, 0.18, 1.5, 0.85, "Reference fiber", orange)
+    box(4.45, 0.65, 2.5, 1.45, "Echelle grating\n+ cross-disperser\n+ camera", blue)
+    box(7.7, 0.65, 2.0, 1.45, "CCD image:\nseparate orders\nand reference traces", blue)
+    arrow((1.7, 2.12), (2.18, 2.12))
+    arrow((1.7, 0.60), (2.18, 0.60), orange)
+    arrow((3.82, 2.12), (4.38, 1.75))
+    arrow((3.82, 0.60), (4.38, 1.05), orange)
+    arrow((7.02, 1.37), (7.62, 1.37))
+    flow.text(5, 2.75, "Simultaneous reference mode (functional schematic)",
+              ha="center", fontsize=12, fontweight="bold")
+
+    # A toy correlation dip, typical of an absorption-line mask convention.
+    ax = fig.add_axes((0.09, 0.13, 0.36, 0.32))
+    velocity = np.linspace(-10_000, 10_000, 2001)
+    center, sigma = 60.0, 3000.0
+    ccf = 1 - 0.3*np.exp(-0.5*((velocity-center)/sigma)**2)
+    ax.plot(velocity/1000, ccf, color=blue, linewidth=2)
+    ax.axvline(center/1000, color=orange, linestyle="--", linewidth=1.4)
+    ax.annotate("Fitted center: +60 m/s", xy=(0.06, 0.702), xytext=(-9, 0.88),
+                arrowprops={"arrowstyle": "-&gt;", "color": orange}, color=orange,
+                fontsize=10)
+    ax.set(xlabel="Trial velocity (km/s)", ylabel="Normalized correlation",
+           title="Calibrate wavelengths; correlate many lines", ylim=(0.68, 1.03))
+    ax.title.set_fontsize(10)
+    ax.text(0.5, -0.27, "Center precision can be finer than line width.",
+            transform=ax.transAxes, ha="center", fontsize=9)
+
+    rv = fig.add_axes((0.61, 0.13, 0.35, 0.32))
+    phase = np.linspace(0, 2, 801)
+    rv.plot(phase, 60*np.cos(2*np.pi*phase), color=blue, linewidth=2)
+    sample = np.array([0.02, .13, .31, .49, .72, .9, 1.12, 1.33, 1.54, 1.78, 1.96])
+    rv.scatter(sample, 60*np.cos(2*np.pi*sample), color=orange, s=23, zorder=3)
+    rv.axhline(0, color="0.75", linewidth=0.7)
+    rv.set(xlabel="Time / chosen period", ylabel="Relative radial velocity (m/s)",
+           title="Repeat after drift and observer corrections", ylim=(-80, 80))
+    rv.title.set_fontsize(10)
+    rv.text(0.5, -0.27, "Illustrative centers on an exact periodic model.",
+            transform=rv.transAxes, ha="center", fontsize=9)
+    fig.text(0.51, 0.30, "→", ha="center", fontsize=28, color=blue)
+    fig.suptitle("From starlight to a radial-velocity time series", y=0.97,
+                 fontsize=16, fontweight="bold")
+    fig.text(0.5, 0.025, "Original schematic and synthetic signals; no discovery data reproduced.",
+             ha="center", fontsize=10, color="0.3")
+    fig.savefig(Path(__file__).stem + ".png", dpi=120, facecolor="white")
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

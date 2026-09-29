@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2002/iii/paper-54-slowness-wave.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2002/iii/paper-54-slowness-wave.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2002/iii/paper-54-slowness-wave.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2002/iii/paper-54-slowness-wave.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2002/iii/paper-54-slowness-wave.py"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../../-/dir">(root)</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge">past-exam-of-the-mathematics-course-of-the-university-of-cambridge</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2002">2002</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2002/iii">iii</a> / <a href="../../../../../-/raw/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2002/iii/paper-54-slowness-wave.py">paper-54-slowness-wave.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2002/iii/paper-54-slowness-wave.py</b></div><div class="code"><div><pre><code>"""Stable orthotropic elastic slowness and wave surfaces.
+Python 3.14 / NumPy 2.3.5 / Matplotlib 3.10.7. Outputs basename to caller CWD.
+"""
+import os
+from pathlib import Path
+import tempfile
+os.environ.setdefault('MPLCONFIGDIR', str(Path(tempfile.gettempdir())/'paper-54-matplotlib'))
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import numpy as np
+
+def branch(theta, sign):
+ d=np.sqrt(5+4*np.cos(4*theta))
+ dp=-8*np.sin(4*theta)/d
+ dpp=-32*np.cos(4*theta)/d-64*np.sin(4*theta)**2/d**3
+ lam=(5+sign*d)/2
+ lp=sign*dp/2
+ lpp=sign*dpp/2
+ v=np.sqrt(lam)
+ vp=lp/(2*v)
+ vpp=lpp/(2*v)-lp**2/(4*v**3)
+ return v,vp,vpp
+
+theta=np.linspace(0,2*np.pi,4001)
+n=np.column_stack((np.cos(theta),np.sin(theta)))
+t=np.column_stack((-np.sin(theta),np.cos(theta)))
+fig, axs=plt.subplots(1,2,figsize=(10.2,4.9),layout='constrained',facecolor='white')
+for sign, color, label in [(1,'#bb4422','Quasi-P'),(-1,'#2266aa','In-plane shear')]:
+ v,vp,_=branch(theta,sign)
+ s=n/v[:,None]
+ g=v[:,None]*n+vp[:,None]*t
+ axs[0].plot(*s.T,color=color,label=label)
+ axs[1].plot(*g.T,color=color,label=label)
+sh=np.sqrt(1.2)
+axs[0].plot(*(n/sh).T,'--',color='#448844',label='Out-of-plane shear')
+axs[1].plot(*(sh*n).T,'--',color='#448844',label='Out-of-plane shear')
+# Locate genuine zeros of v+v''; these are stationary points of the wave-surface map.
+v,vp,vpp=branch(theta,-1)
+h=v+vpp
+roots=[]
+for i in np.flatnonzero(h[:-1]*h[1:]&lt;0):
+ lo,hi=theta[i],theta[i+1]
+ for _ in range(50):
+  mid=(lo+hi)/2
+  f=sum(branch(mid,-1)[::2])
+  if sum(branch(lo,-1)[::2])*f&lt;=0:hi=mid
+  else:lo=mid
+ roots.append((lo+hi)/2)
+for angle in roots:
+ v,vp,_=branch(angle,-1)
+ q=v*np.array([np.cos(angle),np.sin(angle)])+vp*np.array([-np.sin(angle),np.cos(angle)])
+ axs[1].plot(*q,'o',ms=4,color='#2266aa')
+axs[0].set(title='Slowness surface cross-section',xlabel=r'$p_1$',ylabel=r'$p_2$')
+axs[1].set(title='Unit-time wave surface (group velocities)',xlabel=r'$g_1$',ylabel=r'$g_2$')
+axs[1].text(.02,.03, 'Dots: shear-wave cusps', transform=axs[1].transAxes, fontsize=9)
+for ax in axs:
+ ax.axhline(0,color='.75',lw=.7);ax.axvline(0,color='.75',lw=.7)
+ ax.set_aspect('equal');ax.grid(alpha=.16);ax.legend(fontsize=8,loc='upper right')
+fig.savefig(Path.cwd()/'paper-54-slowness-wave.png',dpi=135,facecolor='white',transparent=False)
+plt.close(fig)
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->
