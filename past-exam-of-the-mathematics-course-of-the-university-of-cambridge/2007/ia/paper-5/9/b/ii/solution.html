@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Past exam of the mathematics course of the University of Cambridge / 2007 / ia / Paper 5 / 9 / b / ii / Solution - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="Past exam of the mathematics course of the University of Cambridge / 2007 / ia / Paper 5 / 9 / b / ii / Solution - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../../../" class="brand"><img class="openai-logo" src="../../../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="solution"><div class="notnav"><h1><a href="../../../../../../../past-exam-of-the-mathematics-course-of-the-university-of-cambridge">Past exam of the mathematics course of the University of Cambridge</a><span class="meta"> / </span><a href="../../../../../../2007">2007</a><span class="meta"> / </span><a href="../../../../../ia">ia</a><span class="meta"> / </span><a href="../../../../paper-5">Paper 5</a><span class="meta"> / </span><a href="../../../../paper-5#9">9</a><span class="meta"> / </span><a href="../../../../paper-5#9/b">b</a><span class="meta"> / </span><a href="../../../../paper-5#9/b/ii">ii</a><span class="meta"> / </span><a href="">Solution</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav ancestors"><a  href="#-/ancestors">&nbsp;...</a><a href="../../../../../../2007"> 2007</a><a href="../../../../../ia"> ia</a><a href="../../../../paper-5"> Paper 5</a><a href="../../../../paper-5#9"> 9</a><a href="../../../../paper-5#9/b"> b</a><a href="../../../../paper-5#9/b/ii"> ii</a></div><div class="nav"><a href="https://ourbigbook.com/codex/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2007/ia/paper-5/9/b/ii/solution"><img src="../../../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a><a class="nosplit" href="../../../../paper-5#9/b/ii/solution"></a><span class="metrics"><span class="wcntr"> Words: 796</span></span></div></nav></div><div class="p" id="-/97">Use recursive dependency evaluation with <a href="../../../../../../../computer-science#memoization">memoization</a>. After an edit, invalidate all cell states. To evaluate one formula, recursively obtain its dependencies before storing its own result. This is a <a href="../../../../../../../computer-science#depth-first-search">depth-first search</a> of the dependency graph; a visiting mark identifies a cycle, and a done mark avoids repeated evaluation of a shared dependency. The following single class implements the design, with public nested interfaces for formula extensions:<div class="code" id="-/98"><div><pre><code>public final class Spreadsheet {
+    public enum Kind { EMPTY, LABEL, NUMBER, FORMULA }
+
+    public interface Lookup {
+        double valueAt(int row, int col);
+    }
+    public interface Formula {
+        double evaluate(Lookup values, int row, int col);
+    }
+    public static final class AddFormula implements Formula {
+        private final int dr1, dc1, dr2, dc2;
+        public AddFormula(int dr1, int dc1, int dr2, int dc2) {
+            this.dr1 = dr1; this.dc1 = dc1;
+            this.dr2 = dr2; this.dc2 = dc2;
+        }
+        public double evaluate(Lookup values, int r, int c) {
+            return values.valueAt(r + dr1, c + dc1)
+                 + values.valueAt(r + dr2, c + dc2);
+        }
+    }
+    private static final class Cell {
+        private final Kind kind;
+        private final String label;
+        private final double number;
+        private final Formula formula;
+        private Cell(Kind k, String s, double n, Formula f) {
+            kind = k; label = s; number = n; formula = f;
+        }
+    }
+    private static final Cell EMPTY =
+        new Cell(Kind.EMPTY, null, 0.0, null);
+    private final int rows, cols;
+    private final Cell[][] cells;
+    private final double[][] cache;
+    private final byte[][] state;
+    private final Lookup view = new Lookup() {
+        public double valueAt(int r, int c) {
+            return Spreadsheet.this.valueAt(r, c);
+        }
+    };
+
+    public Spreadsheet(int rows, int cols) {
+        if (rows &lt; 0 || cols &lt; 0) throw new IllegalArgumentException();
+        this.rows = rows; this.cols = cols;
+        cells = new Cell[rows][cols];
+        cache = new double[rows][cols];
+        state = new byte[rows][cols];
+        for (int r = 0; r &lt; rows; r++)
+            for (int c = 0; c &lt; cols; c++) cells[r][c] = EMPTY;
+    }
+    private boolean inside(int r, int c) {
+        return r &gt;= 0 &amp;&amp; r &lt; rows &amp;&amp; c &gt;= 0 &amp;&amp; c &lt; cols;
+    }
+    private void check(int r, int c) {
+        if (!inside(r, c)) throw new IndexOutOfBoundsException();
+    }
+    private void invalidate() {
+        for (int r = 0; r &lt; rows; r++)
+            for (int c = 0; c &lt; cols; c++) state[r][c] = 0;
+    }
+    private void put(int r, int c, Cell cell) {
+        check(r, c); cells[r][c] = cell; invalidate();
+    }
+    public void setEmpty(int r, int c) { put(r, c, EMPTY); }
+    public void setLabel(int r, int c, String text) {
+        if (text == null) throw new IllegalArgumentException();
+        put(r, c, new Cell(Kind.LABEL, text, 0.0, null));
+    }
+    public void setNumber(int r, int c, double x) {
+        put(r, c, new Cell(Kind.NUMBER, null, x, null));
+    }
+    public void setFormula(int r, int c, Formula f) {
+        if (f == null) throw new IllegalArgumentException();
+        put(r, c, new Cell(Kind.FORMULA, null, 0.0, f));
+    }
+    public Kind kindAt(int r, int c) {
+        check(r, c); return cells[r][c].kind;
+    }
+    public String labelAt(int r, int c) {
+        check(r, c); return cells[r][c].label;
+    }
+    public double valueAt(int r, int c) {
+        if (!inside(r, c)) return 0.0;
+        if (state[r][c] == 2) return cache[r][c];
+        if (state[r][c] == 1)
+            throw new IllegalStateException("Cyclic formula dependency");
+        state[r][c] = 1;
+        try {
+            Cell cell = cells[r][c];
+            double answer;
+            switch (cell.kind) {
+            case NUMBER: answer = cell.number; break;
+            case FORMULA: answer = cell.formula.evaluate(view, r, c); break;
+            default: answer = 0.0;
+            }
+            cache[r][c] = answer;
+            state[r][c] = 2;
+            return answer;
+        } catch (RuntimeException error) {
+            state[r][c] = 0;
+            throw error;
+        }
+    }
+    public void recalculate() {
+        invalidate();
+        for (int r = 0; r &lt; rows; r++)
+            for (int c = 0; c &lt; cols; c++) valueAt(r, c);
+    }
+}</code></pre></div></div>The outer loop's order need not be a <a href="../../../../../../../combinatorics#topological-ordering">topological ordering</a>, since recursion evaluates dependencies first. After an edit, callers can invoke <code>recalculate</code>; ordinary <code>valueAt</code> calls also calculate lazily from the invalidated state. Empty and label cells contribute zero without destroying their display content. Relative references are interpreted at the formula's location, and off-grid references contribute zero as required.</div><div class="p" id="-/99">For an acyclic graph, <a href="../../../../../../../foundations-of-mathematics#mathematical-induction">mathematical induction</a> over a <a href="../../../../../../../combinatorics#topological-ordering">topological ordering</a> proves that each cached value equals the evaluation of current cell contents. Each cell becomes done at most once in a pass, so the <a href="../../../../../../../computer-science#time-complexity">time complexity</a> is <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">O</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.22222em;">V</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">E</span><span class="mclose">)</span></span></span></span> for <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.22222em;">V</span></span></span></span> cells and <span class="katex"><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">E</span></span></span></span> dependency references, plus formula arithmetic. The stack depth is at most the longest dependency path. A more elaborate implementation can record reverse dependencies and invalidate only cells affected by an edit.</div><div class="p" id="-/100">The PDF gives no policy for circular formulas. Repeated numerical sweeps are not a general solution: a cell defined as itself plus one has no finite value, while a cell defined as itself plus zero has no unique value. The implementation therefore reports a cycle instead of looping or presenting an arbitrary stale value. <b>An acyclic dependency graph is evaluated once per cell; circular dependencies are detected and rejected.</b></div><h2 id="-/ancestors"><a href="#-/ancestors"><span class="fa-solid-900 icon"></span> Ancestors <span class="meta">(12)</span></a></h2><div class="list"><ol><li><a href="../../../../paper-5#9/b/ii">Ii</a></li><li><a href="../../../../paper-5#9/b">B</a></li><li><a href="../../../../paper-5#9">9</a></li><li><a href="../../../../paper-5">Paper 5</a></li><li><a href="../../../../../ia">Ia</a></li><li><a href="../../../../../../2007">2007</a></li><li><a href="../../../../../../../past-exam-of-the-mathematics-course-of-the-university-of-cambridge">Past exam of the mathematics course of the University of Cambridge</a></li><li><a href="../../../../../../../university-of-cambridge#mathematics-course-of-the-university-of-cambridge">Mathematics course of the University of Cambridge</a></li><li><a href="../../../../../../../university-of-cambridge#course-of-the-university-of-cambridge">Course of the University of Cambridge</a></li><li><a href="../../../../../../../university-of-cambridge">University of Cambridge</a></li><li><a href="../../../../../../..#list-of-universities">List of universities</a></li><li><a href="../../../../../../.."><span title="Home" class="fa-solid-900 icon"></span> Home</a></li></ol></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+<div>Source code for this page: <a href="../../../../../../../-/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2007/ia/paper-5.bigb">past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2007/ia/paper-5.bigb</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = true;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2007/ia/paper-5/9/b/ii/";
+</script>
+<script src="../../../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>

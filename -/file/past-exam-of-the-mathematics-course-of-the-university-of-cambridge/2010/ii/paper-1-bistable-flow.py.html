@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2010/ii/paper-1-bistable-flow.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2010/ii/paper-1-bistable-flow.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2010/ii/paper-1-bistable-flow.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2010/ii/paper-1-bistable-flow.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2010/ii/paper-1-bistable-flow.py"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../../-/dir">(root)</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge">past-exam-of-the-mathematics-course-of-the-university-of-cambridge</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2010">2010</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2010/ii">ii</a> / <a href="../../../../../-/raw/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2010/ii/paper-1-bistable-flow.py">paper-1-bistable-flow.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2010/ii/paper-1-bistable-flow.py</b></div><div class="code"><div><pre><code>"""Original bistable-flow sketch. Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7.
+Writes paper-1-bistable-flow.png to caller CWD; inherits MPLCONFIGDIR.
+"""
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import numpy as np
+
+MU, NU = 0.3, 1.0
+
+def field(p):
+    x, y = p
+    return np.array([-MU*x+y, x*x/(1+x*x)-NU*y])
+
+def trajectory(p, dt, steps=3500):
+    out=[np.array(p,dtype=float)]
+    for _ in range(steps):
+        v=out[-1]
+        k1=field(v);k2=field(v+dt*k1/2);k3=field(v+dt*k2/2);k4=field(v+dt*k3)
+        v=v+dt*(k1+2*k2+2*k3+k4)/6
+        if not (0&lt;=v[0]&lt;=4.2 and 0&lt;=v[1]&lt;=1.45): break
+        out.append(v)
+    return np.array(out)
+
+def main():
+    x=np.linspace(0,4.1,180);y=np.linspace(0,1.4,120)
+    xx,yy=np.meshgrid(x,y)
+    fig,ax=plt.subplots(figsize=(8,4.9),dpi=125,facecolor='white')
+    ax.set_facecolor('white')
+    ax.streamplot(x,y,-MU*xx+yy,xx*xx/(1+xx*xx)-NU*yy,color='#c5cbd1',density=1.0,linewidth=.7,arrowsize=.8)
+    ax.plot(x,MU*x,color='#255c9b',lw=2,label=r'$\dot x=0$')
+    ax.plot(x,x*x/(NU*(1+x*x)),color='#31845b',lw=2,label=r'$\dot y=0$')
+    roots=[(1-np.sqrt(1-4*MU*MU*NU*NU))/(2*MU*NU),(1+np.sqrt(1-4*MU*MU*NU*NU))/(2*MU*NU)]
+    saddle=np.array([roots[0],MU*roots[0]])
+    J=np.array([[-MU,1],[2*saddle[0]/(1+saddle[0]**2)**2,-NU]])
+    vals,vecs=np.linalg.eig(J)
+    for name,i,dt,color,ls in [('stable',int(np.argmin(vals)),-.012,'#cb7925','--'),('unstable',int(np.argmax(vals)),.025,'#a63d75','-')]:
+        v=vecs[:,i].real;v/=np.linalg.norm(v)
+        for sign in [-1,1]:
+            path=trajectory(saddle+sign*1e-5*v,dt)
+            ax.plot(path[:,0],path[:,1],color=color,ls=ls,lw=2,label=f'{name} manifold' if sign==1 else None)
+    for p,label,offset in [(np.zeros(2),'O',(7,8)),(saddle,r'$P_-$',(8,10)),(np.array([roots[1],MU*roots[1]]),r'$P_+$',(7,8))]:
+        ax.scatter(*p,s=35,color='#242424',zorder=5)
+        ax.annotate(label,p,xytext=offset,textcoords='offset points',fontsize=11)
+    ax.set(xlim=(-.025,4.1),ylim=(-.015,1.4),xlabel='$x$',ylabel='$y$',title=r'Bistability: $\mu=0.3$, $\nu=1$')
+    ax.legend(loc='upper left',fontsize=9,framealpha=1)
+    fig.tight_layout()
+    fig.savefig('paper-1-bistable-flow.png',facecolor='white',transparent=False)
+    plt.close(fig)
+if __name__=='__main__':main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,400 @@
+= Paper 37
+{scope}
+{title2=Applied Statistics}
+
+https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2004/Paper37.pdf
+
+= 1
+{parent=Paper 37}
+{scope}
+
+= i
+{parent=1}
+{scope}
+
+= Solution
+{parent=i}
+
+Let $X$ be the $n\times p$ <design matrix> with row $x_i^T$, let $y=(y_i)$, and write $\mu_i(\beta)=\exp(x_i^T\beta)$. Independence gives the <Poisson regression> <likelihood function>
+$$
+L(\beta)=\prod_{i=1}^n\frac{e^{-\mu_i}\mu_i^{y_i}}{y_i!},\qquad
+\ell(\beta)=\sum_i\{y_ix_i^T\beta-e^{x_i^T\beta}-\log(y_i!)\}.
+$$
+The <score function> and negative <Hessian matrix> are
+$$
+\boxed{U(\beta)=X^T(y-\mu),\qquad I(\beta)=-\nabla^2\ell(\beta)=X^TWX,\quad W=\operatorname{diag}(\mu_i).}
+$$
+Because $EY_i=\mu_i$, the score has mean zero; independence and the <Poisson distribution> <variance> give $\operatorname{Var}U=X^TWX$. Thus the observed and expected <Fisher information matrices> are the same here.
+
+Assume $X$ has full column <matrix rank> $p$. For a nonzero vector $a$, $a^TIa=\sum_i\mu_i(x_i^Ta)^2>0$. The <concavity of the Poisson regression likelihood> therefore makes any finite solution of $X^T(y-\widehat\mu)=0$ the unique <maximum-likelihood estimator>. If the design is rank deficient, parameters differing by a vector in $\ker X$ give the same distribution, so only identifiable combinations can be estimated. Full rank alone does not ensure a finite maximizer: for an intercept-only model with all observations zero, $\ell=-ne^\beta$ approaches its supremum as $\beta\to-\infty$. More generally, directions that decrease only fitted means attached to zero counts can produce boundary fits. A useful sufficient case for a finite fit is full rank with every count positive: each summand $y_i\eta_i-e^{\eta_i}$ tends to $-\infty$ in either tail, and some $|\eta_i|$ diverges whenever $\|\beta\|$ diverges.
+
+For an interior fit, <Newton's method> and <Fisher scoring> give the same update:
+$$
+\beta^{(k+1)}=\beta^{(k)}+[X^TW^{(k)}X]^{-1}X^T(y-\mu^{(k)}).
+$$
+This is also <iteratively reweighted least squares>. Define the working response $z_i=\eta_i+(y_i-\mu_i)/\mu_i$, with $\eta=X\beta^{(k)}$, and regress $z$ on $X$ using weights $W^{(k)}$:
+$$
+\beta^{(k+1)}=(X^TW^{(k)}X)^{-1}X^TW^{(k)}z.
+$$
+A numerical implementation solves these linear equations rather than explicitly forming the inverse, checks convergence of the score and <likelihood>, and can shorten a step when necessary.
+
+Under the usual fixed-design regularity conditions, with growing information and no single observation dominating it, a score <Taylor expansion> about the true parameter gives
+$$
+\widehat\beta-\beta_0\approx I(\beta_0)^{-1}U(\beta_0),\qquad
+\boxed{\widehat\beta\ \dot\sim\ N_p\big(\beta_0,I(\beta_0)^{-1}\big).}
+$$
+Estimate the <covariance matrix> by $[X^T\operatorname{diag}(\widehat\mu_i)X]^{-1}$; its diagonal square roots are the coefficient <standard errors>. This justifies large-sample <Wald confidence intervals> and <Wald tests> for specified coefficients or contrasts. Finite-sample unbiasedness is not being asserted. A <likelihood-ratio test> compares nested fits through twice their maximized <log-likelihood> difference. The <Poisson deviance> against the saturated fit is
+$$
+D=2\sum_i\left\{y_i\log\frac{y_i}{\widehat\mu_i}-(y_i-\widehat\mu_i)\right\},
+$$
+with $0\log0=0$. Residual diagnostics and a check of <overdispersion> assess whether the assumed Poisson <variance> is adequate; the <variance> correction required when it is not is derived in the next part.
+
+= ii
+{parent=1}
+{scope}
+
+= Solution
+{parent=ii}
+
+The working <score function> and its derivative are
+$$
+U(\beta)=\sum_i x_i\{Y_i-e^{\beta x_i}\},\qquad
+U'(\beta)=-\sum_i x_i^2e^{\beta x_i}=-I(\beta).
+$$
+At an interior working maximizer, $U(\widehat\beta)=0$. A <Taylor expansion> at $\beta_0$ yields
+$$
+0=U(\beta_0)-I(\beta_0)(\widehat\beta-\beta_0)
+-\frac12\left(\sum_i x_i^3e^{\beta^*x_i}\right)(\widehat\beta-\beta_0)^2
+$$
+for an intermediate value $\beta^*$. When the last term is negligible relative to the linear one, this gives
+$$
+\boxed{\widehat\beta-\beta_0\approx I(\beta_0)^{-1}U(\beta_0).}
+$$
+This is the <Poisson score linearization under proportional variance>. Correct specification of the mean alone implies $EU(\beta_0)=0$. The stipulated independence and <variance> relation give
+$$
+\operatorname{Var}U(\beta_0)=\sum_i x_i^2\operatorname{Var}(Y_i)=\phi\sum_i x_i^2e^{\beta_0x_i}=\phi I(\beta_0).
+$$
+Taking the mean and <variance> of the linear approximation therefore proves
+$$
+\boxed{E\widehat\beta\approx\beta_0,\qquad
+\operatorname{Var}(\widehat\beta)\approx\frac{\phi}{I(\beta_0)}.}
+$$
+These are first-order conclusions, not exact finite-sample identities. The mean and <variance> assumptions alone do not guarantee that the approximation is accurate: an interior consistent solution, increasing information, control of leverage, and a suitable central limit condition are needed for normal inference.
+
+The <quasi-likelihood> score for <variance> $\phi\mu_i$ is $U/\phi$, so its zero is unchanged by the unknown common <dispersion parameter>. Thus the working Poisson estimating equation remains appropriate for the mean parameter, but its unadjusted Poisson <variance> estimate is wrong when $\phi\ne1$. A usual <Pearson dispersion estimator> for this one-parameter model is
+$$
+\widehat\phi=\frac1{n-1}\sum_i\frac{(Y_i-\widehat\mu_i)^2}{\widehat\mu_i},\qquad
+\widehat{\operatorname{Var}}(\widehat\beta)=\frac{\widehat\phi}{I(\widehat\beta)}.
+$$
+In particular <overdispersion> multiplies coefficient <standard errors> by approximately $\sqrt\phi$, even though it leaves the coefficient estimating equation unchanged.
+
+= 2
+{parent=Paper 37}
+{scope}
+
+= i
+{parent=2}
+{scope}
+
+= Solution
+{parent=i}
+
+Treat the counts as independent <binomial distributions>, $R_i\sim\operatorname{Bin}(n_i,\pi_i)$, conditional on the known numbers of operations. The <null hypothesis> is that the probabilities $\pi_i$ are all equal, with no assumed numerical value. Centre 4 has no operations in this period and hence contributes <likelihood> one, supplying no information about its mortality <probability>. The <empty groups in a binomial homogeneity test> principle leaves **11 contributing centres and 10 test degrees of freedom**.
+
+Under the common-probability model the <maximum-likelihood estimator> is
+$$
+\widehat\pi=\frac{\sum_i r_i}{\sum_i n_i}=\frac{283}{1353}=0.209165.
+$$
+Use the two-column <contingency table> of deaths and survivors, deleting its all-zero row. The <Pearson chi-squared test of homogeneity> has statistic
+$$
+X^2=\sum_{i:n_i>0}\left\{\frac{(r_i-n_i\widehat\pi)^2}{n_i\widehat\pi}+\frac{((n_i-r_i)-n_i(1-\widehat\pi))^2}{n_i(1-\widehat\pi)}\right\}
+=\sum_{i:n_i>0}\frac{(r_i-n_i\widehat\pi)^2}{n_i\widehat\pi(1-\widehat\pi)}.
+$$
+Under the null, the large-sample reference distribution is $\chi^2_{10}$. The expected counts are adequate for this approximation here, including at the smallest nonempty centre. Calculating gives
+$$
+\boxed{X^2=39.3923,\qquad p\approx2.17\times10^{-5}.}
+$$
+An alternative is the <likelihood-ratio test> against separate centre probabilities, with <binomial deviance>
+$$
+D=2\sum_{i:n_i>0}\left\{r_i\log\frac{r_i}{n_i\widehat\pi}+(n_i-r_i)\log\frac{n_i-r_i}{n_i(1-\widehat\pi)}\right\}.
+$$
+The unrestricted probabilities are $r_i/n_i$; subtracting one fitted common <probability> leaves the same 10 degrees of freedom. Here $D=39.5033$ and $p\approx2.07\times10^{-5}$. Thus **there is strong evidence against a common mortality <probability>**. This omnibus test does not identify Centre 1 as the sole source of the heterogeneity. If its comparison with the remaining centres is the primary scientific question, specify a separate planned one-versus-rest comparison; inspection of many pairwise comparisons calls for consideration of <multiple testing>.
+
+= ii
+{parent=2}
+{scope}
+
+= Solution
+{parent=ii}
+
+Use the <logit link> $g(\pi)=\log\{\pi/(1-\pi)\}$ and independent counts $R_{ij}\sim\operatorname{Bin}(n_{ij},\pi_{ij})$. This gives a <grouped-binomial logistic regression> with 24 cells and 13 free coefficients: an intercept, 11 centre contrasts, and one period contrast. Reference <treatment coding> makes the intercept the log odds for Centre 1 in the earlier of the two included periods. The two <factors> are assumed to have been coded as specified in the question.
+
+The binomial <log-likelihood>, apart from known constants, is
+$$
+\ell=\sum_{i,j}\{r_{ij}\eta_{ij}-n_{ij}\log(1+e^{\eta_{ij}})\},\qquad
+\eta_{ij}=\mu+\alpha_i+\beta_j.
+$$
+Maximize by <Fisher scoring> or <iteratively reweighted least squares>. Using response proportions $r_{ij}/n_{ij}$ with binomial trial weights $n_{ij}$ is equivalent to using the count response $(r_{ij},n_{ij}-r_{ij})$; omitting those weights would give the wrong <likelihood> and <standard errors>. The coefficient <covariance matrix> is approximately the inverse of $X^T\operatorname{diag}\{n_{ij}\widehat\pi_{ij}(1-\widehat\pi_{ij})\}X$.
+
+The fitted reference log odds are $-0.809585$, and the period change is $-0.426758$, giving
+$$
+\boxed{\widehat\pi_{1,2}=0.30798,\qquad \widehat\pi_{1,3}=0.22507.}
+$$
+These are fitted probabilities under a common period effect, so they need not equal the separate empirical proportions at Centre 1. The estimated period <odds ratio> is
+$$
+\boxed{e^{-0.426758}=0.6526,\qquad 95\%\text{ CI}=e^{-0.426758\pm1.96(0.078807)}=(0.5592,0.7616).}
+$$
+Thus the later-period death odds are estimated to be about 35% lower at each centre, with strong evidence of a period effect: the normal <Wald statistic> is $-5.415$. The displayed “t value” is a coefficient divided by its <standard error>; with fixed binomial dispersion its usual large-sample calibration is standard normal, not a Student distribution with an estimated Gaussian-error <variance>. The <odds ratio> is not a mortality <probability> ratio.
+
+Each centre coefficient is a log <odds ratio> relative to Centre 1, adjusted for period. All its point estimates are negative, so all other centres have lower fitted mortality probabilities in either period. For example, Centre 11's <odds ratio> is $e^{-1.079474}=0.3398$, or about $2.94$ times greater odds at Centre 1 than at Centre 11. Individual unadjusted two-sided <Wald tests> find significant differences at the 5% level for centres 2, 4, 6, 7, 8, 9, 11 and 12; the coefficients for 3, 5 and 10 do not individually reach that threshold. These separate tests are correlated comparisons against a common reference and should not be presented as 11 independent discoveries without considering <multiple testing>. They adjust only for time period, not for differing patient case mix.
+
+For fit assessment, the residual <binomial deviance> is $15.73891$ on $24-13=11$ <statistical degrees of freedom>. Its $\chi^2_{11}$ upper tail is approximately $0.151$, so there is no appreciable evidence of lack of fit to these binomial cell counts. In particular, comparing with a saturated centre-by-period model gives this same deviance and 11 additional parameters; the data do not strongly require a centre-period <interaction>. The moderate deviance residuals are consistent with that assessment, although a residual plot by centre and period would be more informative than the five-number summary alone.
+
+The reduction from null to fitted deviance is
+$$
+119.0659-15.73891=103.32699.
+$$
+It tests the 12 centre-and-period coefficients jointly against an intercept-only model, with reference $\chi^2_{12}$ and $p\approx1.24\times10^{-16}$. It is not a centre-only test adjusted for period. For that test, fit the period-only model and compare its deviance with the full fit: the pooled binomial probabilities in each period give deviance $90.34578$, so
+$$
+\boxed{D_{\text{period only}}-D_{\text{centre+period}}=74.60687,\quad 11\text{ df},\quad p\approx1.61\times10^{-11}.}
+$$
+Thus centre heterogeneity persists after allowing for period. Dispersion one is the stipulated binomial <variance>, and the five scoring iterations describe numerical convergence rather than statistical evidence. The fitted associations alone do not establish a causal difference in surgical quality.
+
+= 3
+{parent=Paper 37}
+{scope}
+
+= Solution
+{parent=3}
+
+The first output uses the equal-variance, pooled <Student's t-test>, as shown by its seven <statistical degrees of freedom>. Its exact model assumes two independent samples from <normal distributions>, with means $\mu_X,\mu_Y$ and a common unknown <variance> $\sigma^2$. The hypotheses are $H_0:\mu_X=\mu_Y$ against $H_1:\mu_X<\mu_Y$. The <sample means> are $\bar x=4.35$ and $\bar y=9.88$, and the unbiased within-sample <sample variances> are
+$$
+s_X^2=4.356667,\qquad s_Y^2=8.822.
+$$
+The <pooled sample variance> and its resulting <standard error> are
+$$
+s_p^2=\frac{3s_X^2+4s_Y^2}{7}=6.908286,\qquad
+\operatorname{se}(\bar X-\bar Y)=s_p\sqrt{\frac14+\frac15}=1.763159.
+$$
+Hence
+$$
+\boxed{T=\frac{4.35-9.88}{1.763159}=-3.136416.}
+$$
+To justify its reference distribution, under the null $(\bar X-\bar Y)/(\sigma\sqrt{1/4+1/5})$ is standard normal, while $(3s_X^2+4s_Y^2)/\sigma^2$ is $\chi^2_7$, independently of the two <sample means>. Dividing the first variable by the square root of the second divided by seven gives the <exact pooled two-sample t statistic>, with <Student t-distribution> $t_7$. Its one-sided <p-value> is the lower tail
+$$
+\boxed{\Pr\{t_7\le-3.136416\}=0.0082307.}
+$$
+The associated one-sided 95% <confidence interval> for $\mu_X-\mu_Y$ is
+$$
+\boxed{\left(-\infty,\;\bar x-\bar y+t_{7,0.95}s_p\sqrt{1/4+1/5}\right)=(-\infty,-2.189557).}
+$$
+The printed missing lower bound means that this is a one-sided upper confidence limit, not that a finite lower endpoint should be estimated. With such small samples the normality and common-variance assumptions matter; a Welch analysis would use a different <variance> estimate and generally different degrees of freedom.
+
+The second output is the <Wilcoxon rank sum test> for two independent continuous samples. Under a common-distribution <null hypothesis>, labels are exchangeable conditional on the pooled values, so the four ranks assigned to the first sample form a uniformly chosen four-element subset of $\{1,\ldots,9\}$. The first sample receives ranks $2,1,3,5$, giving raw rank sum
+$$
+\boxed{W_X=2+1+3+5=11.}
+$$
+Equivalently the <Mann–Whitney U test> statistic is $U_X=W_X-4\cdot5/2=1$, the number of cross-sample pairs with an $X$ observation larger than a $Y$ observation. This output reports the raw rank sum, rather than the shifted statistic used by some software.
+
+A first sample tending to be smaller has a small rank sum. Under the null, all $\binom94=126$ rank allocations have equal <probability>. Only $\{1,2,3,4\}$ and $\{1,2,3,5\}$ have rank sum at most 11. By the <exact rank-sum tail one above the minimum>, the exact lower-tail <p-value> is
+$$
+\boxed{\Pr(W_X\le11)=\frac2{126}=0.0158730.}
+$$
+No large-sample normal approximation or continuity correction is involved; the absence of ties makes this simple enumeration valid. For a common-shape location-shift family, the test's alternative is a negative location shift of $X$ relative to $Y$. Without that model, the null is equality of distributions and the rank comparison is not simply a test of equality of means or <medians>.
+
+**Both tests reject at the 5% level in the direction of smaller $X$ observations; only the pooled t-test rejects at 1%.** The t-test uses the numerical spacing and targets a mean difference under its normal model. The rank-sum test uses ordering and an exact exchangeability calculation, avoiding the normality and common-normal-variance assumptions. Their different <p-values> therefore reflect both different statistics and different modelling assumptions, not a numerical contradiction.
+
+= 4
+{parent=Paper 37}
+{scope}
+
+= Solution
+{parent=4}
+
+The commands read the 52 cell values into a vector and build the matching two-factor layout. In `expand.grid(country, goods)` the first <factor> varies fastest, so the four countries are listed successively within each goods category. This matches row-by-row reading of the displayed table. Converting `Goods` to a <factor> is essential: its labels identify 13 categories and are not a quantitative trend. `Country` supplies the other categorical <factor>. The summaries suppress coefficient correlations, not coefficient <standard errors>.
+
+The first fit is the additive <two-factor normal linear model>
+$$
+Y_{gc}=\mu+a_g+b_c+\varepsilon_{gc},\qquad
+\varepsilon_{gc}\text{ independent }N(0,\sigma^2),\qquad a_1=b_{\mathrm{UK}}=0.
+$$
+There are $1+12+3=16$ free coefficients and $52-16=36$ residual <statistical degrees of freedom>. This is <two-way analysis of variance> without an <interaction term>. For this complete balanced layout, <ordinary least squares> gives
+$$
+\widehat Y_{gc}=\overline Y_{g\cdot}+\overline Y_{\cdot c}-\overline Y_{\cdot\cdot},\qquad
+\widehat a_g=\overline Y_{g\cdot}-\overline Y_{1\cdot},\qquad
+\widehat b_c=\overline Y_{\cdot c}-\overline Y_{\cdot\mathrm{UK}}.
+$$
+These formulas follow from the row- and column-sum normal equations: fitted row and column totals equal their observed totals. The balanced-design coefficient <standard errors> are $s\sqrt{2/4}$ for a goods contrast, $s\sqrt{2/13}$ for a country contrast, and $s\sqrt{1/4+1/13-1/52}$ for the reference-cell intercept. These yield the common contrast <standard errors> and the different intercept <standard error> in each summary. In particular the intercept is the fitted Software–UK value, not the grand mean or the observed Software–UK entry.
+
+Thus the first intercept predicts $149.8269$ million euros for Software in the UK. The Books coefficient adds $254.7$ million euros to the fitted value in any country, relative to Software; every other goods coefficient has this same arithmetic-difference interpretation. The country coefficients subtract $193.7$, $57.0308$ and $97.3769$ million euros from the UK prediction for France, Germany and the rest of Europe respectively, regardless of goods. The model therefore assumes common absolute country differences across goods categories. For Software–France its prediction is
+$$
+149.8269-193.7=-43.8731\text{ million euros},
+$$
+which is impossible for positive spending and indicates a limitation of this additive original-scale specification.
+
+The <residual standard error> is $80.98$ million euros, obtained from $s^2=\operatorname{RSS}/36$; direct calculation gives $\operatorname{RSS}=236088.7435$. Each coefficient's printed statistic is $\widehat\theta/\operatorname{se}(\widehat\theta)$, with a $t_{36}$ reference distribution under this <normal linear model>. The two-sided <p-values> compare each goods category with Software, or each other country with the UK, after adjustment for the other <factor>. For example France and the rest of Europe differ significantly from the UK at 5%, but Germany does not. The raw-scale significant goods differences are Books, Clothing, Electronic Goods, Groceries and Leisure Travel; these are individual reference-level comparisons, not an overall test of the goods <factor>.
+
+The <coefficient of determination> is $R^2=1-\operatorname{RSS}/\operatorname{TSS}=0.7743$. The omnibus <F-test> compares all 15 nonintercept coefficients with zero:
+$$
+F=\frac{(\operatorname{TSS}-\operatorname{RSS})/15}{\operatorname{RSS}/36}=8.2316,
+$$
+with reference $F_{15,36}$ and $p=1.2544\times10^{-7}$. This says at least one <factor> contrast is nonzero under the assumed error model. There is one observation per cell, so an unrestricted goods-country <interaction> would saturate the model, leaving zero <residual degrees of freedom>. Without replication or a specified <interaction> structure, the residual variation cannot be separated into <interaction> and independent error.
+
+The second fit applies a <logarithmic transformation> and fits the same <factor> design to $Z_{gc}=\log Y_{gc}$. The <Gaussian log-response model> is
+$$
+\log Y_{gc}=\mu+a_g+b_c+\varepsilon_{gc}.
+$$
+Its intercept exponentiates to a fitted Software–UK conditional <median> of $e^{4.5267}\approx92.45$ million euros. Goods coefficients now give multiplicative ratios to Software, and country coefficients give multiplicative ratios to the UK. The estimated country ratios are
+$$
+\boxed{\mathrm{France/UK}=e^{-1.6800}=0.1864,\quad
+\mathrm{Germany/UK}=e^{-0.2447}=0.7830,\quad
+\mathrm{rest/UK}=e^{-0.5033}=0.6045.}
+$$
+For example the Books ratio is $e^{1.6415}\approx5.16$ and the Sports Equipment ratio is $e^{-1.8364}\approx0.1594$, consistently across countries. The model assumes common relative, rather than common absolute, country effects. It also guarantees positive retransformed fitted values. Under normal log errors, the original-scale conditional mean is $e^{\eta+\sigma^2/2}$, whereas $e^\eta$ is the conditional <median> and <geometric mean>. Correcting the <retransformation bias> here multiplies the naive predictions by approximately $e^{0.127406/2}=1.0658$.
+
+The log-scale <residual standard error> is $0.3569$, with the same 36 <residual degrees of freedom>, corresponding to a typical multiplicative error multiplier $e^{0.3569}\approx1.429$. France and the rest remain significant reference-country contrasts; Germany remains nonsignificant at 5%. The log-scale significant reference-goods contrasts are Books, Music, Videos/DVDs, Clothing, Sports Equipment, Electronic Goods, Groceries and Leisure Travel. Event Tickets, Toys, Video Games and Housewares do not individually differ significantly from Software at that level. These <p-values> remain subject to the usual <multiple testing> qualification.
+
+The log-scale $R^2=0.9381$ is computed using variation in the logarithms, so it cannot by itself establish better fit on the original response scale. The change is plausible because spending varies widely in magnitude and relative discrepancies are more meaningful than constant absolute discrepancies, but it should be assessed with <regression diagnostics>, especially a <residual-versus-fitted plot> and a <normal Q-Q plot>. The minimum residual near $-1.01$ merits inspection; the command summaries alone do not verify independent normal errors. Moreover these responses are forecasts, so the inferential <p-values> have a literal sampling interpretation only if an appropriate stochastic model for their uncertainty is justified.
+
+The log-scale <analysis of variance> adds Goods and then Country. In this balanced design their effect spaces are orthogonal after removing the intercept, so the <sequential sums of squares> equal the corresponding adjusted <factor> sums and are unchanged by reversing the two <factors>:
+$$
+SS_G=4\sum_g(\overline Z_{g\cdot}-\overline Z_{\cdot\cdot})^2=47.85186,\qquad
+SS_C=13\sum_c(\overline Z_{\cdot c}-\overline Z_{\cdot\cdot})^2=21.60350.
+$$
+The <residual sum of squares> is $4.58662$, giving $MS_E=4.58662/36=0.127406$. Thus
+$$
+\boxed{F_G=\frac{47.85186/12}{0.127406}=31.29875\quad(12,36\text{ df}),\qquad
+F_C=\frac{21.60350/3}{0.127406}=56.52133\quad(3,36\text{ df}).}
+$$
+Their tiny upper-tail <p-values> show strong overall goods and country effects under the log-error model; a globally significant country <factor> is compatible with the nonsignificant individual Germany contrast. The omnibus fit statistic is $36.3433$ on $(15,36)$ degrees of freedom, whose <p-value> is approximately $3.14\times10^{-17}$. The printed zero reflects numerical formatting, not an exactly zero <probability>.
+
+If two cell entries were missing, retain their correct <factor> labels and mark those responses unavailable, rather than shifting the remaining scan values into different cells. Fit the additive models to the 50 observed cells, assuming the missingness mechanism permits those observations to be analyzed without selection bias. All <factor> levels remain represented, and the row-column incidence graph remains connected: any two goods rows still share an observed country, since only two edges of the complete layout have been removed, and every country still has many observed goods. By <identifiability of an incomplete two-factor additive design>, the design therefore still has rank $13+4-1=16$. Hence
+$$
+\boxed{\text{two missing cells leave }50-16=34\text{ residual degrees of freedom}.}
+$$
+The coefficients and their <covariance> must be recomputed by the observed-cell <ordinary least squares> equations. The balanced row-mean-plus-column-mean formulas and common within-factor <standard errors> no longer apply. Goods and Country effects are generally no longer orthogonal, so sequential ANOVA sums can depend on order; <factor> tests adjusted for the other <factor> should use nested model comparisons. Missing cells do not restore replication or make an unrestricted <interaction> test possible: that larger model still fits every observed cell exactly. If missingness depends on the unavailable spending values, additional modelling of that mechanism would be needed.
+
+= 5
+{parent=Paper 37}
+{scope}
+
+= i
+{parent=5}
+{scope}
+
+= Solution
+{parent=i}
+
+Use the time-homogeneous <continuous-time multi-state model> displayed in part ii. Write $Z(t)$ for the state at time $t$, $Q=(q_{rs})$ for its <generator matrix>, and
+$$
+p_{rs}(u)=\Pr\{Z(t+u)=s\mid Z(t)=r\},\qquad P(u)=e^{uQ}.
+$$
+For $r\ne s$, $q_{rs}=\lim_{h\downarrow0}p_{rs}(h)/h$ is the <transition intensity>, and $q_{rr}=-\sum_{s\ne r}q_{rs}$. Condition on the observed initial state, and treat the clinic observation process and administrative end of follow-up as noninformative. A panel-observed interval contributes its <transition probability>, not the density of a jump at the examination date; the transitions inside that interval need not have been observed.
+
+For the first patient, the two clinic intervals contribute $p_{11}(2)p_{13}(2)$. The subsequent death is observed at elapsed time $u=0.2$ after the last clinic state, so its contribution is the conditional death-time density
+$$
+g_{35}(u)=\sum_{s=1}^4p_{3s}(u)q_{s5}=p_{33}(u)q_{35}+p_{34}(u)q_{45}.
+$$
+The equality uses the permitted directions: starting from state 3, only living states 3 and 4 can be occupied before death. To obtain this density directly, survival in a living state $s$ until time $u$, followed by death in $(u,u+du)$, has <probability> $p_{3s}(u)q_{s5}\,du+o(du)$; add over the unobserved state $s$. Hence the <mixed panel and exact-death likelihood> contribution is
+$$
+\boxed{L_1=p_{11}(2)p_{13}(2)\{p_{33}(0.2)q_{35}+p_{34}(0.2)q_{45}\}.}
+$$
+It includes the possibility of an unrecorded transition $3\to4\to5$ between the last clinic visit and death. Keeping only $p_{33}(0.2)q_{35}$ would exclude that allowed history, while $p_{35}(0.2)$ would be the <probability> of death by that time rather than the density of death at that time. With dates recorded in whole days, an exact interval-likelihood treatment integrates this density over the relevant day; the density formulation is its fine-time approximation.
+
+For the second patient, the three successive intervals with state 1 at both ends, then the interval ending in state 2, and the last interval remaining in state 2 give the <panel-observed multi-state likelihood>
+$$
+\boxed{L_2=p_{11}(2)^3p_{12}(2)p_{22}(2).}
+$$
+There is no additional death contribution after the final administrative observation. Each likelihood contribution already accounts for being alive in the observed state at that visit. For independent patients their joint conditional <likelihood> contribution is $L_1L_2$.
+
+For an explicit form, put $\lambda_r=-q_{rr}$. Irreversibility gives
+$$
+p_{rr}(u)=e^{-\lambda_ru},\qquad
+p_{1s}(u)=\frac{q_{1s}}{\lambda_s-\lambda_1}(e^{-\lambda_1u}-e^{-\lambda_su})\quad(s=2,3),
+$$
+and
+$$
+p_{34}(u)=\frac{q_{34}}{\lambda_4-\lambda_3}(e^{-\lambda_3u}-e^{-\lambda_4u}).
+$$
+These formulas follow by integrating the density of the one possible intermediate jump time; at equal exit rates the limiting expression is $q_{rs}u e^{-\lambda_ru}$. Thus
+$$
+g_{35}(u)=q_{35}e^{-\lambda_3u}+\frac{q_{34}q_{45}}{\lambda_4-\lambda_3}(e^{-\lambda_3u}-e^{-\lambda_4u}).
+$$
+Using the displayed fitted rates as numerical values gives $g_{35}(0.2)\approx0.289314$ per year, $L_1\approx0.017596$ per year and $L_2\approx0.016048$, providing a check of the probability-versus-density distinction.
+
+= ii
+{parent=5}
+{scope}
+
+= a
+{parent=ii}
+{scope}
+
+= Solution
+{parent=a}
+
+The permitted transitions form the following diagram. Each arrow is labelled by its fitted <transition intensity> in units of inverse years; the absence of an arrow is a structural restriction, not an estimated small effect.
+
+\Image[paper-37-transition-diagram.png]
+{title=Five-state model: permitted transitions and fitted rates per year}
+
+State 1 can move directly to 2, 3 or 5; state 2 can move to 4 or 5; state 3 can move to 4 or 5; and state 4 can move only to 5. There are no recovery transitions, and state 5 is an <absorbing state>. The rates of leaving the four living states are the sums of their outgoing arrows:
+$$
+\boxed{\lambda_1=0.085,\quad\lambda_2=0.181,\quad\lambda_3=0.369,\quad\lambda_4=0.513\quad\text{per year}.}
+$$
+The diagonal generator entries are their negatives, so every row of $Q$ sums to zero. These diagonal entries are not arrows or negative event rates. For example the direct $1\to5$ rate is $0.004$ per year, while death after reaching another state can occur at a much larger rate. The printed fit has no <covariates> on the intensities, so it estimates one pooled rate system and contains no treatment-effect comparison, despite the trial's treatment randomization. The reported $-2\ell$ describes the fitted <likelihood> level; by itself it is not a goodness-of-fit test without a reference or competing model.
+
+= b
+{parent=ii}
+{scope}
+
+= Solution
+{parent=b}
+
+For a homogeneous <continuous-time Markov chain>, the <holding time> in a living state $r$ before the next transition has survival <probability> $e^{-\lambda_rt}$, where $\lambda_r=\sum_{s\ne r}q_{rs}=-q_{rr}$. Indeed, conditional on still occupying that state, the <probability> of leaving in the next $dt$ is $\lambda_rdt+o(dt)$, so its survival function satisfies $S'(t)=-\lambda_rS(t)$ and $S(0)=1$. Integrating gives the <mean holding time from a transition intensity matrix>:
+$$
+\boxed{\tau_r=\int_0^\infty e^{-\lambda_rt}\,dt=\frac1{\lambda_r}=-\frac1{q_{rr}}.}
+$$
+This is the mean time until any allowed exit from that state, not necessarily the patient's remaining lifetime.
+
+For confidence limits, use the supplied <standard error> $s_r$ of the corresponding diagonal generator estimate. Changing its sign does not change its <standard error>, so it is also the <standard error> of $\widehat\lambda_r$. The <delta method>, with derivative $d(1/\lambda)/d\lambda=-1/\lambda^2$, gives
+$$
+\operatorname{se}(\widehat\tau_r)\approx\frac{s_r}{\widehat\lambda_r^2},\qquad
+\widehat\tau_r\pm1.96\frac{s_r}{\widehat\lambda_r^2}.
+$$
+The resulting approximate 95% <Wald confidence intervals> are
+$$
+\boxed{\begin{array}{c|r|r|c}
+\text{state}&\widehat\tau_r\ (\text{years})&\operatorname{se}(\widehat\tau_r)&95\%\text{ interval}\rule{0pt}{2.5ex}\\\hline
+1&11.765&0.498&(10.788,12.741)\\
+2&5.525&0.644&(4.263,6.787)\\
+3&2.710&0.181&(2.356,3.064)\\
+4&1.949&0.258&(1.444,2.454)
+\end{array}}
+$$
+The diagonal <standard errors> already incorporate the <covariance> among outgoing rates. They should not be replaced by the square root of a sum of squared off-diagonal <standard errors>, which would silently assume those rate estimates independent.
+
+Alternatively construct a positive rate <confidence interval> and apply the <confidence interval for an inverse rate> transformation. Here every normal rate interval has a positive lower endpoint, giving
+$$
+\left[\frac1{\widehat\lambda_r+1.96s_r},\frac1{\widehat\lambda_r-1.96s_r}\right].
+$$
+These approximate intervals are, respectively, $(10.863,12.830)$, $(4.497,7.161)$, $(2.397,3.117)$ and $(1.548,2.631)$ years. They are asymmetric because inversion is nonlinear; positive log-rate or likelihood-based intervals could also be inverted. The symmetric delta intervals and the inverted-rate intervals are two legitimate first-order approaches and need not have numerically identical endpoints.
+
+The death state has zero exit rate, so its <holding time> is infinite. There is no finite mean-sojourn estimate or ordinary finite <confidence interval> for this structurally <absorbing state>. All intervals above concern the mean parameter, not a <prediction interval> for one patient's realized <holding time>.
+
+= c
+{parent=ii}
+{scope}
+
+= Solution
+{parent=c}
+
+The <transition matrix> over five years is $P(5)=e^{5Q}$. Its first row conditions on starting in state 1. The displayed approximate probabilities mean that, five years later, about **65% remain disease-free, 6% have local recurrence only, 10% have distant metastasis only, 2% have both, and 16% have died**. They are probabilities of the states occupied at five years; they are not the probabilities of the next jump destinations or annual <transition intensities>. In particular the positive <probability> of state 4 does not require a direct $1\to4$ arrow: the paths $1\to2\to4$ and $1\to3\to4$ contribute to it. The <probability> of death includes deaths after any allowed sequence of intermediate states.
+
+The printed row sums to $0.99$ rather than one because the entries are approximate; an exact stochastic transition row sums to one. Exponentiating the displayed three-decimal generator gives approximately $(0.65377,0.06490,0.09775,0.02532,0.15826)$, illustrating that the edited, low-precision table should not be treated as an exact matrix exponential of its separately rounded rates.
+
+State 5 is an <absorbing state>, so once entered it can never be left. Its generator row is zero, and the last row of every positive-time <transition matrix> is therefore
+$$
+\boxed{(0,0,0,0,1).}
+$$
+This explains all four leading zeroes in the printed last row.

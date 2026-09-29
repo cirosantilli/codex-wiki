@@ -1,0 +1,381 @@
+= Paper 73
+{scope}
+{title2=Computational Neuroscience}
+
+https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2007/Paper73.pdf
+
+= 1
+{parent=Paper 73}
+{scope}
+
+= a
+{parent=1}
+{scope}
+
+= Solution
+{parent=a}
+
+An <action potential> is a brief regenerative change in a neuron's <membrane potential>, followed by repolarization and recovery. In a typical spiking neuron, depolarization recruits <voltage-gated ion channels>; inward current promotes further depolarization until inactivation and opposing currents terminate the event. The <neuronal refractory period> makes immediate repetition difficult or impossible. Once initiated, the roughly stereotyped event propagates along the <axon>. Its amplitude is therefore not generally the primary variable used to represent stimulus strength.
+
+Inputs arriving at <synapses> on a <neuron> and its <dendrites> change membrane currents and produce graded voltage changes. Their spatial and temporal integration can trigger an <action potential>. At a chemical <synapse>, an arriving spike promotes release of a <neurotransmitter>, whose receptors alter the next neuron's conductances. Depending on the synapse and receptor mechanism, the input can promote or suppress the next neuron's firing. Thus information flows through activity patterns interacting with connectivity and synaptic dynamics, rather than by an identical voltage waveform simply passing unchanged across every cell.
+
+In <rate coding>, a relevant response statistic is the number of spikes in a chosen interval, or the mean firing rate inferred from repeated trials or a population. For example, a sensory variable might be represented by mean counts of two versus five spikes in a $100$ ms window. A downstream neuron integrating many synaptic inputs over that window can distinguish the rates even if individual spike times vary. The window, averaging method and neuron's stimulus tuning must be specified; not every cell increases its rate for every stronger stimulus. <Neural adaptation> can also make the rate depend on recent stimulus history.
+
+In <temporal coding>, precise times carry information beyond that count. Two responses containing the same number of spikes can differ in their first-spike latency after stimulus onset. Alternatively, spikes can lock to a particular phase of a periodic input, or relative timing across two neurons can encode coincidence. A decoder that reads only the long-window count discards those distinctions, whereas a temporally sensitive synapse or coincidence detector can use them.
+
+**Rate coding uses a chosen frequency or count summary; temporal coding uses the arrangement of spike times relative to a reference.** They are complementary possibilities within <neural coding>, and a <spike train> can carry information in both. Stochastic variability does not prevent coding, but requires assessing how reliably different response distributions can be distinguished.
+
+= b
+{parent=1}
+{scope}
+
+= Solution
+{parent=b}
+
+For a constant-rate <Poisson process>, let $T$ be the waiting time from a spike to the next spike. By <independent increments>, there is no spike in an interval of length $u$ with probability $e^{-ru}$. Hence, for $r>0$,
+$$
+\boxed{F_T(u)=\mathbb P(T\leq u)=
+\begin{cases}0,&u<0,\\1-e^{-ru},&u\geq0.\end{cases}}
+$$
+Its density is $re^{-ru}$, so the interspike intervals are independent <exponential distributions> with mean $1/r$. If $U$ is uniform on $(0,1)$, <inverse transform sampling> gives $T=-\log U/r$. Repeatedly add independent draws to the current spike time to simulate a constant-rate <spike train>.
+
+For a prescribed time-dependent nonnegative rate $r(t)$, use an <inhomogeneous Poisson process>. Conditional on the present event at $t_i$, its next waiting time has survival probability
+$$
+\mathbb P(T_i>u\mid t_i)=\exp\left[-\int_{t_i}^{t_i+u}r(s)\,ds\right].
+$$
+Thus its conditional CDF is $1$ minus that expression for $u\geq0$. Define the cumulative intensity $\Lambda(t)=\int_0^t r(s)\,ds$. For each new independent uniform draw, set $E_i=-\log U_i$ and solve
+$$
+\boxed{\Lambda(t_{i+1})-\Lambda(t_i)=E_i.}
+$$
+This transforms independent unit-rate exponential intervals in integrated-intensity time into physical spike times. Use a generalized inverse when the rate vanishes on an interval: no spikes are placed in a flat part of $\Lambda$. On a finite simulation window, stop when the next intensity target exceeds the available $\Lambda$. If the total future intensity is finite, a target beyond it means that no further spike occurs.
+
+Numerically, integrate the known rate and invert the accumulated integral, or integrate exactly across piecewise-constant rate bins. **Drawing an exponential interval using only $r(t_i)$ is not exact when the rate changes during the interval.** The Poisson model also omits the <neuronal refractory period> and other spike-history effects.
+
+= c
+{parent=1}
+{scope}
+
+= Solution
+{parent=c}
+
+One useful starting point is reverse correlation, implemented as a <spike-triggered average>. Present a long stimulus record and retain the stimulus history before each observed spike. After subtracting the stimulus mean, estimate
+$$
+\widehat k(u)=\frac1K\sum_{i=1}^K s(t_i-u),\qquad 0\leq u\leq T_k,
+$$
+where $K$ is the number of spikes and $T_k$ is the history window. This identifies a candidate temporal <receptive field>. For white Gaussian stimulation and a one-filter encoding model, the average is proportional to the relevant filter, provided the response nonlinearity does not make that average vanish. For example an even response to the projection can have zero average despite strong stimulus dependence. Colored inputs require accounting for stimulus covariance, and more than one relevant stimulus direction may require a richer fitted model.
+
+Use the candidate filter in an <LNP model>:
+$$
+z(t)=b+\int_0^{T_k} k(u)s(t-u)\,du,\qquad r(t)=g(z(t))\geq0.
+$$
+Estimate the static nonlinearity $g$ by binning filter projections and dividing spike counts by exposure time in each bin. Equivalently, Bayes' rule gives $g(z)=\overline r\,p(z\mid\text{spike})/p(z)$ under this model. Refine the filter and nonlinearity by maximizing the conditional Poisson <log-likelihood>
+$$
+\ell=\sum_i\log r(t_i)-\int r(t)\,dt,
+$$
+with suitable regularization. Simulate an <inhomogeneous Poisson process> at the fitted rate using integrated-intensity inversion from the previous solution. This gives a statistical encoding model, not a claim to reconstruct the neuron's ion channels.
+
+Use <cross-validation>: estimate parameters on one set of trials and test them on independent held-out trials. Under repeated identical stimuli, compare the observed and simulated trial-averaged firing rates, spike-count distributions, interspike-interval distributions and <autocorrelations>. Compare held-out likelihoods and predictive errors with simpler baseline models and with the variability between real repeats. Exact spike-by-spike agreement is not expected from two independent realizations of a stochastic model. Large rate agreement accompanied by incorrect short-interval or correlation statistics reveals missing dynamics. Adding a spike-history term, for example in a point-process <generalized linear model>, can account for refractoriness or bursting when the basic Poisson cascade fails.
+
+**A good model predicts held-out response distributions, not just its training spike train.** Such a model summarizes what stimulus features affect the neuron, permits controlled simulated changes of those features, and tests whether the proposed computation is sufficient. Its failures can suggest further experiments or additional stimulus and history variables.
+
+= d
+{parent=1}
+{scope}
+
+= Solution
+{parent=d}
+
+Assume the two response labels are distinct and the error probability is the same for each stimulus. Then the stimulus-response map is a <binary symmetric channel>:
+$$
+\mathbb P(R=r_+\mid S=+)=\mathbb P(R=r_-\mid S=-)=1-P_x,
+$$
+with the two incorrect conditional probabilities equal to $P_x$. Equal stimulus probabilities give $\mathbb P(R=r_+)=\mathbb P(R=r_-)=1/2$. In bits, the <Shannon entropy> of the response is therefore $H(R)=1$. For either stimulus the response entropy is the <binary entropy>
+$$
+h_2(P_x)=-P_x\log_2P_x-(1-P_x)\log_2(1-P_x),
+$$
+with $0\log0=0$. Thus $H_{\mathrm{noise}}=H(R\mid S)=h_2(P_x)$, and the <mutual information> is
+$$
+\boxed{I(S;R)=1-h_2(P_x)quad\text{bits per presentation}.}
+$$
+It is maximal, equal to one bit, at $P_x=0$ and also at $P_x=1$. The latter response is always opposite to the ideal label but still specifies the stimulus perfectly after relabelling. It is minimal, equal to zero, at $P_x=1/2$, when both response distributions are identical and the response is independent of the stimulus. If error is conventionally restricted to $0\leq P_x\leq1/2$, the maximum occurs only at zero.
+
+The symmetric-error assumption matters. A single overall error probability would not determine this information if the two stimuli had different conditional error rates or if the response included additional outcomes.
+
+= 2
+{parent=Paper 73}
+{scope}
+
+= Solution
+{parent=2}
+
+Computational models and biological experiments answer complementary questions. Experiments constrain what a nervous system actually does; a model makes a proposed explanation precise enough to test whether its mechanisms can produce those observations. **The useful comparison is between competing, experimentally constrained explanations, rather than between modelling and experimentation as alternatives.** A good model exposes assumptions, predicts new observations and identifies measurements that would distinguish it from rivals.
+
+A <Hodgkin-Huxley model> links <action potentials> to voltage-dependent conductances and channel kinetics. It is more informative than merely fitting a spike waveform because changes in its conductances predict changes in excitability. Yet a model calibrated for one cell or preparation does not automatically represent another: different channel combinations and spatial geometry can yield similar outputs. Detailed parameters must be constrained by experiments, and apparent agreement does not make them uniquely identifiable. A <leaky integrate-and-fire model> deliberately sacrifices channel detail to study the effects of connectivity, timing and <synapses> in a large network. It is useful for such questions even though it cannot explain the microscopic origin of the action-potential waveform.
+
+At a functional level, an <LNP model> tests which stimulus features predict a neuron's response and how those features map to firing rate. Independent testing, including response correlations rather than only mean rate, reveals what its assumptions miss. It can characterize a <receptive field> without claiming that the brain explicitly performs its particular fitted calculation. A <Hopfield network> likewise demonstrates that recurrent interactions can implement content-addressable memory: corrupted cues relax toward stored patterns. Its usefulness is an existence proof and a quantitative account of interference, not evidence that biological memory literally uses symmetric binary connections and the same update schedule.
+
+Developmental models connect observed input statistics with <synaptic plasticity>. <Hebbian learning> with normalization or <synaptic competition> can produce selective weights and segregation of competing inputs. Models of correlated ON and OFF inputs can explain the formation of oriented simple-cell subregions and predict how changing the correlations changes their organization. That makes altered visual experience or patterned stimulation informative tests. Such models still need anatomical, developmental and plasticity constraints; several learning rules may reproduce similar final receptive fields. https://pmc.ncbi.nlm.nih.gov/articles/PMC6576834/[A primary model of activity-dependent ON/OFF competition] illustrates this approach.
+
+Normative models instead ask what representation would perform a specified task efficiently. For example, <sparse coding> of natural images can produce localized oriented filters resembling <simple cell> receptive fields. This links environmental statistics to a useful coding objective, but resemblance alone neither proves that the objective is the only explanation nor specifies the biological learning mechanism. Predictions about altered stimulus ensembles, population activity and synaptic changes provide stronger tests. https://www.rctn.org/bruno/papers/sparse-coding.pdf[The original sparse-code receptive-field model] provides an example.
+
+These distinctions also explain the dangers of models. Excessive flexibility can fit noise; unrealistic assumptions can generate a desired effect by construction; and multiple parameter sets can have nearly indistinguishable outputs. Simulation without analysis may obscure rather than explain a mechanism. <Cross-validation>, uncertainty analysis, comparisons with simpler models and controlled perturbations are therefore important. Conversely, collecting more measurements without a discriminating hypothesis can leave the same explanatory ambiguity unresolved.
+
+The productive cycle is to propose a constrained model, determine which observations it predicts beyond the fitting data, perform the relevant experiment, and revise or reject the model. Models help select experiments and interpret results; experiments establish their scope and reveal omitted mechanisms. The appropriate level of detail depends on the question: spike-generation mechanisms, circuit computation and developmental organization need not be explained by the same model.
+
+= 3
+{parent=Paper 73}
+{scope}
+
+= a
+{parent=3}
+{scope}
+
+= Solution
+{parent=a}
+
+Interpret $x$ and $y$ as nonnegative firing-rate activities, rather than individual <action potentials>. Take $\tau,m,\sigma>0$. The relaxation time $\tau$ controls how quickly activity changes. The decay terms $-x$ and $-y$ make activity fall in the absence of recurrent drive. Each neuron receives a weighted input from the other, with coupling $a$, and the static input-output function converts that input into a target activity.
+
+The nonlinear response tends to $m$ at large input magnitude and equals $m/2$ at $|p|=\sigma$, so $m$ is its maximum activity and $\sigma$ its half-saturation input scale. At small inputs it is approximately $mp^2/\sigma^2$. For $a>0$ this is a <mutually excitatory saturating rate network>: increasing one neuron's activity increases the other's drive, permitting positive feedback. The response is even in $p$, so this particular equation does not model a negative $a$ as ordinary inhibition; its dynamics depend on $a^2$.
+
+The equations combine passive relaxation with instantaneous nonlinear recurrent drive. They omit explicit spike timing, delays, channel dynamics and stochasticity, so they are an activity-level model for <computational neuroscience>.
+
+= b
+{parent=3}
+{scope}
+
+= Solution
+{parent=b}
+
+Put $g(z)=s(az)=ma^2z^2/(\sigma^2+a^2z^2)$. The <nullclines> are
+$$
+x=g(y),\qquad y=g(x).
+$$
+Any <steady state> has nonnegative coordinates because $g\geq0$. For $a\ne0$, $g$ is strictly increasing on the positive half-line. If a steady state had $x>y$, then $x=g(y)<g(x)=y$, a contradiction. The case $y>x$ is identical, so all steady states lie on the diagonal. Write $x=y=z$. Besides $z=0$, the equation $z=g(z)$ gives
+$$
+a^2z^2-ma^2z+\sigma^2=0,
+$$
+and hence
+$$
+\boxed{z_\pm=\frac{m\pm\sqrt{m^2-4\sigma^2/a^2}}2.}
+$$
+Thus **three distinct steady states exist exactly when $|a|m>2\sigma$**, with $a\ne0$ and the positive parameter assumptions stated above. For positive excitatory coupling this is $am>2\sigma$. At equality the two positive states merge; below it only the origin remains. If $a=0$, the origin is again the only steady state.
+
+Both nullclines begin at the origin and approach the limiting activity $m$ along their saturating direction; they are reflections of each other across $x=y$. Flow points to the right where $x<g(y)$ and to the left where $x>g(y)$. It points upwards where $y<g(x)$ and downwards where $y>g(x)$. The plot shows these nullclines and typical trajectories for the parameters of the next part.
+
+\Image[paper-73-neural-phase.png]
+{title=Nullclines and flow of the bistable two-neuron rate network}
+
+The origin and upper diagonal state attract nearby trajectories, while the lower positive state is a saddle. Its <stable manifold> separates the two attracting regions: trajectories in each <basin of attraction> approach its stable node, giving <bistability>. The diagonal is invariant, and on it the scalar activity increases between $z_-$ and $z_+$ and decreases between zero and $z_-$ or above $z_+$. Activities remain nonnegative and bounded because $0\leq g\leq m$. The vector field has constant negative divergence $-2/\tau$, so the <Bendixson-Dulac criterion> also rules out periodic orbits in the physical quadrant. The network is a switch between persistent activity levels, rather than an oscillator.
+
+= c
+{parent=3}
+{scope}
+
+= Solution
+{parent=c}
+
+The <Jacobian matrix> at a diagonal <steady state> is
+$$
+J(z)=\frac1\tau\begin{pmatrix}-1&g'(z)\\g'(z)&-1\end{pmatrix},\qquad
+ g'(z)=\frac{2ma^2\sigma^2z}{(\sigma^2+a^2z^2)^2}.
+$$
+Its <eigenvectors> $(1,1)$ and $(1,-1)$ represent common and opposing perturbations, with respective <eigenvalues> $(-1+g')/\tau$ and $(-1-g')/\tau$.
+
+For a nonzero equilibrium, $\sigma^2+a^2z^2=ma^2z$ and $\sigma^2/a^2=z(m-z)$. Consequently $g'(z)=2(m-z)/m$. The lower root has $g'>1$ and is a <saddle equilibrium>; the upper root has $0<g'<1$ and is a <stable node>. At the origin $g'(0)=0$, so both <eigenvalues> are $-1/\tau$.
+
+The supplied parameters give $\sigma/a=4$, and the nonzero roots solve $z^2-10z+16=0$, giving $2$ and $8$. The numerical stability results are
+$$
+\boxed{\begin{array}{c|cc|c}
+(x,y)&\lambda_{(1,1)}&\lambda_{(1,-1)}&\text{type}\\\hline
+(0,0)&-0.1&-0.1&\text{stable node}\\
+(2,2)&0.06&-0.26&\text{saddle}\\
+(8,8)&-0.06&-0.14&\text{stable node}
+\end{array}}
+$$
+Biologically, the origin is a quiescent state and the upper equilibrium a sustained mutually reinforced activity state. The saddle represents a collective activation threshold: a perturbation crossing its basin boundary can switch the network from low to high activity. This persistent-state mechanism can model a memory or decision variable, but the simplified rate equations do not establish that a particular biological circuit uses it.
+
+= d
+{parent=3}
+{scope}
+
+= Solution
+{parent=d}
+
+A standard binary <Hopfield network> contains $M$ recurrently connected units with activities $x_i\in\{-1,+1\}$. Choose symmetric weights $w_{ij}=w_{ji}$, omit self-couplings by setting $w_{ii}=0$, and use zero thresholds for the energy in the next part. To store desired binary patterns $\xi^\mu$, a simple choice is <Hebbian memory weights for a Hopfield network>:
+$$
+\boxed{w_{ij}=\frac1M\sum_{\mu=1}^P\xi_i^\mu\xi_j^\mu\quad(i\ne j),\qquad w_{ii}=0.}
+$$
+Correlated activity strengthens connections between units agreeing across the training patterns and makes disagreement contribute negatively. This creates attraction toward the stored configurations when cross-talk is sufficiently small. For one stored pattern, its local field is $(M-1)\xi_i/M$, so every bit is stable for $M>1$. With multiple patterns, the other patterns add cross-talk; the rule does not guarantee exact retrieval for an arbitrary collection.
+
+Start retrieval from a partial or corrupted cue and update one unit at a time using its current field
+$$
+h_i=\sum_{j\ne i}w_{ij}x_j,\qquad
+x_i' =\begin{cases}+1,&h_i>0,\\-1,&h_i<0,\\x_i,&h_i=0.\end{cases}
+$$
+A cyclic or random fair asynchronous schedule lets the network relax toward a fixed point, completing a memory when the cue lies in its basin. This is content-addressable retrieval: the initial pattern selects the memory without an explicit address. Nonzero thresholds can be included in a more general model, but their corresponding linear terms must then be included in the energy.
+
+= e
+{parent=3}
+{scope}
+
+= Solution
+{parent=e}
+
+For the symmetric zero-diagonal weights and asynchronous rule just specified, update only unit $k$. In the energy difference, terms involving neither $k$ nor its symmetric partner cancel. Thus <asynchronous Hopfield energy descent> gives
+$$
+\Delta E=-\frac12\sum_{j\ne k}w_{kj}(x_k'-x_k)x_j
+-\frac12\sum_{i\ne k}w_{ik}x_i(x_k'-x_k)
+=-(x_k'-x_k)h_k.
+$$
+If the unit was already aligned, it does not change and $\Delta E=0$. If it flips into alignment, $x_k'-x_k=2\operatorname{sgn}(h_k)$, so
+$$
+\boxed{\Delta E=-2|h_k|<0\quad\text{on every actual non-tie flip}.}
+$$
+At $h_k=0$ our tie rule retains the old activity. The network has only $2^M$ configurations. Strict descent on every actual change prevents revisiting a configuration and permits only finitely many changes. With a fair schedule every misaligned unit is eventually updated, so the terminal configuration is a fixed point. At that point each possible single-bit flip has energy cost $2x_kh_k\geq0$. **The network reaches a minimum against single-unit changes, not necessarily the global minimum.** Its energy is a <Lyapunov function> for these asynchronous dynamics.
+
+The qualifications are essential to the printed claim. Synchronous updates can cycle: for two units with $w_{12}=w_{21}=1$, the state $(1,-1)$ alternates with $(-1,1)$, keeping energy $+1$. Symmetry alone therefore does not prove convergence under simultaneous updates.
+
+Nor does the valid descent proof guarantee a global minimum. Consider four units with $w_{12}=w_{34}=3$ and all four cross-group weights equal to $1$, symmetrically and with zero diagonal. The state $(1,1,-1,-1)$ has aligned fields $(1,1,-1,-1)$ and energy $-2$, so it is a strict single-flip local minimum. The all-positive state has energy $-10$. This explicit counterexample shows why local minima may trap retrieval even though the energy always descends under the stipulated rule.
+
+= f
+{parent=3}
+{scope}
+
+= Solution
+{parent=f}
+
+One limitation is finite useful storage capacity and interference. Under simple <Hebbian learning>, each additional pattern contributes cross-talk to the retrieval fields; correlated or excessive patterns can erase a memory's basin or destabilize the pattern itself. More structured learning can reduce this interference: covariance-based weights account for activity biases, and pseudoinverse-based rules can orthogonalize a set of linearly independent patterns. Sparse representations and suitable thresholds can also change the capacity tradeoff. These extensions require their own retrieval analysis; they do not permit unlimited robust storage in a finite network.
+
+A second limitation is spurious attractors and entrapment in unintended local minima. Mixtures of memories or unrelated configurations can be fixed points, and deterministic energy descent cannot escape an already stable incorrect state. Stochastic updates that sometimes accept energy increases can explore other configurations, and <simulated annealing> can gradually reduce that randomness to favor lower energies. Better weight learning and basin shaping can reduce the spurious states. Finite-temperature escape is probabilistic, and a practical finite-time annealing schedule does not guarantee the desired memory or a global minimum.
+
+**Changing the learning rule addresses interference; changing the retrieval dynamics can address trapping.** The objective must still be appropriate: the lowest energy pattern is not necessarily the memory best matching a particular noisy cue.
+
+= 4
+{parent=Paper 73}
+{scope}
+
+= a
+{parent=4}
+{scope}
+
+= Solution
+{parent=a}
+
+The input vector $x$ contains the activities of presynaptic units or sensory features, and $w$ contains the corresponding synaptic weights. The linear output $y=w^Tx$ is their weighted sum; it may be a centered activity proxy rather than a literal nonnegative spike rate. The learning time scale is $\tau>0$, and take $\alpha>0$ for normalization. The term $yx$ is a <Hebbian learning> increment that strengthens weights correlated with the postsynaptic output. The term $-\alpha y^2w$ opposes unlimited growth.
+
+For slow learning under stationary input statistics, average over inputs while holding the current weights fixed. Define $C=\langle xx^T\rangle$. The averaged <Oja's rule> is
+$$
+\tau\dot w=Cw-\alpha(w^TCw)w.
+$$
+Its squared norm obeys
+$$
+\boxed{\frac\tau2\frac{d\|w\|^2}{dt}=(w^TCw)(1-\alpha\|w\|^2).}
+$$
+Whenever the output second moment is positive, this drives the norm toward $1/\sqrt\alpha$, preventing the unbounded growth of an unconstrained Hebbian linear neuron. The direction becomes sensitive to dominant input correlations. Such a unit can learn a feature detector without supplied target labels, providing a simple mechanism for <unsupervised learning> and <principal component analysis>. This averaged analysis assumes input fluctuations are fast relative to learning; it is not a claim that every individual stochastic update follows the same deterministic trajectory.
+
+= b
+{parent=4}
+{scope}
+
+= Solution
+{parent=b}
+
+For fixed weights during the input average,
+$$
+\langle yx\rangle=\langle xx^T\rangle w=Cw,\qquad
+\langle y^2\rangle=w^TCw.
+$$
+Thus $C$ is the input second-moment matrix. It is a <positive semidefinite matrix> because $v^TCv=\langle(v^Tx)^2\rangle\geq0$. If the inputs have been mean-centered, it is their <covariance matrix>; otherwise $C=\operatorname{Cov}(x)+\langle x\rangle\langle x\rangle^T$.
+
+The stationary averaged learning equation is
+$$
+\boxed{Cw=\alpha\langle y^2\rangle w.}
+$$
+For $w\ne0$ this makes $w$ an <eigenvector> of $C$ with <eigenvalue> $\lambda=\alpha\langle y^2\rangle$. If $\lambda>0$, taking the inner product with $w$ gives
+$$
+\lambda\|w\|^2=\alpha(w^TCw)\|w\|^2,
+\qquad w^TCw=\lambda\|w\|^2,
+$$
+and therefore
+$$
+\boxed{\|w\|^2=1/\alpha.}
+$$
+The zero vector is also stationary but is not an eigenvector in the usual nonzero-vector definition. Likewise any vector in the nullspace of $C$ is stationary with zero output second moment and need not have the normalized length. These exceptional equilibria must be distinguished from a nonzero feature-learning solution.
+
+= c
+{parent=4}
+{scope}
+
+= Solution
+{parent=c}
+
+Let $\{v_i\}$ be an orthonormal <eigenbasis> of $C$, with $\lambda_1\geq\lambda_2\geq\cdots\geq0$. Expand $w=\sum_i b_iv_i$. At the normalized length imposed on positive-output equilibria,
+$$
+\sum_i b_i^2=\frac1\alpha,\qquad
+\langle y^2\rangle=w^TCw=\sum_i\lambda_i b_i^2\leq\frac{\lambda_1}{\alpha}.
+$$
+Equality holds exactly when $w$ lies in the largest-eigenvalue eigenspace. If $\lambda_1$ is simple,
+$$
+\boxed{w=\pm\frac{v_1}{\sqrt\alpha},\qquad
+\max\langle y^2\rangle=\frac{\lambda_1}{\alpha}.}
+$$
+The norm constraint is essential: without it, scaling a direction with positive eigenvalue makes the output second moment arbitrarily large, so the printed maximization statement would have no finite maximum. When $\alpha=1$, this is the usual unit-length formulation.
+
+For centered inputs, maximizing this quantity maximizes output variance. The unit therefore selects the first <principal component analysis> direction: a stimulus feature with the greatest variation in the input ensemble. Biologically, learned synaptic weights become selective to that dominant correlated pattern, rather than to a teacher-supplied label. For uncentered inputs it maximizes a second moment including the mean response, which is not the same as maximizing variance. If the top eigenvalue is repeated, any normalized vector in its eigenspace attains the same maximum.
+
+= d
+{parent=4}
+{scope}
+
+= Solution
+{parent=d}
+
+Linearize the averaged rule about the genuine positive-eigenvalue <equilibrium> $w_i=v_i/\sqrt\alpha$, where $v_i$ is a unit <eigenvector>. The question's unit-length hint implicitly uses $\alpha=1$; for general $\alpha$ the scaling is required. Put $w=w_i+u$ and $u_i=v_i^Tu$. To first order,
+$$
+w^TCw=\frac{\lambda_i}{\alpha}+\frac{2\lambda_i}{\sqrt\alpha}u_i+O(\|u\|^2).
+$$
+Substituting into the mean learning equation and cancelling the equilibrium terms gives <stability and normalization of averaged Oja learning>:
+$$
+\boxed{\tau\dot u=(C-\lambda_iI)u-2\lambda_i u_iv_i+O(\|u\|^2).}
+$$
+In the eigenbasis, the radial and transverse perturbations satisfy
+$$
+\tau\dot u_i=-2\lambda_i u_i,\qquad
+\tau\dot u_j=(\lambda_j-\lambda_i)u_j\quad(j\ne i).
+$$
+For $\lambda_i>0$, the radial direction contracts. Any nonmaximal eigenvector has a transverse direction with $\lambda_j>\lambda_i$ and is unstable. If $\lambda_1>\lambda_2$ and $\lambda_1>0$, both $\pm v_1/\sqrt\alpha$ have strictly negative linearized <eigenvalues> and are <locally asymptotically stable>. Thus **only the maximal-eigenvalue directions can be stable**, with the usual simple-eigenvalue assumptions giving isolated attracting equilibria.
+
+Convergence also needs an initial component along the top direction. For the full averaged equation, the coefficients $b_j=v_j^Tw$ obey
+$$
+\tau\dot b_j=[\lambda_j-\alpha(w^TCw)]b_j.
+$$
+For $b_1(0)\ne0$,
+$$
+\boxed{\frac{b_j(t)}{b_1(t)}=\frac{b_j(0)}{b_1(0)}
+ e^{(\lambda_j-\lambda_1)t/\tau}.}
+$$
+With a strict top eigenvalue, all other ratios tend to zero. The norm equation from part a then drives the nonzero weight norm to $1/\sqrt\alpha$, so the weight converges to the top eigenvector with the sign of its initial top component. Random nonzero initialization has that component with probability one under a continuous distribution.
+
+Several exceptions qualify the printed conclusion. A repeated largest eigenvalue gives neutral directions within the top eigenspace and convergence to a normalized vector in that space, not a unique eigenvector. An initial vector exactly orthogonal to the top eigenspace remains in that invariant subspace. The zero initialization stays zero. If $C=0$, every weight is stationary and no distinguished component can be learned. Nonzero nullspace equilibria are unstable when $C$ has a positive eigenvalue. Hence unconditional convergence from every initial weight, or uniqueness without a spectral gap, would be false.
+
+= e
+{parent=4}
+{scope}
+
+= Solution
+{parent=e}
+
+A visual neuron's <receptive field> specifies the region of visual space and stimulus features whose changes affect its response, with the surrounding and temporal context held appropriately controlled. A linear receptive-field approximation is a signed spatial weighting kernel. A <simple cell> in <primary visual cortex> commonly has elongated alternating ON and OFF subregions and <orientation selectivity>. Brightening an ON region increases its drive; darkening an OFF region does likewise, while opposite contrasts oppose that drive in the linear approximation.
+
+The original sketch below uses a Gaussian-windowed cosine to depict an elongated ON strip with OFF flanks. A bar aligned with these regions can produce strong net drive, whereas an orthogonal bar produces more cancellation. This is an illustrative signed filter, not a claim that every simple cell has exactly this analytical shape.
+
+\Image[paper-73-receptive-field.png]
+{title=Illustrative simple-cell receptive field with elongated ON and OFF subregions}
+
+Different <unsupervised learning> models address different developmental aspects. <Oja's rule> can select a dominant direction of correlated input and provides normalization that a bare Hebbian update lacks. By itself, one linear principal component need not be localized, nor does it create a cortical map. Additional spatial constraints and competition are needed to explain a collection of spatially organized selective cells.
+
+Competitive <Hebbian learning> among correlated ON and OFF inputs can separate those input types into adjacent subregions and generate <orientation selectivity>. Competition among inputs from the two eyes can similarly contribute to eye-specific preference and <ocular dominance columns>; spatial interactions between cortical units are needed for an organized map rather than merely one cell choosing one input pool. These models connect developmental organization to input correlations and normalization constraints. https://pmc.ncbi.nlm.nih.gov/articles/PMC6576834/[The ON/OFF competition model] gives a concrete orientation-development example.
+
+A different approach is <sparse coding>: learn features that reconstruct natural images while limiting simultaneous activity. This can yield localized, oriented, band-pass filters resembling simple-cell receptive fields, because it uses structure in natural-image statistics beyond the covariance alone. https://www.rctn.org/bruno/papers/sparse-coding.pdf[The original sparse-code model] demonstrates this functional account. It does not by itself establish an exact developmental mechanism.
+
+**Correlated input, competition and normalization can produce selectivity; the objective and network constraints determine which aspect of cortical organization is explained.** Anatomical constraints, spontaneous activity and experience must still be tested experimentally. A final receptive-field resemblance is weaker evidence than accurate predictions about its development and responses to altered input statistics.

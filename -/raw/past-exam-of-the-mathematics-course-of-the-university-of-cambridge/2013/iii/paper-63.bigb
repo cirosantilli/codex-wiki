@@ -1,0 +1,461 @@
+= Paper 63
+{scope}
+{title2=Numerical Solution of Differential Equations}
+
+https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2013/paper_63.pdf
+
+= 1
+{parent=Paper 63}
+{scope}
+
+= 1
+{parent=1}
+{scope}
+
+= Solution
+{parent=1}
+
+Put $d=\Delta x$, $k=\Delta t$ and use the diffusion <Courant number> $r=k/d^2$. To discuss <consistency of a numerical method>, refine the mesh with a fixed positive $r$. With $\delta^2U_m=U_{m-1}-2U_m+U_{m+1}$, the printed update is $U^{n+1}-U^n=\alpha\delta^2U^{n+1}$. A <Taylor expansion> of a smooth exact solution, about the new time level, gives the residual divided by $k$:
+$$
+\frac{u(t+k,x)-u(t,x)-\alpha\delta^2u(t+k,x)}{k}
+=\left(1-\frac{\alpha}{r}\right)u_{xx}
+-\frac{k}{2}u_{xxxx}-\frac{\alpha d^4}{12k}u_{xxxx}
++O(k^2+\alpha d^6/k).
+$$
+Here the <heat equation> implies $u_t=u_{xx}$ and $u_{tt}=u_{xxxx}$. Since $\alpha$ depends only on $r$, the leading term can vanish for every smooth solution only if **$\alpha(r)=r$**. Thus the method is the <Backward Euler diffusion scheme>, with <local truncation error>
+$$
+\tau=-\left(\frac{k}{2}+\frac{d^2}{12}\right)u_{xxxx}
++O(k^2+kd^2+d^4).
+$$
+Its highest general accuracy is **first order in time and second order in space**, or **order two in $d$ under $k=rd^2$**. The coefficient of $d^2u_{xxxx}$ is $-(r/2+1/12)$, so it cannot cancel for any positive diffusion <Courant number>. This is a conclusion about the stencil actually printed: the new-time spatial difference fixes the sign of its temporal error. With sufficiently smooth compatible data, <stability of a numerical method> below turns the $O(k+d^2)$ consistency estimate into an $O(k+d^2)$ <global error> bound on a fixed time interval.
+
+= 2
+{parent=Paper 63/1}
+{scope}
+
+= Solution
+{parent=2}
+
+The zero <Dirichlet boundary conditions> permit an exact finite-interval calculation. Let $T=\operatorname{tridiag}(1,-2,1)$ on the $M$ interior grid points. The <Dirichlet discrete Laplacian> has an orthogonal <eigenvector> basis
+$$
+v_m^{(j)}=\sin\frac{jm\pi}{M+1},\qquad
+Tv^{(j)}=-4s_jv^{(j)},\qquad
+s_j=\sin^2\frac{j\pi}{2(M+1)},\quad 1\leq j\leq M.
+$$
+Consequently the update matrix $G=(I-rT)^{-1}$ has modal amplification factors
+$$
+g_j=\frac1{1+4rs_j}.
+$$
+For every physical $r\geq0$, all denominators are at least one. <Orthogonal diagonalization> therefore proves
+$$
+\|G^nU^0\|_d\leq\|U^0\|_d,\qquad
+\|U\|_d^2=d\sum_{m=1}^M|U_m|^2,
+$$
+uniformly in $M$, $r$ and $n$. The same bound controls initial perturbations; a forcing increment is propagated by contraction, so successive increments accumulate at most by their sum. **The highest-order consistent method is unconditionally stable for all $r\geq0$.** This proof incorporates the boundary conditions, whereas a periodic <Fourier mode> calculation alone would not do so.
+
+For completeness, if “range” is interpreted algebraically to include negative $r$ on a fixed grid, the exact power-stable range is
+$$
+\boxed{r\in[0,\infty)\ \cup\ \left(-\infty,-\frac1{2\sin^2(\pi/[2(M+1)])}\right].}
+$$
+Indeed, for $r<0$ every denominator is less than one, so $|g_j|\leq1$ requires $1+4rs_j\leq-1$ for every $j$. The strongest restriction comes from $s_1$. Equality gives a simple amplification factor $-1$ and is allowed because the update is orthogonally diagonalizable. Other negative values either amplify a mode or make the update singular. This extra branch describes backward time stepping on a fixed spatial grid; it is not a positive-time diffusion discretization, and no fixed negative $r$ remains in that branch as $M\to\infty$.
+
+= 2
+{parent=Paper 63}
+{scope}
+
+= 1
+{parent=2}
+{scope}
+
+= Solution
+{parent=1}
+
+The complete <Butcher tableau> in the PDF supplies
+$$
+s=\frac{\sqrt3}{6},\qquad
+A=\begin{pmatrix}\frac14&\frac14-s\\\frac14+s&\frac14\end{pmatrix},\quad
+b=\frac12\begin{pmatrix}1\\1\end{pmatrix},\quad
+c=\begin{pmatrix}\frac12-s\\\frac12+s\end{pmatrix}.
+$$
+These are the two Gauss nodes and the corresponding <Gauss--Legendre Runge-Kutta method>. We can verify its order directly rather than infer it from its name. Write $e=(1,1)^T$, $C=\operatorname{diag}(c)$ and let powers of $c$ be componentwise. The <Butcher order conditions> through order four are
+$$
+\begin{aligned}
+b^Te&=1,&b^Tc&=\frac12,\\
+b^Tc^2&=\frac13,&b^TAc&=\frac16,\\
+b^Tc^3&=\frac14,&b^TCAc&=\frac18,\\
+b^TAc^2&=\frac1{12},&b^TA^2c&=\frac1{24}.
+\end{aligned}
+$$
+For these coefficients $Ae=c$, $Ac=c^2/2$ and $c^2=c-e/6$. Also $b^Tc^j=1/(j+1)$ for $j=0,1,2,3$, as follows by averaging the two values $1/2\pm s$. These identities give all eight displayed <Butcher order conditions>; for example $b^TCAc=b^Tc^3/2=1/8$, $b^TAc^2=b^T(c^2/2-c/6)=1/12$, and $b^TA^2c=b^TAc^2/2=1/24$. They establish order at least four for smooth nonlinear <ordinary differential equations>.
+
+To exclude order five, apply the method to the <Dahlquist test equation>. Solving its stage equations gives the <stability function>
+$$
+R(z)=1+zb^T(I-zA)^{-1}e
+=\frac{1+z/2+z^2/12}{1-z/2+z^2/12}
+=1+z+\frac{z^2}{2}+\frac{z^3}{6}+\frac{z^4}{24}+\frac{z^5}{144}+O(z^6).
+$$
+The exact solution has coefficient $1/120$ at degree five. Hence **the method has order exactly four**; its one-step defect is $O(h^5)$.
+
+= 2
+{parent=2}
+{scope}
+
+= Solution
+{parent=2}
+
+Use the <stability function> just calculated. Its denominator has its two zeros at $3\pm i\sqrt3$, so there is no pole in the closed left half-plane. Put $z=x+iy$, $N=1+z/2+z^2/12$ and $D=1-z/2+z^2/12$. A direct calculation yields
+$$
+|D|^2-|N|^2=-2x\left(1+\frac{|z|^2}{12}\right).
+$$
+For $x\leq0$ this is nonnegative, and therefore $|R(z)|\leq1$. **The method is A-stable.** Equality holds on the imaginary axis, consistently with the absence of numerical damping for those scalar oscillatory modes. Since $R(z)\to1$ as $z\to\infty$, the <A-stability> established here does not imply strong damping of very stiff decaying modes.
+
+= 3
+{parent=Paper 63/2}
+{scope}
+
+= Solution
+{parent=3}
+
+For an <implicit Runge-Kutta method>, <algebraic stability> means that $b_i\geq0$ and the symmetric matrix
+$$
+\mathcal M_{ij}=b_i a_{ij}+b_j a_{ji}-b_i b_j
+$$
+is <positive semidefinite>. Here $b_1=b_2=1/2$ and $A+A^T=ee^T/2$, so
+$$
+\mathcal M=\frac12(A+A^T)-\frac14ee^T=0.
+$$
+**The method is algebraically stable.** This also explains why the property matters for nonlinear problems. If a vector field satisfies $\langle f(v)-f(w),v-w\rangle\leq0$, the <Runge-Kutta contractivity identity> for two solutions, with stage differences $D_i$ and vector-field differences $F_i$, is
+$$
+\|d_{n+1}\|^2-\|d_n\|^2
+=2h\sum_i b_i\langle D_i,F_i\rangle
+-h^2\sum_{i,j}\mathcal M_{ij}\langle F_i,F_j\rangle\leq0.
+$$
+The first sum is nonpositive and the second vanishes. Thus, whenever the implicit stage equations have the relevant solutions, their updates are contractive in the <Hilbert space> norm.
+
+= 3
+{parent=Paper 63}
+{scope}
+
+= 1
+{parent=3}
+{scope}
+
+= Solution
+{parent=1}
+
+Work first in a real <Hilbert space>. A <bounded linear operator> $L$ is **<self-adjoint>** when
+$$
+\langle Lu,v\rangle=\langle u,Lv\rangle\quad(u,v\in H).
+$$
+For the variational interpretation, **elliptic** means uniformly coercive: some $\gamma>0$ satisfies
+$$
+\langle Lv,v\rangle\geq\gamma\|v\|_H^2\quad(v\in H).
+$$
+This is <ellipticity of a bounded Hilbert-space operator>, expressed through its <quadratic form>, rather than the principal-symbol definition for an <elliptic differential operator>. In the nonsymmetric case this condition concerns the symmetric part of $L$ and does not itself imply <self-adjointness>.
+
+A <positive-definite operator> is <self-adjoint> and **strictly positive**:
+$$
+\langle Lv,v\rangle>0\quad(v\ne0).
+$$
+Some variational conventions use “positive definite” for the stronger combination of self-adjointness and ellipticity; we distinguish strict from uniform positivity explicitly. A <uniformly positive definite symmetric operator> is coercive, whereas strict positivity alone in infinite dimension need not give a bounded inverse or solvability for every forcing. If positivity is instead defined only by the displayed real quadratic inequality, symmetry must be added separately for the next part. In a complex <Hilbert space>, use a <self-adjoint> operator, the real <quadratic form>, and $\operatorname{Re}\langle f,v\rangle$ in the linear term.
+
+= 2
+{parent=3}
+{scope}
+
+= Solution
+{parent=2}
+
+Assume the <self-adjoint> interpretation of <positive-definite operator> from the preceding part. For $v,w\in H$ and real $\varepsilon$, expand the <quadratic functional>:
+$$
+I(v+\varepsilon w)=I(v)+2\varepsilon\langle Lv-f,w\rangle
++\varepsilon^2\langle Lw,w\rangle.
+$$
+The <first variation> therefore vanishes in every direction precisely when $\langle Lv-f,w\rangle=0$ for every $w$, or **$Lv=f$**. This is its <Euler-Lagrange equation> and its <weak formulation>. For any weak solution $u$, write $v=u+w$. Self-adjointness and $Lu=f$ cancel the cross terms and give the exact identity
+$$
+\boxed{I(v)-I(u)=\langle L(v-u),v-u\rangle.}
+$$
+Strict positivity makes this difference positive unless $v=u$, so **every weak solution is the unique global minimizer**, and conversely every minimizer is a weak solution. If $L$ is uniformly positive, the <Lax-Milgram theorem> additionally gives existence for every $f\in H$ and $\|u\|\leq\|f\|/\gamma$. The identity above then gives the quantitative gap $I(v)-I(u)\geq\gamma\|v-u\|^2$.
+
+The hypotheses matter. On $\mathbb R^2$, let
+$$
+L=\begin{pmatrix}1&-1\\1&1\end{pmatrix},\qquad f=\begin{pmatrix}1\\0\end{pmatrix}.
+$$
+Then $\langle Lv,v\rangle=\|v\|^2>0$ for nonzero $v$, but $I$ is minimized at $v=f$, whereas $L^{-1}f=(1/2,-1/2)^T$. Thus real quadratic positivity without symmetry does not imply the requested variational assertion: the <symmetric part determines a real quadratic functional>.
+
+Also, strict <self-adjoint> positivity does not imply existence for arbitrary $f$. On $H=\ell^2$, take $(Lv)_j=v_j/j$ and $f_j=1/j$. The operator is bounded, <self-adjoint> and strictly positive, and $f\in\ell^2$; a solution would have $u_j=1$, which is not in $\ell^2$. In fact the trial vectors with their first $N$ coordinates equal to one give $I(v)=-\sum_{j=1}^N1/j\to-\infty$. The printed conclusion about a weak solution is valid whenever that solution exists; an unconditional existence assertion needs uniform positivity.
+
+= 3
+{parent=3}
+{scope}
+
+= Solution
+{parent=3}
+
+The appropriate bounded-operator formulation uses the <zero-boundary Sobolev space>
+$$
+H=H_0^1(-1,1),\qquad (u,v)_H=\int_{-1}^1u'v'\,dx.
+$$
+The <Poincare inequality> makes this a <Hilbert space> norm equivalent to the usual $H^1$ norm, and the zero endpoint traces encode the <Dirichlet boundary conditions>. Under the usual regular-coefficient assumptions, for example continuous $p,q$ on the closed interval with $p>0$ and $q\geq0$, set
+$$
+a(u,v)=\int_{-1}^1\bigl(pu'v'+quv\bigr)\,dx.
+$$
+If $p_*=\min p>0$, then <Cauchy-Schwarz inequality> and the <Poincare inequality> give
+$$
+|a(u,v)|\leq(\|p\|_\infty+C_P^2\|q\|_\infty)\|u\|_H\|v\|_H,
+\qquad a(v,v)\geq p_*\|v\|_H^2.
+$$
+By the <Riesz representation theorem>, a unique <bounded linear operator> $T:H\to H$ satisfies $(Tu,v)_H=a(u,v)$. Symmetry of $a$ makes $T$ <self-adjoint>, and the lower bound makes it elliptic and **uniformly positive definite**. The differential expression in the question is represented weakly by $a$: for smooth functions, <integration by parts> gives
+$$
+\int_{-1}^1\bigl[-(pu')'+qu\bigr]v\,dx=a(u,v),
+$$
+with the boundary term zero. A forcing $f\in L^2$ becomes the bounded functional $v\mapsto\int fv$, or its Riesz representative in $H$.
+
+Equivalently, for sufficiently smooth coefficients one may realize the differential operator itself on $L^2(-1,1)$ with domain $H^2\cap H_0^1$. Its regular <Sturm-Liouville operator> realization is <self-adjoint> and
+$$
+\langle Lu,u\rangle_{L^2}=\int_{-1}^1\bigl(p|u'|^2+q|u|^2\bigr)\,dx>0\quad(u\ne0).
+$$
+This realization is an unbounded operator, so it should not be confused with the bounded weak operator $T$ used above.
+
+The PDF states sign conditions without coefficient regularity. If only $p>0$ almost everywhere and $p,q$ are bounded, the same form is still bounded and strictly positive: a zero energy would force $u'=0$ almost everywhere and the zero traces force $u=0$. Uniform ellipticity, however, requires a positive lower bound. For instance $p(x)=x^2$ for $x\ne0$, $p(0)=1$, and $q=0$ satisfy literal pointwise positivity. Derivatives of unit $L^2$ norm supported in $(\varepsilon,2\varepsilon)$ and of integral zero define functions in $H_0^1$, with energy at most $4\varepsilon^2$. Thus pointwise positivity without regularity does not imply coercivity in this $H$ norm. These distinctions supply the precise regularity and operator domain behind the intended positive-definiteness proof.
+
+= 4
+{parent=Paper 63}
+{scope}
+
+= 1
+{parent=4}
+{scope}
+
+= Solution
+{parent=1}
+
+Let $g(y)=f_y(y)f(y)$. The <chain rule> gives $y''=g(y)$ along a smooth solution. Expanding every term about $t_n$, the unscaled exact-solution residual of this <multiderivative multistep method> is
+$$
+R_h=\frac{5a-11}{6}h^3y'''(t_n)
++\frac{23a-57}{24}h^4y^{(4)}(t_n)+O(h^5).
+$$
+For example, at derivative degree $q\geq2$ its coefficient is
+$$
+\frac{2^q-(1+a)}{q!}
+-\frac{3-a}{2}\frac{2^{q-2}}{(q-2)!};
+$$
+the coefficients at degrees zero, one and two vanish. Thus the formal <order of a numerical method> is **two for $a\ne11/5$**, and **three for $a=11/5$**, where the fourth-degree coefficient is $-4/15$. This order statement describes the exact-solution defect; convergence also needs <zero-stability>.
+
+At $h=0$ the characteristic polynomial is
+$$
+\rho(\zeta)=\zeta^2-(1+a)\zeta+a=(\zeta-1)(\zeta-a).
+$$
+The <root condition for a multistep method> holds exactly when $|a|\leq1$ and $a\ne1$. In particular $a=-1$ has two distinct unit roots and is admissible, whereas $a=1$ has a repeated unit root. Applying the permitted <Dahlquist equivalence theorem> for this multiderivative setting, with smooth $f$, the nearby implicit solution branch and convergent starting values, yields
+$$
+\boxed{\text{convergent exactly for }-1\leq a<1.}
+$$
+All those methods have **global order two**, provided the starting errors are $O(h^2)$. The formally third-order choice $a=11/5$ is not zero-stable and therefore is not convergent as a method for general initial-value problems.
+
+One can see the failure without any nonlinear difficulty. For $y'=0$, an error mode $e_n=a^n e_0$ grows exponentially if $|a|>1$. At $a=1$, $e_n=C+Dn$; choosing $e_0=0$, $e_1=h$ gives vanishing starting errors but $e_{T/h}=T$. This also explains why a small residual alone does not rescue that degenerate choice: at $a=1$ the first-derivative term disappears and the formula has no zero-stable first-order evolution interpretation.
+
+= 2
+{parent=4}
+{scope}
+
+= Solution
+{parent=2}
+
+Apply the $a=0$ method to the <Dahlquist test equation> and write $z=h\lambda$. The recurrence becomes
+$$
+\left(1-\frac32z^2\right)y_{n+2}-y_{n+1}-zy_n=0,
+$$
+so every amplification root must satisfy
+$$
+\left(1-\frac32z^2\right)\xi^2-\xi-z=0.
+$$
+Choose $z=-1$, which lies strictly in the left half-plane. The polynomial then gives $\xi^2+2\xi-2=0$, hence
+$$
+\xi=-1\pm\sqrt3.
+$$
+One root has modulus $1+\sqrt3>1$. Generic initial perturbations excite that growing recurrence mode even though the exact scalar solution decays. **The $a=0$ method is not A-stable.** There is also a singular implicit coefficient at $z=-\sqrt{2/3}$, another obstruction inside the left half-plane.
+
+= 5
+{parent=Paper 63}
+{scope}
+
+= Solution
+{parent=5}
+
+For fixed finite matrices, the <matrix exponential> and a <Taylor expansion> show
+$$
+S(h)=e^{hA/2}e^{hB}e^{hA/2}
+=I+h(A+B)+\frac{h^2}{2}(A^2+AB+BA+B^2)+O(h^3).
+$$
+This agrees through degree two with $e^{h(A+B)}$, even when $A$ and $B$ do not commute. On a fixed time interval, $\|S(h)\|\leq e^{h(\|A\|+\|B\|)}$ and the telescoping identity
+$$
+S(h)^N-E(h)^N=\sum_{j=0}^{N-1}S(h)^{N-1-j}\bigl(S(h)-E(h)\bigr)E(h)^j,
+\qquad E(h)=e^{h(A+B)},
+$$
+turns the $O(h^3)$ one-step defect into $O(Nh^3)=O(h^2)$ <global error> for $Nh\leq T$. Hence **Strang splitting is second order** in general; for commuting matrices it is exact.
+
+For the spatial discretization, use $d=2/(M+1)$, $x_m=-1+md$ and the interior vector $U=(u_1,\ldots,u_M)^T$, with $u_0=u_{M+1}=0$. The <central finite differences> give
+$$
+\boxed{A=\frac1{d^2}\operatorname{tridiag}(1,-2,1),\qquad
+B=\frac{\alpha}{2d}\operatorname{tridiag}(-1,0,1).}
+$$
+Here $\operatorname{tridiag}$ lists lower diagonal, main diagonal and upper diagonal, in that order. Thus $A^T=A$ and $B^T=-B$. Discrete <summation by parts> gives
+$$
+U^TAU=-\frac1{d^2}\sum_{m=0}^{M}(u_{m+1}-u_m)^2\leq0.
+$$
+The <matrix exponential> $e^{hA/2}$ is consequently a contraction in the <Euclidean norm>, while $e^{hB}$ is an <orthogonal matrix> for real $\alpha$. Therefore
+$$
+\boxed{\|e^{hA/2}e^{hB}e^{hA/2}\|_2\leq1\quad(h\geq0).}
+$$
+Repeated split steps are contractive in the mesh-weighted norm $d\sum|u_m|^2$, uniformly in the spatial mesh and without a <Courant–Friedrichs–Lewy condition>. **The split semidiscretization is unconditionally stable.** No commutativity or shared <eigenvectors> are needed for this <Strang splitting contraction for symmetric diffusion and skew advection>. Its time-order proof is for fixed spatial matrices; as $d\to0$, commutators can grow, so this <stability> result alone is not a uniform-in-mesh second-order error estimate.
+
+= 6
+{parent=Paper 63}
+{scope}
+
+= Solution
+{parent=6}
+
+The <Engquist-Osher method> is a conservative <finite volume method> built by separating positive and negative characteristic speeds. Take $f\in C^1$, a uniform cell width $d$, a time step $k$, and cell averages $U_j^n$. Write $\lambda=k/d$ and define the <numerical flux>
+$$
+F(a,b)=f(0)+\int_0^a\max(f'(s),0)\,ds
++\int_0^b\min(f'(s),0)\,ds.
+$$
+The <Engquist-Osher flux> uses the left state for right-going transport and the right state for left-going transport. Its conservative update is
+$$
+U_j^{n+1}=U_j^n-\lambda\bigl(F(U_j^n,U_{j+1}^n)-F(U_{j-1}^n,U_j^n)\bigr).
+$$
+It is consistent because $F(u,u)=f(u)$. The integrals have their ordinary oriented meaning even for negative states. For the <inviscid Burgers equation>, $f(u)=u^2/2$ gives the useful example
+$$
+F(a,b)=\frac12\max(a,0)^2+\frac12\min(b,0)^2.
+$$
+In a region where all characteristic speeds have one sign, the flux reduces to the corresponding upwind flux. In smooth regions, this basic piecewise-constant, forward-time version is first order in space and time; its main virtue is robust nonlinear <stability> across shocks.
+
+Here is a precise <stability> proof. Assume the data lie in a bounded interval $J=[m,M]$ and choose
+$$
+\boxed{\lambda\sup_{s\in J}|f'(s)|\leq1.}
+$$
+Work on a periodic grid, or on the infinite grid with summable differences; on a finite interval the inflow boundary data and boundary fluxes must be treated monotonically as well. Define the three-point update map
+$$
+H(a,b,c)=b-\lambda\bigl(F(b,c)-F(a,b)\bigr).
+$$
+Writing $f'_+=\max(f',0)$ and $f'_- =\min(f',0)$, its three partial derivatives are
+$$
+H_a=\lambda f'_+(a)\geq0,\qquad
+H_b=1-\lambda|f'(b)|\geq0,\qquad
+H_c=-\lambda f'_-(c)\geq0.
+$$
+Thus it is a <monotone conservative scheme>. Since $H(s,s,s)=s$, comparison with the constant states proves
+$$
+m\leq U_j^n\leq M\quad\hbox{for all }j,n.
+$$
+The interval is invariant, so the same <Courant–Friedrichs–Lewy condition> remains valid at every step. This is an $L^\infty$ bound relative to constant states, not a claim that arbitrary pairs of solutions are contractive in $L^\infty$.
+
+For a stronger perturbation estimate, let $\mathcal T$ denote the global update and use componentwise maxima. Monotonicity gives $\mathcal T(U\vee V)\geq\mathcal TU,\mathcal TV$. Therefore
+$$
+(\mathcal TU-\mathcal TV)_+\leq\mathcal T(U\vee V)-\mathcal TV.
+$$
+Sum over the grid. The shared interface flux cancels telescopically, so conservation gives
+$$
+\sum_j(\mathcal TU_j-\mathcal TV_j)_+
+\leq\sum_j(U_j-V_j)_+.
+$$
+Interchanging $U,V$ and adding yields the <L1 contraction of a monotone conservative scheme>:
+$$
+\boxed{d\sum_j|U_j^n-V_j^n|\leq d\sum_j|U_j^0-V_j^0|.}
+$$
+This is a mesh-independent nonlinear <stability> estimate. On an infinite grid the telescoping argument is justified by summability of the differences and the bounded characteristic-speed range, or by truncation followed by a limit. For unequal prescribed boundary data, additional boundary flux terms enter the estimate.
+
+The method is also a <total variation diminishing scheme>. Let $\mathcal S$ shift a grid sequence by one cell. Translation invariance gives $\mathcal T\mathcal S=\mathcal S\mathcal T$. Applying the preceding $L^1$ contraction to $U$ and $\mathcal SU$ shows
+$$
+\sum_j|U_{j+1}^{n+1}-U_j^{n+1}|
+\leq\sum_j|U_{j+1}^{n}-U_j^{n}|.
+$$
+Hence initially finite discrete <total variation> cannot grow.
+
+Finally, monotonicity supplies a <discrete entropy inequality>, explaining why the <stability> is compatible with the physically admissible <entropy solution>. For a constant $c\in J$, define
+$$
+Q(a,b;c)=F(a\vee c,b\vee c)-F(a\wedge c,b\wedge c).
+$$
+Comparison of $H$ with the clipped triples above and below $c$ gives
+$$
+|U_j^{n+1}-c|\leq|U_j^n-c|
+-\lambda\bigl(Q(U_j^n,U_{j+1}^n;c)-Q(U_{j-1}^n,U_j^n;c)\bigr).
+$$
+Indeed $H(U\vee c)\geq\max(H(U),c)$ and $H(U\wedge c)\leq\min(H(U),c)$, and subtracting these two update formulas yields exactly the right side. Also $Q(u,u;c)=\operatorname{sgn}(u-c)(f(u)-f(c))$, the <Kruzhkov entropy flux>. Under the displayed CFL condition the method therefore has an invariant state range, $L^1$ contraction, decreasing discrete <total variation> and entropy dissipation. These estimates remain meaningful at discontinuities, where linearized <Fourier analysis> alone cannot establish the corresponding nonlinear <stability>.
+
+= 7
+{parent=Paper 63}
+{scope}
+
+= Solution
+{parent=7}
+
+A <stability> analysis asks whether perturbations in an evolution remain bounded on a fixed physical time interval by a constant independent of the mesh. For a linear update $U^{n+1}=G_{d,k}U^n$, the basic requirement is
+$$
+\|G_{d,k}^n\|\leq C_T\quad(nk\leq T).
+$$
+This permits physical growth bounded by $e^{\omega T}$; it need not require every step to be a contraction. <Consistency of a numerical method> measures how well its stencil reproduces the differential equation, whereas <stability of a numerical method> controls the accumulated defects. For a well-posed linear problem, the <Lax equivalence theorem> connects <stability> and convergence for a consistent approximation in the specified norm.
+
+On the whole line or a periodic grid, constant-coefficient stencils commute with translations. The <Fourier modes> $e^{ij\theta}$ diagonalize such spatial operators, turning a scalar one-step scheme into
+$$
+\widehat U^{n+1}(\theta)=g(\theta;d,k)\widehat U^n(\theta).
+$$
+The <Fourier symbol> is found simply by replacing a shift by $e^{i\theta}$. The <Parseval identity> makes this modal calculation a norm estimate: if $|g(\theta)|\leq1$ at every resolvable frequency, then the discrete $L^2$ norm cannot increase. More generally, a uniform $|g|\leq1+Ck$ gives $|g|^n\leq e^{CT}$ and a fixed-time <stability> bound. All frequencies matter, including those near the grid scale; a small-wavenumber expansion establishes consistency but cannot test the entire <stability> range.
+
+For the <heat equation>, put $r=k/d^2$ and $s=\sin^2(\theta/2)$. The <Forward Euler diffusion scheme> has
+$$
+g_{\rm FE}=1-4rs.
+$$
+The condition $|g_{\rm FE}|\leq1$ for every $s\in[0,1]$ is exactly $0\leq r\leq1/2$. This illustrates a parabolic time-step restriction $k\leq d^2/2$. The <Backward Euler diffusion scheme> instead has
+$$
+g_{\rm BE}=\frac1{1+4rs},
+$$
+which is contractive for every $r\geq0$. The <Crank-Nicolson diffusion scheme> has
+$$
+g_{\rm CN}=\frac{1-2rs}{1+2rs},
+$$
+and is likewise unconditionally $L^2$ stable. However, its high-frequency amplification approaches $-1$ for large $r$, so it need not damp rapidly decaying modes effectively and may produce alternating transients from nonsmooth data. An <A-stable> time integrator can stabilize a diffusion semidiscretization with left-half-plane spectrum, but damping and accuracy remain separate questions.
+
+For transport $u_t+a u_x=0$, define the hyperbolic <Courant number> $\nu=ak/d$. Forward Euler with a centered spatial difference gives $g=1-i\nu\sin\theta$ and $|g|^2=1+\nu^2\sin^2\theta$. It is unstable under a fixed nonzero CFL ratio. For $a>0$, the <upwind finite difference scheme> has
+$$
+g=1-\nu(1-e^{-i\theta}),\qquad
+|g|^2=1-4\nu(1-\nu)\sin^2(\theta/2).
+$$
+Thus $0\leq\nu\leq1$ is the stable range. Upwinding for negative $a$ reverses the spatial difference and gives $|\nu|\leq1$. The <Lax-Wendroff advection scheme> gives a second-order example:
+$$
+g=1-i\nu\sin\theta+\nu^2(\cos\theta-1),\qquad
+|g|^2=1-4\nu^2(1-\nu^2)\sin^4(\theta/2).
+$$
+It is stable for $|\nu|\leq1$, but that $L^2$ result does not imply monotonicity or exclude oscillations at shocks. The <Courant–Friedrichs–Lewy condition> has a domain-of-dependence interpretation for explicit hyperbolic schemes; the Fourier calculation supplies the sharper algebraic <stability> criterion for the particular stencil.
+
+For multilevel methods, each frequency gives an amplification polynomial and a companion <matrix>. Every amplification root must lie in the closed unit disk, with unit-modulus roots simple. Uniformity across frequencies and meshes is essential: one also needs control of the associated matrix powers, for example through a uniformly bounded diagonalization or the <uniform power bound from separated amplification roots>. A repeated unit root generates a <Jordan block> and polynomial growth in the number of steps. The same issue occurs for systems: checking only <eigenvalue> moduli of a <nonnormal Fourier amplification matrix> is insufficient. For instance
+$$
+G=\begin{pmatrix}1&1\\0&1\end{pmatrix},\qquad
+G^n=\begin{pmatrix}1&n\\0&1\end{pmatrix}
+$$
+has unit <eigenvalues> but no fixed-time mesh-uniform bound as $n=T/k\to\infty$. For a <hyperbolic system> with a constant coefficient matrix admitting a uniformly bounded characteristic diagonalization, scalar modal estimates for each characteristic speed do give a system estimate. A positive energy symmetrizer provides another route. Frozen-coefficient Fourier tests for variable coefficients are useful local diagnostics, but a global estimate must also account for coefficient variation and boundary terms.
+
+Boundary conditions change the allowable modes and can change the conclusion. A periodic calculation is exact only for a periodic closure. On a finite interval with zero <Dirichlet boundary conditions>, the centered diffusion matrix is diagonalized instead by the <discrete sine transform>. On $M$ interior points its <eigenvalues> are $-4\sin^2(j\pi/[2(M+1)])$ before scaling by $d^{-2}$. Thus the exact fixed-grid Forward Euler restriction is
+$$
+0\leq r\leq\frac1{2\cos^2(\pi/[2(M+1)])},
+$$
+which tends to the whole-line threshold $1/2$ as the grid is refined. Backward Euler and Crank-Nicolson remain stable for all nonnegative $r$. An appropriate <Neumann boundary condition> uses cosine-type modes and includes a constant mode with <eigenvalue> zero. The constant mode must be preserved, rather than forced to decay; depending on the boundary stencil, the natural discrete inner product may have endpoint weights.
+
+For hyperbolic transport, the continuous and discrete boundary closures must respect the direction of propagation. If $a>0$ on $[0,L]$, prescribe the left inflow value; prescribing an independent outflow value can overdetermine the problem. The <energy method> exposes this directly:
+$$
+\frac12\frac d{dt}\int_0^L u^2\,dx
+=-\frac a2\bigl(u(L)^2-u(0)^2\bigr).
+$$
+Homogeneous inflow is dissipative, while forced inflow contributes data to the estimate. A compatible upwind boundary update has the same one-sided information flow. For diffusion,
+$$
+\frac12\frac d{dt}\int_0^L u^2\,dx
+=-\int_0^L u_x^2\,dx+[uu_x]_0^L.
+$$
+The last term vanishes for homogeneous Dirichlet or Neumann conditions. With <Robin boundary conditions> of dissipative sign it contributes a further nonpositive term. A non-dissipative boundary can produce genuine PDE growth, which a valid <stability> estimate should represent rather than incorrectly suppress.
+
+Even a perfectly stable interior symbol cannot detect every defective <boundary closure of a difference scheme>. As a concrete counterexample, leave a stable explicit heat stencil on all grid points away from the left endpoint, but replace its first interior row by $U_1^{n+1}=2U_1^n$, still keeping $U_0=0$. The interior Fourier symbol is unchanged, yet $U_1^n=2^nU_1^0$ makes the finite-interval update unstable. The faulty boundary-adjacent row creates a mode absent from the periodic interior calculation. Thus the entire finite update matrix, or an energy estimate including its boundary rows, must be examined.
+
+A more systematic <boundary stability of a finite-difference method> analysis transforms time and any tangential spatial variables, then looks for modes $U_j^n=z^n\kappa^j$ with $|z|>1$ and $|\kappa|<1$ on a half-line. The interior dispersion relation selects decaying spatial modes; the boundary equations must determine their coefficients without admitting a nonzero growing homogeneous mode. A uniform inverse estimate for the boundary system, expressed by the <uniform Kreiss--Lopatinskii condition>, also rules out arbitrarily weak boundary control near limiting frequencies. Merely excluding one obvious unstable mode is weaker than proving a mesh-uniform estimate. Discrete <summation by parts> and suitable boundary penalties offer an energy-based alternative.
+
+Finally, nonlinear <scalar conservation laws> can develop discontinuities, so linearized Fourier <stability> is only one part of the analysis. A <monotone conservative scheme>, such as the <Engquist-Osher method> under its CFL restriction, has an invariant state range and <L1 contraction of a monotone conservative scheme>, with a <discrete entropy inequality> selecting admissible shocks. These complement the Fourier and boundary estimates. For an evolution problem, the meaningful outcome is a <stability> bound in a specified norm, uniform over the chosen mesh family and compatible with the actual boundary and initial data.

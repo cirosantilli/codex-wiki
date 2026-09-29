@@ -1,0 +1,2731 @@
+= Probability and statistics
+{wiki}
+
+= Descriptive statistics
+{parent=Probability and statistics}
+{wiki}
+
+Descriptive statistics summarizes observed data, for example through location and spread statistics or graphical summaries such as a <histogram>.
+
+= Scatter plot
+{parent=Descriptive statistics}
+{wiki}
+
+A <scatter plot> represents paired quantitative observations as points in a coordinate plane. Group labels, uncertainty and transformations can reveal nonlinear patterns or heterogeneous associations that a single correlation coefficient conceals. A visual association does not establish causation.
+
+= Box plot
+{parent=Descriptive statistics}
+{wiki}
+
+A <box plot> displays a median and interquartile interval, with whiskers and separately marked points according to a stated rule. Common whiskers extend to the most extreme observations within 1.5 interquartile ranges of the box. It compares location, spread and unusually distant observations across groups; whiskers need not represent the full range.
+
+= Histogram
+{parent=Descriptive statistics}
+{wiki}
+
+A histogram groups observations into bins and displays the bin counts or frequencies. For a <probability density function> estimate, the height in a bin of width $\delta$ is its sample count divided by $n\delta$, so each bar's area is the observed relative frequency. This scaling ensures that the histogram integrates to one.
+
+= Birthday problem
+{parent=Probability and statistics}
+{wiki}
+
+For $n$ independent uniform draws from $m$ labels, the probability of all labels being distinct is $\prod_{j=0}^{n-1}(1-j/m)$ when $n\leq m$, and zero otherwise. Applying $1-x\leq e^{-x}$ gives a collision probability at least $1-\exp[-n(n-1)/(2m)]$. The transition therefore occurs at sample size of order $\sqrt m$, not $m$: many pairs can collide before many labels have been sampled.
+
+\Include[actuarial-statistics]{parent=Probability and statistics}
+
+= Self-averaging
+{parent=Probability and statistics}
+{wiki}
+
+= Q-Q plot
+{c}
+{parent=Probability and statistics}
+{wiki=Q–Q_plot}
+
+= Quantile-quantile plot
+{synonym}
+
+A quantile-quantile plot compares ordered observations with quantiles of a reference distribution, or with quantiles of another sample. Approximate linearity supports agreement up to location and scale. A regression normal <Q-Q plot> compares ordered <standardized regression residuals> with <standard normal distribution> quantiles.
+
+= Normal Q-Q plot
+{parent=Q-Q plot}
+
+A <Q-Q plot> comparing ordered observations with quantiles of a <normal distribution>. Approximate linearity supports a normal location-scale shape, while systematic curvature reveals deviations such as heavy tails or asymmetry.
+
+= Change-point detection
+{parent=Probability and statistics}
+
+Change-point detection estimates locations where a sequence's distribution or mean changes. A piecewise-constant mean has a sparse vector of adjacent differences; <one-dimensional total variation denoising> exploits this sparsity without fixing the number of changes in advance.
+
+= Poisson count change-point model with gamma priors
+{parent=Change-point detection}
+{c}
+{title2=$p(\lambda,\phi,m\mid x)\propto\lambda^{\alpha+S_m-1}e^{-(\beta+m)\lambda}\phi^{\gamma+S_N-S_m-1}e^{-(\delta+N-m)\phi}$}
+
+For independent <Poisson distributions> with rate $\lambda$ up to an unknown index $m$ and rate $\phi$ after it, independent shape-rate <Gamma distribution> priors give the displayed <posterior distribution> when $m$ is uniform on $\{1,\ldots,N\}$ and $S_m=\sum_{i\leq m}x_i$. The model differs from a continuous-time <Poisson change-point posterior>. The endpoint $m=N$ represents no observed change: the second segment is empty and its rate keeps its prior law.
+
+= Marginal posterior weights of a Poisson count change point
+{parent=Poisson count change-point model with gamma priors}
+{title2=$w_m=\frac{\Gamma(\alpha+S_m)\Gamma(\gamma+S_N-S_m)}{(\beta+m)^{\alpha+S_m}(\delta+N-m)^{\gamma+S_N-S_m}}$}
+
+Integrating the two rates out of the <Poisson count change-point model with gamma priors> gives these weights up to a common factor, by the defining <Gamma function> integral. Normalizing across the finitely many possible indices gives the exact marginal <posterior distribution> of $m$, providing a check on <Markov chain Monte Carlo> estimates. One can also draw $m$ from these weights and then draw both rates from their conditional <Gamma distributions>, producing independent exact joint posterior samples.
+
+= Gibbs updates for a Poisson count change point
+{parent=Poisson count change-point model with gamma priors}
+{c}
+
+The <full conditional distributions> are $\lambda\mid m,x\sim\operatorname{Gamma}(\alpha+S_m,\beta+m)$ and $\phi\mid m,x\sim\operatorname{Gamma}(\gamma+S_N-S_m,\delta+N-m)$, in shape-rate notation. Conditional on the two rates, $m$ has weights $w_j=\exp[j(\phi-\lambda)+S_j\log(\lambda/\phi)]$. A <Gibbs sampler> cycles through these three draws. Each update preserves the joint <posterior distribution>; subtracting the largest log weight before exponentiation stabilizes the categorical draw. Averages of $\mathbf1_{\{m=N\}}$ estimate the posterior probability of no observed change.
+
+= Gaussian change-point posterior with proper priors
+{c}
+{parent=Change-point detection}
+{title2=$p(\theta,\phi,v,m\mid x)\propto v^{-n/2}e^{-S_m/(2v)}p(\theta)p(\phi)p(v)p(m)$}
+
+Take independent proper normal <prior distributions> for the two segment means and a proper <inverse-gamma distribution> for the common <variance>. A uniform <prior distribution> over $m=1,\ldots,n$ may then retain the empty second segment. The <posterior distribution> is proper: its <likelihood function> is bounded above by $(2\pi)^{-n/2}v^{-n/2}$, whose integral against $\operatorname{IG}(a_0,b_0)$ is finite for $a_0,b_0>0$. At $m=n$ the second mean has its unchanged proper <prior distribution> as its <full conditional distribution>. The configuration's <posterior probability> now has the meaningful interpretation of no change inside the observed sample.
+
+= Gaussian change-point Gibbs updates
+{c}
+{parent=Gaussian change-point posterior with proper priors}
+
+For independent means $\theta\sim N(\mu_\theta,t_\theta)$ and $\phi\sim N(\mu_\phi,t_\phi)$, the first mean's conditional precision is $m/v+1/t_\theta$ and conditional precision-weighted mean is $\sum_{i\le m}x_i/v+\mu_\theta/t_\theta$; replace $m$ by $n-m$ for the second mean. With $v\sim\operatorname{IG}(a_0,b_0)$ its conditional law is $\operatorname{IG}(a_0+n/2,b_0+S_m/2)$. The discrete split has conditional probabilities proportional to $e^{-S_m/(2v)}$. These <full conditional distributions> give a <Gibbs sampler> including $m=n$. Averaging the sampled indicators of that configuration estimates its <probability>; averaging its conditional probabilities gives an estimate by <Rao-Blackwellization>.
+
+= Poisson change-point posterior
+{c}
+{parent=Change-point detection}
+{title2=$p(\theta\mid t_1,\ldots,t_n)$}
+
+For an <inhomogeneous Poisson process> whose known positive intensity changes from $\lambda_1$ to $\lambda_2$ at an unknown time $\theta\in(0,T)$, the ordered arrival-time <likelihood function> is
+$$
+L(\theta)=\lambda_1^{j(\theta)}\lambda_2^{n-j(\theta)}e^{-\lambda_1\theta-\lambda_2(T-\theta)}.
+$$
+Under a <uniform prior>, each interval between successive arrivals has an exponential <posterior density> with rate in the exponent $\lambda_2-\lambda_1$. Its integrated weights allow exact interval selection followed by a truncated exponential draw; when the two rates coincide, the <Bayesian posterior> is uniform and the data contain no change-time information.
+
+= Measurement error
+{parent=Probability and statistics}
+{wiki}
+
+Measurement error is the difference between a recorded variable and the quantity it is intended to measure. It can attenuate associations, create misclassification, and bias nonlinear estimators even when the error has mean zero.
+
+= Errors-in-variables model
+{parent=Measurement error}
+{wiki}
+
+An errors-in-variables model distinguishes a latent true predictor from its noisy measurement and models both the measurement and the response. For example, $W_i\mid U_i\sim N(U_i,s^2)$ and $Y_i\mid U_i\sim N(a+bU_i,v^2)$, with a population distribution for $U_i$, propagate predictor uncertainty into inference on $b$. Treating $W_i$ as exact can create <attenuation bias from classical measurement error>. Identifiability requires appropriate information about the measurement process or latent predictor distribution.
+
+= Regression toward the mean
+{parent=Probability and statistics}
+{wiki}
+
+Regression toward the mean is the tendency for units selected because of an extreme noisy measurement to have less extreme subsequent measurements even without an intervention. It follows because the selection captures both a persistent component and an unusually extreme error component.
+
+= Sensitivity analysis
+{parent=Probability and statistics}
+{wiki}
+
+A sensitivity analysis examines how conclusions change when assumptions, tuning choices, unidentified parameters, or plausible data perturbations are varied.
+
+= Pattern-mixture sensitivity analysis
+{parent=Sensitivity analysis}
+
+Specify distributions of measurements separately by observation pattern and vary assumptions about unseen values that the observed data do not identify. For example, shift the imputed binary-response <log odds> for nonresponders away from its <missing at random> prediction and refit the substantive analysis. This investigates <missing not at random> departures rather than testing them from observed data.
+
+= Power spectrum
+{parent=Probability and statistics}
+{wiki}
+
+= Power spectra
+{synonym}
+
+The power spectrum describes how the variance of a random field or stationary process is distributed over spatial wavenumber or temporal frequency.
+
+= Spectral tensor
+{parent=Power spectrum}
+{title2=$\widehat C_{ij}(\mathbf k)$}
+
+For a statistically homogeneous vector <random field>, its spectral tensor is the <Fourier transform> of the componentwise two-point <correlation> $C_{ij}(\mathbf r)=\mathbb E[B_i(\mathbf x+\mathbf r)B_j(\mathbf x)]$. It distributes cross-correlations between components over <wavevectors>. With $\widehat B(\mathbf k)=\int B(\mathbf r)e^{-i\mathbf k\cdot\mathbf r}d^dr$, homogeneity gives $\mathbb E[\widehat B_i(\mathbf k)\widehat B_j(\mathbf k')]=(2\pi)^d\delta(\mathbf k+\mathbf k')\widehat C_{ij}(\mathbf k)$, understood as an identity of <distributions> for an infinite stationary field.
+
+= Solenoidal isotropic spectral tensor
+{parent=Spectral tensor}
+{title2=$\widehat C_{ij}=H(k)(\delta_{ij}-k_i k_j/k^2)$}
+
+For a statistically homogeneous, isotropic, reflection-symmetric <solenoidal> vector <random field> in three dimensions, the nonzero-wavevector <spectral tensor> is a scalar multiple of the <transverse projector of a vector field>. Isotropy gives $A(k)\delta_{ij}+D(k)k_i k_j$, while zero <divergence> gives $A+Dk^2=0$. Its <trace> is $2A$, giving the displayed normalization. Without reflection symmetry an additional antisymmetric, helical term can occur.
+
+= Statistical homogeneity
+{parent=Power spectrum}
+
+A random field is statistically homogeneous when all of its joint distributions are invariant under a common spatial translation of their arguments. Its momentum-space correlation functions consequently contain a <Dirac delta function> imposing total-momentum conservation.
+
+= Statistical isotropy
+{parent=Power spectrum}
+
+A random field is statistically isotropic when all of its joint distributions are invariant under a common spatial rotation of their arguments. A statistically isotropic scalar power spectrum depends only on the magnitude of its wavevector.
+
+= Statistical reflection symmetry
+{parent=Statistical isotropy}
+
+Statistical reflection symmetry means that the joint distributions of a <random field> are unchanged by a simultaneous spatial reflection, with each field component transformed according to its vector or pseudovector character. For an isotropic <magnetic field>, it excludes a parity-odd <magnetic helicity> contribution to the two-point <spectral tensor>.
+
+\Include[time-series]{parent=Probability and statistics}
+
+= Sub-Gaussian distribution
+{parent=Probability and statistics}
+{wiki}
+
+= Sub-Gaussian random variable
+{synonym}
+
+A centered random variable is sub-Gaussian with parameter $\sigma$ when $\mathbb E e^{tX}\leq e^{\sigma^2t^2/2}$ for every real $t$.
+
+= Sub-Gaussian random vector
+{parent=Sub-Gaussian distribution}
+{title2=$\mathbb E e^{\langle a,g\rangle}\leq e^{\tau^2\|a\|_2^2/2}$}
+
+A centered random vector is sub-Gaussian with variance proxy $\tau^2$ when the displayed inequality holds for every deterministic vector $a$. Equivalently every scalar inner product is a <sub-Gaussian random variable> with proxy $\tau^2\|a\|_2^2$. Independence of coordinates is not required. For vectors $a_j$ with <Euclidean norms> at most one, the <union bound> gives $\max_j|\langle a_j,g\rangle|\leq\tau\sqrt{2\log(2m/\delta)}$ with <probability> at least $1-\delta$. This assumption alone is weaker than concentration for all Lipschitz functions.
+
+= Subexponential distribution
+{parent=Probability and statistics}
+{disambiguate=light-tailed}
+{wiki}
+
+= Sub-exponential random variable
+{synonym}
+
+A centered random variable is sub-exponential when its <moment-generating function> is bounded by a Gaussian moment-generating function in a neighbourhood of zero. Equivalently up to universal constants, its tail is bounded by $2e^{-ct/K}$ beyond scale $K$.
+
+= Centered square of a sub-Gaussian random variable
+{parent=Subexponential distribution (light-tailed)}
+{title2=$X^2-\mathbb E X^2$}
+
+If $\mathbb E e^{tX}\leq e^{\sigma^2t^2/2}$, then $X^2-\mathbb E X^2$ is a <sub-exponential random variable> with scale at most a universal constant times $\sigma^2$. The <Chernoff bound> gives $\mathbb P(|X|>x)\leq2e^{-x^2/(2\sigma^2)}$; integrating this tail bounds $\mathbb E|X|^{2q}$ by $2(2\sigma^2)^q q!$. Centering preserves a factorial moment bound, so the <Bernstein bound for independent sub-exponential variables> apply to independent averages of these squares.
+
+= Bernstein moment condition
+{c}
+{parent=Subexponential distribution (light-tailed)}
+
+A centered <random variable> $X$ with $\mathbb E[X^2]=\nu$ satisfies the Bernstein moment condition with parameter $b$ when
+$$
+|\mathbb E[X^k]|\leq\frac{k!}{2}\nu b^{k-2}
+$$
+for every integer $k\geq2$. Summing its moment-generating series shows that it is sub-exponential with parameters $(2\nu,2b)$.
+
+= Product of sub-Gaussian random variables is sub-exponential
+{parent=Subexponential distribution (light-tailed)}
+
+If $X$ and $Y$ are sub-Gaussian, without requiring independence between them, then $XY$ is <sub-exponential random variable>[sub-exponential]. The inequality $2|XY|\leq X^2+Y^2$ converts exponential-square moment bounds for the factors into an exponential moment bound for the product.
+
+= Bernstein concentration inequality for products of sub-Gaussian variables
+{c}
+{parent=Product of sub-Gaussian random variables is sub-exponential}
+
+For independent identically distributed pairs $(U_i,V_i)$ whose coordinates are sub-Gaussian with parameter $\sigma/4$, <Bernstein's inequality> applied to the centered products gives
+$$
+\mathbb P\!\left(
+\left|\frac1n\sum_{i=1}^n\{U_iV_i-\mathbb E(U_iV_i)\}\right|\geq t
+\right)
+\leq2\exp\!\left(-\frac{2nt^2}{\sigma^2(\sigma^2+t)}\right).
+$$
+
+= Positive-semidefinite kernel
+{parent=Probability and statistics}
+
+= Positive-definite kernel
+{synonym}
+
+A symmetric function $k$ is a positive-semidefinite kernel when every finite Gram matrix $(k(x_i,x_j))$ is positive semidefinite.
+
+= Mercer kernel
+{parent=Positive-semidefinite kernel}
+{c}
+{title2=$k(x,z)$}
+
+In the compact-domain spectral setting, a Mercer kernel is a continuous symmetric <positive-semidefinite kernel> on a compact space equipped with a finite full-support measure. <Mercer's theorem> yields nonnegative eigenvalues and an expansion $k(x,z)=\sum_j\lambda_j e_j(x)e_j(z)$, giving features $(\sqrt{\lambda_j}e_j(x))_j$ in $\ell^2$. The finite-Gram positivity condition on arbitrary domains is more general than these spectral hypotheses; all such kernels still have a <reproducing-kernel Hilbert space> realization.
+
+= Cauchy-Schwarz inequality for positive-semidefinite kernels
+{parent=Positive-semidefinite kernel}
+{c}
+{title2=$|k(x,y)|^2\leq k(x,x)k(y,y)$}
+
+A real <positive-semidefinite kernel> satisfies $|k(x,y)|^2\leq k(x,x)k(y,y)$. This follows from positivity of its two-point <kernel matrix>. If a diagonal value is zero, the corresponding off-diagonal values must also vanish.
+
+= Kernel matrix
+{title2=$K$}
+{parent=Positive-semidefinite kernel}
+{wiki}
+
+For points $x_1,\ldots,x_n$, the kernel matrix has entries $K_{ij}=k(x_i,x_j)$ and is positive semidefinite.
+
+= Feature map
+{parent=Positive-semidefinite kernel}
+
+= Feature function
+{synonym}
+
+A feature map sends $x$ to a vector $\phi(x)$ in a vector space with an <inner product> so that $k(x,y)=\langle\phi(x),\phi(y)\rangle$.
+
+= Canonical feature space of a positive-semidefinite kernel
+{parent=Feature map}
+{title2=$\phi(x)=[e_x]$}
+
+On the finite formal span of symbols $e_x$, define $B(e_x,e_y)=k(x,y)$ and extend bilinearly. For a <positive-semidefinite kernel>, the null vectors of this <positive semidefinite bilinear form> form its <radical of a bilinear form>. Quotienting by that <linear subspace> gives an <inner-product space> and <feature map> $x\mapsto[e_x]$ with $\langle[e_x],[e_y]\rangle=k(x,y)$. This construction works for degenerate and zero kernels.
+
+= Random feature map
+{parent=Feature map}
+
+A random feature map is a random function $\widehat\phi:\mathcal X\to\mathbb R^q$ whose expected inner product represents a kernel:
+$$
+k(x,y)=\mathbb E\langle\widehat\phi(x),\widehat\phi(y)\rangle.
+$$
+
+= Random Fourier features
+{c}
+{parent=Random feature map}
+{wiki}
+
+= Random Fourier feature
+{c}
+{synonym}
+
+Random Fourier features represent a translation-invariant <positive-semidefinite kernel> by sampling frequencies from its spectral distribution and using sine and cosine features. They replace an implicit infinite-dimensional <feature map> by a finite random approximation.
+
+= Gaussian kernel
+{title2=$k(x,y)=e^{-\lVert x-y\rVert^2/(2\sigma^2)}$}
+{c}
+{parent=Positive-semidefinite kernel}
+
+The Gaussian kernel is a translation-invariant <positive-semidefinite kernel> whose canonical <feature map> takes values in an <infinite-dimensional vector space>.
+
+= Linear kernel
+{title2=$k(x,y)=x^Ty$}
+{parent=Positive-semidefinite kernel}
+
+The linear kernel is the ordinary <inner product> on a real vector space.
+
+= Closure property of positive-semidefinite kernels
+{parent=Positive-semidefinite kernel}
+
+Nonnegative scalar multiples, sums, pointwise products, pointwise limits, and pullbacks of positive-semidefinite kernels are positive semidefinite whenever the displayed expressions are defined.
+
+= Integral closure of positive-semidefinite kernels
+{parent=Closure property of positive-semidefinite kernels}
+
+Suppose $k_\tau$ is a <positive-semidefinite kernel> for every $\tau$ and its diagonal entries are integrable. Positivity of each $2\times2$ <kernel matrix> gives
+$$
+|k_\tau(x,y)|\leq\sqrt{k_\tau(x,x)k_\tau(y,y)}.
+$$
+The <Cauchy-Schwarz inequality> makes every entry integrable, and integrating each nonnegative finite quadratic form shows that $\int k_\tau\,d\tau$ is again a positive-semidefinite kernel.
+
+= Product of positive-semidefinite kernels
+{parent=Closure property of positive-semidefinite kernels}
+
+The pointwise product of two <positive-semidefinite kernels> is positive semidefinite because its finite <kernel matrix> is the entrywise product of two positive-semidefinite matrices, to which the <Schur product theorem> applies.
+
+= Laplace kernel
+{title2=$k(x,y)=e^{-\lambda\|x-y\|_1}$}
+{c}
+{parent=Positive-semidefinite kernel}
+
+The Laplace kernel on $\mathbb R^d$ is a translation-invariant <positive-semidefinite kernel>. Independent standard <Cauchy random variables> give its <random Fourier feature> representation through their characteristic function $e^{-|t|}$.
+
+= Reproducing kernel Hilbert space
+{c}
+{parent=Positive-semidefinite kernel}
+{wiki}
+
+A reproducing-kernel Hilbert space is a Hilbert space of functions in which point evaluation is continuous and satisfies $f(x)=\langle f,k(x,\cdot)\rangle$.
+
+= Sum of reproducing-kernel Hilbert spaces
+{parent=Reproducing kernel Hilbert space}
+{title2=$\mathcal H_{\sum k_j}$}
+
+For <positive-semidefinite kernels> $k_j$ with <reproducing-kernel Hilbert spaces> $\mathcal H_j$, the <reproducing-kernel Hilbert space> of $k=\sum_jk_j$ consists of sums $f=\sum_jf_j$, with
+$$
+\|f\|_{\mathcal H_k}^2=\min_{\sum_jf_j=f}\sum_j\|f_j\|_{\mathcal H_j}^2.
+$$
+The minimum is attained uniquely. Indeed, in the <Hilbert space> direct sum $E=\bigoplus_j\mathcal H_j$, the tuples summing to zero form a closed subspace $N$: they are the intersection, over inputs $x$, of the kernels of the continuous maps $(f_j)\mapsto\sum_jf_j(x)$. Every affine fibre has a unique representative in $N^\perp$ by <orthogonal decomposition by a closed subspace>. The <vector> $(k_j(\cdot,x))_j$ lies in $N^\perp$ and represents evaluation in the quotient; its evaluation at $y$ is $\sum_jk_j(y,x)$, identifying the <positive-semidefinite kernel> with $k$.
+
+= Common representer coefficients for a sum of kernels
+{parent=Sum of reproducing-kernel Hilbert spaces}
+
+For a real-valued <loss function> depending only on evaluations at $x_1,\ldots,x_n$, and a positive squared-norm penalty, any minimizing tuple in a <sum of reproducing-kernel Hilbert spaces> has the form
+$$
+\widehat f_j=\sum_{i=1}^n\widehat\alpha_i k_j(\cdot,x_i)
+$$
+with the same coefficient <vector> for every component. The tuple must be the unique minimum-norm decomposition of its sum. Apply the <representer theorem> to that sum and note that the displayed tuple has total squared <norm> $\sum_j\widehat\alpha^TK_j\widehat\alpha=\widehat\alpha^T(\sum_jK_j)\widehat\alpha$, exactly the <norm> of the sum. This argument is conditional on existence of a <minimizer>; arbitrary <loss functions> need not attain their infimum.
+
+= Reproducing property
+{parent=Reproducing kernel Hilbert space}
+
+The reproducing property is $f(x)=\langle f,k(x,\cdot)\rangle_{\mathcal H}$; it turns point evaluation into an inner product with a kernel section.
+
+= Representer theorem
+{parent=Reproducing kernel Hilbert space}
+{wiki}
+
+The representer theorem reduces regularized optimization over a reproducing-kernel Hilbert space to the span of kernel sections at the observed points.
+
+= Kernel method
+{parent=Reproducing kernel Hilbert space}
+{wiki}
+
+A kernel method represents data through a <positive-semidefinite kernel>, allowing algorithms to use inner products in an implicit <feature map>.
+
+= Kernel ridge regression
+{parent=Kernel method}
+
+Kernel ridge regression minimizes empirical squared error plus the squared norm in a <reproducing-kernel Hilbert space>. The <representer theorem> reduces it to <ridge regression> with the <kernel matrix> as its feature Gram matrix.
+
+= Prediction-risk bound for kernel ridge regression
+{parent=Kernel ridge regression}
+
+For the unscaled objective $\sum_i(Y_i-f(x_i))^2+\lambda\|f\|_{\mathcal H}^2$, the <kernel-ridge hat matrix> is $H=K(K+\lambda I)^{-1}$. Its prediction variance is $\sigma^2\operatorname{tr}(H^2)/n$. For eigenvalues $d_i\geq0$, use $d_i^2/(d_i+\lambda)^2\leq\min\{d_i/(4\lambda),1\}$ and $\lambda^2d_i/(d_i+\lambda)^2\leq\lambda/4$ to bound the variance and the squared bias. The latter also uses the <reproducing property> and <Bessel inequality>, and does not require invertibility of $K$.
+
+\Q[EXISTING BODY EXPANSION, not a new concept: replace the present one-direction definition of Faithfulness of a directed acyclic graph in probability-and-statistics.bigb, under Causal directed acyclic graph, with the following body. Retain its existing header and parent.]
+
+= Kernel-ridge hat matrix
+{title2=$H_\lambda$}
+{parent=Kernel ridge regression}
+
+For kernel matrix $K$ and objective normalized as $n^{-1}\lVert Y-f\rVert_2^2+\lambda\lVert f\rVert_{\mathcal H}^2$, the fitted values are $H_\lambda Y$, where
+$$
+H_\lambda=K(K+n\lambda I)^{-1}.
+$$
+
+= Moore-Aronszajn theorem
+{c}
+{parent=Reproducing kernel Hilbert space}
+
+Every positive-semidefinite kernel $k$ has a Hilbert-space feature map $\phi$ satisfying $k(x,y)=\langle\phi(x),\phi(y)\rangle$, and determines a unique reproducing-kernel Hilbert space.
+
+= Kernel covariance operator
+{title2=$\Sigma$}
+{parent=Reproducing kernel Hilbert space}
+
+For feature vectors $\phi(x_i)$, the empirical uncentered kernel covariance operator is
+$$
+\Sigma v=\frac1n\sum_i\phi(x_i)\langle\phi(x_i),v\rangle.
+$$
+
+= Kernel trick
+{parent=Reproducing kernel Hilbert space}
+{wiki}
+
+The kernel trick evaluates feature-space inner products through $k(x,y)$ without explicitly constructing the feature vectors.
+
+= Kernel principal component analysis
+{c}
+{parent=Kernel trick}
+{wiki}
+
+Kernel principal component analysis diagonalizes a centered <kernel matrix> to perform principal component analysis in an implicit feature space.
+
+= Reproducing-kernel Hilbert space of a stationary Gaussian process
+{c}
+{parent=Reproducing kernel Hilbert space}
+
+If a stationary <Gaussian process> has covariance spectral density $\widehat K$, its reproducing-kernel Hilbert space has norm
+$$
+\lVert f\rVert_{\mathcal H_K}^2
+=c\int\frac{|\widehat f(u)|^2}{\widehat K(u)}\,du
+$$
+on the functions for which this integral is finite.
+
+= Lasso
+{c}
+{parent=Probability and statistics}
+{wiki=Lasso_(statistics)}
+
+= Lasso estimator
+{c}
+{synonym}
+
+= Lasso regression
+{synonym}
+{c}
+
+The Lasso minimizes regression error plus an $\ell^1$ penalty.
+
+= Karush-Kuhn-Tucker conditions for the Lasso
+{c}
+{parent=Lasso}
+{title2=$X^{\mathsf T}(Y-Xb)/n\in\lambda\partial\|b\|_1$}
+
+For the <Lasso> criterion $\|Y-Xb\|_2^2/(2n)+\lambda\|b\|_1$, the displayed <subgradient optimality condition> is necessary and sufficient. A nonzero coefficient has residual score $\lambda\operatorname{sign}(b_k)$, and a zero coefficient has residual score in $[-\lambda,\lambda]$. The <subdifferential of the L1 norm> supplies both cases.
+
+= Lasso regularization path
+{parent=Lasso}
+{c}
+{title2=$\widehat\beta(t)$}
+
+The <Lasso> regularization path follows its coefficients as the penalty or constraint radius changes. Under the usual least-angle construction, the coefficient path is piecewise linear between knots, and variables can enter or leave the active set. Reading support at a selected <cross-validation> fraction requires checking which coefficients are actually zero at that fraction, rather than retaining only visibly large traces.
+
+= KKT-consistent resolution of tied Lasso knots
+{c}
+{parent=Lasso regularization path}
+{title2=$v=\operatorname*{argmin}\{\tfrac12v^TX^TXv-s_E^Tv_E:\ v_{E^c}=0,\ s_jv_j\geq0\ (j\in E\setminus N)\}$}
+
+At a positive penalty level, let $E$ be the residual-score equality set, $s_j$ its signs and $N$ the nonzero <regression coefficient> support. With full column rank, the displayed <strictly convex> <quadratic program> selects the direction for a small decrease of the penalty. Existing nonzero <regression coefficients> have unrestricted tangent components; tied zero <regression coefficients> may move only with their residual signs. Stationarity gives $X_j^TXv=s_j$ for $j\in N$ and for entering zero coordinates, and $s_jX_j^TXv\geq1$ for tied coordinates that remain zero. These are exactly the first-order <Karush-Kuhn-Tucker conditions for the Lasso> along the next segment. Normalize $Xv$ to obtain the corresponding least-angle direction. This resolves simultaneous entries or dropouts without adding a generic-position assumption.
+
+// Target: mathematical-optimization.bigb
+
+= Lasso dropout knot
+{c}
+{parent=Lasso regularization path}
+{title2=$\gamma_{\rm drop}=\min_{j\in A:\,-\beta_j/d_j>0}(-\beta_j/d_j)$}
+
+On a least-angle segment $\beta(\gamma)=\beta+\gamma d$, a nonzero active <regression coefficient> reaches zero at the displayed first positive root. Continue only as far as the first dropout, inactive-entry event or zero-correlation endpoint. At a dropout remove the vanishing <regression coefficient> from the active direction and recompute. This preserves agreement between nonzero <regression coefficient> signs and residual-score signs, which the <Karush-Kuhn-Tucker conditions for the Lasso> require. A removed <regression coefficient> may re-enter later; the active set need not grow monotonically.
+
+= Gaussian score event for the Lasso
+{parent=Lasso}
+{c}
+{title2=$\Omega=\{\|X^T\varepsilon\|_\infty/n\leq c\lambda\}$}
+
+Let $0<c<1$, $A>0$, $\sigma>0$ and $p\geq2$. For <design matrix> columns of norm $\sqrt n$ and $\varepsilon\sim N_n(0,\sigma^2I)$, the event $\|X^T\varepsilon\|_\infty/n\leq c\lambda$ has probability at least $1-p^{1-A^2c^2/2}$ when $\lambda=A\sigma\sqrt{\log(p)/n}$. Apply the <sharp two-sided Gaussian tail bound> to each standardized score and then the <union bound>; independence of the scores is not required.
+
+= Sparse maximum eigenvalue
+{parent=Lasso}
+{title2=$\kappa_m^2$}
+
+For a <design matrix> $X$ with $p$ columns, define $\kappa_m^2=\max_{|M|=m}\lambda_{\max}(X_M^TX_M/n)$ for $1\le m\le p$. Equivalently this bounds $\|Xv\|_2^2/(n\|v\|_2^2)$ for <vectors> supported on at most $m$ coordinates. These quantities are nondecreasing: extend the support of a maximizing <vector> by zero coordinates and use the variational characterization of the largest <eigenvalue>. Values at $m>p$, including infinity, require a separate convention.
+
+= Lasso support bound from sparse eigenvalues
+{c}
+{parent=Sparse maximum eigenvalue}
+{title2=$|\widehat S|\le64\kappa_p^2s/\phi^2$}
+
+For $\lambda>0$ and $\phi>0$, use the <Lasso> objective $\|Y-X\beta\|_2^2/(2n)+\lambda\|\beta\|_1$. Suppose the noise score has maximum <norm> at most $\lambda/2$, the true support has size $s$, and $\|X(\widehat\beta-\beta^0)\|_2^2/n\le16\lambda^2s/\phi^2$. For any nonempty $B\subseteq\widehat S$, the <Karush-Kuhn-Tucker conditions> imply
+$$
+\lambda|B|/2\le n^{-1}\operatorname{sgn}(\widehat\beta_B)^TX_B^TX(\beta^0-\widehat\beta)\le4\lambda\kappa_{|B|}\sqrt{|B|s}/\phi.
+$$
+The upper bound is the <Cauchy-Schwarz inequality>. Hence $|B|\le64\kappa_{|B|}^2s/\phi^2$. A finite first index $m_*$ violating this inequality must exceed $|\widehat S|$. Its minimality also gives $|\widehat S|\le64\kappa_{m_*}^2s/\phi^2$. If no such index exists within $1,\ldots,p$, use the always defined bound $|\widehat S|\le64\kappa_p^2s/\phi^2$.
+
+= Lava estimator
+{c}
+{title2=$\widehat\delta+\widehat\beta$}
+{parent=Lasso}
+
+= Regression with sparse and dense components
+{synonym}
+
+The Lava estimator minimizes $\|Y-X(\delta+\beta)\|_2^2/(2n)+\lambda_1\|\delta\|_1+\lambda_2\|\beta\|_2^2$. It combines a component selected by <Lasso> with a component shrunk by <ridge regression>. Profiling the latter yields a transformed <Lasso> problem; this is not the same coefficient penalty as <elastic net regularization>.
+
+= Lasso reduction for the Lava estimator
+{parent=Lava estimator}
+
+For $Q=(X^TX+2n\lambda_2I)^{-1}$ and $A=(I-XQX^T)^{1/2}$, profiling the dense coefficient gives $\widehat\beta=QX^T(Y-X\widehat\delta)$. The sparse coefficient minimizes $\|AY-AX\delta\|_2^2/(2n)+\lambda_1\|\delta\|_1$. The transformation uses the <principal square root of a positive semidefinite matrix> and remains valid for rank-deficient designs.
+
+= Fused Lasso
+{parent=Lasso}
+
+The fused Lasso adds an <L1 norm> penalty on adjacent coefficient differences to a squared-error objective, optionally together with an <L1 norm> penalty on the coefficients themselves. The differences penalty encourages neighbouring coefficients to coincide.
+
+= One-dimensional total variation denoising
+{title2=$\widehat\mu_\lambda=\arg\min_\mu\{\|Y-\mu\|_2^2/(2n)+\lambda\sum_i|\mu_{i+1}-\mu_i|\}$}
+{parent=Fused Lasso}
+
+= One-dimensional fused Lasso
+{synonym}
+
+This version of the <fused Lasso> penalizes only adjacent differences. It estimates a piecewise-constant signal while preserving an unpenalized constant level. Larger penalties generally favour fewer fitted changes.
+
+= Dantzig selector
+{c}
+{parent=Lasso}
+{wiki}
+
+The Dantzig selector minimizes the coefficient $\ell^1$ norm subject to an $\ell^\infty$ bound on residual correlations.
+
+= Square-root Lasso
+{c}
+{parent=Lasso}
+
+The square-root Lasso uses the unsquared residual norm plus an $\ell^1$ penalty.
+
+= Residual-score decomposition from square-root Lasso
+{parent=Square-root Lasso}
+
+For a fixed residual direction $R=Z-X\widetilde\beta_\gamma\ne0$ obtained by <square-root Lasso>, its optimality condition gives $\|X^TR\|_\infty\leq\sqrt n\,\gamma\|R\|_2$. In a fixed-design <normal linear model>, the score $R^T(Y-X\widehat\beta)/\|R\|_2$ equals a $N(0,\sigma^2)$ component plus a remainder bounded by $\sqrt n\,\gamma\|\beta^0-\widehat\beta\|_1$. The direction must be fixed or independent of the response noise for that normality claim.
+
+= Tuning relation between Lasso and square-root Lasso
+{title2=$\gamma=\lambda/\widehat\sigma_\lambda$}
+{parent=Square-root Lasso}
+
+A <Lasso> minimizer with positive residual scale $\widehat\sigma_\lambda=\|Y-X\widehat\beta_\lambda\|_2/\sqrt n$ also minimizes the <square-root Lasso> objective at the displayed tuning parameter. Divide its <Karush-Kuhn-Tucker conditions> by the residual scale and use the <subgradient optimality condition>.
+
+= Group Lasso
+{c}
+{parent=Lasso}
+{wiki}
+
+The group Lasso partitions a coefficient vector into groups $G_1,\ldots,G_q$ and replaces the coordinatewise $\ell^1$ penalty with a weighted sum of group norms,
+$$
+P(\beta)=\sum_{j=1}^q m_j\lVert\beta_{G_j}\rVert_2.
+$$
+It tends to retain or discard an entire group at once. Its dual norm is
+$$
+P^*(v)=\max_j m_j^{-1}\lVert v_{G_j}\rVert_2,
+$$
+so the corresponding <Hölder inequality> is $|u^Tv|\leq P(u)P^*(v)$.
+
+= Paired group Lasso for Gaussian graph estimation
+{parent=Group Lasso}
+{title2=$\sum_{j<k}\sqrt{\Theta_{jk}^2+\Theta_{kj}^2}$}
+
+Joint squared-error <nodewise regression> with this penalty groups the two coefficients of each unordered edge. Its norm is nonsmooth only when the whole pair is zero, encouraging edge-wise sparsity. A fitted edge is present when its pair norm is positive. The penalty does not require equal directional coefficients, two nonzero entries in every selected group, or a symmetric positive definite <precision matrix>.
+
+= Paired group Lasso optimality conditions
+{parent=Paired group Lasso for Gaussian graph estimation}
+{title2=$g=0:\ \|c\|_2\leq\lambda;\qquad g\ne0:\ c=\lambda g/\|g\|_2$}
+
+For each unordered pair, $g=(\Theta_{jk},\Theta_{kj})$ and $c=(X_j^{\mathsf T}r_k/n,X_k^{\mathsf T}r_j/n)$ with centred columns and <regression residuals>. The <subdifferential> of the <Euclidean norm> is the unit ball at zero and $g/\|g\|_2$ otherwise. These <KKT conditions> are necessary and sufficient for the convex paired objective and explain joint edge deletion.
+
+= Basic inequality for the Lasso
+{c}
+{parent=Lasso}
+
+Comparing the <Lasso> objective at an estimate $\widehat\beta$ and a target $\beta^0$, then expanding the squared loss, bounds the prediction error by a noise-score term and the decrease in the $\ell^1$ penalty.
+
+= Prediction inequality from Lasso stationarity
+{parent=Basic inequality for the Lasso}
+{title2=$\|X\delta\|_2^2/n\leq\eta^TX\delta/n+\lambda(\|\beta^0\|_1-\|\widehat\beta\|_1)$}
+
+For <Lasso> loss $\|Y-X\beta\|_2^2/(2n)+\lambda\|\beta\|_1$ and $Y=X\beta^0+\eta$, stationarity with a penalty <subgradient> gives $\|X\delta\|_2^2/n\leq\eta^TX\delta/n+\lambda(\|\beta^0\|_1-\|\widehat\beta\|_1)$, $\delta=\widehat\beta-\beta^0$. This follows by multiplying the <Karush-Kuhn-Tucker conditions> by $\delta$ and using $z^T\widehat\beta=\|\widehat\beta\|_1$ and $z^T\beta^0\leq\|\beta^0\|_1$.
+
+= Slow-rate prediction bound for the Lasso
+{title2=$\|X(\widehat\beta-\beta^0)\|_2^2/n\leq4\lambda\|\beta^0\|_1$}
+{parent=Basic inequality for the Lasso}
+
+For $Y=X\beta^0+\eta$, the <Lasso> objective $\|Y-X\beta\|_2^2/(2n)+\lambda\|\beta\|_1$ has this prediction bound whenever $\|X^T\eta\|_\infty/n\leq\lambda$. Compare its value at $\widehat\beta$ and $\beta^0$, apply <Holder inequality> to the score, and use the triangle inequality. No <restricted eigenvalue condition> is required.
+
+= Lasso cone condition
+{c}
+{parent=Basic inequality for the Lasso}
+
+On an event where the noise-score infinity norm is at most half the penalty, the Lasso error $\delta$ obeys $\lVert\delta_{S^c}\rVert_1\leq3\lVert\delta_S\rVert_1$.
+
+= Restricted eigenvalue condition
+{parent=Lasso cone condition}
+
+A design matrix satisfies a restricted eigenvalue condition with constant $\gamma>0$ on a cone $C$ when $\lVert X\delta\rVert_2^2/n\geq\gamma\lVert\delta\rVert_2^2$ for every nonzero $\delta\in C$.
+
+= Compatibility condition for the Lasso
+{c}
+{parent=Lasso cone condition}
+
+A compatibility condition lower-bounds prediction norm by a scaled $\ell^1$ norm on a <Lasso cone condition>. One convention requires $|S|\lVert X\delta\rVert_2^2/n\geq\phi^2\lVert\delta_S\rVert_1^2$ throughout the cone.
+
+= Fast-rate Lasso prediction bound under compatibility
+{parent=Compatibility condition for the Lasso}
+{title2=$Q+(1-c)\lambda\|\delta_{S^c}\|_1\leq(1+c)^2\lambda^2s/\phi^2$}
+
+Let $\delta=\widehat\beta-\beta^0$, $s=|S|>0$ and $\phi>0$. On the score event $\|X^T\eta\|_\infty/n\leq c\lambda$ with $0<c<1$, the <prediction inequality from Lasso stationarity> gives $Q+(1-c)\lambda\|\delta_{S^c}\|_1\leq(1+c)\lambda\|\delta_S\|_1$. If the <compatibility condition for the Lasso> with constant $\phi$ holds on this cone, then $Q+(1-c)\lambda\|\delta_{S^c}\|_1\leq(1+c)^2\lambda^2s/\phi^2$. Here $Q=\|X\delta\|_2^2/n$ and $S$ is the true <support of a vector>.
+
+= Prediction and coefficient error bound for compatible Lasso
+{parent=Fast-rate Lasso prediction bound under compatibility}
+{title2=$Q+\lambda\|\delta\|_1\leq16\lambda^2s/\phi_0^2$}
+
+With objective $\|Y-Xb\|_2^2/(2n)+\lambda\|b\|_1$, the <Gaussian score event for the Lasso> $\|X^T\epsilon/n\|_\infty\leq\lambda/2$ gives $Q+\lambda\|\delta_{S^c}\|_1\leq3\lambda\|\delta_S\|_1$, where $Q=\|X\delta\|_2^2/n$. The <Lasso cone condition> activates the <compatibility condition for the Lasso>. Then $Q+\lambda\|\delta\|_1\leq4\lambda\sqrt{sQ}/\phi_0\leq Q/2+8\lambda^2s/\phi_0^2$. Thus even $Q+2\lambda\|\delta\|_1\leq16\lambda^2s/\phi_0^2$. This controls prediction and coefficient error together, including a design with correlated columns.
+
+= Lasso sign recovery under compatibility
+{parent=Fast-rate Lasso prediction bound under compatibility}
+{c}
+{title2=$|\beta^0_k|>(1+c)\lambda s/\phi^2$}
+
+The <fast-rate Lasso prediction bound under compatibility> implies $\|\widehat\beta_S-\beta^0_S\|_1\leq(1+c)\lambda s/\phi^2$. Each true coefficient larger in absolute value than this bound has the correct estimated sign. This conclusion alone does not ensure absence of false positives.
+
+= Compatibility constant
+{title2=$\phi_\Sigma$}
+{parent=Compatibility condition for the Lasso}
+
+For a positive-semidefinite matrix $\Sigma$, an active set $S$ of size $s$, and cone factor three, one compatibility constant is defined by
+$$
+\phi_\Sigma^2
+=s\inf_{\|\delta_S\|_1=1,\,\|\delta_{S^c}\|_1\leq3}
+\delta^T\Sigma\delta.
+$$
+It measures how strongly the quadratic form controls active-coordinate $\ell^1$ error on the <Lasso cone condition>.
+
+= Stability of a compatibility constant under entrywise perturbation
+{parent=Compatibility constant}
+
+If $\|\Theta-\Sigma\|_{\max}\leq\phi_\Sigma^2/(32s)$, then $\phi_\Theta^2\geq\phi_\Sigma^2/2$. Indeed, every normalized cone vector has $\|\delta\|_1\leq4$, so its quadratic form changes by at most $16\|\Theta-\Sigma\|_{\max}\leq\phi_\Sigma^2/(2s)$.
+
+= Lasso sign recovery from cone invertibility
+{c}
+{parent=Compatibility condition for the Lasso}
+
+Suppose every $\delta$ in the <Lasso cone condition> satisfies $\psi\|\delta_S\|_\infty\leq\|\widehat\Sigma\delta\|_\infty$. On the usual score event, the <Karush-Kuhn-Tucker conditions> give $\|\widehat\Sigma(\widehat\beta-\beta^0)\|_\infty\leq3\lambda/2$. Hence every active-coordinate error is at most $3\lambda/(2\psi)$, and a larger minimum nonzero signal guarantees coordinatewise sign recovery.
+
+= Debiased Lasso
+{c}
+{parent=Lasso}
+
+The debiased Lasso adds an approximate inverse-Gram correction to a Lasso estimate so that each corrected coordinate has an asymptotically linear expansion.
+
+= Debiased-Lasso remainder bound
+{parent=Debiased Lasso}
+{title2=$\|\Delta\|_\infty\le\sqrt n\|\beta^0-\widehat\beta\|_1\max_j\lambda_j/\widehat\tau_j^2$}
+
+Let $\widehat\Sigma=X^TX/n$ and use <nodewise Lasso> with $\lambda_j>0$ and nonzero design columns. Form $c_j$ with entry $j$ equal to one and other entries $-\widehat\gamma^{(j)}$, and put row $j$ of $\widehat\Theta$ equal to $c_j^T/\widehat\tau_j^2$. The <nodewise-Lasso residual identity> and the <Karush-Kuhn-Tucker conditions> show that the diagonal of $\widehat\Theta\widehat\Sigma$ equals one and its row-$j$ off-diagonal entries have magnitude at most $\lambda_j/\widehat\tau_j^2$. For the <debiased Lasso>,
+$$
+\sqrt n(\widehat b-\beta^0)=\widehat\Theta X^T\varepsilon/\sqrt n+\Delta,\qquad \Delta=\sqrt n(\widehat\Theta\widehat\Sigma-I)(\beta^0-\widehat\beta).
+$$
+The displayed bound follows row by row from <Hölder inequality>. If the noise is conditionally <multivariate normal> with <covariance> $\sigma^2I$, and the nodewise fits and tuning parameters depend only on $X$, the first term is conditionally normal with <covariance> $\sigma^2\widehat\Theta\widehat\Sigma\widehat\Theta^T$.
+
+= Approximate inverse of a Gram matrix
+{parent=Debiased Lasso}
+
+A matrix $\Theta$ is an $\eta$-approximate inverse of a Gram matrix $\widehat\Sigma$ in entrywise maximum norm when
+$$
+\lVert\widehat\Sigma\Theta-I\rVert_{\max}\leq\eta.
+$$
+This turns the bias remainder of a <debiased Lasso> into a product of $\eta$ and the coefficient $\ell^1$ error.
+
+= Nodewise Lasso
+{c}
+{parent=Debiased Lasso}
+
+The nodewise Lasso regresses each design column on the remaining columns and uses its residual to estimate a column of the inverse covariance or inverse Gram matrix.
+
+= Nodewise-Lasso residual identity
+{parent=Nodewise Lasso}
+{title2=$\widehat\tau_j^2=X_j^Tr_j/n$}
+
+For <nodewise Lasso> with objective $\|X_j-X_{-j}\gamma\|_2^2/(2n)+\lambda_j\|\gamma\|_1$, put $r_j=X_j-X_{-j}\widehat\gamma^{(j)}$. Its <Karush-Kuhn-Tucker conditions> give $X_{-j}^Tr_j/n=\lambda_jz_j$ with $z_j\in\partial\|\widehat\gamma^{(j)}\|_1$. Hence
+$$
+X_j^Tr_j/n=\|r_j\|_2^2/n+\lambda_j\|\widehat\gamma^{(j)}\|_1=\widehat\tau_j^2.
+$$
+For $\lambda_j>0$ this is positive whenever $X_j\ne0$; if it were zero both nonnegative terms would vanish, forcing $\widehat\gamma^{(j)}=0$ and $X_j=r_j=0$. Nonzero columns are therefore an essential hypothesis for division by this quantity.
+
+= Debiased-Lasso asymptotic normality
+{c}
+{parent=Debiased Lasso}
+
+Under sparsity, compatibility, and inverse-Gram estimation conditions, the standardized coordinatewise error of the <debiased Lasso> converges in distribution to a <standard normal distribution>.
+
+= Gaussian identity design for debiased Lasso
+{c}
+{parent=Debiased-Lasso asymptotic normality}
+
+In the <normal linear model>, assume $\varepsilon\sim N_n(0,\sigma^2I)$ is independent of $X$. Independent rows of $X$ with <multivariate normal distribution> $N_p(0,I_p)$ give a simple random design for <debiased Lasso>. Let $p\to\infty$, $\log p=o(n)$ and $s\log p=o(\sqrt n)$, with fixed positive noise scale. Choose the <Lasso> penalty and all <nodewise Lasso> penalties as sufficiently large constant multiples of $\sqrt{\log p/n}$, including the noise scale in the former. Uniform sample cross-correlations are bounded by this scale, so zero is the nodewise solution with <probability> tending to one. Column squared <norms> divided by $n$ converge uniformly to one. To check the <compatibility condition for the Lasso> directly, put $\widehat\Sigma=X^TX/n$ and $\eta=\max_{j,k}|\widehat\Sigma_{jk}-\mathbf1_{\{j=k\}}|$. On the <Lasso cone condition>, $\|\delta\|_1\le4\|\delta_S\|_1$, and the <Cauchy-Schwarz inequality> gives
+$$
+\delta^T\widehat\Sigma\delta\ge\|\delta\|_2^2-\eta\|\delta\|_1^2\ge(1/s-16\eta)\|\delta_S\|_1^2.
+$$
+For $s\ge1$, <entrywise concentration of a Gaussian Gram matrix> gives $\eta\le D_0\sqrt{\log p/n}$ with <probability> tending to one for sufficiently large fixed $D_0$. The stated sparsity condition implies $s\eta\to0$ on this event, so one can take $\phi^2\ge1/2$ eventually. The conditional <Gaussian tail bound> for the noise score and the <basic inequality for the Lasso> then give $\|\widehat\beta-\beta^0\|_1\le C s\sqrt{\log p/n}$ with <probability> tending to one. Consequently the <debiased-Lasso remainder bound> is at most $A s\log p/\sqrt n$ with <probability> tending to one, for a fixed constant $A$. These assumptions allow both $p$ and $s$ to grow, for example $p=n^2$, $s=\lfloor n^{1/4}\rfloor$.
+
+= Soft thresholding
+{parent=Lasso}
+{wiki}
+
+= Soft-thresholding operator
+{synonym}
+
+Soft thresholding maps $u$ to $\operatorname{sgn}(u)(|u|-\lambda)_+$ and is the proximal operator of the absolute-value penalty.
+
+= Berhu penalty
+{c}
+{parent=Lasso}
+
+= Reverse-Huber penalty
+{c}
+{synonym}
+
+The Berhu, or reverse-Huber, penalty with threshold $\delta>0$ is
+$$
+\rho_\delta(t)=
+\begin{cases}
+|t|,&|t|\leq\delta,\\
+(t^2+\delta^2)/(2\delta),&|t|>\delta.
+\end{cases}
+$$
+It behaves like the <absolute value> near zero and quadratically for large coefficients.
+
+= Elastic net regularization
+{parent=Lasso}
+{wiki}
+
+= Elastic net
+{synonym}
+
+Elastic-net regression minimizes squared error plus both an $\ell^1$ coefficient penalty and a squared $\ell^2$ penalty. It combines exact sparsity with strict convexity when the quadratic penalty is positive.
+
+= Elastic net regularization in Hilbert sequence space
+{parent=Elastic net regularization}
+{title2=$J(u)=\|u\|_1+\beta\|u\|_2^2,\quad\beta>0$}
+
+Extend $J$ by infinity outside $\ell^1$. For a <bounded linear operator> $K:\ell^2\to\ell^2$, the objective $\|Ku-f\|_2^2/2+\alpha J(u)$ is coercive, weakly lower semicontinuous and <strictly convex> for $\alpha>0$, so it has a unique minimizer. The quadratic penalty ensures existence and uniqueness even if $K$ has a <null space>. Its limiting exact solution minimizes $J$ in the data fiber, which need not be the <minimum-norm least-squares solution>.
+
+= Nonlinearity of elastic net reconstruction
+{parent=Elastic net regularization in Hilbert sequence space}
+
+For fixed $\alpha>0$ and nonzero bounded $K$, the reconstruction vanishes when $\|K^*f\|_\infty\leq\alpha$, which includes a neighborhood of zero. If it were linear it would vanish everywhere. Choose a coordinate $e_j$ with $Ke_j\ne0$ and data $f=tKe_j$ with $t\|Ke_j\|^2>\alpha$; the optimality inequality at zero fails, so its minimizer is nonzero. Thus the map is nonlinear. The qualification $K\ne0$ is essential: $K=0$ gives the zero linear map.
+
+= Norm convergence of elastic net regularization
+{parent=Elastic net regularization in Hilbert sequence space}
+
+Assume an exact solution of finite penalty exists and select the unique $J$-minimizing exact solution $u^\dagger$. Minimality gives $\|Ku_\alpha^\delta-f^\delta\|^2/2+\alpha J(u_\alpha^\delta)\leq\delta^2/2+\alpha J(u^\dagger)$. If $\alpha\to0$ and $\delta^2/\alpha\to0$, boundedness, <weak sequential compactness of bounded sequences in a reflexive Banach space> and lower semicontinuity identify every weak limit with $u^\dagger$. The separate lower semicontinuity of $\|u\|_1$ and $\|u\|_2^2$, together with the upper bound on $J$, forces the Hilbert norms to converge. The <Radon-Riesz theorem> then gives <norm convergence>.
+
+= Grouping effect of the elastic net
+{parent=Elastic net regularization}
+
+The quadratic penalty encourages strongly correlated predictors to receive similar coefficients, so an elastic net tends to retain or discard correlated predictors as a group more readily than the Lasso.
+
+= Doubly robust estimation
+{parent=Probability and statistics}
+{wiki}
+
+Doubly robust estimation combines two nuisance-function estimates so that the target estimator remains consistent when either one of two model components is correctly specified.
+
+= Augmented inverse-probability-weighted estimator
+{parent=Doubly robust estimation}
+
+This estimator combines outcome regression with inverse propensity weighting and has a second-order product bias.
+
+= Double robustness
+{parent=Doubly robust estimation}
+
+An estimator is doubly robust when it remains consistent if either of two nuisance models is correctly specified, commonly an outcome-regression model or a propensity-score model.
+
+= Cross-fitting
+{parent=Doubly robust estimation}
+
+Cross-fitting trains nuisance estimators outside each observation's fold and evaluates the target score on the held-out fold.
+
+= Double machine learning
+{parent=Cross-fitting}
+{wiki}
+
+Double machine learning uses orthogonal estimating equations and cross-fitting so that sufficiently accurate machine-learning nuisance estimates yield asymptotically normal target estimates.
+
+= Conditional multivariate normal distribution
+{parent=Probability and statistics}
+
+Conditioning one block of a jointly Gaussian vector on another gives a Gaussian law with linear mean and Schur-complement covariance.
+
+= Gaussian process regression posterior
+{c}
+{parent=Conditional multivariate normal distribution}
+
+For a zero-mean <Gaussian process> observed with independent <Gaussian noise>, the latent value at a new input is conditionally normal. Its mean is the kernel cross-covariance times the noisy kernel-matrix inverse times the observations, and its variance is the prior variance minus the corresponding quadratic form.
+
+\Include[causal-inference]{parent=Probability and statistics}
+
+= Missing data
+{parent=Probability and statistics}
+{wiki}
+
+Missing data occur when some intended measurements are unobserved. Whether valid inference can ignore the missingness mechanism depends on how the probability of observation relates to observed and unobserved values.
+
+= Unit and item nonresponse
+{parent=Missing data}
+
+Item nonresponse leaves a particular measurement unobserved while retaining other measurements on that individual. Unit nonresponse leaves all survey measurements unavailable. Adjusting for an observed auxiliary variable can address item nonresponse under <missing at random>, but does not identify the auxiliary-variable distribution among unit nonresponders. Extrapolation to them needs further assumptions or external information.
+
+= Sensitivity analysis for unit and item nonresponse
+{parent=Unit and item nonresponse}
+{title2=$\theta=[n_R\widehat p_R+n_Ip_I+n_Up_U]/n$}
+
+Vary the unobserved outcome probabilities for item and unit nonresponders, and any unknown auxiliary-variable mixture, over scientifically plausible ranges. Recompute the population estimate and identify values at which substantive conclusions change. This probes untestable transport or <missing at random> assumptions; it is distinct from sampling uncertainty represented by a <confidence interval>. Letting each missing-outcome probability vary from zero to one gives worst-case identification bounds.
+
+= Missing-data mechanism
+{parent=Missing data}
+{title2=$p(R\mid D)$}
+
+The mechanism assigns probabilities to observation patterns $R$ conditional on complete measurements $D$: $p(R\mid D)$. Whether it depends on missing values distinguishes <missing completely at random>, <missing at random> and <missing not at random>.
+
+= Covariate-dependent missing completely at random
+{parent=Missing-data mechanism}
+{title2=$R\perp Y\mid X$}
+
+= CD-MCAR
+{c}
+{synonym}
+
+Missingness depends only on fully observed <covariates> $X$, not on the response after conditioning on them. A responder-only marginal estimate may still be biased when response rates and outcome probabilities both vary across <covariate> strata. <MAR standardization over a fully observed covariate> weights within-stratum respondent estimates using <covariate> frequencies from the whole target cohort.
+
+= Sequential response selection model
+{parent=Missing-data mechanism}
+{title2=$q_j(y)=\mathbb P(A\geq j\mid A\geq j-1,Y=y)$}
+
+Suppose outcome collection stops at the first success or after $m$ unsuccessful attempts, and let $A$ count unsuccessful attempts. Conditional on the outcome $y$, put $q_j(y)=\mathbb P(A\geq j\mid A\geq j-1,Y=y)$. For $k<m$, the joint density of $A=k$ and an observed $Y=y$ is
+$$
+f_\beta(y)\left(\prod_{j=1}^{k}q_j(y)\right)(1-q_{k+1}(y)).
+$$
+For $A=m$, the unobserved outcome is integrated out, giving $\int f_\beta(y)\prod_{j=1}^m q_j(y)\,dy$. These probabilities sum to one by telescoping and integration. Dependence of $q_j$ on $y$ models <missing not at random>. If all $q_j$ are independent of $y$ conditional on the regression predictors, the outcome density among responders remains $f_\beta$, as required for <complete-case analysis> of that conditional model.
+
+= Missing completely at random
+{title2=MCAR}
+{parent=Missing data}
+{wiki}
+
+= MCAR
+{synonym}
+{c}
+
+Data are missing completely at random when the missingness indicator is independent of both observed and missing data.
+
+= MCAR auxiliary-variable efficiency
+{parent=Missing completely at random}
+{c}
+{title2=$V_{\mathrm{CC}}-V_{\mathrm{std}}=(1-\rho)\operatorname{Var}(m)/(N\rho)$}
+
+With a fully observed covariate $X$, response $Y$, and an independent response indicator with <probability> $\rho$, let $m(X)=E(Y\mid X)$. A covariate-standardized mean has asymptotic <variance> $[\operatorname{Var}(m)+E\{\operatorname{Var}(Y\mid X)\}/\rho]/N$, whereas the complete-case mean has <variance> $\operatorname{Var}(Y)/(N\rho)$. The difference is $(1-\rho)\operatorname{Var}(m)/(N\rho)$. Thus <missing completely at random> does not justify discarding predictive observed covariates on efficiency grounds.
+
+= Missing at random
+{title2=MAR}
+{parent=Missing data}
+{wiki}
+
+= MAR
+{synonym}
+{c}
+
+Data are missing at random when the probability of missingness, conditional on observed data, does not depend further on the missing values.
+
+= Covariate-dependent missing at random
+{parent=Missing at random}
+{title2=$f(R\mid Y^o,Y^m,X)=f(R\mid Y^o,X)$}
+
+= CD-MAR
+{c}
+{synonym}
+
+For each fixed observation pattern, the probability of that pattern may depend on observed response components and fully observed <covariates>, but not on the response components missing under that pattern. Conditional <missing completely at random> is the special case with no dependence on observed response components either.
+
+= MAR standardization over a fully observed covariate
+{parent=Missing at random}
+{c}
+{title2=$\widehat\theta=\sum_x\widehat p_x\widehat m_x$}
+
+= Stratified estimation under missing at random
+{synonym}
+
+When a response $Y$ is <missing at random> conditional on a fully observed category $X$, estimate its <conditional probabilities> using respondents within each category and average them with the category frequencies from all patients. For a binary response, $\widehat P(Y=1)=\sum_x\widehat P(X=x)\widehat P(Y=1\mid X=x,R=1)$. The weighting uses the full cohort rather than only complete cases.
+
+= Ignorable missingness mechanism
+{parent=Missing data}
+
+= Ignorable
+{synonym}
+
+A missingness mechanism is ignorable for likelihood or Bayesian inference about outcome-model parameters when the missingness-model factor can be omitted without changing that inference. Missing at random together with distinct outcome and missingness parameters is a standard sufficient condition.
+
+= Observed-data likelihood with a missing covariate
+{parent=Ignorable missingness mechanism}
+{title2=$L_i=\int f_\beta(y_i\mid x)g_\eta(x)\,dx$}
+
+If a regression response $Y$ is observed but covariate $X$ is sometimes missing, <likelihood> inference requires a joint model: for example $f_\beta(y\mid x)g_\eta(x)$. An incomplete record contributes $\int f_\beta(y\mid x)g_\eta(x)\,dx$ to the <observed-data likelihood>. <Missing at random> with distinct parameters allows the missingness mechanism to be omitted; it does not remove the need to integrate over $X$.
+
+= Distinct parameters
+{parent=Ignorable missingness mechanism}
+
+Outcome and missingness parameters are distinct when their joint parameter space is the Cartesian product of their separate parameter spaces, so variation-independent choices can be made for the two models.
+
+= Missing not at random
+{title2=MNAR}
+{parent=Missing data}
+{wiki}
+
+Data are missing not at random when the probability of missingness still depends on an unobserved value after conditioning on the observed data.
+
+= Selection model for informative longitudinal dropout
+{parent=Missing not at random}
+{title2=$f(Y_i\mid X_i)g(R_i\mid Y_i,X_i)$}
+
+Model the joint distribution by multiplying a response model by a sequential dropout model. For example, the <logit> of dropout before visit $j$, conditional on remaining observed, can depend on the currently unobserved $Y_{ij}$ as well as previous responses and baseline <covariates>. The observed-data <likelihood> sums over the missing binary responses. Such a dependence parameter is usually weakly identified or unidentified from observed responses alone; <sensitivity analysis> must vary it over scientifically justified values.
+
+= Shared-parameter model for informative dropout
+{parent=Selection model for informative longitudinal dropout}
+{title2=$\int f(Y_i\mid B_i,X_i)g(R_i\mid B_i,X_i)\,dF(B_i)$}
+
+A response model and a dropout model share latent <random effects>. Conditional on those effects and observed predictors, the two processes may be independent, yet marginally dropout is <missing not at random> because the shared effects also predict unseen outcomes. Joint <likelihood> fitting integrates the product of both models over the shared effects; integrating the outcome model alone is insufficient. This is an explicit identifying model, and its latent-dependence assumptions should be assessed by <sensitivity analysis>.
+
+= Monotone missing-data pattern
+{parent=Missing data}
+
+Repeated measurements have a monotone missing-data pattern when every measurement after a subject's first missing value is also missing.
+
+= Complete-case analysis
+{parent=Missing data}
+{wiki}
+
+A complete-case analysis uses only observations for which every variable required by the analysis is observed. It can be biased when completeness selects observations according to their outcomes or other relevant variables.
+
+= Complete-case regression under conditional missing at random
+{parent=Complete-case analysis}
+{title2=$Y\perp R\mid X\quad\Longrightarrow\quad f(Y\mid X,R=1)=f(Y\mid X)$}
+
+Let $R$ indicate observation of a regression response $Y$, with fully observed predictors $X$. If $Y\perp R\mid X$ and $\mathbb P(R=1\mid X)>0$ on the target support, the observed conditional density equals the full conditional density. Thus a correctly specified <regression model> can be fitted to observed responses under conditional <missing at random>. This does not justify the unadjusted complete-case mean when observation rates and outcome means both vary with $X$, nor does it imply <missing completely at random>.
+
+= Multiple imputation
+{parent=Missing data}
+{wiki}
+
+Multiple imputation repeatedly draws missing values from fitted predictive distributions, analyzes each completed dataset, and combines the resulting estimates and uncertainty.
+
+= Auxiliary variable for multiple imputation
+{parent=Multiple imputation}
+
+= Auxiliary variables for multiple imputation
+{synonym}
+
+A recorded variable included in imputation models to help predict missing values or explain response patterns, even if it is absent from the final substantive model. Useful auxiliaries can improve precision and make <missing at random> more plausible; they cannot establish that assumption from the observed data.
+
+= Rubin's rules
+{parent=Multiple imputation}
+{c}
+{title2=$T=\overline U+(1+M^{-1})B$}
+
+For $M>1$ completed-data estimates $Q_m$ with variances $U_m$, pool using $\overline Q=M^{-1}\sum_mQ_m$, $\overline U=M^{-1}\sum_mU_m$, $B=(M-1)^{-1}\sum_m(Q_m-\overline Q)^2$, and $T=\overline U+(1+M^{-1})B$. The total <variance> includes within-imputation uncertainty, between-imputation uncertainty and finite-$M$ simulation uncertainty.
+
+= Multiple-imputation confidence interval
+{parent=Rubin's rules}
+{title2=$\overline Q\pm t_{\nu,1-\alpha/2}\sqrt T$}
+
+Use the pooled estimate and total <variance> from <Rubin's rules>. A basic large-complete-sample scalar interval is $\overline Q\pm t_{\nu,1-\alpha/2}\sqrt T$, with $\nu=(M-1)[1+\overline U/((1+M^{-1})B)]^2$ for $B>0$. Small complete-data samples need an appropriate degrees-of-freedom adjustment; the normal limit applies as the available degrees of freedom become large.
+
+= Multiple imputation by chained equations
+{parent=Multiple imputation}
+
+= Full conditional specification
+{synonym}
+
+= MICE
+{c}
+{synonym}
+
+Specify a <conditional distribution> for each incomplete variable given the others, cycle through parameter draws and missing-value draws, and retain multiple completed datasets after suitable convergence checks. Preserve observed entries. Adequate models, appropriate support and the intended analysis structure matter; arbitrary conditional models need not be compatible with one joint distribution. Standard applications assume <missing at random> given included predictors. Use <Rubin's rules> to pool estimates and uncertainty.
+
+= Clinical trial
+{parent=Probability and statistics}
+{wiki}
+
+= Independent trial safety monitoring
+{parent=Clinical trial}
+
+Independent trial safety monitoring reviews accumulating serious outcomes according to a prespecified plan and may recommend stopping or modifying a <clinical trial> when harm or benefit changes the ethical balance. Complete ascertainment of deaths and other severe outcomes is needed even if the trial is sized for a different endpoint. Pooled evidence and prespecified sequential thresholds can make rare-event monitoring useful without presenting a nonsignificant harm comparison as safety.
+
+= Clinical equipoise
+{parent=Clinical trial}
+
+Clinical equipoise is genuine professional uncertainty about the relative overall benefit and harm of the treatments being compared in a <randomized controlled trial>. A favorable intermediate endpoint does not by itself resolve uncertainty about <mortality>. Ethical design requires <informed consent>, meaningful benefit-risk assessment and monitoring of serious harms; an underpowered safety comparison is not evidence that harm is absent.
+
+= Time-origin alignment of clinical endpoints
+{parent=Clinical trial}
+
+A <clinical trial> comparison must define a common time origin and observation window for both assigned treatments. A probability measured from allocation cannot be replaced by one measured from a later treatment-dependent release or discharge. The latter may describe a different time interval and a selected population. A numerical <sample size> cannot be obtained by silently treating those probabilities as interchangeable.
+
+= Eligibility criteria for a clinical trial
+{parent=Clinical trial}
+
+Eligibility criteria specify which individuals may enter a <clinical trial>, defining its enrolled population and excluding individuals for whom the intervention or measurements are unsuitable. Screening applies those criteria before <randomization>. The treatment comparison's <external validity> depends on how this population relates to the population of interest.
+
+= Sample size
+{title2=$n$}
+{parent=Clinical trial}
+
+The sample size is the number of observational units included in a study or assigned to a specified study arm.
+
+= Sample size for comparing two proportions
+{parent=Sample size}
+{title2=$n\simeq[z_{1-\alpha/2}\sqrt{2\bar p(1-\bar p)}+z_{1-\beta}\sqrt{p_1(1-p_1)+p_0(1-p_0)}]^2/(p_1-p_0)^2$}
+
+For equal independent binomial samples, the displayed normal-approximation size per group targets a two-sided significance level $\alpha$ and power $1-\beta$ at specified alternative rates, with $\bar p=(p_1+p_0)/2$. Its first <variance> term sets the null critical value and its second the alternative distribution. A numerical <sample size> is not determined by an effect ratio alone; power, sidedness, allocation and baseline rates must also be specified. Rare-event discreteness and clustered designs can materially change the achieved power.
+
+= Rare-event collaboration size at half power
+{parent=Sample size for comparing two proportions}
+{title2=$m\simeq\left\lceil\frac{2\bar p(1-\bar p)z_*^2}{n_0(p_A-p_B)^2}\right\rceil$}
+
+Suppose each collaborating centre contributes $n_0$ independently randomized participants per arm with specified event probabilities. At 50% <statistical power>, the usual normal-approximation alternative quantile is zero. The required size per arm is $2\bar p(1-\bar p)z_*^2/(p_A-p_B)^2$, with $z_*=z_{1-\alpha/2}$ for a <two-sided test> or $z_{1-\alpha}$ for a <one-sided test>. Divide by the per-centre arm size and round up. Endpoints must use the same time origin and follow-up window, and cluster dependence requires an additional adjustment.
+
+= Endpoint-specific rare-event sample size
+{parent=Sample size for comparing two proportions}
+
+A <sample size> calculation for a binary endpoint requires its own baseline <probability>, not merely the rate of a related outcome. A fatal-event probability equals the probability of the underlying event times its conditional fatality probability; knowing only that product does not identify the incidence of all events. Thus a mortality rate can size a mortality trial but cannot determine the size for all fatal and nonfatal events without further assumptions. The significance level, allocation, target <statistical power> and effect definition must also be specified.
+
+= Normal-mean sample size calculation
+{parent=Sample size}
+{title2=$n=\left\lceil\sigma^2(z_{1-\alpha}+z_{1-\beta})^2/(\delta^*)^2\right\rceil$}
+
+For a one-sided normal-mean test of size $\alpha$ with known standard deviation $\sigma$, a positive alternative $\delta^*$ and target <statistical power> $1-\beta>\alpha$, the required <sample size> is the ceiling of $\sigma^2(z_{1-\alpha}+z_{1-\beta})^2/(\delta^*)^2$. This follows by shifting the <standard normal quantile> in the alternative rejection <probability>.
+
+= Statistical power
+{title2=$1-\beta$}
+{parent=Clinical trial}
+{wiki}
+
+The statistical power of a test at an alternative parameter value is the probability that the test rejects its null hypothesis at that value.
+
+= Power of a two-sample rare-event comparison
+{parent=Statistical power}
+
+For two independent samples of size $n$ with event probabilities $p_0,p_1$, put $\delta=p_0-p_1$, $\bar p=(p_0+p_1)/2$, $s_0^2=2\bar p(1-\bar p)/n$ and $s_1^2=[p_0(1-p_0)+p_1(1-p_1)]/n$. The normal approximation to a two-sided level-$\alpha$ test has power
+$$
+1-\Phi\left(\frac{z_{1-\alpha/2}s_0-\delta}{s_1}\right)+\Phi\left(\frac{-z_{1-\alpha/2}s_0-\delta}{s_1}\right).
+$$
+For rare events, independent <Poisson distributions> approximate the counts. Conditional on their total, the null count allocation is <binomial distribution> with probability one half; under the alternative the allocation probability is $p_0/(p_0+p_1)$. Averaging its exact rejection probability over the alternative total supplies a discrete power calculation.
+
+// Target: probability-theory.bigb
+
+= Group sequential design
+{parent=Clinical trial}
+
+A group sequential design analyzes accumulating data at prespecified interim analyses and may stop early for efficacy or futility.
+
+= Futility boundary
+{parent=Group sequential design}
+{title2=$W_1<f$}
+
+A futility boundary specifies an interim result below which a <clinical trial> stops without rejecting the <null hypothesis>. Removing only potential rejection paths cannot increase the <type I error>. With a finite boundary and a nonsingular joint normal test-statistic distribution, it strictly reduces that error relative to the corresponding fixed-final-boundary test.
+
+= Conditional selection bias after futility continuation
+{parent=Futility boundary}
+{title2=$E(S\mid X\ge c)-\delta$}
+
+In a two-stage normal trial, conditioning on a first-stage <sample mean> exceeding $c$ raises that mean. With stage standard error $s$, mean parameter $\delta$, and combined mean $S$, the <estimator bias> after continuation is $E(S\mid X\ge c)-\delta=(s/2)\lambda((c-\delta)/s)$, where $\lambda$ is the upper-tail <inverse Mills ratio>. It is positive and tends to zero as continuation becomes virtually certain.
+
+= Conditional bias-corrected normal mean estimate
+{parent=Conditional selection bias after futility continuation}
+{title2=$m=d+(w/\sqrt{I_1})\phi(d\sqrt{I_1}-f)/\Phi(d\sqrt{I_1}-f)$}
+
+In a two-stage normal trial, invert the pooled <estimator>'s conditional mean after continuation to correct its selection shift. The root is unique when the pooled stage-1 weight satisfies $0<w<1$, because its conditional-mean map has derivative between $1-w$ and one. This root also maximizes the corresponding conditional <likelihood>. It is distinct from exact conditional unbiasedness, which is supplied by a suitable <Rao-Blackwell theorem> construction.
+
+= Rao-Blackwell estimator after interim selection
+{parent=Conditional selection bias after futility continuation}
+{c}
+{title2=$\widetilde\delta=S-v\lambda((c-S)/v)$}
+
+For two independent stage means $X,Y\sim N(\delta,s^2)$ and continuation $X\ge c$, let $S=(X+Y)/2$ and $v=s/\sqrt2$. The second-stage mean is conditionally unbiased. The <Rao-Blackwell theorem> gives $E(Y\mid S,X\ge c)=S-v\lambda((c-S)/v)$, using $X\mid S\sim N(S,v^2)$ and truncation. This is a <conditionally unbiased estimator> using both stages through their combined <sample mean>.
+
+= Conditional error principle
+{parent=Group sequential design}
+
+The conditional error principle permits adaptation of a testing design if, conditional on the observed interim information, the modified future rule's <Type I error> does not exceed the original rule's conditional future rejection probability. Averaging then preserves the original unconditional error bound. For a completed single-look test that has not rejected, there is no future conditional error budget under that original design.
+
+= Alpha-spending function
+{parent=Group sequential design}
+{title2=$\alpha(u)$}
+
+An alpha-spending function assigns the cumulative <Type I error> budget to successive information fractions in a <group sequential design>. Its total at the final analysis is the overall <significance level>. The rejection boundaries must be calibrated using the joint distribution of the sequential <test statistics>; independent fixed-level tests do not automatically spend the assigned budget correctly.
+
+= Interim analysis
+{parent=Group sequential design}
+{wiki}
+
+An interim analysis examines data before a study reaches its planned maximum sample size.
+
+= Sequential stopping boundary
+{parent=Group sequential design}
+
+A sequential stopping boundary specifies values of an accumulating test statistic that trigger early stopping for efficacy, futility, or harm.
+
+= Canonical joint distribution for group sequential test statistics
+{parent=Group sequential design}
+
+At information levels $I_1<\cdots<I_J$, standardized efficient test statistics have unit variances, means proportional to $\sqrt{I_j}$, and correlations $\operatorname{Corr}(Z_j,Z_k)=\sqrt{I_j/I_k}$ for $j\leq k$.
+
+= Two-stage clinical trial design
+{parent=Clinical trial}
+
+A two-stage clinical trial design permits early stopping after an interim analysis for futility or efficacy and otherwise continues to a prespecified final decision boundary.
+
+= Neyman allocation
+{c}
+{parent=Clinical trial}
+{wiki}
+
+Neyman allocation assigns sample sizes in proportion to outcome standard deviations to minimize variance.
+
+= Response-adaptive randomization
+{parent=Clinical trial}
+{wiki}
+
+Response-adaptive randomization updates treatment probabilities using outcomes observed during a trial.
+
+= Randomized play-the-winner rule
+{parent=Response-adaptive randomization}
+{title2=RPW$(a,b)$}
+
+In a two-treatment urn design, begin with $a$ balls of each type, draw and replace a ball to allocate treatment, then add $b$ balls of the same type after success or of the opposite type after failure. This <response-adaptive randomization> favours treatments with more observed successes. For RPW$(1,1)$, type-0 probability after counts $(s_0,f_0,s_1,f_1)$ is $(1+s_0+f_1)/(2+s_0+f_0+s_1+f_1)$.
+
+\Include[survival-analysis]{parent=Probability and statistics}
+
+= Sign test
+{parent=Probability and statistics}
+{wiki}
+
+The sign test counts positive outcomes under a binomial null with success probability one half.
+
+= f-divergence
+{c}
+{title2=$D_f(P\Vert Q)$}
+{parent=Probability and statistics}
+{wiki}
+
+For a <convex function> $f$ satisfying $f(1)=0$, the f-divergence between <probability distributions> $P$ and $Q$ is
+$$
+D_f(P\Vert Q)=\int qf(p/q)\,d\lambda,
+$$
+where $p=dP/d\lambda$, $q=dQ/d\lambda$, and the integrand uses the lower-semicontinuous perspective convention at $q=0$.
+
+= Kullback-Leibler divergence
+{title2=$D_{\mathrm{KL}}$}
+{parent=f-divergence}
+{c}
+{wiki}
+
+= Relative entropy
+{synonym}
+
+For probability densities $p$ and $q$, the Kullback-Leibler divergence from $q$ to $p$ is
+$$
+D_{\mathrm{KL}}(p\Vert q)
+=\mathbb E_p\!\left[\log\frac{p(X)}{q(X)}\right].
+$$
+
+= Binary partition bound for relative entropy
+{parent=Kullback-Leibler divergence}
+{title2=$K(P,Q)\geq d(P(A),Q(A))$}
+
+= Bernoulli reduction of relative entropy
+{synonym}
+{c}
+
+For a measurable event $A$, applying <Jensen inequality> to $u\log u$ separately on $A$ and its complement shows that the <Kullback-Leibler divergence> between two <probability measures> is at least the divergence between the two event indicators. This reduces a general <probability measure> comparison to a binary one and is the key step in a proof of <Pinsker's inequality>.
+
+= Bernoulli relative entropy lower bound
+{parent=Binary partition bound for relative entropy}
+{c}
+{title2=$d(a,b)\geq2(a-b)^2$}
+
+For $d(a,b)=a\log(a/b)+(1-a)\log((1-a)/(1-b))$, the <second derivative> with respect to $a$ is $1/[a(1-a)]\geq4$. Its value and first derivative at $a=b$ vanish, so $d(a,b)\geq2(a-b)^2$. Boundary values follow by continuity or the infinite-divergence convention. Together with the <binary partition bound for relative entropy>, this gives <Pinsker's inequality> with the natural-logarithm constant.
+
+= Relative Fisher information
+{parent=Kullback-Leibler divergence}
+{title2=$I(f\mid g)=\int|\nabla\log(f/g)|^2f$}
+
+For sufficiently regular positive <probability densities>, this compares their spatial logarithmic derivatives. It is the dissipation functional for <relative entropy> under suitable diffusion equations. For standard Gaussian $g=\gamma$, it becomes $\int|\nabla\log f+v|^2f$, and in one dimension equals $\int|f'|^2/f+\int v^2f-2$ at unit <mass>.
+
+= Relative Fisher information decay under Ornstein-Uhlenbeck flow
+{parent=Relative Fisher information}
+{title2=$I(t)\leq e^{-2(t-s)}I(s)$}
+
+The differential estimate $I'(t)\leq-2I(t)$ gives the displayed exponential bound by an integrating factor. Start at any time with finite information. Combining this with a zero limiting entropy yields $H(f_t\mid\gamma)=\int_t^\infty I(s)ds\leq I(t)/2$.
+
+= Relative entropy nonnegativity
+{parent=Kullback-Leibler divergence}
+{title2=$H(f\mid g)\geq0$}
+
+For <probability densities> $f,g$ with $g>0$, set $q=f/g$. Equal masses give $H(f\mid g)=\int g(q\log q-q+1)\geq0$. The scalar integrand is minimized only at $q=1$, so equality means $f=g$ almost everywhere. Use $0\log0=0$; infinite entropy is allowed.
+
+= Generalized Kullback–Leibler divergence
+{parent=Kullback-Leibler divergence}
+{title2=$D(x,y)=\int[x\log(x/y)-x+y]$}
+
+For nonnegative densities of possibly different total masses, this divergence includes the mass correction $-x+y$ as well as the logarithmic term. It is the <Bregman distance> of the <maximum-entropy regularization functional> at a positive reference $y$. Convexity of $s\log s-s$ proves nonnegativity. For equal masses the correction integrates to zero, recovering the <Kullback-Leibler divergence>; for <probability density functions> both masses are one. Use the usual extended-value conventions at zero reference density.
+
+= Three-point identity for relative entropy
+{parent=Kullback-Leibler divergence}
+
+For probability mass functions $P,Q,R$ with compatible supports,
+$$
+D(P\Vert Q)
+=D(P\Vert R)+D(R\Vert Q)
++\sum_a\{P(a)-R(a)\}\log\frac{R(a)}{Q(a)}.
+$$
+When the final term vanishes, this is the Pythagorean identity for relative entropy.
+
+= Pythagorean identity for relative entropy
+{parent=Three-point identity for relative entropy}
+
+The Pythagorean identity is
+$$
+D(P\Vert Q)=D(P\Vert R)+D(R\Vert Q)
+$$
+whenever the residual term in the <three-point identity for relative entropy> is zero. Convex information projections replace equality by the corresponding Pythagorean inequality.
+
+= Binary relative entropy
+{title2=$\operatorname{kl}(a,b)$}
+{parent=Kullback-Leibler divergence}
+
+The binary relative entropy is the <Kullback-Leibler divergence> between Bernoulli distributions:
+$$
+\operatorname{kl}(a,b)
+=a\log\frac ab+(1-a)\log\frac{1-a}{1-b}.
+$$
+It is the exact exponent obtained by optimizing the Chernoff bound for a Bernoulli mean.
+
+= Gibbs inequality
+{c}
+{parent=Kullback-Leibler divergence}
+{wiki}
+
+For <probability distribution>[probability distributions] $p$ and $q$ on the same finite set,
+$$
+D_{\mathrm{KL}}(p\Vert q)
+=\sum_i p_i\log\frac{p_i}{q_i}\geq0,
+$$
+with equality exactly when $p=q$ on the support of $p$.
+
+= Log-optimal multiplicative betting
+{parent=Gibbs inequality}
+{title2=$g_*=D(p\Vert u/U)-\log U$}
+
+For independent outcomes with positive <probability distribution> $p$, allocations $a_j>0$ summing to one and return multipliers $a_j/u_j$, the <strong law of large numbers> gives asymptotic logarithmic fortune growth $g(a)=\sum_jp_j\log(a_j/u_j)$. <Gibbs inequality> gives $g(a)=g(p)-D(p\Vert a)$, so the unique optimum is $a=p$. Writing $U=\sum_ju_j$ gives $g(p)=D(p\Vert u/U)-\log U$. Thus $U<1$ guarantees positive optimal growth, whereas $U>1$ allows the house to force negative growth by choosing $u_j=Up_j$, but does not guarantee decline for every choice of $u$.
+
+= Chain rule for relative entropy
+{parent=Kullback-Leibler divergence}
+
+For <probability distribution>[probability distributions] $P$ and $Q$ on a product space, the <Kullback-Leibler divergence> decomposes into the divergence of a marginal and the expected divergence of the corresponding conditional distributions. Iteration gives
+$$
+D(Q\Vert P)=\sum_i\mathbb E_QD\bigl(Q_i(\mathord\cdot\mid X_{<i})\Vert P_i(\mathord\cdot\mid X_{<i})\bigr).
+$$
+
+= Log-sum inequality
+{parent=Kullback-Leibler divergence}
+{wiki}
+
+For nonnegative $a_i,b_i$, with $a=\sum_i a_i$ and $b=\sum_i b_i$, the log-sum inequality is
+$$
+\sum_i a_i\log\frac{a_i}{b_i}\geq a\log\frac ab.
+$$
+It proves both <Gibbs inequality> and the <data processing inequality for relative entropy>.
+
+= Gibbs variational principle for relative entropy
+{parent=Kullback-Leibler divergence}
+
+For a <probability mass function> $Q$ of full support on a finite <alphabet> and a real function $g$,
+$$
+\log\mathbb E_Q e^g
+=\sup_P\{\mathbb E_Pg-D_e(P\Vert Q)\},
+$$
+where $D_e$ uses <natural logarithms>. The unique maximizing <probability mass function> is the exponential tilt $P^*(x)=Q(x)e^{g(x)}/\mathbb E_Qe^g$.
+
+= Kullback-Leibler divergence between normal distributions
+{c}
+{parent=Kullback-Leibler divergence}
+
+For univariate normal distributions,
+$$
+D_{\mathrm{KL}}\bigl(N(m_1,v_1)\Vert N(m_0,v_0)\bigr)
+=\frac12\left[\log\frac{v_0}{v_1}+\frac{v_1+(m_1-m_0)^2}{v_0}-1\right].
+$$
+
+= Han's inequality for relative entropy
+{c}
+{parent=Kullback-Leibler divergence}
+
+If $P=\bigotimes_{i=1}^nP_i$ is a product measure, $Q$ is any probability measure, and $X^{(i)}$ omits coordinate $i$, then
+$$
+D(Q\Vert P)\geq\frac1{n-1}\sum_{i=1}^nD(Q_{X^{(i)}}\Vert P_{X^{(i)}}).
+$$
+
+= Han's entropy inequality
+{c}
+{parent=Han's inequality for relative entropy}
+
+For a random vector $X_{1:n}$,
+$$
+\sum_{i=1}^nH(X^{(i)})\geq(n-1)H(X_{1:n}).
+$$
+This is equivalent to <Han's inequality for relative entropy> after expansion against a product reference measure.
+
+= Normalized subset entropy
+{parent=Han's entropy inequality}
+{title2=$h_k^{(n)}=\frac{1}{k\binom nk}\sum_{|S|=k}h(X_S)$}
+
+For a discrete <random vector> with $n$ coordinates, this is the average <information entropy> per coordinate over all subsets of size $k$. Independent coordinates give the same average for every $k$, even when their individual entropies differ. If all coordinates are copies of one random variable $Z$, the average is $h(Z)/k$.
+
+= Monotonicity of normalized subset entropies
+{parent=Normalized subset entropy}
+{title2=$h_n^{(n)}\leq h_{n-1}^{(n)}\leq\cdots\leq h_1^{(n)}$}
+
+For discrete <random variables>, <normalized subset entropy> decreases with subset size. For finite entropies, the <chain rule for information entropy> and <conditioning reduces entropy> give $\sum_{i\in S}h(X_{S\setminus\{i\}})\geq(|S|-1)h(X_S)$. Sum this over all $k$-subsets $S$. Every $(k-1)$-subset occurs $n-k+1$ times, and $k\binom nk=(n-k+1)\binom n{k-1}$ cancels the normalization factors. This proves $h_k^{(n)}\leq h_{k-1}^{(n)}$. If a marginal entropy is infinite, every one of these subset averages is infinite; otherwise all entropies used in the proof are finite.
+
+= Strong form of Han's entropy inequality
+{c}
+{parent=Han's inequality for relative entropy}
+
+The strong form
+$$
+(n-1)\sum_iH(X^{(i)})
+\geq n(n-2)H(X_{1:n})+\sum_iH(X_i)
+$$
+follows by iterating <entropy submodularity>.
+
+= Tensorization lower bound for relative entropy
+{parent=Kullback-Leibler divergence}
+
+For a product reference $P=\bigotimes_iP_i$ and arbitrary $Q$,
+$$
+D(Q\Vert P)\geq\sum_iD(Q_i\Vert P_i).
+$$
+It follows from the <chain rule for relative entropy> and convexity of relative entropy in its first argument.
+
+= Chi-squared divergence
+{title2=$\chi^2(P\Vert Q)$}
+{parent=f-divergence}
+{wiki}
+
+For <probability mass functions> $P,Q$ with $P$ absolutely continuous with respect to $Q$,
+$$
+\chi^2(P\Vert Q)=\sum_x\frac{(P(x)-Q(x))^2}{Q(x)}.
+$$
+
+= Chi-squared divergence of product measures
+{parent=Chi-squared divergence}
+{title2=$1+\chi^2(Q^{\otimes n}\Vert P^{\otimes n})=(1+\chi^2(Q\Vert P))^n$}
+
+If $r=dQ/dP$, <independence> gives $E_{P^{\otimes n}}\prod_i r(X_i)^2=(E_Pr^2)^n$. Since $E_Pr=1$, this proves the displayed identity. The <Cauchy-Schwarz inequality> also gives $\|Q^{\otimes n}-P^{\otimes n}\|_1^2\leq\chi^2(Q^{\otimes n}\Vert P^{\otimes n})$. Thus perturbations of size $\chi^2(Q\Vert P)=O(1/n)$ have a uniformly bounded joint <total variation distance>, a useful input to a <metric squared-loss two-point bound>.
+
+= Second moment of a mixture likelihood ratio
+{parent=Chi-squared divergence}
+{title2=$\chi^2(\sum_jw_jP_j\Vert Q)=\sum_{j,k}w_jw_k\mathbb E_Q[L_jL_k]-1$}
+
+If $L_j=dP_j/dQ$ and the nonnegative <mixture weights> sum to one, the <likelihood ratio> of the <mixture model> is $L=\sum_jw_jL_j$. Expanding $\mathbb E_QL^2-1$ proves the displayed <chi-squared divergence> identity. For <independent random variables> sampled from a fixed component, one-observation cross moments multiply across observations. The component is drawn once for the whole sample; redrawing it per observation gives a different <mixture model>.
+
+= Data processing inequality for f-divergences
+{parent=f-divergence}
+
+For a <measurable function> $T$, every f-divergence contracts under <pushforward measure>[pushforward]:
+$$
+D_f(T_*P\Vert T_*Q)\leq D_f(P\Vert Q).
+$$
+This follows from conditional <Jensen inequality> applied to the jointly convex perspective $(a,b)\mapsto bf(a/b)$.
+
+= Data processing inequality for relative entropy
+{parent=Data processing inequality for f-divergences}
+
+This is the <data processing inequality for f-divergences> specialized to <relative entropy>. Passing two <probability distributions> through the same <Markov kernel> cannot increase their <relative entropy>. For a kernel $K$,
+$$
+D(PK\Vert QK)\leq D(P\Vert Q).
+$$
+
+= Squared Hellinger distance
+{c}
+{title2=$H^2(P,Q)$}
+{parent=f-divergence}
+
+The squared Hellinger distance is
+$$
+H^2(P,Q)=\int(\sqrt p-\sqrt q)^2d\lambda
+=2-2\int\sqrt{pq}\,d\lambda,
+$$
+where $p$ and $q$ are densities with respect to any common dominating measure $\lambda$.
+
+= Hellinger distance
+{title2=$d_H(P,Q)$}
+{parent=Squared Hellinger distance}
+{wiki}
+
+The Hellinger distance is the square root of a constant multiple of $\int(\sqrt p-\sqrt q)^2d\lambda$. Common conventions use either the factor $1$ or $1/2$.
+
+= Relative entropy bound for the unnormalized Hellinger distance
+{parent=Hellinger distance}
+{title2=$H^2(P,Q)\leq K(P,Q)$}
+
+The scalar inequality $-\log u\geq1-u$, applied to $u=\sqrt{q/p}$ and integrated against $P$, gives $K(P,Q)\geq2-2\int\sqrt{pq}\,d\mu$. The right side is the unnormalized squared <Hellinger distance>. Infinite divergence and zero density regions are handled by the usual extended-integral conventions.
+
+= Hellinger affinity
+{parent=Hellinger distance}
+{c}
+{title2=$\int\sqrt{pq}\,d\mu$}
+
+The <Hellinger affinity> of dominated <probability measures> is the integral of the geometric mean of their <probability density functions>. It lies in $[0,1]$ by <Cauchy-Schwarz inequality>. The unnormalized squared <Hellinger distance> is $2-2$ times this affinity; this identity makes the relation with <relative entropy> particularly simple.
+
+= Total variation–Hellinger–relative entropy inequality
+{parent=Hellinger distance}
+{title2=$\operatorname{TV}(P,Q)\leq h(P,Q)\leq\sqrt{\operatorname{KL}(P,Q)}$}
+
+For the <unnormalized Hellinger distance>, $\operatorname{TV}(P,Q)\leq h(P,Q)\leq\sqrt{\operatorname{KL}(P,Q)}$. Factor $|p-q|=|\sqrt p-\sqrt q|(\sqrt p+\sqrt q)$ and use the <Cauchy-Schwarz inequality> to bound the <total variation distance>. For the other bound, $\log t\leq t-1$ gives $p\log(p/q)\geq2(p-\sqrt{pq})$, whose integral is the squared <unnormalized Hellinger distance>. Infinite <Kullback-Leibler divergence> is allowed.
+
+= Unnormalized Hellinger distance
+{parent=Hellinger distance}
+{title2=$h(P,Q)=\|\sqrt p-\sqrt q\|_{L^2(\nu)}$}
+
+= Unnormalised Hellinger distance
+{synonym}
+
+The <Hellinger distance> convention $h^2(P,Q)=\int(\sqrt p-\sqrt q)^2\,d\nu$, with no factor $1/2$, for densities under a common dominating measure. Its range is $[0,\sqrt2]$. This convention makes $\operatorname{TV}(P,Q)\leq h(P,Q)\leq\sqrt{\operatorname{KL}(P,Q)}$ hold with the displayed constants.
+
+= Hellinger bound for differences of expectations
+{c}
+{parent=Hellinger distance}
+
+If $f$ is a measurable function into a separable <Banach space> and has finite second <moments> under <probability measures> $\mu,\mu'$, then their <Bochner integral> <expected values> satisfy
+$$
+\|\mathbb E^\mu f-\mathbb E^{\mu'}f\|
+\leq2\left(\mathbb E^\mu\|f\|^2+\mathbb E^{\mu'}\|f\|^2\right)^{1/2}d_{\mathrm{Hell}}(\mu,\mu').
+$$
+Here the <Hellinger distance> includes the factor $1/2$ in its square. For a proof, use $\nu=(\mu+\mu')/2$, $p=d\mu/d\nu$, and $q=d\mu'/d\nu$. Apply the norm bound for a <Bochner integral> and the <Cauchy-Schwarz inequality> to $f(p-q)=f(\sqrt p-\sqrt q)(\sqrt p+\sqrt q)$, then use $(\sqrt p+\sqrt q)^2\leq2(p+q)$. This explains why stability of a <Bayesian posterior> in <Hellinger distance> controls posterior <expected values> when the relevant second <moments> remain bounded.
+
+= Hellinger distance between normal distributions
+{c}
+{parent=Hellinger distance}
+{title2=$d_{\mathrm{Hell}}(\mathcal N(\theta_1,\sigma_1^2),\mathcal N(\theta_2,\sigma_2^2))$}
+
+With the convention $d_{\mathrm{Hell}}^2=\frac12\int(\sqrt p-\sqrt q)^2$, the <Hellinger distance> between two <normal distributions> with $\sigma_1,\sigma_2>0$ is
+$$
+d_{\mathrm{Hell}}^2=1-\sqrt{\frac{2\sigma_1\sigma_2}{\sigma_1^2+\sigma_2^2}}
+\exp\left[-\frac{(\theta_1-\theta_2)^2}{4(\sigma_1^2+\sigma_2^2)}\right].
+$$
+To prove it, integrate the geometric mean of their <probability density functions>. <Completing the square> makes that geometric mean the density of a <normal distribution> times the displayed prefactor and exponential. For example, writing $S=\sigma_1^2+\sigma_2^2$, that <normal distribution> has mean $(\theta_1\sigma_2^2+\theta_2\sigma_1^2)/S$ and <variance> $2\sigma_1^2\sigma_2^2/S$. The identity $d_{\mathrm{Hell}}^2=1-\int\sqrt{pq}$ then proves the formula.
+
+For equal unit <variances>, this becomes $1-e^{-(\theta_1-\theta_2)^2/8}$. More generally, put $B=\sqrt{2\sigma_1\sigma_2/S}\leq1$ and $x=(\theta_1-\theta_2)^2/(4S)$. Then $1-Be^{-x}=(1-B)+B(1-e^{-x})$, $1-B=(\sigma_1-\sigma_2)^2/[S(1+B)]$, and $1-e^{-x}\leq x$, proving
+$$
+d_{\mathrm{Hell}}^2\leq\frac{(\sigma_1-\sigma_2)^2+(\theta_1-\theta_2)^2}{\sigma_1^2+\sigma_2^2}.
+$$
+
+= Coupling
+{parent=Probability and statistics}
+{wiki=Coupling_(probability)}
+
+= Coupling of probability distributions
+{synonym}
+
+= Probabilistic coupling
+{synonym}
+
+A coupling of probability distributions $\mu$ and $\nu$ is a joint distribution of $(X,Y)$ whose marginals are $\mu$ and $\nu$.
+
+= Summable-memory coupling
+{parent=Coupling}
+{title2=$\|q(\cdot\mid\eta)-q(\cdot\mid\eta')\|_{\rm TV}\leq b_r,\quad\sum_rb_r<\infty$}
+
+Suppose a finite-alphabet transition kernel is uniformly positive and histories agreeing in their most recent $r$ symbols have <total variation distance> at most $b_r$. Choose decreasing bounds with $b_r<1$ and summable tail. A <maximal coupling> can be dominated by a match-length chain that increments with probability $1-b_r$ and resets with probability $b_r$. Its chance of never resetting is $\prod_{r\geq0}(1-b_r)>0$. Successive failed attempts therefore end almost surely, leaving a final infinite run of matches. The dominating chain does not depend on the histories, so future-block laws forget the remote past uniformly. This proves uniqueness of a two-sided law with the prescribed transition kernel without assuming stationarity first.
+
+= Eventual coupling of planar symmetric random walks
+{parent=Coupling}
+
+Two <simple symmetric random walks> on the planar integer lattice starting at sites of the same parity can be coupled to agree after a finite time almost surely. Run them independently until they meet, then give them identical increments. Their difference walk has return probability $p_{2n}(0,0)$ at time $n$; the divergent return sum proves <Markov-chain recurrence> and makes the meeting time finite.
+
+= Stochastic domination of probability measures
+{parent=Coupling}
+{title2=$\mu\preceq\nu$}
+
+= Stochastically dominates
+{synonym}
+
+= Stochastic domination
+{synonym}
+
+On a finite partially ordered state space, $\mu\preceq\nu$ means $\int f\,d\mu\leq\int f\,d\nu$ for every real-valued <order-preserving function> $f$. Equivalently, every increasing subset has no larger <probability> under $\mu$ than under $\nu$. A coupling supported on pairs $(X,Y)$ with $X\leq Y$ proves this relation. This concerns order of <probability> laws, rather than stochastic asymptotic order notation.
+
+= Holley inequality
+{parent=Stochastic domination of probability measures}
+{c}
+{wiki}
+
+On a finite distributive configuration lattice, <probability> weights satisfying $\mu_1(\omega\vee\eta)\mu_2(\omega\wedge\eta)\ge\mu_1(\omega)\mu_2(\eta)$ for all pairs give <stochastic domination> $\mu_1\ge\mu_2$. The result holds for nonnegative weights as well: apply the <four functions theorem> to $\mu_1\mathbf1_{A^c},\mu_2\mathbf1_A,\mu_1\mathbf1_A,\mu_2\mathbf1_{A^c}$ for an <increasing event> $A$, obtaining $\mu_1(A^c)\mu_2(A)\le\mu_1(A)\mu_2(A^c)$.
+
+= Holley condition
+{parent=Holley inequality}
+{c}
+{title2=$\mu_1(\omega\vee\eta)\mu_2(\omega\wedge\eta)\ge\mu_1(\omega)\mu_2(\eta)$}
+
+= Holley's condition
+{synonym}
+{c}
+
+The cross-lattice sufficient condition for stochastic comparison of two measures:
+$$
+\mu_1(\omega\vee\eta)\mu_2(\omega\wedge\eta)\ge\mu_1(\omega)\mu_2(\eta).
+$$
+The join and meet are coordinatewise maximum and minimum on a Boolean configuration cube. Normalization factors cancel, so the condition can be checked using unnormalized positive weights.
+
+= Synchronous coupling
+{parent=Coupling}
+
+A synchronous coupling drives two solutions of a stochastic differential equation by the same Brownian motion. Their difference has noise coefficient $\sigma(X)-\sigma(Y)$. A dissipativity inequality for the drift and this coefficient gives the <mean-square contraction of synchronously coupled diffusions>.
+
+= Mean-square contraction of synchronously coupled diffusions
+{parent=Synchronous coupling}
+{title2=$\mathbb E|X_t-Y_t|^2\leq e^{-kt}\mathbb E|X_0-Y_0|^2$}
+
+If $2(x-y)(b(x)-b(y))+(\sigma(x)-\sigma(y))^2\leq-k(x-y)^2$, the <Itô formula> for the squared difference and the <Gronwall inequality> give $\mathbb E|X_t-Y_t|^2\leq e^{-kt}\mathbb E|X_0-Y_0|^2$. Localization of $e^{kt}|X_t-Y_t|^2$ as a nonnegative local supermartingale gives the same estimate under suitable existence hypotheses.
+
+= A bounded drift cannot be uniformly strictly dissipative on the real line
+{parent=Mean-square contraction of synchronously coupled diffusions}
+{title2=$|b|\leq B\quad\Longrightarrow\quad\text{no global }k>0\text{ contraction}$}
+
+If $|b|\leq B$, then $2(x-y)(b(x)-b(y))+(\sigma(x)-\sigma(y))^2\geq-4B|x-y|$. It cannot also be at most $-k|x-y|^2$ for every pair on the real line when $k>0$. Global strict dissipativity thus requires relaxing global boundedness of the drift; linear confining drifts give natural compatible examples.
+
+= Convergence by synchronous coupling for bounded continuous test functions
+{parent=Mean-square contraction of synchronously coupled diffusions}
+
+If two coupled processes approach each other in L2 and one family of marginals is uniformly tight, then their expectations of any bounded continuous test function approach each other. On a large compact set use uniform continuity; outside it use boundedness; control excessive coupling separation by the second-moment Markov bound. A constant expectation for one process then identifies the other limit. No global derivative or Lipschitz bound is necessary.
+
+= Coalescing coupling
+{parent=Coupling}
+{title2=$T$}
+
+A coalescing <coupling of probability distributions> of two <Markov chains> keeps them identical after a meeting time $T$. The <coupling inequality for total variation> gives $\|P^t(x,\cdot)-P^t(y,\cdot)\|_{\mathrm{TV}}\leq\mathbb P(T>t)$. A uniform bound on $\mathbb E T$, combined with <Markov inequality>, bounds the <mixing time of a Markov chain>.
+
+= Mirror coupling under an involution
+{parent=Coalescing coupling}
+
+Suppose an <involution> $R$ of a <Markov chain> satisfies $P(Rx,Ry)=P(x,y)$. Start one chain at $x$, set the other equal to its image under $R$ until the first <hitting time> of the fixed-point set of $R$, and subsequently use identical transitions. This is a <coalescing coupling>, because the symmetry preserves each marginal <transition matrix> and both chains coincide at that <hitting time>.
+
+= Bernoulli coupling by a shared uniform random variable
+{c}
+{parent=Coupling}
+{title2=$\mathbb P(B_r\ne B_s)=|r-s|$}
+
+For $r,s\in[0,1]$ and a <random variable> $U$ with the <uniform distribution> on $[0,1]$, set $B_r=\mathbb1_{\{U\leq r\}}$ and $B_s=\mathbb1_{\{U\leq s\}}$. Each has the corresponding <Bernoulli distribution>, and $\mathbb P(B_r\ne B_s)=|r-s|$, because disagreement occurs precisely between the two thresholds. This is a <maximal coupling> of the two laws.
+
+= Maximal coupling
+{parent=Coupling}
+
+A maximal coupling makes $\mathbb P(X\ne Y)$ as small as possible among all <coupling of probability distributions>[couplings] of its two marginals.
+
+= Wasserstein distance
+{c}
+{title2=$W_\rho(\mu,\nu)$}
+{parent=Coupling}
+{wiki}
+
+For a metric $\rho$, the first Wasserstein distance is
+$$
+W_\rho(\mu,\nu)=\inf\{\mathbb E\rho(X,Y):(X,Y)\text{ couples }\mu,\nu\}.
+$$
+
+= Displacement interpolation
+{title2=$\mu_t=((1-t)\operatorname{Id}+tT)_\#\mu$}
+{parent=Wasserstein distance}
+
+In Euclidean space, push an optimal <transport plan> $\pi$ forward by $(x,y)\mapsto(1-t)x+ty$. The resulting <probability measures> form a constant speed curve for the <p-Wasserstein distance>:
+$$
+W_p(\mu_s,\mu_t)=|t-s|W_p(\mu_0,\mu_1).
+$$
+If the plan is induced by a <transport map> $T$, this becomes the displayed title formula.
+
+= Kantorovich–Rubinstein theorem
+{c}
+{parent=Wasserstein distance}
+
+On a <Polish space> $(X,\rho)$, <probability measures> with finite first <moments> satisfy
+$$
+W_1(\mu,\nu)=\sup_{\operatorname{Lip}(f)\leq1}\left(\int f\,d\mu-\int f\,d\nu\right).
+$$
+The supremum runs over functions with <Lipschitz constant> at most one. Fixing $f(x_0)=0$ ensures integrability from the moment assumption.
+
+= Lipschitz regularization of transport potentials
+{parent=Kantorovich–Rubinstein theorem}
+{title2=$h(x)=\inf_y\{d(x,y)-g(y)\}$}
+
+For <continuous functions> $f,g$ on a <compact metric space> satisfying $f(x)+g(y)\leq d(x,y)$, set $h(x)=\min_y(d(x,y)-g(y))$. The <triangle inequality> makes $h$ $1$-<Lipschitz>, while the constraint gives $f\leq h$ and evaluation at $y=x$ gives $g\leq-h$. Thus the feasible pair $(h,-h)$ has at least as large an objective against any two <probability measures>. This explains why <metric> <optimal transport> duality reduces to a single $1$-<Lipschitz function>.
+
+= p-Wasserstein distance
+{title2=$W_p(\mu,\nu)$}
+{parent=Wasserstein distance}
+
+For $1\leq p<\infty$ and <probability measures> with finite $p$th <absolute moments>,
+$$
+W_p(\mu,\nu)=\left(\inf_{\pi\in\Pi(\mu,\nu)}\int\rho(x,y)^p\,d\pi(x,y)\right)^{1/p},
+$$
+where $\rho$ is the ground metric and $\pi$ ranges over <transport plans>. For $p=2$ this is the <second Wasserstein distance>.
+
+= Second Wasserstein distance
+{title2=$W_2(\mu,\nu)$}
+{parent=Wasserstein distance}
+
+For probability measures with finite second moments on a metric space,
+$$
+W_2(\mu,\nu)^2=\inf\{\mathbb E[\rho(X,Y)^2]:(X,Y)\text{ couples }\mu,\nu\}.
+$$
+
+= One-dimensional second-Wasserstein convergence criterion
+{parent=Second Wasserstein distance}
+
+For probability measures $\mu_n,\mu$ on the real line with finite second moments, $W_2(\mu_n,\mu)\to0$ exactly when $\mu_n$ converges <weak convergence of probability measures>[weakly] to $\mu$ and their second moments converge. The common-quantile coupling is optimal and satisfies
+$$
+W_2(\mu_n,\mu)^2
+=\int_0^1|F_{\mu_n}^{-1}(u)-F_\mu^{-1}(u)|^2\,du.
+$$
+
+= Wasserstein contraction
+{parent=Wasserstein distance}
+
+A Markov kernel is Wasserstein contractive with rate $\alpha>0$ when $W_\rho(\mu P,\nu P)\leq e^{-\alpha}W_\rho(\mu,\nu)$ for all probability distributions $\mu,\nu$.
+
+= Total variation distance
+{title2=$\lVert\mu-\nu\rVert_{\mathrm{TV}}$}
+{parent=Probability and statistics}
+
+The total variation distance between probability distributions is
+$$
+\lVert\mu-\nu\rVert_{\mathrm{TV}}
+=\sup_A|\mu(A)-\nu(A)|.
+$$
+
+= Coupling characterization of total variation distance
+{parent=Total variation distance}
+
+The total variation distance is the least possible mismatch probability over all couplings:
+$$
+\lVert\mu-\nu\rVert_{\mathrm{TV}}=\inf\mathbb P(X\ne Y).
+$$
+
+= Coupling inequality for total variation
+{parent=Total variation distance}
+
+For any coupling of two <Markov chains> and its coalescence time $T$,
+$$
+\lVert\mathcal L(X_t)-\mathcal L(Y_t)\rVert_{\mathrm{TV}}\leq\mathbb P(T>t).
+$$
+
+= Pinsker's inequality
+{c}
+{parent=Total variation distance}
+{wiki}
+
+Pinsker's inequality bounds total variation by relative entropy:
+$$
+\lVert P-Q\rVert_{\mathrm{TV}}
+\leq\sqrt{\frac12D(P\Vert Q)}.
+$$
+
+\Include[probability-theory]{parent=Probability and statistics}
+\Include[information-theory]{parent=Probability and statistics}
+\Include[statistical-model]{parent=Probability and statistics}
+
+= Augmented Markov chain
+{parent=Probability and statistics}
+{wiki}
+
+= Bayesian normal model
+{parent=Probability and statistics}
+{c}
+{wiki}
+
+= Normal mean-variance posterior with a log-uniform variance prior
+{parent=Bayesian normal model}
+
+For iid $N(\mu,v)$ observations, the prior density $1/v$ relative to $d\mu\,dv$ gives posterior kernel $v^{-n/2-1}\exp[-\{S+n(\mu-\bar x)^2\}/(2v)]$. It is proper exactly when $n>1$ and $S=\sum(x_i-\bar x)^2>0$. The conditionals are $\mu\mid v,x\sim N(\bar x,v/n)$ and $v\mid\mu,x\sim\operatorname{IG}(n/2,\sum_i(x_i-\mu)^2/2)$. Integrating out $\mu$ changes the inverse-gamma shape to $(n-1)/2$.
+
+= Normal-normal conjugacy with known observation variance
+{parent=Bayesian normal model}
+
+= Normal-normal conjugacy
+{synonym}
+
+For independent $X_i\sim N(\theta,\sigma^2)$ and prior $\theta\sim N(\mu,\nu^2)$, the posterior has variance and mean
+$$
+v_n=\left(\frac n{\sigma^2}+\frac1{\nu^2}\right)^{-1},
+\qquad
+m_n=v_n\left(\frac{n\overline X}{\sigma^2}+\frac\mu{\nu^2}\right).
+$$
+As $n\to\infty$, $m_n-\overline X=O_p(n^{-1})$ and $v_n^{1/2}\sim\sigma/\sqrt n$, so fixed-level posterior credible intervals agree asymptotically with the corresponding known-variance confidence intervals.
+
+= Sequential normal predictive monitoring
+{parent=Normal-normal conjugacy with known observation variance}
+{title2=$u_k=m_k+\Phi^{-1}(1-\alpha)\sqrt{v_k+\sigma^2}$}
+
+For repeated independent $N(\theta,\sigma^2)$ measurements with prior $\theta\sim N(\mu,\tau^2)$ and known scales, <normal-normal conjugacy> gives $v_k=(\tau^{-2}+k\sigma^{-2})^{-1}$ and $m_k=v_k(\mu\tau^{-2}+\sigma^{-2}\sum_{j=1}^k y_j)$. The next measurement has <posterior predictive distribution> $N(m_k,v_k+\sigma^2)$. Its one-sided false-alarm level $\alpha$ yields the displayed limit. Predictive width tends to the irreducible measurement width, while the center adapts to the individual's data. To assess a held-out measurement, fit with earlier measurements only.
+
+= Normal-normal conjugacy with unequal exposures
+{parent=Normal-normal conjugacy with known observation variance}
+{title2=$\Theta\mid X\sim N((v\mu+a\sum_jm_jX_j)/(v+aW),av/(v+aW))$}
+
+For independent normal observations conditional on $\Theta$, with mean $\Theta$ and variances $v/m_j$, and normal prior mean $\mu$ and variance $a$, write $W=\sum_jm_j$. Multiplying likelihood and prior adds precisions $W/v+1/a$. Completing the square gives the displayed <posterior distribution>. Its <posterior mean> is $Z\overline X_w+(1-Z)\mu$, where $Z=aW/(v+aW)$ and $\overline X_w=\sum_jm_jX_j/W$. Thus the <Bayes estimator under squared error loss> is exactly the <Bühlmann–Straub credibility estimate>, not merely an approximation to it. Its posterior variance is $av/(v+aW)$.
+
+= Branching-process extinction criterion
+{parent=Probability and statistics}
+{wiki}
+
+= Cauchy-Schwarz inequality
+{parent=Probability and statistics}
+{c}
+{wiki}
+
+= Cauchy-Schwarz
+{c}
+{synonym}
+
+= Minimum pairwise dot-product sum of three unit vectors
+{parent=Cauchy-Schwarz inequality}
+{title2=$u\cdot v+v\cdot w+w\cdot u\geq-3/2$}
+
+For three <unit vectors>, the squared <Euclidean norm> of their sum is $3+2S$, proving the displayed bound; equality holds exactly when $u+v+w=0$. For fixed unit vectors $u,v$ with $u+v\ne0$, the <Cauchy-Schwarz inequality> gives the unique minimizing third vector $w=-(u+v)/\|u+v\|$, and the minimum is $u\cdot v-\sqrt{2+2u\cdot v}$. Three coplanar directions separated by $120$ degrees attain the global bound.
+
+= Distance bound from two hyperplane constraints
+{parent=Cauchy-Schwarz inequality}
+{title2=$|x|geq|A-B|/|a-b|$}
+
+If $a\ne b$ and $x\cdot a=A$, $x\cdot b=B$, the <Cauchy-Schwarz inequality> applied to $x\cdot(a-b)=A-B$ gives $\|x\|\geq|A-B|/\|a-b\|$. Equality requires $x$ parallel to $a-b$ and satisfying both original equations. The estimate gives a lower bound on the distance from the origin to the intersection; it need not be sharp if that equality condition is incompatible with the constraints.
+
+= Cover time
+{parent=Probability and statistics}
+{wiki}
+
+= Last visited vertex of a simple random walk on a cycle
+{parent=Cover time}
+{title2=$\mathbb P(L=j)=1/(N-1)\quad(j\ne0)$}
+
+A <simple symmetric random walk> on a cycle of $N\geq2$ vertices, started at vertex zero, has its last newly visited vertex uniformly distributed on the other $N-1$ vertices. To prove this for a specified vertex $j\ne0$, cut the cycle at $j$, representing it by a path with absorbing endpoints $0,N$ both corresponding to $j$. All other vertices are visited before $j$ exactly when both interior endpoints $1,N-1$ are visited before absorption. After the first hit on either interior endpoint, the probability of reaching the other before the adjacent absorbing endpoint is $1/(N-1)$ by <gambler's ruin>. The <strong Markov property> makes this the desired probability, independent of the original start position. For $N=2$ the sole unvisited vertex has probability one.
+
+= Expected cover time of a cycle
+{parent=Cover time}
+{title2=$\mathbb E T=n(n-1)/2$}
+
+A <simple random walk> on a <cycle graph> of $n\geq3$ vertices has <expected value> of its <cover time> equal to $n(n-1)/2$, from any starting vertex. Lift the walk to the integers using the same $\pm1$ increments. Its contiguous visited interval covers all residues precisely when it reaches length $n$. Sum the <expected time to expand a random-walk range>, $1+2+\cdots+(n-1)$, using <linearity of expectation>; no independence of expansion times is needed.
+
+= Expected energy
+{parent=Probability and statistics}
+{wiki}
+
+= F-test
+{parent=Probability and statistics}
+{c}
+{wiki}
+
+= Partial F-test for nested linear models
+{parent=F-test}
+{title2=$F=\frac{(\operatorname{RSS}_0-\operatorname{RSS}_1)/(p_1-p_0)}{\operatorname{RSS}_1/(n-p_1)}$}
+
+= Partial F-test
+{synonym}
+
+Let $M_0\subset M_1$ be nested <normal linear models> with $p_0,p_1$ independent coefficients and $n$ observations. Under the reduced model,
+$$
+F=\frac{(\operatorname{RSS}_0-\operatorname{RSS}_1)/(p_1-p_0)}{\operatorname{RSS}_1/(n-p_1)}\sim F_{p_1-p_0,n-p_1}.
+$$
+The difference of the orthogonal projection matrices onto the two model spaces is an orthogonal projection of rank $p_1-p_0$, orthogonal to the full-model residual projection. Independent <normal distribution> projections therefore give independent chi-squared numerators and denominators after division by $\sigma^2$. This proves the ratio law. The test evaluates the extra terms conditional on all reduced-model terms, and estimates the unknown common variance from the full model.
+
+= F-statistic
+{title2=$F$}
+{c}
+{parent=F-test}
+
+An F-statistic is a ratio of two variance estimates. Under the null hypothesis of an F-test, suitably independent scaled sums of squares make this ratio follow an <F-distribution>.
+
+= Nested-model F-test
+{parent=F-test}
+
+For nested Gaussian linear models differing by $r$ parameters, the statistic
+$$\frac{(RSS_0-RSS_1)/r}{RSS_1/(n-p_1)}$$
+has an $F_{r,n-p_1}$ distribution under the reduced model.
+
+= Extra sum of squares
+{parent=Nested-model F-test}
+{title2=$SS_{\rm extra}=RSS_{\rm reduced}-RSS_{\rm full}$}
+
+For nested <normal linear models>, the decrease in <residual sum of squares> obtained by adding coefficients is their extra sum of squares. Dividing by the number of added coefficients and by the full-model residual mean square gives the partial <F-test>. A sequential <analysis of variance> attributes this decrease according to the specified order of entry; it need not equal the partial comparison when other terms are retained.
+
+= Galton-Watson process
+{parent=Probability and statistics}
+{c}
+{wiki}
+
+A Galton--Watson process forms each generation by giving every current individual an independent number of offspring with a common distribution.
+
+= Offspring distribution of a branching process
+{parent=Galton-Watson process}
+{title2=$f(s)=\sum_{j\geq0}p_js^j$}
+
+= Offspring distribution
+{synonym}
+
+In a <Galton-Watson process>, each individual independently has $j$ children with <probability> $p_j$. This <probability distribution> determines its offspring <probability generating function>, its mean $f'(1)$ when finite, and the <branching extinction probability>. A <binomial branching process> and a <Poisson branching process> have different <offspring distributions> even when their means agree.
+
+= Fractional-power offspring generating function
+{parent=Offspring distribution of a branching process}
+{title2=$G(s)=1-\alpha(1-s)^\beta$}
+
+For $0<\alpha,\beta<1$, this <probability generating function> has probabilities $p_0=1-\alpha$ and $p_k=\alpha\beta(1-\beta)\cdots(k-1-\beta)/k!$ for $k\ge1$, where the product after $\beta$ is empty for $k=1$. All probabilities are positive and sum to one, while the <expected value> is infinite. In a <Galton-Watson process> starting with one individual, the generation-$n$ <probability generating function> is $G_n(s)=1-\alpha^{(1-\beta^n)/(1-\beta)}(1-s)^{\beta^n}$. The <branching extinction probability> is $1-\alpha^{1/(1-\beta)}$, obtained by taking the limit of $G_n(0)$ and using that extinction by generation $n$ is an increasing sequence of <events>.
+
+= Branching process conditioned on extinction
+{parent=Galton-Watson process}
+{title2=$f_q(s)=f(qs)/q$}
+
+Let $q\in(0,1]$ be the <branching extinction probability> of a <Galton-Watson process> with offspring <probability generating function> $f$. Conditional on extinction, the probability of $j$ children is multiplied by $q^j/q$: every child's descendants must also become extinct. Hence the new <probability generating function> is $f_q$ and its mean is $f'(q)$. If $f'(q)<1$, the <total progeny of a branching process> has conditional <expected value> $1/(1-f'(q))$, and unconditionally $\mathbb E[T;T<\infty]=q/(1-f'(q))$. The <Markov inequality> gives a finite-total-progeny tail bound without discarding the survival mass.
+
+= Poisson branching process
+{c}
+{parent=Galton-Watson process}
+{title2=$f(s)=e^{\mu(s-1)}$}
+
+A <Galton-Watson process> with a <Poisson distribution> of offspring of mean $\mu$ has this <probability generating function>. For $\mu=1+\varepsilon>1$ its <branching survival probability> $r$ satisfies $-\log(1-r)=(1+\varepsilon)r$, and $2\varepsilon/(1+2\varepsilon)\leq r\leq2\varepsilon$. Indeed $\varepsilon=\sum_{j\geq1}r^j/(j+1)$ lies between $r/2$ and $r/[2(1-r)]$. These exact inequalities belong to the <Poisson branching process>, not to every finite <binomial branching process>.
+
+= Bounded information in a subcritical Poisson branching process
+{parent=Poisson branching process}
+{title2=$i_n(\theta)=\frac{1-\theta^{n+1}}{\theta(1-\theta)},\quad0<\theta<1$}
+
+Start with $Y_0\sim\operatorname{Poisson}(\theta)$ and conditionally let $Y_i\sim\operatorname{Poisson}(\theta Y_{i-1})$. The mean generation size is $\theta^{i+1}$. The log-likelihood is $S_n\log\theta-\theta T_n$ plus a parameter-free term, where $S_n=\sum_{i=0}^nY_i$ and $T_n=1+\sum_{i=0}^{n-1}Y_i$. Expected negative curvature gives the displayed <Fisher information>, bounded as the horizon grows. Extinction makes the observations eventually all zero, so one longer observed family does not supply indefinitely increasing information.
+
+// Target: convergence-of-random-variables.bigb
+
+= Binomial branching process
+{parent=Galton-Watson process}
+{title2=$f(s)=(1-p+ps)^n$}
+
+A <Galton-Watson process> whose offspring law is a <binomial distribution> $\operatorname{Bin}(n,p)$ has mean $np$ and the displayed offspring <probability generating function>. Its <branching extinction probability> is the smallest root of $q=f(q)$ in $[0,1]$. It dominates a <breadth-first exploration of a binomial random graph> by allowing each explored <vertex> up to $n$ independent possible children, including previously exposed or already discovered <vertices> as phantom children.
+
+= Binomial branching survival correction
+{parent=Binomial branching process}
+{title2=$\rho=2\varepsilon+O(\varepsilon^2+\varepsilon/n)$}
+
+For $p=(1+\varepsilon)/n$, the <branching survival probability> satisfies $1-\rho=(1-p\rho)^n$. If $(1+\varepsilon)^2<n$, comparison with a <Poisson branching process> and expansion of the <logarithm> give
+$$
+\frac{2\varepsilon}{1+2\varepsilon}\leq\rho\leq\frac{2\varepsilon}{1-(1+\varepsilon)^2/n}.
+$$
+For the upper bound use $\varepsilon=\sum_{j\geq1}(1-np^{j+1})\rho^j/(j+1)$ and retain its first nonnegative term. For fixed $n>1$, the leading term is instead $2n\varepsilon/(n-1)$. In particular $n=2$ gives $\rho=4\varepsilon/(1+\varepsilon)^2$, showing that the uncorrected exact bound $\rho\leq2\varepsilon$ is false for small positive $\varepsilon$.
+
+For $0<\varepsilon\leq1/4$ and $n\varepsilon\geq2$, the uncorrected exact upper bound does hold for the <binomial branching process>. Here $np^2\leq\varepsilon$ and $np^3\leq1/4$, so at $x=2\varepsilon$ the first two terms of the nonnegative series give $\varepsilon(1-np^2)+(4/3)\varepsilon^2(1-np^3)\geq\varepsilon$. Monotonicity of that series yields $\rho\leq2\varepsilon$. This recovers the intended large-$n$ bracket without claiming it for every finite reproduction law.
+
+= Total progeny of a branching process
+{parent=Galton-Watson process}
+{title2=$T=\sum_{j\geq0}Z_j$}
+
+= Total progeny
+{synonym}
+
+The total progeny counts all individuals, including the initial ancestor, in a <Galton-Watson process>. It is infinite on survival. If the offspring mean is $m<1$, the <expected generation size in a Galton-Watson process> and the <monotone convergence theorem> give $\mathbb ET=1/(1-m)$.
+
+= Finite-horizon total progeny generating function
+{parent=Total progeny of a branching process}
+{title2=$H_{n+1}(s)=sG(H_n(s)),\quad H_0(s)=1$}
+
+Count the ancestor and the next $n-1$ generations of a <Galton-Watson process>. Conditioning on the ancestor's offspring, their independent descendant trees each have the preceding finite-horizon <probability generating function>, proving the displayed recursion. If the count instead excludes the ancestor, the recursion is $\widehat H_{n+1}(s)=G(s\widehat H_n(s))$ with $\widehat H_0=1$. The indexing convention must be specified.
+
+= Geometric-offspring critical branching process
+{parent=Galton-Watson process}
+{title2=$G(s)=1/(2-s)$}
+
+The offspring <probabilities> $P(K=j)=2^{-j-1}$ for $j\geq0$ have <expected value> one. For one initial individual, the <branching-process generating-function iteration> gives
+$$
+G_n(s)=\frac{n-(n-1)s}{n+1-ns},\quad P(X_n=0)=\frac n{n+1},\quad
+P(X_n=j)=\frac1{(n+1)^2}\left(\frac n{n+1}\right)^{j-1}\ (j\geq1).
+$$
+For $n\geq1$ the <PGF> disk is $|s|<1+1/n$; $G_0(s)=s$ separately. Conditional on survival, the population is positive geometric with success <probability> $1/(n+1)$, leading to the <exponential limit of surviving geometric branching>.
+
+= Exponential limit of surviving geometric branching
+{parent=Geometric-offspring critical branching process}
+{title2=$P(X_n/n>x\mid X_n>0)\to e^{-x}$}
+
+For the stated critical geometric offspring law, the conditional upper tail is exactly $[n/(n+1)]^{\lfloor nx\rfloor}$ for $x\geq0$. Its logarithm tends to $-x$, proving an <exponential distribution> limit of rate one without a transform continuity theorem. The unconditional mass at zero tends to one, so survival conditioning changes the relevant limiting population scale.
+
+= Branching-process generating-function iteration
+{parent=Galton-Watson process}
+{title2=$G_{n+1}=G\circ G_n,\quad G_0(s)=s$}
+
+Conditioning on the initial individual's children gives independent copies of the population $n$ generations later. Their <PGFs> multiply, and averaging the product over the offspring number yields $G(G_n(s))$. Conditioning on the last generation gives $G_n(G(s))$ as well; both agree because $G_n$ is the $n$fold iterate of $G$.
+
+= Mean and variance of a Galton-Watson generation
+{parent=Galton-Watson process}
+{title2=$\mathbb E[X_n]=\mu^n,\quad v_{n+1}=\mu^2v_n+\sigma^2\mu^n$}
+
+= Branching-process generation moments
+{synonym}
+
+With one initial ancestor and independent offspring counts of finite mean and <variance>, conditioning on the current generation gives the displayed recurrences. For $\mu\ne1$ the <variance> is $\sigma^2\mu^{n-1}(\mu^n-1)/(\mu-1)$ for positive generation index. At $\mu=1$ it is $n\sigma^2$. At zero offspring mean the distribution is concentrated at zero and later generations vanish. These formulas are for the <Galton-Watson process>, not arbitrary dependent reproduction.
+
+= Galton-Watson extinction fixed point
+{parent=Galton-Watson process}
+{c}
+
+If $G$ is the offspring probability-generating function, the eventual extinction probability is the smallest fixed point of $G$ in $[0,1]$.
+
+= Laziness invariance of branching extinction
+{parent=Galton-Watson extinction fixed point}
+{title2=$G_q(z)=qz+(1-q)G(z),\quad q<1$}
+
+For a <Galton-Watson process>, replacing an individual's reproduction by a one-descendant uneventful step with probability $q<1$ changes its offspring <probability generating function> to the displayed mixture. Its fixed-point equation reduces to $G(z)=z$, so the smallest fixed point and hence the <extinction probability of a branching process> are unchanged. The mean is $q+(1-q)G'(1)$, which also preserves the subcritical/critical/supercritical classification. The excluded case $q=1$ never reproduces or dies and need not share the extinction probability.
+
+= Extinction probability of a branching process
+{parent=Galton-Watson extinction fixed point}
+{title2=$q=\mathbb P(\exists j:Z_j=0)$}
+
+= Branching extinction probability
+{synonym}
+
+For a <Galton-Watson process> with one ancestor this is the probability that some generation is empty. It is the smallest fixed point of the offspring <probability generating function> in $[0,1]$; the complementary survival probability is $1-q$. A <branching process conditioned on extinction> reweights reproduction using this fixed point.
+
+= Survival probability of a branching process
+{parent=Extinction probability of a branching process}
+{title2=$\rho=1-q$}
+
+= Branching survival probability
+{synonym}
+
+For a <Galton-Watson process> started from one ancestor, this is the <probability> that every generation is nonempty. It is the complement of the <branching extinction probability>. The <binomial branching survival correction> distinguishes finite-binomial reproduction from the <Poisson branching process> near mean one.
+
+= Expected generation size in a Galton-Watson process
+{title2=$\mathbb E[Z_n]=m^n$}
+{parent=Galton-Watson process}
+
+If a <Galton-Watson process> starts from one individual and has offspring mean $m$, conditioning on generation $n$ gives $\mathbb E[Z_{n+1}\mid Z_n]=mZ_n$. Induction therefore gives $\mathbb E[Z_n]=m^n$.
+
+= Quadratic Galton-Watson extinction bound
+{parent=Galton-Watson process}
+
+For offspring mean $\mu>1$ and variance $\sigma^2$, Taylor expansion at one gives
+$$
+d\leq1-\frac{2(\mu-1)}{\sigma^2+\mu^2-\mu}
+$$
+for the extinction probability $d$.
+
+= Gaussian tail bound
+{parent=Probability and statistics}
+{c}
+{wiki}
+
+For $Z\sim N(0,1)$ and $v>0$, exponential Markov optimization gives
+$$
+\mathbb P(Z\geq v)\leq e^{-v^2/2}.
+$$
+
+= Sharp two-sided Gaussian tail bound
+{parent=Gaussian tail bound}
+{title2=$\mathbb P(|G|>t)\leq e^{-t^2/2}$}
+
+For $G$ with the <standard normal distribution> and $t\geq0$, $\mathbb P(|G|>t)=2(1-\Phi(t))\leq e^{-t^2/2}$. The difference has derivative $e^{-t^2/2}(\sqrt{2/\pi}-t)$, starts at zero, and tends to zero, proving its nonnegativity.
+
+= Gronwall inequality
+{parent=Probability and statistics}
+{c}
+{wiki}
+
+= Gronwall's inequality
+{c}
+{synonym}
+
+= Discrete Gronwall inequality
+{parent=Gronwall inequality}
+
+If nonnegative quantities satisfy
+$$
+e_{n+1}\leq(1+hL)e_n+h b_n,
+$$
+then iteration gives
+$$
+e_n\leq(1+hL)^ne_0
++h\sum_{j=0}^{n-1}(1+hL)^{n-1-j}b_j.
+$$
+For $nh\leq T$, the growth factor is bounded by $e^{LT}$.
+
+= Kac's lemma
+{parent=Probability and statistics}
+{c}
+{wiki}
+
+= Kac lemma
+{synonym}
+{c}
+
+For an irreducible positive recurrent <Markov chain> with <stationary distribution> $\pi$, the expected return time to state $i$ is $1/\pi_i$. More generally, expected occupation rewards in a return cycle equal their stationary rate times the expected cycle length.
+
+= Markov additive process
+{parent=Probability and statistics}
+{c}
+{wiki}
+
+A Markov additive process couples a Markov chain to an additive functional whose increments depend on the chain.
+
+= Multivariate normal distribution
+{parent=Probability and statistics}
+{wiki}
+
+= Multivariate normal
+{synonym}
+
+= Jointly Gaussian
+{c}
+{synonym}
+
+= Gaussian rotation of independent copies
+{c}
+{parent=Multivariate normal distribution}
+{title2=$(U_\theta,V_\theta)=(X\sin\theta+Y\cos\theta,X\cos\theta-Y\sin\theta)$}
+
+If $X,Y$ are <independent and identically distributed random variables> with a centered <multivariate normal distribution> and <covariance matrix> $\Sigma$, then $(U_\theta,V_\theta)$ has the same <probability law> as $(X,Y)$. Its two marginal <covariance matrices> are $\Sigma$ and its cross-<covariance> is zero. The pair has a <multivariate normal distribution>, so the two components are <independent>. This remains valid when $\Sigma$ is singular.
+
+= Gaussian random vector
+{c}
+{parent=Multivariate normal distribution}
+{title2=$X\sim N(\mu,\Sigma)$}
+
+= Gaussian vector
+{synonym}
+{c}
+
+A Gaussian random vector has a <multivariate normal distribution>; equivalently, every real <linear combination> of its coordinates is a <normal random variable>, allowing zero <variance>. Its <expected value> vector and <covariance matrix> determine its law. Subvectors are independent when their cross-covariances vanish, a feature particular to joint Gaussianity.
+
+= Gaussian sign-correlation identity
+{c}
+{parent=Gaussian random vector}
+{title2=$\mathbb E[\operatorname{sign}G\operatorname{sign}H]=\frac2\pi\arcsin\rho$}
+
+For centered, unit-variance jointly <Gaussian random variables> with <correlation coefficient> $\rho$, the displayed identity holds. Realize the pair as projections onto unit <vectors> of angle $\theta=\arccos\rho$. Rotational symmetry of the two-dimensional <Gaussian random vector> direction makes sign disagreement have <probability> $\theta/\pi$. The <expectation> is therefore $1-2\theta/\pi=(2/\pi)\arcsin\rho$. Perfectly correlated and anticorrelated endpoints follow directly; the sign at zero does not affect the result.
+
+= Standard Gaussian random vector
+{parent=Gaussian random vector}
+{title2=$Z\sim N(0,I_r)$}
+
+= Standard Gaussian vector
+{synonym}
+
+A <Gaussian random vector> with independent <normal> coordinates of <expectation> zero and <variance> one. Its distribution is invariant under <orthogonal transformations>. In particular, its direction in a fixed two-dimensional plane is uniform, which underlies the <Gaussian sign-correlation identity>.
+
+= Multivariate normal density
+{parent=Multivariate normal distribution}
+
+= Gaussian density
+{c}
+{synonym}
+
+For a <positive-definite matrix> $\Sigma$, the distribution $N_p(\mu,\Sigma)$ has density
+$$
+f(x)=\frac{
+\exp\!\left[-\frac12(x-\mu)^T\Sigma^{-1}(x-\mu)\right]
+}{(2\pi)^{p/2}(\det\Sigma)^{1/2}}.
+$$
+
+= Linear image of a multivariate normal vector
+{parent=Multivariate normal distribution}
+
+If $X\sim N(\mu,\Sigma)$ and $A$ and $c$ are deterministic, then
+$$
+AX+c\sim N(A\mu+c,A\Sigma A^T).
+$$
+In particular, $a^TX$ is normal with mean $a^T\mu$ and variance $a^T\Sigma a$.
+
+= Independence of uncorrelated jointly normal variables
+{parent=Multivariate normal distribution}
+
+Two subvectors of a jointly <multivariate normal distribution> are independent exactly when their cross-covariance matrix is zero.
+
+= Gaussian conditional independence
+{c}
+{parent=Multivariate normal distribution}
+
+For a jointly Gaussian vector, conditional independence is equivalent to vanishing conditional cross-covariance. Equivalently, two coordinates are conditionally independent given all the others exactly when their entry in the <precision matrix> is zero.
+
+= Bivariate normal distribution
+{parent=Multivariate normal distribution}
+{wiki}
+
+= Bivariate normal density
+{synonym}
+
+For means $\mu_i$, standard deviations $\sigma_i$, and correlation $\rho$, the standardized quadratic form in the density is
+$$
+\frac1{1-\rho^2}
+\left[
+\frac{(x_1-\mu_1)^2}{\sigma_1^2}
+-\frac{2\rho(x_1-\mu_1)(x_2-\mu_2)}{\sigma_1\sigma_2}
++\frac{(x_2-\mu_2)^2}{\sigma_2^2}
+\right].
+$$
+
+= Bivariate standard normal distribution
+{parent=Bivariate normal distribution}
+
+A bivariate standard normal distribution is a <bivariate normal distribution> whose two marginal means are zero and marginal variances are one; its remaining parameter is their correlation.
+
+= Maximum-likelihood covariance estimator for centered Gaussian data
+{title2=$\widehat\Sigma$}
+{parent=Bivariate normal distribution}
+
+For independent $Z_i\sim N_p(0,\Sigma)$ with known zero mean,
+$$
+\widehat\Sigma=\frac1n\sum_{i=1}^nZ_iZ_i^T.
+$$
+
+= Asymptotic covariance of the bivariate Gaussian covariance estimator
+{parent=Maximum-likelihood covariance estimator for centered Gaussian data}
+
+Writing $a=\Sigma_{11}$, $c=\Sigma_{12}$, and $b=\Sigma_{22}$, the vector $(\widehat\Sigma_{11},\widehat\Sigma_{12},\widehat\Sigma_{22})$ has asymptotic covariance
+$$
+\begin{pmatrix}
+2a^2&2ac&2c^2\\
+2ac&ab+c^2&2bc\\
+2c^2&2bc&2b^2
+\end{pmatrix}.
+$$
+
+= Conditional distribution of a bivariate normal variable
+{parent=Bivariate normal distribution}
+
+Conditionally on $X_2=x_2$,
+$$
+X_1\sim N\left(
+\mu_1+\rho\frac{\sigma_1}{\sigma_2}(x_2-\mu_2),
+\sigma_1^2(1-\rho^2)\right).
+$$
+
+= Uncorrelated jointly normal variables are independent
+{parent=Multivariate normal distribution}
+
+= Uncorrelated jointly Gaussian variables are independent
+{synonym}
+
+Any jointly normal random variables with zero covariance are independent.
+
+= Gaussian independence of linear and quadratic statistics
+{c}
+{parent=Uncorrelated jointly normal variables are independent}
+{title2=$Y\sim N(\mu,\sigma^2I),\quad A=LL^T,\quad BA=0\Longrightarrow BY\perp Y^TAY$}
+
+When $L$ has full column rank, its <Gram matrix> $L^TL$ is <positive-definite> and $BLL^TL(L^TL)^{-1}=BL=0$. The stacked normal vector $(BY,L^TY)$ therefore has zero cross <covariance>, so its blocks are independent. Since $Y^TAY=\|L^TY\|^2$, the linear and quadratic statistics are independent. This is the projection argument behind independence of <regression coefficient> and <variance> estimators in a <normal linear model>.
+
+= Orthogonal projection of a Gaussian vector
+{parent=Multivariate normal distribution}
+{wiki}
+
+Orthogonal projections of an isotropic Gaussian vector onto orthogonal subspaces are independent.
+
+= Paley-Zygmund inequality
+{parent=Probability and statistics}
+{c}
+{wiki}
+
+= Truncated first moment bound
+{parent=Paley-Zygmund inequality}
+{title2=$\mathbb E[X\mathbf1_{\{X>\theta\mathbb E X\}}]\geq(1-\theta)\mathbb E X$}
+
+For a nonnegative <random variable> with finite mean $\mu$ and $0\leq\theta\leq1$, the part of the <expectation> on $X\leq\theta\mu$ is at most $\theta\mu$. Subtracting gives $\mathbb E[X\mathbf1_{\{X>\theta\mu\}}]\geq(1-\theta)\mu$. If the <second moment> is positive and finite, applying the <Cauchy-Schwarz inequality> to $X$ and the <indicator variable> gives the <Paley-Zygmund inequality> $\mathbb P(X>\theta\mu)\geq(1-\theta)^2\mu^2/\mathbb E[X^2]$.
+
+= Pivotal quantity
+{parent=Probability and statistics}
+{wiki}
+
+= Rao-Blackwell theorem
+{parent=Probability and statistics}
+{c}
+{wiki}
+
+If $T$ is a <sufficient statistic> and $U$ is an estimator with finite variance, then $U^*=\mathbb E[U\mid T]$ has the same expectation and no greater variance. Indeed, the <tower property of conditional expectation> preserves the mean and the <law of total variance> gives
+$$
+\operatorname{Var}(U)
+=\operatorname{Var}(U^*)+\mathbb E[\operatorname{Var}(U\mid T)].
+$$
+
+= Rao-Blackwell estimator for a uniform scale interval
+{c}
+{parent=Rao-Blackwell theorem}
+{title2=$\widetilde\theta=(X_{(1)}+X_{(n)})/4$}
+
+For independent <uniform random variables> on $(\theta,3\theta)$ with $\theta>0$, the sample minimum and maximum form a <sufficient statistic>. Conditional on these endpoints, <exchangeability> and the uniform law of the remaining observations give $E[X_1\mid X_{(1)},X_{(n)}]=(X_{(1)}+X_{(n)})/2$. Applying the <Rao-Blackwell theorem> to $X_1/2$ gives the displayed <unbiased estimator>. Its <variance> is $\theta^2/[2(n+1)(n+2)]$, compared with $\theta^2/12$ for $X_1/2$.
+
+= Rao-Blackwell estimator of a geometric failure probability
+{c}
+{parent=Rao-Blackwell theorem}
+{title2=$\widehat p=(T-n)/(T-1),\quad T=\sum_{j=1}^nX_j,\quad n\geq2$}
+
+For independent geometric observations with mass $p^{r-1}(1-p)$, the total $T$ is sufficient. Conditional on $T=t$, positive-integer compositions are uniformly distributed. The indicator $1_{\{X_1>1\}}$ is unbiased for $p$, and conditioning it on $T$ gives $\binom{t-2}{n-1}/\binom{t-1}{n-1}=(t-n)/(t-1)$. For one observation, use $1_{\{T>1\}}$ instead, including its zero value at $T=1$.
+
+= Lehmann–Scheffé theorem
+{parent=Rao-Blackwell theorem}
+{c}
+{wiki}
+
+An unbiased <estimator> that is a function of a <complete sufficient statistic> is the unique uniformly minimum-<variance> unbiased <estimator>, up to almost sure equality. <Rao-Blackwellization> supplies <variance> reduction, and completeness supplies uniqueness. The theorem applies to a conditional statistical experiment as well, when unbiasedness, sufficiency and completeness are all evaluated under that conditional family.
+
+= Rao-Blackwellization of a multinomial probability product
+{c}
+{parent=Rao-Blackwell theorem}
+{title2=$\widehat{p_0p_1p_2}=n_0n_1n_2/[n(n-1)(n-2)]$}
+
+For $n\geq3$ independent labels with three type probabilities, conditioning the indicator of an ordered $(0,1,2)$ initial triple on the <multinomial distribution> type counts gives the displayed unbiased <estimator>. The <Rao-Blackwell theorem> reduces its <variance> strictly when all three probabilities are positive. At a boundary parameter with a missing type, both <variances> vanish.
+
+= Rao-Blackwellization
+{parent=Rao-Blackwell theorem}
+{c}
+
+Replace an estimator by its <conditional expectation> given selected information. The mean is unchanged and the variance cannot increase, by the <law of total variance>. In simulation this produces <conditional Monte Carlo> estimators. Sufficiency is needed for the classical inferential strengthening, but not for the elementary variance reduction identity.
+
+= Rao-Blackwell estimator of a squared normal mean
+{parent=Rao-Blackwell theorem}
+{c}
+
+For independent $X_1,X_2\sim N(\mu,1)$, the unbiased estimator $X_1^2-1$ of $\mu^2$ has mean square error $2+4\mu^2$. Conditioning on the sufficient statistic $T=X_1+X_2$ gives
+$$
+\mathbb E[X_1^2-1\mid T]=\frac{T^2}{4}-\frac12,
+$$
+whose mean square error is $1/2+2\mu^2$.
+
+= Regression residual
+{parent=Probability and statistics}
+{wiki}
+
+A regression residual is the observed response minus its fitted value. Residual plots diagnose failures of assumptions such as constant variance, linear mean structure, and independent errors.
+
+= Residual curvature diagnostic
+{parent=Regression residual}
+
+A systematic curved pattern in <regression residuals> plotted against <fitted values> suggests a misspecified conditional mean. Positive residuals at both ends and negative residuals in the middle motivate trying <quadratic regression>. The diagnostic does not by itself identify the error <probability distribution> or prove <heteroscedasticity>.
+
+= Partial residual
+{parent=Regression residual}
+{title2=$r_{ij}=Y_i-\widehat\alpha-\sum_{k\ne j}\widehat f_k(X_{ik})$}
+
+In an additive mean model, the partial residual for component $j$ subtracts every fitted term except that component. It equals the full <regression residual> plus the fitted component. Plotting it against that component's predictor shows the conditional pattern after accounting for other fitted effects, and supplies the response for a <backfitting> update.
+
+= Standardized regression residual
+{parent=Regression residual}
+{title2=$e_i/[s\sqrt{1-h_{ii}}]$}
+
+= Internally studentized residual
+{synonym}
+
+In a <normal linear model>, the $i$th <regression residual> has <variance> $\sigma^2(1-h_{ii})$, where $h_{ii}$ is a diagonal entry of the <hat matrix>. Replacing $\sigma$ by the residual standard deviation $s$ gives the standardized residual used in the normal <Q-Q plot> of R's linear-model diagnostic plots.
+
+= Distribution of an internally studentized Gaussian residual
+{parent=Standardized regression residual}
+{title2=$\eta_i^2/\nu\sim\operatorname{Beta}(1/2,(\nu-1)/2)$}
+
+In a <normal linear model> with residual <degrees of freedom> $\nu\geq2$, an <internally studentized residual> satisfies $|\eta_i|\leq\sqrt\nu$ and $\eta_i^2/\nu\sim\operatorname{Beta}(1/2,(\nu-1)/2)$, provided its <leverage> is less than one. Choose an <orthonormal basis> of the residual space with its first direction proportional to the projection of the $i$th coordinate vector. The <Gaussian> coordinates in this basis are independent standard <normal random variables> $Z_1,\ldots,Z_\nu$, and $\eta_i=\sqrt\nu Z_1/(\sum_jZ_j^2)^{1/2}$. The <beta distribution> follows from the independent <chi-squared distributions> of $Z_1^2$ and $\sum_{j=2}^\nu Z_j^2$. The bounded residual is not exactly distributed according to <Student's t-distribution>; it approaches the standard <normal distribution> as $\nu\to\infty$.
+
+= Sufficient statistic
+{parent=Probability and statistics}
+{wiki}
+
+A statistic $T$ is sufficient for a parameter when the conditional distribution of the full data given $T$ is independent of that parameter.
+
+= Ancillary statistic
+{parent=Sufficient statistic}
+{wiki}
+{title2=$\mathcal L_\theta(A)\text{ is independent of }\theta$}
+
+= Ancillary
+{synonym}
+
+= Ancillarity
+{synonym}
+
+A <statistic> is ancillary for a <statistical model> if its <probability distribution> is the same for every parameter value. Its marginal law carries no information about the parameter, but its observed value can identify the precision or configuration of the experiment. <Fisherian conditional inference> uses the <conditional distribution> of an informative <statistic> given the observed ancillary value. Ancillarity does not mean that the ancillary is independent of every informative <statistic>.
+
+= Range-conditioned uniform location inference
+{parent=Ancillary statistic}
+
+For independent observations uniform on $(\theta-1/2,\theta+1/2)$, let $U$ and $V$ be the sample minimum and maximum, $R=V-U$, and $C=(U+V)/2$. For $n\ge2$ their joint <density> in $(c,r)$ is $n(n-1)r^{n-2}$ on $0<r<1$, $|c-\theta|<(1-r)/2$. Integrating over $c$ gives $f_R(r)=n(n-1)r^{n-2}(1-r)$, independent of $\theta$, so $R$ is an <ancillary statistic>. Moreover $C\mid R=r$ is uniform on $(\theta-(1-r)/2,\theta+(1-r)/2)$. Consequently
+$$
+\left[C-\frac{(1-\alpha)(1-R)}2,\ C+\frac{(1-\alpha)(1-R)}2\right]
+$$
+is an exact conditional $(1-\alpha)$ <confidence interval> for $\theta$. The realized range determines the appropriate precision, although the range is not itself evidence about the value of $\theta$.
+
+= Non-uniqueness of maximal ancillary statistics
+{parent=Ancillary statistic}
+
+A maximal <ancillary statistic> has no strictly finer ancillary partition of the sample space, but different maximal ancillary partitions can exist. Let $(U,V)$ take values in $\{0,1\}^2$, with probabilities $\theta/2$ on each equal pair and $(1-\theta)/2$ on each unequal pair, for $0<\theta<1$. Both $U$ and $V$ have the <Bernoulli distribution> with success probability $1/2$ for every $\theta$. Their joint law depends on $\theta$, so combining them is not ancillary. Each partition is maximal: splitting one of its two-point cells singles out a point whose probability depends on $\theta$. There is no common ancillary refinement, and conditioning on one ancillary choice need not specify a unique conditioning principle for all models.
+
+= Partial ancillary statistic
+{parent=Ancillary statistic}
+{title2=$\mathcal L_{\psi,\lambda}(A)=\mathcal L_\lambda(A)$}
+
+For a parameter of interest $\psi$ and <nuisance parameter> $\lambda$, a partial ancillary for $\psi$ has a marginal law independent of $\psi$, possibly depending on $\lambda$. This differs from a fully <ancillary statistic>, whose law is independent of both. For independent Poisson counts with means $\lambda\psi$ and $\lambda(1-\psi)$, their total is Poisson with mean $\lambda$, while the first count conditional on the total is binomial with success probability $\psi$. Conditioning on the total eliminates $\lambda$. A partial ancillary does not automatically eliminate a <nuisance parameter>; the conditional law must actually be free of that parameter.
+
+= Ancillary conditioning that eliminates a nuisance parameter
+{parent=Partial ancillary statistic}
+
+For a <sufficient statistic> $(C,S)$ and parameter $(\psi,\lambda)$, a useful strong reduction requires the law of $S$ to be free of $\psi$ and the <conditional distribution> of $C$ given $S$ to be free of the <nuisance parameter> $\lambda$. In the discrete case it gives
+$$
+f(x;\psi,\lambda)=\phi_0(x)\phi_C(C(x),S(x);\psi)\phi_S(S(x);\lambda),
+$$
+where $\phi_0$ sums to one on each $(C,S)$ fiber, $\phi_S$ sums to one over $s$, and $\phi_C$ sums to one over $c$ separately for every fixed $s$. Ordinary <ancillarity>, or just the law of $S$ being free of $\psi$, does not by itself guarantee that conditioning removes $\lambda$.
+
+= Complete sufficient statistic
+{parent=Sufficient statistic}
+{title2=$\mathbb E_\theta g(T)=0\ \forall\theta\Longrightarrow g(T)=0\text{ a.s.}$}
+
+A <sufficient statistic> is complete when every integrable function of it with <expectation> zero for every parameter is almost surely zero for every parameter. Full regular one-parameter <exponential families> with natural parameter ranging over an open interval provide a standard completeness result. Completeness makes an unbiased function of a <sufficient statistic> unique, giving the <Lehmann–Scheffé theorem>.
+
+= Basu's theorem
+{c}
+{parent=Complete sufficient statistic}
+
+= Basu theorem
+{c}
+{synonym}
+
+A <complete sufficient statistic> is independent of every <ancillary statistic>. To prove this, let $S$ be complete and sufficient, let $A$ be ancillary, and take any bounded measurable function $h$. By sufficiency, $g(S)=E_\theta[h(A)\mid S]$ has a parameter-independent version; by ancillarity, $c=E_\theta h(A)$ is independent of $\theta$. Thus $E_\theta[g(S)-c]=0$ for every $\theta$. Completeness gives $g(S)=c$ almost surely. Choosing $h$ to be the indicator of each measurable event in the ancillary space proves <independence>. Completeness is essential: a sufficient statistic may itself contain a nonconstant ancillary, as in the minimum and maximum of a uniform location sample.
+
+= Normal sample sum with known variance
+{parent=Sufficient statistic}
+
+For independent observations $X_i\sim N(\mu,\sigma^2)$ with known variance, $\sum_iX_i$ is minimal sufficient for $\mu$. Factorization proves sufficiency, while the likelihood ratio for two samples is independent of $\mu$ exactly when their sums agree.
+
+= Minimal sufficient statistic
+{parent=Sufficient statistic}
+
+A sufficient statistic is minimal sufficient when it is a function of every other sufficient statistic, up to null sets. Its level sets form the coarsest sufficient partition of the sample space.
+
+= Sufficient statistic for a symmetric uniform sample
+{parent=Minimal sufficient statistic}
+{title2=$M=\max_i|X_i|$}
+
+For independent samples uniform on $[-\theta,\theta]$ with $\theta>0$, the absolute maximum $M$ is a <minimal sufficient statistic>, since the likelihood is $(2\theta)^{-n}\mathbf1_{\{\theta\geq M\}}$. The pair of sample minimum and maximum is a <sufficient statistic> but is not minimal: simultaneous sign reversal preserves $M$ and generally changes that pair.
+
+= Likelihood-ratio criterion for minimal sufficiency
+{parent=Minimal sufficient statistic}
+
+For a dominated family with positive densities $p_\theta$, a statistic $T$ is minimal sufficient if
+$$
+T(x)=T(y)
+\quad\Longleftrightarrow\quad
+\frac{p_\theta(x)}{p_\theta(y)}
+\text{ is independent of }\theta.
+$$
+
+= Fisher-Neyman factorization theorem
+{parent=Sufficient statistic}
+{c}
+{wiki}
+
+= Factorization criterion for sufficiency
+{synonym}
+
+= Factorization theorem for sufficient statistics
+{synonym}
+
+A statistic is sufficient exactly when the likelihood factors into a parameter-dependent function of the statistic times a parameter-free function of the sample.
+
+= Weierstrass M-test
+{parent=Probability and statistics}
+{c}
+{wiki}
+
+= Monte Carlo method
+{c}
+{parent=Probability and statistics}
+{wiki}
+
+= Monte Carlo simulation
+{c}
+{synonym}
+
+A Monte Carlo method approximates a deterministic quantity using averages of simulated random variables and controls the approximation with probabilistic limit theorems.
+
+= Pseudorandom number generator
+{parent=Monte Carlo method}
+{wiki}
+
+A <pseudorandom number generator> is a deterministic state-update algorithm producing numbers intended to imitate an independent sequence from a prescribed <probability distribution>. For <Monte Carlo integration>, desirable features include good one-dimensional and multidimensional uniformity, a period far longer than the calculation, negligible detectable dependence, reproducible seeds, sufficient numerical precision and fast generation. Uniform marginal distributions alone do not provide independent draws.
+
+= Pseudorandom number
+{parent=Pseudorandom number generator}
+{title2=$U_i$}
+
+A pseudorandom number is an output of a deterministic algorithm chosen to imitate samples from a specified <probability> law. For example, a <linear congruential generator> returns fractions $S_i/M$ on a finite grid in $[0,1)$. Their intended <uniform distribution> is an approximation, and their serial dependence must be assessed separately from the generator's period.
+
+= Linear congruential generator
+{parent=Pseudorandom number generator}
+{title2=$S_{n+1}=(aS_n+c)\bmod M$}
+
+Choose integers $M>1$, $a$, $c$ and a seed $S_0$. Iterate $S_{n+1}=(aS_n+c)\bmod M$ and return $U_n=S_n/M$. This gives a deterministic finite-state <pseudorandom number generator> with output in $[0,1)$. A nonzero increment gives a mixed generator; $c=0$ gives a multiplicative generator. Its period is at most $M$, but even a full period does not guarantee good multidimensional uniformity or statistical <independence>.
+
+= Full-period criterion for a mixed congruential generator
+{parent=Linear congruential generator}
+{title2=$\operatorname{period}=M$}
+
+= Hull–Dobell theorem
+{synonym}
+{c}
+
+A <linear congruential generator> has period $M$ for every seed if and only if $\gcd(c,M)=1$, every prime dividing $M$ divides $a-1$, and $4\mid M$ implies $4\mid a-1$. The coprimality of $c$ prevents the orbit from being trapped in a residue class; the multiplier conditions permit full-period lifting through each prime power. Combining the prime-power periods by the <Chinese remainder theorem> gives period $M$. For $M=12^k=2^{2k}3^k$, the multiplier criterion reduces to $a\equiv1\pmod{12}$, together with $\gcd(c,6)=1$. A positive increment alone is insufficient.
+
+= Monte Carlo integration
+{parent=Monte Carlo method}
+{c}
+{title2=$\widehat I_S=S^{-1}\sum_{s=1}^Sh(X_s)$}
+
+To calculate $I=\int h(x)p(x)\,dx$, generate independent $X_s$ with density $p$ and average $h(X_s)$. Integrability gives convergence by the <strong law of large numbers>; finite <variance> gives an unbiased estimate with variance $\operatorname{Var}(h(X))/S$. Applying this to indicators estimates probabilities. Correlated <Markov chain Monte Carlo> samples can also approximate the integral, but their error is determined by the chain's dependence rather than the independent-sample variance formula.
+
+= Antithetic variates
+{parent=Monte Carlo integration}
+{wiki}
+
+<Antithetic variates> deliberately couple <unbiased estimators> of the same <expectation> with negative <covariance>. Their average can have smaller <variance> than an average using independent draws. For example, evaluating a monotone integrand at $U$ and $1-U$, where $U$ has a <uniform distribution>, gives opposite fluctuations while preserving both marginal distributions.
+
+= Antithetic Cauchy-tail integration on a finite interval
+{parent=Antithetic variates}
+{title2=$\widehat p=\frac12-\frac{k}{2r}\sum_{j=1}^r[f(kU_j)+f(k(1-U_j))]$}
+
+For standard <Cauchy distribution> <probability density function> $f$ and $k>0$, this estimates its upper-tail <probability> without sampling a heavy tail. The function $f(ku)$ decreases on $[0,1]$, while $f(k(1-u))$ increases, so their <covariance> is nonpositive. The paired estimator is unbiased and has no larger <variance> than an estimator using the same number $2r$ of <independent> <probability density function> evaluations.
+
+= Minimum-variance combination of unbiased sample means
+{parent=Antithetic variates}
+{title2=$w_*=(V_Y-C)/(V_X+V_Y-2C)$}
+
+For two <unbiased estimators> $A,B$ of the same parameter with <variances> $V_X,V_Y$ and <covariance> $C$, the fixed-weight estimator $wA+(1-w)B$ is unbiased and has <variance> $w^2V_X+(1-w)^2V_Y+2w(1-w)C$. Completing the square gives $w_*=(V_Y-C)/(V_X+V_Y-2C)$ and minimum <variance> $(V_XV_Y-C^2)/(V_X+V_Y-2C)$ when the denominator is positive. These are optimal among fixed linear unbiased combinations. Substituting weights estimated from the same observations need not preserve unbiasedness.
+
+= Cross-fitted combination of unbiased sample means
+{parent=Minimum-variance combination of unbiased sample means}
+
+Split independent observational blocks into two folds. Use one fold to estimate the combination weight for the two <sample means> in the other fold, and conversely. Each held-out combination is an <unbiased estimator> conditionally on its training fold because its two held-out <sample means> have the same <expectation>. A deterministic average of the two combinations remains unbiased. Under consistency of the moment estimates and balanced fold sizes, the weights approach those of the <minimum-variance combination of unbiased sample means>. Paired observations must stay together when splitting or <bootstrapping> so their <covariance> is preserved.
+
+= Conditional Monte Carlo
+{parent=Monte Carlo method}
+
+Replacing a simulated quantity $H$ by $E[H\mid\mathcal G]$ preserves its expectation and reduces variance by the <law of total variance>. This is <Rao-Blackwellization>. For a random sum, conditioning on the count and all but one summand replaces an event indicator by a <cumulative distribution function> evaluation. The resulting estimator needs that conditional expectation to be computable.
+
+= Box-Muller transform
+{parent=Monte Carlo method}
+{c}
+
+Independent <uniform distribution> draws $U_1,U_2$ on $(0,1)$ produce independent standard <normal distribution> draws $X_1=\sqrt{-2\log U_1}\cos(2\pi U_2)$ and $X_2=\sqrt{-2\log U_1}\sin(2\pi U_2)$. The proof transforms an independent uniform angle and radial density $re^{-r^2/2}$ through the polar-coordinate Jacobian.
+
+= Nested Monte Carlo
+{parent=Monte Carlo method}
+
+<Nested Monte Carlo> approximates an outer <expected value> whose integrand contains another <expected value>. A nonlinear transformation, such as a <logarithm>, of an inner sample average usually introduces finite-sample bias. Increasing both sample sizes requires suitable integrability controls to establish consistency; an <unbiased estimator> of the inner quantity does not make its <logarithm> unbiased.
+
+= Monte Carlo estimator
+{c}
+{parent=Monte Carlo method}
+
+A Monte Carlo estimator is a random approximation obtained from simulated samples, commonly a sample average or a weighted sample average.
+
+= Summing before taking a mean changes Monte Carlo normalization
+{parent=Monte Carlo estimator}
+
+For $n$ observations, taking the mean of their scalar sum returns that sum, not their sample mean. If $a-b\overline H$ is unbiased for a target, replacing the mean by a sum gives expected value $a-bn\mathbb EH$ and multiplies its variance by $n^2$. A mean-zero <control variate> changes variance but cannot correct this missing normalization factor.
+
+= Proposal-budget variance comparison of importance and rejection sampling
+{parent=Monte Carlo estimator}
+
+At equal proposal count, compare $\int\phi^2f^2/g-\theta^2$ for unnormalized importance sampling with $M(\int\phi^2f-\theta^2)$ for the accepted-sample mean. There is no universal ordering for nonzero target mean. For zero mean, the bounded-weight inequality gives importance sampling no larger asymptotic variance. Empty rejected samples and per-proposal computational cost are separate considerations.
+
+= Variance reversal under additive shifts of an importance-sampling integrand
+{parent=Proposal-budget variance comparison of importance and rejection sampling}
+
+An additive constant leaves the target variance and accepted-sample mean variance unchanged, but changes the variance of unnormalized importance sampling because its random weights do not sum to one. With g uniform on (0,1), f(x)=2x and M=2, phi(x)=x gives importance variance 16/45 versus rejection proposal-budget variance 1/9. Replacing phi by x-1 gives importance variance 1/45 with the same rejection variance, reversing preference.
+
+= Control variates
+{parent=Monte Carlo estimator}
+{wiki}
+
+= Control variate
+{synonym}
+
+A control variate is a <random variable> with known <expected value> whose centered value is subtracted from a <Monte Carlo estimator> to reduce its <variance>. For a mean-zero vector $G$, put $S=\operatorname{Cov}(G)$ and $c=\operatorname{Cov}(G,H)$. When $S$ is invertible, the optimal estimator averages $H-c^TS^{-1}G$ and has variance $(\operatorname{Var}(H)-c^TS^{-1}c)/N$ for $N$ independent draws. Improvement is strict exactly when $c\ne0$.
+
+= Multivariate control variates
+{parent=Control variates}
+{title2=$\beta_*=\Sigma^{-1}\operatorname{Cov}(C,Y)$}
+
+If $Y$ is an unbiased estimator and a vector $C$ has known mean, then $Y-\beta^T(C-\mathbb EC)$ remains unbiased for a deterministic coefficient vector. Its variance is $\operatorname{Var}Y-2\beta^T c+\beta^T\Sigma\beta$, where $c=\operatorname{Cov}(C,Y)$ and $\Sigma=\operatorname{Cov}(C)$. For invertible $\Sigma$, completing the square gives the displayed optimum and minimum variance $\operatorname{Var}Y-c^T\Sigma^{-1}c$. With singular $\Sigma$, use a generalized inverse on its range. Estimating coefficients from the same simulation can introduce finite-sample bias; fixed pilot coefficients or independent training preserve the elementary unbiasedness assertion.
+
+= Cauchy tail control variate on a bounded interval
+{c}
+{parent=Control variates}
+{title2=$\beta_* =\operatorname{Cov}(g(Y),H(Y))/\operatorname{Var}(H(Y))$}
+
+For $Y$ uniform on $(0,2)$, put $g(y)=1/(\pi(1+y^2))$ and $H(y)=y^2-4/3$. Then $\mathbb EH=0$, and $1/2-2\overline{g-\beta H}$ estimates the standard <Cauchy distribution> probability above two. Its variance is $4\operatorname{Var}(g-\beta H)/n$, minimized by the displayed coefficient. Here $\operatorname{Var}(H)=64/45$ and $\operatorname{Cov}(g,H)=1/\pi-7\arctan(2)/(6\pi)$, so the optimal coefficient is negative. A coefficient estimated using a separate pilot can be fixed for a fresh unbiased production sample.
+
+= Posterior score control variate
+{parent=Control variates}
+{title2=$g(\beta)=\nabla\log p(\beta\mid Y)$}
+
+If a smooth <posterior density> has vanishing boundary terms, its <log-posterior> gradient satisfies $\mathbb E[g]=0$ and
+$$
+\mathbb E[g(\beta)h(\beta)]=-\mathbb E[\nabla h(\beta)].
+$$
+This is a posterior integration-by-parts identity; it concerns differentiation in the random parameter, distinct from the usual <mean-zero score identity> for sampling distributions. It makes $g$ a vector <control variate>. Finite moments and known coefficients preserve unbiasedness of the <Monte Carlo estimator>.
+
+= Monte Carlo error
+{parent=Monte Carlo method}
+
+Monte Carlo error is the random difference between a simulation estimate and the exact quantity it approximates. For an average of independent finite-variance draws, its standard deviation is proportional to the inverse square root of the number of draws.
+
+= Rejection sampling
+{parent=Monte Carlo method}
+{wiki}
+
+= Rejection method
+{synonym}
+
+Suppose $f$ is a target probability density and $h$ is a proposal density with $f(x)\leq Mh(x)$. Draw $X\sim h$ and an independent $U\sim\operatorname{Uniform}[0,1]$, and accept $X$ when
+$$
+U\leq\frac{f(X)}{Mh(X)}.
+$$
+The accepted value has density $f$, the acceptance probability is $1/M$, and the expected number of proposals is $M$.
+
+= Acceptance mass for an unnormalized rejection envelope
+{parent=Rejection sampling}
+{title2=$p_{\rm acc}=C/M$}
+
+If $f\geq0$, $C=\int f\in(0,\infty)$ and $f(x)\leq Mg(x)$ for a proposal <probability density function> $g$, accept a proposal $Y$ when an <independent> <uniform distribution> value is at most $f(Y)/(Mg(Y))$. Integrating the joint acceptance <probability density function> gives $p_{\rm acc}=C/M$ and conditional accepted <probability density function> $f/C$. For $n$ <independent> proposals the accepted count has <binomial distribution> with parameters $n,C/M$.
+
+= Truncated gamma rejection sampling with a Pareto envelope
+{parent=Rejection sampling}
+{title2=$x_*=(\alpha+b)/\beta$}
+
+For target density proportional to $x^{\alpha-1}e^{-\beta x}$ on $x>a>0$, use the <Pareto distribution> proposal $g(x)=ba^bx^{-b-1}$ with $b>0$. Its density ratio is proportional to $x^{\alpha+b}e^{-\beta x}$, maximized at $(\alpha+b)/\beta$ if that point exceeds $a$. The tight envelope yields the highest acceptance probability for this fixed proposal. An inverse draw is $aU^{-1/b}$ with $U$ <uniformly distributed> on $(0,1)$.
+
+= Uniform-envelope rejection sampling for a beta distribution
+{parent=Rejection sampling}
+{title2=$r(x)=x^{a-1}(1-x)^{b-1},\quad a,b\geq1$}
+
+For $a,b>1$, the maximum of $r$ on $[0,1]$ occurs at $(a-1)/(a+b-2)$. If one parameter is one, the maximum is attained at the corresponding endpoint; if both are one, $r$ is constant. Let $M=\sup r$. Accept an <independent> <uniform distribution> proposal $X$ when another uniform draw is at most $r(X)/M$. The accepted <probability density function> is the <beta distribution>, and acceptance <probability> is $B(a,b)/M$.
+
+= Bayesian rejection sampling for a segregating-site count
+{parent=Rejection sampling}
+
+With proper prior $\pi(\theta)$ independent of the neutral <Kingman's coalescent> times, propose $(\theta,T)$ from their joint prior and accept with probability $e^{-\theta L/2}(\theta L/2)^k/k!$. The accepted density is proportional to the prior times the observed-count likelihood, hence is the posterior given $S=k$. The acceptance rate is the prior predictive probability $P(S=k)$. For $k>0$, divide the acceptance function by its maximum $M_k=e^{-k}k^k/k!$, achieved at $\theta L/2=k$, to improve the rate to $P(S=k)/M_k$ without altering the accepted distribution. For $k=0$, $M_0=1$.
+
+= Joint posterior of mutation rate and coalescent times
+{parent=Bayesian rejection sampling for a segregating-site count}
+
+For a proper <prior distribution> $\pi(\theta)$ independent of coalescent times $T$, let $q(T)=\prod_{j=2}^n\lambda_j e^{-\lambda_jT_j}$ with $\lambda_j=\binom j2$ and $L=\sum jT_j$. Observing $S=k$ under an <infinite sites mutation model> gives <posterior density> $\pi(\theta)q(T)e^{-\theta L/2}(\theta L/2)^k/(k!m_k)$, where $m_k$ is the prior predictive <probability> of $S=k$. Multiplication by the conditional Poisson mass and normalization is an application of <Bayes theorem>.
+
+// Target: statistical-inference.bigb
+
+= Match-biased reshuffling preserves uniform rank marginals
+{parent=Rejection sampling}
+
+Accepting a fresh uniform deck permutation with a probability depending only on whether its endpoint ranks match preserves uniform individual rank marginals by symmetry. It changes their joint law. For four cards of each of thirteen ranks and rejection probability $p$ on a mismatch, the accepted matching probability is $1/(17-16p)$. The two accepted ranks are independent precisely at $p=1/4$; equality of marginals alone does not imply independence.
+
+= Exponential-envelope rejection sampling for a chi-squared variable
+{parent=Rejection sampling}
+{title2=$\chi^2_\nu$, $\nu\geq2$}
+
+Write $a=\nu/2$. Against an <exponential distribution> proposal of mean $\nu$, the <chi-squared distribution> density has envelope constant $M=a^ae^{1-a}/\Gamma(a)$. The density ratio divided by $M$ is $\exp((a-1)(\log(y/\nu)-y/\nu+1))$. Thus generate $Y=-\nu\log U$ and accept when $\log V\leq(a-1)(\log(Y/\nu)-Y/\nu+1)$ for independent <uniform distributions>. The inequality $\log t\leq t-1$ validates the acceptance probability. The accepted <probability density function> is the target because <rejection sampling> weights the proposal by its target-to-envelope ratio.
+
+= Ratio-of-uniforms method
+{parent=Rejection sampling}
+{title2=$X=V/U,\quad0<U\le\sqrt{h(V/U)}$}
+
+For a nonnegative integrable function $h$ with integral $Z$, its ratio-of-uniforms region has area $Z/2$. A uniform point in the region transforms under $v=ux$ with <Jacobian determinant> $u$; integrating $2u/Z$ over $0<u\le\sqrt{h(x)}$ gives density $h(x)/Z$. A rectangle containing the region gives a practical <rejection sampling> algorithm using only uniform random variables, with acceptance $Z/(2\operatorname{area}(B))$.
+
+= Laplace ratio-of-uniforms envelope
+{parent=Ratio-of-uniforms method}
+{c}
+{title2=$a=1,\quad b_1=-4e^{-5/4},\quad b_2=4e^{-3/4}$}
+
+For the unnormalized <Laplace distribution> <probability density function> $h(x)=e^{-|x-1|/2}$, the <ratio-of-uniforms method> uses $0<u\leq\sqrt{h(v/u)}$. The maximum of $h$ is one. On $x\leq0$, the maximum of $x^2h(x)$ occurs at $x=-4$ and equals $16e^{-5/2}$. On $x\geq0$, it occurs at $x=4$ and equals $16e^{-3/2}$. Thus the displayed rectangle contains the region. Its area is $4(e^{-3/4}+e^{-5/4})$, while the target region has area $\tfrac12\int h=2$. Uniform proposals in the rectangle, accepted when $u^2\leq h(v/u)$, therefore return the correct <Laplace distribution> with acceptance <probability> $[2(e^{-3/4}+e^{-5/4})]^{-1}$.
+
+= Normal ratio-of-uniforms envelope
+{parent=Ratio-of-uniforms method}
+{title2=$0<u<1,\quad|v|\le2\sigma u\sqrt{-\log u}$}
+
+For the unnormalized <normal density> $h(x)=e^{-x^2/(2\sigma^2)}$, the smallest axis-aligned envelope is $0<u<1$ and $|v|\le\sigma\sqrt{2/e}$. The boundary reaches that width at $u=e^{-1/2}$. Region area is $\sigma\sqrt{\pi/2}$, so the acceptance rate is $\sqrt{\pi e}/4$, independently of $\sigma$. Multiplying $h$ by a positive constant rescales both coordinates and their areas consistently.
+
+= Finite-area envelope for a ratio-of-uniforms region
+{parent=Ratio-of-uniforms method}
+
+A finite bounding rectangle exists when $\sqrt{h(x)}$ and $x\sqrt{h(x)}$ are bounded. This is not automatic for every <probability density function>: tails proportional to $(1+|x|)^{-3/2}$ give an unbounded second coordinate. In principle any finite-area measurable region has an open envelope of finite area, decomposable up to null boundaries into disjoint dyadic rectangles. Select a rectangle with probability proportional to its area, then sample its two coordinates uniformly and reject outside the target region. The accepted point is uniform on the region, with acceptance equal to the ratio of their areas. Constructing an effective envelope remains a density-specific computational step.
+
+= Normal rejection sampling with an exponential envelope
+{parent=Rejection sampling}
+{title2=$M(\lambda)=\sqrt{2/\pi}\,e^{\lambda^2/2}/\lambda$}
+
+For the <half-normal distribution>, the density ratio to $\operatorname{Exp}(\lambda)$ is maximized at $y=\lambda$. Completing the square gives the envelope constant above and acceptance <probability> $e^{-(y-\lambda)^2/2}$. Its logarithmic derivative is $\lambda-1/\lambda$, so the optimal rate is $\lambda=1$. Give an accepted nonnegative value an independent fair sign to obtain the <standard normal distribution>. The expected number of proposals is $M$, while the <probability> of rejecting one proposal is $1-1/M$; these are different quantities.
+
+= Marsaglia polar method
+{parent=Rejection sampling}
+{c}
+{title2=$Z=V\sqrt{-2\log S/S}$}
+{wiki}
+
+= Polar rejection method
+{synonym}
+
+Reject pairs of independent uniform coordinates from the square until their squared radius $S$ lies in $(0,1)$. Multiply each coordinate by $\sqrt{-2\log S/S}$ to obtain two independent variables with the <standard normal distribution>. Squaring either gives a chi-squared variable with one degree of freedom.
+
+= Binomial count and iid values in fixed-budget rejection sampling
+{parent=Rejection sampling}
+{title2=$N\sim\operatorname{Bin}(n,1/M)$}
+
+For n independent proposals and an envelope constant $M$, each rejection decision succeeds with probability $1/M$. The accepted count is Bin(n,1/M). Conditional on any acceptance pattern, the accepted values have independent target density f; summing over patterns preserves that product law conditional on the count. The empty-output probability is $(1-1/M)^n$.
+
+= Random-count central limit theorem for accepted rejection samples
+{parent=Binomial count and iid values in fixed-budget rejection sampling}
+{title2=$\sqrt n(\widehat\theta_{\rm rej}-\theta)\Rightarrow N(0,M\operatorname{Var}_f\phi)$}
+
+Conditional iid accepted values have the ordinary target-sample CLT at scale $\sqrt N$. Since $N/n\to1/M$, the same estimator has asymptotic variance $M\operatorname{Var}_f\phi$ at scale $\sqrt n$. The centered count has limiting variance $(1/M)(1-1/M)$. Any fixed convention on an empty output is asymptotically negligible.
+
+= Rejected-proposal distribution
+{parent=Rejection sampling}
+{title2=$r(z)=\frac{Mg(z)-f(z)}{M-1}$}
+
+With normalized densities $f,g$ and envelope $f\leq Mg$, $M>1$, conditioning a proposal on rejection gives density $r=(Mg-f)/(M-1)$. It can be used as an <importance sampling> proposal only if it covers the relevant target support. If $Mg=f$ on a set of positive target mass, rejected draws never visit that set.
+
+= Adaptive rejection sampling
+{parent=Rejection sampling}
+
+Adaptive rejection sampling builds a piecewise linear upper envelope for a differentiable <log-concave probability density>, samples from its piecewise exponential form, and accepts with the target-to-envelope ratio. Adding evaluated points improves the envelope without changing the target distribution. Initial tangent slopes must yield integrable tails. The accepted draws are exact samples, unlike a finite run of <Markov chain Monte Carlo>.
+
+= Importance sampling
+{parent=Monte Carlo method}
+{wiki}
+
+To estimate $\mathbb E_f[g(X)]$, sample $Y_1,\ldots,Y_m$ independently from a reference density $h$ whose support covers that of $gf$, and use
+$$
+\frac1m\sum_{i=1}^m g(Y_i)\frac{f(Y_i)}{h(Y_i)}.
+$$
+The summands have expectation $\int g(x)f(x)\,dx$, and the <strong law of large numbers> gives almost-sure convergence under integrability.
+
+= Importance sampling of a Cauchy tail
+{parent=Importance sampling}
+{title2=$Y=2/(1-U),\quad W=Y^2/[2\pi(1+Y^2)]$}
+
+For $U$ uniform on $(0,1)$, $Y$ has density $q(y)=2y^{-2}$ on $y\ge2$. The <importance sampling> weight for the standard <Cauchy distribution> tail is $W=f(Y)/q(Y)$, and its expectation is the target tail <probability>. Writing $A=\arctan(1/2)$ gives $\mathbb EW=A/\pi$ and $\mathbb EW^2=(A+2/5)/(4\pi^2)$ by integrating $y^2/(1+y^2)^2$. The weight varies only between $2/(5\pi)$ and $1/(2\pi)$, making its <variance> much smaller than that of a rare-event indicator. This is a comparison of sampling <variances>, not a deterministic ordering of every pair of empirical <variance> estimates.
+
+= Rao-Blackwell identity for a fixed-denominator rejection estimator
+{parent=Importance sampling}
+{c}
+{title2=$\mathbb E\left[\frac Mn\sum_iI_i\phi(X_i)\Bigm|X\right]=\widehat\theta_{\rm IS}$}
+
+For rejection indicators with conditional acceptance $f(X_i)/(Mg(X_i))$, the conditional expectation of $(M/n)\sum_iI_i\phi(X_i)$ given all proposals is the unnormalized importance estimator. The <Rao-Blackwell theorem> reduces variance relative to that fixed-denominator estimator. It gives no such automatic comparison with the accepted-sample mean, whose denominator is the random count.
+
+= Bounded-weight importance-sampling moment bound
+{parent=Importance sampling}
+{title2=$\mathbb E_g[\phi^2w^2]\leq M\mathbb E_f\phi^2$}
+
+If $f\leq Mg$, the importance weight $w=f/g$ is bounded by $M$, and $\mathbb E_g[\phi^2w^2]\leq M\mathbb E_f\phi^2$. A finite target second moment therefore guarantees finite variance and the iid central limit theorem for the unnormalized importance-sampling average. Its proposal-budget variance is $\mathbb E_g[\phi^2w^2]-(\mathbb E_f\phi)^2$.
+
+= Minimum-variance importance distribution
+{parent=Importance sampling}
+{title2=$q_*(x)=|h(x)|f(x)/\int|h|f$}
+
+For $\mu=\int hf$ and $0<A=\int|h|f<\infty$, the proposal $q_*=|h|f/A$ minimizes the <variance> of the ordinary unbiased <importance sampling> estimator. The <Cauchy-Schwarz inequality> gives $\int h^2f^2/q\geq A^2$, so the minimum <variance> for $n$ independent samples is $(A^2-\mu^2)/n$. The proposal need only cover the nonzero integrand.
+
+= Support condition for importance sampling
+{parent=Importance sampling}
+
+An <importance sampling> proposal $q$ must be positive wherever the target-weighted integrand can contribute. The usual sufficient condition is that the target probability is absolutely continuous with respect to $q$. Otherwise multiplying observed draws by $f/q$ cannot recover a missing part of the integral. A strict rejection envelope supplies this condition for the <rejected-proposal distribution>.
+
+= Importance weight
+{parent=Importance sampling}
+
+For target density $f$ and proposal density $h$, the importance weight is the density ratio $w(x)=f(x)/h(x)$ wherever the target is supported.
+
+= Self-normalized importance sampling
+{parent=Importance sampling}
+
+For an unnormalized target density, self-normalized importance sampling uses weights $w_i=f(Y_i)/h(Y_i)$ and estimates expectations by $\sum_iw_ig(Y_i)/\sum_iw_i$. Resampling a point $Y_i$ with probability proportional to $w_i$ produces the associated weighted empirical distribution.
+
+= Optimal importance density for a single integral
+{parent=Importance sampling}
+
+For estimating $I=\int g(x)f(x)\,dx$ by the unbiased importance estimator $g(Y)f(Y)/q(Y)$, the proposal minimizing variance is
+$$
+q^*(x)=\frac{|g(x)|f(x)}{\int |g(u)|f(u)\,du}.
+$$
+This follows from the <Cauchy-Schwarz inequality>. Its normalizing constant and dependence on the particular integrand often make it impractical.
+
+= Effective sample size of importance sampling
+{title2=$K_{\mathrm{eff}}$}
+{parent=Importance sampling}
+
+For normalized importance weights $w_i$, the standard effective sample size is $K_{\mathrm{eff}}=1/\sum_iw_i^2$.
+
+\Include[statistical-inference]{parent=Probability and statistics}
+
+= Linear least squares
+{parent=Probability and statistics}
+{wiki}
+
+<Linear least squares> minimizes $\|Ax-b\|^2$ over a <vector> $x$. Its <normal equations for linear least squares> are $A^TAx=A^Tb$; geometrically $Ax$ is the orthogonal <projection> of $b$ onto the range of $A$.
+
+= Linear least-squares projection
+{parent=Linear least squares}
+
+This is an orthogonal <projection> interpretation of <linear least squares>. The best affine predictor has slope covariance divided by predictor variance and intercept chosen to match means.
+
+= Schur complement covariance
+{parent=Linear least-squares projection}
+{c}
+
+The residual variance after projection onto one factor is $\operatorname{Var}(Y)-\operatorname{Cov}(X,Y)^2/\operatorname{Var}(X)$, a covariance Schur complement.

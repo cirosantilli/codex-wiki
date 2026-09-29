@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2004/iii/paper-43-clustering.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2004/iii/paper-43-clustering.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2004/iii/paper-43-clustering.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2004/iii/paper-43-clustering.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2004/iii/paper-43-clustering.py"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../../-/dir">(root)</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge">past-exam-of-the-mathematics-course-of-the-university-of-cambridge</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2004">2004</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2004/iii">iii</a> / <a href="../../../../../-/raw/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2004/iii/paper-43-clustering.py">paper-43-clustering.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2004/iii/paper-43-clustering.py</b></div><div class="code"><div><pre><code>"""Python 3.14, NumPy 2.3 and Matplotlib 3.10. Output PNG basename to caller cwd.
+Uses caller MPLCONFIGDIR unchanged. Exact Jaccard/complete-linkage calculation.
+Ties are resolved by original row order; other tied trees are also valid.
+"""
+from fractions import Fraction
+import numpy as np
+import matplotlib.pyplot as plt
+
+NAMES = ['Taeko','Luitgard','Alet','Tom','LinYee','Pio','LingChen','HuiChin','Martin','Nicolas','Mohammad','Meg']
+DATA = np.array([[1,1,0,1,1,1,0,0,0],[0,1,0,0,1,1,1,1,0],
+ [1,1,1,0,0,1,0,1,0],[1,1,1,1,1,0,1,1,0],[1,1,0,0,0,0,1,1,0],
+ [1,1,0,0,0,0,1,0,0],[1,0,0,0,0,1,1,0,0],[1,1,0,0,0,1,1,1,0],
+ [1,1,1,1,0,0,1,1,0],[1,1,1,0,0,0,1,1,1],[1,1,0,0,0,0,0,1,0],
+ [1,1,0,0,0,1,1,0,0]], dtype=bool)
+
+
+def exact_distances():
+    return [[Fraction(int(np.count_nonzero(x != y)), int(np.count_nonzero(x | y)))
+             for y in DATA] for x in DATA]
+
+
+def merges():
+    distances = exact_distances()
+    clusters = {i:(i,) for i in range(len(NAMES))}
+    history = []
+    for new_id in range(len(NAMES), 2*len(NAMES)-1):
+        keys = sorted(clusters)
+        candidates = [(max(distances[i][j] for i in clusters[a] for j in clusters[b]),
+                       clusters[a], clusters[b], a, b)
+                      for ia,a in enumerate(keys) for b in keys[ia+1:]]
+        height, _, _, a, b = min(candidates)
+        history.append((a,b,new_id,height,clusters[a],clusters[b]))
+        clusters[new_id] = tuple(sorted(clusters.pop(a)+clusters.pop(b)))
+    return history
+
+
+def main():
+    n = len(NAMES)
+    history = merges()
+    children = {new:(a,b) for a,b,new,*_ in history}
+    def leaves(node):
+        return [node] if node&lt;n else leaves(children[node][0])+leaves(children[node][1])
+    order = leaves(2*n-2)
+    positions = {node:(i,0.) for i,node in enumerate(order)}
+    fig, (ax, heat) = plt.subplots(1,2,figsize=(12,6), gridspec_kw={'width_ratios':[1.5,1]})
+    for a,b,new,height,*_ in history:
+        x1,y1=positions[a]; x2,y2=positions[b]; y=float(height)
+        ax.plot([x1,x1,x2,x2],[y1,y,y,y2],color='#245b82',lw=1.6)
+        positions[new]=((x1+x2)/2,y)
+    ax.set_xticks(range(n),[NAMES[i] for i in order],rotation=65,ha='right')
+    ax.set_ylim(0,.86);ax.set_ylabel('Complete-linkage Jaccard distance')
+    ax.set_title('One valid dendrogram (ties resolved by row order)')
+    ax.axhline(.65,color='#ad601a',ls='--',lw=1,label='Illustrative cut at 0.65')
+    ax.legend(fontsize=8,loc='upper left');ax.spines[['top','right']].set_visible(False)
+    distances=np.array(exact_distances(),dtype=float)
+    im=heat.imshow(distances[np.ix_(order,order)],vmin=0,vmax=.8,cmap='Blues')
+    heat.set_xticks(range(n),[NAMES[i] for i in order],rotation=90,fontsize=8)
+    heat.set_yticks(range(n),[NAMES[i] for i in order],fontsize=8)
+    heat.set_title('Pairwise distances in dendrogram order')
+    fig.colorbar(im,ax=heat,shrink=.65,label='Jaccard distance')
+    fig.tight_layout();fig.savefig('paper-43-clustering.png',dpi=110,facecolor='white',transparent=False)
+    plt.close(fig)
+
+
+if __name__=='__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2017/iii/paper-332-lava-evolution.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2017/iii/paper-332-lava-evolution.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2017/iii/paper-332-lava-evolution.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2017/iii/paper-332-lava-evolution.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2017/iii/paper-332-lava-evolution.py"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../../-/dir">(root)</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge">past-exam-of-the-mathematics-course-of-the-university-of-cambridge</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2017">2017</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2017/iii">iii</a> / <a href="../../../../../-/raw/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2017/iii/paper-332-lava-evolution.py">paper-332-lava-evolution.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2017/iii/paper-332-lava-evolution.py</b></div><div class="code"><div><pre><code>"""Original figure; Python 3.14, matplotlib 3.10.7, numpy 2.3.5.
+Run from the intended output directory; the PNG is written to CWD.
+"""
+import os, sys
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+B, R, STE = 4.0, 20.0, 0.1
+
+def evolution(ratio, n=40000, final_scaled_time=4.0):
+    # Integrate in s=sqrt(tau); the initial h~sqrt(2 STE)*s removes
+    # the infinite initial dh/dtau. Classical RK4, uniform s steps.
+    s = np.linspace(0, np.sqrt(final_scaled_time/B), n+1)
+    h = np.zeros(n+1)
+    def rhs(v, height):
+        if v == 0:
+            return np.sqrt(2*STE)
+        flux = R*(1+(ratio-1)*np.exp(-B*v*v))
+        return 2*STE*(v/height-v*flux)
+    for j in range(n):
+        ds=s[j+1]-s[j]
+        k1=rhs(s[j],h[j])
+        k2=rhs(s[j]+ds/2,h[j]+ds*k1/2)
+        k3=rhs(s[j]+ds/2,h[j]+ds*k2/2)
+        k4=rhs(s[j+1],h[j]+ds*k3)
+        h[j+1]=h[j]+ds*(k1+2*k2+2*k3+k4)/6
+    tau=s*s
+    theta_ratio=1+(ratio-1)*np.exp(-B*tau)
+    return B*tau, theta_ratio, R*h
+
+def main():
+    assert sys.version_info[:2] == (3,14)
+    assert matplotlib.__version__.split('+')[0] == '3.10.7'
+    assert np.__version__ == '2.3.5'
+    fig, axes=plt.subplots(1,2,figsize=(9.6,4.4),dpi=100,facecolor='white')
+    for ratio,color,label in [(0.5,'#1976b5','Cool initial lava'),(1,'#555555','Constant temperature'),(1.5,'#c54436','Hot initial lava')]:
+        x,temp,thick=evolution(ratio)
+        axes[0].plot(x,temp,color=color,label=label,lw=2)
+        axes[1].plot(x,thick,color=color,lw=2)
+    for ax in axes:
+        ax.set_facecolor('white'); ax.axhline(1,color='#777777',ls=':',lw=1)
+        ax.set_xlabel(r'$B\tau$'); ax.grid(alpha=.18); ax.set_xlim(0,4)
+    axes[0].set_ylabel(r'$\theta/\theta_*$'); axes[0].set_title('Temperature relaxation')
+    axes[1].set_ylabel(r'$h/h_*=R h$'); axes[1].set_title('Crust growth and possible remelting')
+    axes[0].legend(fontsize=8,loc='lower right')
+    fig.suptitle(r'$B=4,\ R=20,\ \mathrm{Ste}=0.1$; initially no crust',fontsize=11)
+    fig.tight_layout(rect=(0,0,1,.93))
+    fig.savefig('paper-332-lava-evolution.png',facecolor='white',transparent=False,dpi=100)
+    plt.close(fig)
+if __name__ == '__main__':
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

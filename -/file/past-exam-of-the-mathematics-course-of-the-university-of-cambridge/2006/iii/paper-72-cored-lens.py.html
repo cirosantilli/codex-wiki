@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-72-cored-lens.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-72-cored-lens.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-72-cored-lens.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-72-cored-lens.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-72-cored-lens.py"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../../-/dir">(root)</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge">past-exam-of-the-mathematics-course-of-the-university-of-cambridge</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006">2006</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii">iii</a> / <a href="../../../../../-/raw/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-72-cored-lens.py">paper-72-cored-lens.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-72-cored-lens.py</b></div><div class="code"><div><pre><code>"""Cored-lens mapping. Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7.
+
+Writes only paper-72-cored-lens.png in the caller's current directory.
+Uses the caller's MPLCONFIGDIR without overriding it.
+"""
+from pathlib import Path
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+CORE = 0.3
+STRENGTH = 1.0
+
+
+def mapping(theta):
+    return theta * (1 - STRENGTH / np.sqrt(theta**2 + CORE**2))
+
+
+def bisect_source(left, right, source):
+    fl = mapping(left) - source
+    assert fl * (mapping(right) - source) &lt; 0
+    for _ in range(70):
+        mid = (left + right) / 2
+        fm = mapping(mid) - source
+        if fl * fm &lt;= 0:
+            right = mid
+        else:
+            left, fl = mid, fm
+    return (left + right) / 2
+
+
+def main():
+    radial = np.sqrt((STRENGTH * CORE**2)**(2/3) - CORE**2)
+    tangential = np.sqrt(STRENGTH**2 - CORE**2)
+    caustic = CORE * ((STRENGTH / CORE)**(2/3) - 1)**1.5
+    source = caustic / 2
+    roots = np.array([bisect_source(-2, -radial, source),
+                      bisect_source(-radial, 0, source),
+                      bisect_source(tangential, 2, source)])
+    assert np.max(np.abs(mapping(roots) - source)) &lt; 1e-14
+    # Include the exact critical positions and image positions in the sampled grids.
+    theta = np.unique(np.r_[np.linspace(-1.6, 1.6, 900), -radial, radial,
+                             -tangential, 0, tangential, roots])
+    r = np.unique(np.r_[np.linspace(0, 1.6, 600), radial, tangential])
+    fig, axes = plt.subplots(1, 2, figsize=(10.4, 4.2), facecolor="white")
+    ax = axes[0]
+    ax.plot(theta, mapping(theta), color="#365f9c", label=r"Lens map $\beta(\theta)$")
+    ax.axhline(source, color="#a65722", label=r"Source $\beta=\beta_c/2$")
+    ax.scatter(roots, np.full(3, source), color="#a65722", zorder=5)
+    for i, root in enumerate(roots):
+        ax.annotate(("Intermediate", "Central", "Outer")[i], (root, source),
+                    xytext=(0, 10 if i != 1 else -22), textcoords="offset points",
+                    ha="center", fontsize=9)
+    ax.scatter([-radial, radial], mapping(np.array([-radial, radial])),
+               facecolors="white", edgecolors="#365f9c", zorder=4)
+    ax.set_xlabel(r"Signed image angle $\theta/\theta_E$")
+    ax.set_ylabel(r"Source angle $\beta/\theta_E$")
+    ax.set_title(r"Three intersections inside the radial caustic")
+    ax.legend(loc="lower right", fontsize=9)
+    ax = axes[1]
+    ax.plot(r, 1 - STRENGTH / np.sqrt(r*r + CORE*CORE), color="#365f9c",
+            label=r"Tangential $\lambda_t$")
+    ax.plot(r, 1 - STRENGTH * CORE**2 / (r*r + CORE*CORE)**1.5, color="#268565",
+            label=r"Radial $\lambda_r$")
+    for critical, color, label in [(radial, "#268565", r"$\theta_r$"),
+                                    (tangential, "#365f9c", r"$\theta_t$")]:
+        ax.axvline(critical, color=color, linestyle=":")
+        ax.scatter([critical], [0], color=color, zorder=5)
+        ax.annotate(label, (critical, 0), xytext=(7, -20), textcoords="offset points")
+    ax.set_title(r"Critical radii: Jacobian eigenvalue zeros")
+    ax.set_xlabel(r"Image radius $r/\theta_E$")
+    ax.set_ylabel("Mapping eigenvalue")
+    ax.legend(loc="lower right", fontsize=9)
+    for ax in axes:
+        ax.set_facecolor("white")
+        ax.axhline(0, color="#555555", linewidth=.8)
+        ax.grid(alpha=.2)
+    fig.suptitle(r"Softened isothermal lens: $\theta_c/\theta_E=0.3$", fontsize=12)
+    fig.tight_layout()
+    fig.savefig(Path.cwd() / "paper-72-cored-lens.png", dpi=120, facecolor="white", transparent=False)
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->

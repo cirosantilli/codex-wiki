@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-82-shear-layer-rays.py - Codex Wiki</title>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-Y215GF8JS2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-Y215GF8JS2');
+</script>
+
+<meta property="og:title" content="past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-82-shear-layer-rays.py - Codex Wiki">
+<meta property="og:type" content="website">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>@import "../../../../../-/obb/dist/ourbigbook.css";
+
+</style>
+<link rel="stylesheet" type="text/css" href="../../../../../-/raw/main.css">
+<link rel="icon" href="../../../../../-/raw/openai-logo.png" type="image/png">
+</head>
+<body>
+<header>
+<div class="brand-group">
+<a href="../../../../../" class="brand"><img class="openai-logo" src="../../../../../-/raw/openai-logo.png" alt="OpenAI logo">Codex Wiki</a>
+<a href="https://ourbigbook.com" class="brand"><img src="../../../../../-/raw/ourbigbook-logo.png" alt="OurBigBook logo"><span class="mobile-hide">OurBigBook.com</span><span class="mobile-show">Site</span></a>
+<a href="https://github.com/cirosantilli/codex-wiki"><i class="fab fa-github fa-fw icon"></i> Source code</a>
+</div>
+</header>
+<main class="ourbigbook">
+<div class="h top" id="/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-82-shear-layer-rays.py"><div class="notnav"><span class="file" title="This article is about a file." /><h1><a href="">past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-82-shear-layer-rays.py</a></h1></div><nav class="h-nav h-nav-toplevel"><div class="nav"><a href="https://ourbigbook.com/codex/-/file/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-82-shear-layer-rays.py"><img src="../../../../../-/obb/logo.svg" class="logo" alt=""> OurBigBook.com</a></div><div class="nav file"><b> <a href="../../../../../-/dir">(root)</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge">past-exam-of-the-mathematics-course-of-the-university-of-cambridge</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006">2006</a> / <a href="../../../../../-/dir/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii">iii</a> / <a href="../../../../../-/raw/past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-82-shear-layer-rays.py">paper-82-shear-layer-rays.py</a></b></div></nav></div><div class="p"><b>past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2006/iii/paper-82-shear-layer-rays.py</b></div><div class="code"><div><pre><code>"""Original acoustic-ray sketch; Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7.
+
+Writes paper-82-shear-layer-rays.png to caller CWD; honors MPLCONFIGDIR.
+Units: omega = c0 = 1; mean flow U(y) = 0.6 (1 - exp(-y)).
+"""
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+
+def primitive(values, grid):
+    return np.r_[0, np.cumsum((values[:-1] + values[1:]) * np.diff(grid) / 2)]
+
+
+def flow(y):
+    return 0.6 * (1 - np.exp(-y))
+
+
+def ray(beta, y):
+    kx = np.cos(np.deg2rad(beta))
+    intrinsic = 1 - flow(y) * kx
+    ky = np.sqrt(intrinsic**2 - kx**2)
+    return primitive((flow(y) * intrinsic + kx) / ky, y)
+
+
+fig, ax = plt.subplots(figsize=(7.8, 5.3), facecolor='white')
+y = np.linspace(0, 3, 1200)
+for beta, color, label in [(65, '#1864ab', 'Downstream ray escapes'),
+                            (145, '#2b8a3e', 'Upstream wave normal at launch'),
+                            (90, '#862e9c', 'Wall-normal wave normal; ray drifts')]:
+    x = ray(beta, y)
+    ax.plot(x, y, color=color, lw=2.1, label=label)
+    j = 650
+    ax.annotate('', xy=(x[j+30], y[j+30]), xytext=(x[j-30], y[j-30]),
+                arrowprops=dict(arrowstyle='-&gt;', color=color, lw=2.1))
+
+kx = np.cos(np.deg2rad(35))
+uturn = 1 / kx - 1
+yturn = -np.log(1 - uturn / .6)
+t = np.linspace(0, np.pi/2 - 1e-5, 1000)
+yt = yturn * np.sin(t)**2
+intrinsic = 1 - flow(yt) * kx
+ky = np.sqrt(intrinsic**2 - kx**2)
+dx_dt = (flow(yt) * intrinsic + kx) / ky * 2*yturn*np.sin(t)*np.cos(t)
+xt = primitive(dx_dt, t)
+ax.plot(xt, yt, color='#d95f02', lw=2.2, label='Shallow downstream ray turns')
+ax.plot(2*xt[-1] - xt[::-1], yt[::-1], color='#d95f02', lw=2.2)
+ax.scatter([xt[-1]], [yturn], color='#d95f02', s=28, zorder=5)
+ax.annotate('Turning: $k_y=0$', xy=(xt[-1], yturn), xytext=(1.4, .95),
+            color='#d95f02', fontsize=10,
+            arrowprops=dict(arrowstyle='-&gt;', color='#d95f02'))
+ax.annotate('', xy=(2*xt[-1]-xt[600], yt[600]),
+            xytext=(2*xt[-1]-xt[680], yt[680]),
+            arrowprops=dict(arrowstyle='-&gt;', color='#d95f02', lw=2.2))
+
+for height in [.3, .8, 1.4, 2.1, 2.8]:
+    ax.annotate('', xy=(4.35 + flow(height), height), xytext=(4.35, height),
+                arrowprops=dict(arrowstyle='-&gt;', color='#a6aeb5', lw=1.5))
+ax.text(4.05, 3.05, 'Mean flow', fontsize=10, color='#68737d')
+ax.axhline(0, color='#343a40', lw=3)
+ax.scatter([0], [0], color='#343a40', s=35, zorder=6)
+ax.text(-.25, -.2, 'Wall source', fontsize=10)
+ax.set(xlim=(-1.8, 5), ylim=(-.25, 3.25), xlabel='Distance along the wall',
+       ylabel='Height above the wall', title='Acoustic rays through a wall shear layer')
+ax.legend(loc='upper center', bbox_to_anchor=(.5, -.2), ncol=2, fontsize=8.5, frameon=True, facecolor='white', framealpha=1)
+ax.spines[['top', 'right']].set_visible(False)
+fig.tight_layout()
+fig.savefig('paper-82-shear-layer-rays.png', dpi=120, facecolor='white', transparent=False)
+plt.close(fig)
+</code></pre></div></div></main>
+<footer>
+<div><button type="button" class="ourbigbook-theme-toggle" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ourbigbook-theme-toggle-icon" aria-hidden="true">&#xf186;</span> <span class="ourbigbook-theme-toggle-label">Dark theme</span></button></div>
+<div>Powered by <a href="https://docs.ourbigbook.com">OurBigBook</a></div>
+<div>License: <a href="https://creativecommons.org/publicdomain/zero/1.0/">CC0 1.0</a> unless noted</div>
+<div><a href="../../../../../-/dir">Website source code</a></div>
+<div><a href="https://github.com/cirosantilli/codex-wiki">Website source code on GitHub</a></div>
+
+</footer>
+<script>
+window.ourbigbook_split_headers = false;
+window.ourbigbook_html_x_extension = false;
+window.ourbigbook_redirect_prefix = "";
+</script>
+<script src="../../../../../-/obb/dist/ourbigbook_runtime.js"></script><script>ourbigbook_runtime.ourbigbook_runtime()</script></body>
+</html>
+<!--ourbigbook-file-usage-v3:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945-->
