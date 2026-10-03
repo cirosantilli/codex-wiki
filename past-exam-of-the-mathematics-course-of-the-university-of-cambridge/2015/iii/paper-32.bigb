@@ -11,12 +11,114 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2015/paper_32.pdf
 = Solution
 {parent=1}
 
+With the centred data, no intercept is needed. Use the <Lasso> normalization
+$$
+\boxed{\widehat\beta^L_\lambda\in\operatorname*{arg\,min}_{b\in\mathbb R^p}\left\{\frac1{2n}\|Y-Xb\|_2^2+\lambda\|b\|_1\right\}.}
+$$
+Write $r=Y-Xb$ and $c=X^{\mathsf T}r/n$. The <KKT conditions> are
+$$
+\boxed{c_k=\lambda\operatorname{sign}(b_k)\text{ if }b_k\ne0,\qquad |c_k|\leq\lambda\text{ if }b_k=0.}
+$$
+Indeed, the <subdifferential of the L1 norm> consists of vectors $z$ with $z_k=\operatorname{sign}(b_k)$ at nonzero coordinates and $z_k\in[-1,1]$ at zero coordinates. The <subgradient optimality condition> is $0=-X^{\mathsf T}(Y-Xb)/n+\lambda z$. <convexity> makes these conditions sufficient as well as necessary. These are the <Karush-Kuhn-Tucker conditions for the Lasso>.
+
+Here is a correlation-parameter version of <least angle regression>. Put $G=X^{\mathsf T}X/n$, a <Gram matrix>, and initialize $\widehat\beta=0$, $A_1=\varnothing$, $\lambda_0=\infty$.
+
+\Ol[
+\L[Compute $\lambda_1=\max_k|X_k^{\mathsf T}Y|/n$. For $\lambda\geq\lambda_1$, keep $\widehat\beta(\lambda)=0$. If $\lambda_1=0$, stop: all <regression residual> correlations already vanish. Otherwise add the uniquely maximizing variable to obtain $A_2$.]
+\L[At step $m\geq2$, put $t=\lambda_{m-1}$, $A=A_m$, $b^0=\widehat\beta(t)$, and $s_A=c_A(t)/t$. These active signs have entries in $\{-1,1\}$. Solve $G_{AA}d_A=s_A$, set $d_{A^c}=0$, and follow the segment
+$$
+\widehat\beta(\lambda)=b^0+(t-\lambda)d,\qquad0\leq\lambda\leq t.
+$$
+]
+\L[For each inactive variable set $a_j=G_{jA}d_A$. Along the segment its correlation is $c_j(t)-h a_j$, where $h=t-\lambda$. Its candidate hitting distances are
+$$
+h_j^+=\frac{t-c_j(t)}{1-a_j},\qquad h_j^-=\frac{t+c_j(t)}{1+a_j}.
+$$
+Discard undefined or nonpositive candidates. Choose the smallest remaining distance below $t$, if one exists, and otherwise choose $h=t$. Set $\lambda_m=t-h$. If $\lambda_m>0$, add the unique variable achieving the hit to form $A_{m+1}$ and repeat; if $\lambda_m=0$, stop.
+]
+]
+
+The two hitting formulas come from $c_j(t)-h a_j=\pm(t-h)$. This is <LAR hitting time>. Active variables are not dropped if a coefficient crosses zero: that is the distinction between this algorithm and the modified <Lasso> path algorithm.
+
+The active <Gram matrix> is an <invertible matrix> under the assumed unique positive hits. Inductively, a candidate column in the span of the current active columns would have $c_j(\lambda)$ equal to a fixed linear combination of their correlations, hence proportional to $\lambda$ on the whole segment. Its ratio $|c_j(\lambda)|/\lambda$ could not first reach one at a positive interior knot. Thus every uniquely entering column adds a new independent direction. This also allows more predictors than observations; the algorithm stops before a dependent direction needs to be added at zero correlation.
+
+We now prove the requested invariant. At the first positive knot the newly active correlation has magnitude $\lambda_1$. At a later knot the old active correlations have that knot's magnitude by induction, and the entering correlation has the same magnitude by the hitting rule. Throughout the next segment,
+$$
+c_A(\lambda)=c_A(t)-(t-\lambda)G_{AA}d_A=t s_A-(t-\lambda)s_A=\lambda s_A.
+$$
+The first-hitting rule also ensures $|c_j(\lambda)|\leq\lambda$ for every inactive $j$. If no positive hit remains, this inequality continues to zero, where all correlations vanish. Consequently, on every printed closed segment,
+$$
+\boxed{\frac1n|X_k^{\mathsf T}(Y-X\widehat\beta(\lambda))|=\lambda\quad(k\in A_m).}
+$$
+This is the <LAR active correlation invariant>.
+
+If active nonzero coefficients have the same signs as their residual correlations, the active equalities are precisely the nonzero-coordinate <Lasso> <KKT conditions>. An active coefficient which is zero also satisfies the zero-coordinate <KKT conditions>, because its correlation is within $[-\lambda,\lambda]$. Inactive coefficients are zero and satisfy those same inequalities by construction. Thus every point of the <least angle regression> path is a <Lasso> minimizer for $\lambda>0$. Under the stated uniqueness assumption,
+$$
+\boxed{\widehat\beta(\lambda)=\widehat\beta^L_\lambda\qquad(\lambda>0).}
+$$
+This proves the desired implication, in fact under the weaker <sign compatibility of LAR and Lasso> condition requiring agreement only at nonzero coefficients.
+
+There is an endpoint convention in the printed sufficient condition. With the standard $\operatorname{sign}(0)=0$, a newly entering coefficient is zero at a positive knot although its correlation is $\pm\lambda$; the displayed sign equality therefore cannot literally hold there. At the final zero knot the correlation signs are zero as well. Interpret sign compatibility on positive open segments, or in the nonzero-coefficient/subgradient sense just proved. The <KKT conditions> already handle zero coefficients at knots, and no equality of solution paths at $\lambda=0$ is needed for the requested conclusion.
+
 = 2
 {parent=Paper 32}
 {scope}
 
 = Solution
 {parent=2}
+
+Put $S=X^{\mathsf T}X$, which is a <positive definite matrix> by the full column-rank assumption. The <ordinary least squares> estimator is
+$$
+\boxed{\widehat\beta^{OLS}=S^{-1}X^{\mathsf T}Y.}
+$$
+For <ridge regression> use the criterion $\tfrac12\|Y-Xb\|_2^2+\tfrac\lambda2\|b\|_2^2$. Differentiating gives
+$$
+\boxed{\widehat\beta^R_\lambda=(S+\lambda I)^{-1}X^{\mathsf T}Y.}
+$$
+If instead the squared-error term is normalized by $n$, replace $\lambda$ in this formula and the calculations below by $n\lambda$. Only the scale of the tuning parameter changes.
+
+As usual for this <linear regression> model, use zero-mean errors; more generally $X^{\mathsf T}\mathbb E\varepsilon=0$ suffices. Since the columns are centred, $X^{\mathsf T}\mathbf1=0$, so the random centring term disappears from both estimators. Thus
+$$
+\widehat\beta^{OLS}=\beta^0+S^{-1}X^{\mathsf T}\varepsilon,\qquad
+\operatorname{Cov}(\widehat\beta^{OLS})=\sigma^2S^{-1}.
+$$
+Let $A=(S+\lambda I)^{-1}$. The <bias> and <covariance matrix> of the <ridge regression> estimator are
+$$
+\mathbb E\widehat\beta^R_\lambda-\beta^0=-\lambda A\beta^0,\qquad
+\operatorname{Cov}(\widehat\beta^R_\lambda)=\sigma^2ASA.
+$$
+The <bias-variance decomposition of mean squared error> therefore represents directional risk by the quadratic forms
+$$
+R_R(x)=x^{\mathsf T}\left(\sigma^2ASA+\lambda^2A\beta^0\beta^{0\mathsf T}A\right)x,\qquad
+R_{OLS}(x)=\sigma^2x^{\mathsf T}S^{-1}x.
+$$
+Their difference has the useful factorization
+$$
+\begin{aligned}
+R_{OLS}(x)-R_R(x)
+&=\lambda x^{\mathsf T}A\left(2\sigma^2I+\lambda\sigma^2S^{-1}-\lambda\beta^0\beta^{0\mathsf T}\right)Ax.
+\end{aligned}
+$$
+To check it, multiply $S^{-1}-ASA$ on both sides by $A^{-1}=S+\lambda I$: the resulting matrix is $(S+\lambda I)S^{-1}(S+\lambda I)-S=2\lambda I+\lambda^2S^{-1}$.
+
+The <Cauchy-Schwarz inequality> gives $\beta^0\beta^{0\mathsf T}\preceq\|\beta^0\|_2^2I$ in the <Loewner order>. Therefore the middle matrix is <positive definite> whenever $\lambda\|\beta^0\|_2^2<2\sigma^2$. For example,
+$$
+\boxed{\lambda=\frac{\sigma^2}{1+\|\beta^0\|_2^2}>0}
+$$
+works, independently of the <eigenvalues> of $S$. Since $A$ is invertible, the risk difference is strictly positive for every nonzero $x$, in particular simultaneously for every unit $x^*$. This proves <uniform directional risk improvement by ridge regression>. For the normalized-loss convention, take the displayed choice divided by $n$.
+
+For the final assertion, fix any $\lambda>0$ and choose a unit <eigenvector> $v$ of $S$ with <eigenvalue> $d>0$. Put $x^*=v$ and $\beta^0=Bv$. Directly,
+$$
+R_R(v)=\frac{\lambda^2B^2+\sigma^2d}{(d+\lambda)^2},\qquad
+R_{OLS}(v)=\frac{\sigma^2}{d}.
+$$
+Choosing
+$$
+\boxed{B^2>\frac{(d+\lambda)^2}{\lambda^2}\left(\delta+\frac{\sigma^2}{d}\right)}
+$$
+makes the squared bias alone greater than $R_{OLS}(v)+\delta$, proving the required strict inequality. Thus <unbounded directional risk of fixed ridge shrinkage> is compatible with the existence of a beneficial signal-dependent small penalty: no fixed positive penalty uniformly improves risk over all possible signals.
+
+The mean assumption matters if the printed covariance condition is read in isolation. With $n=2$, $X=(1,-1)^{\mathsf T}$, $\beta^0=10$, $\sigma^2=1$ and $\mathbb E\varepsilon=-5X$, the columns and response are still centred and $\operatorname{Var}\varepsilon=I$, but the <ordinary least squares> risk is $25.5$. Writing $a=2/(2+\lambda)$, the <ridge regression> risk is $(5a-10)^2+\tfrac12a^2=100-100a+25.5a^2>25.5$ for every $0<a<1$. Hence the standard zero-mean regression-error convention, or its stated orthogonality version, is necessary for the first risk comparison; covariance alone is insufficient.
 
 = 3
 {parent=Paper 32}
@@ -25,9 +127,95 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2015/paper_32.pdf
 = Solution
 {parent=3}
 
+The <familywise error rate> is the probability of rejecting at least one true null:
+$$
+\boxed{\operatorname{FWER}=\mathbb P\left(\bigcup_{i\in I_0}\{H_i\text{ is rejected}\}\right).}
+$$
+A valid <p-value> is <super-uniform> under its null: $\mathbb P(p_i\leq t)\leq t$ for $0\leq t\leq1$. The <Bonferroni correction> rejects $H_i$ if $p_i\leq\alpha/m$. The <union bound> gives
+$$
+\operatorname{FWER}\leq\sum_{i\in I_0}\mathbb P(p_i\leq\alpha/m)\leq\frac{|I_0|}{m}\alpha\leq\alpha.
+$$
+This controls the <familywise error rate> for every configuration of true and false nulls, without any independence assumption on the <p-values>.
+
+For a nonempty index set $I\subseteq\{1,\ldots,m\}$, the <intersection hypothesis> $H_I=\bigcap_{i\in I}H_i$ asserts that every null indexed by $I$ holds. The <closure of a family of statistical hypotheses> consists of all these nonempty intersections, including the original hypotheses. For each intersection choose a local test $\phi_I$ of size at most $\alpha$ under $H_I$. Such tests always exist: for example, within $I$ use the <Bonferroni correction>, rejecting $H_I$ if $\min_{i\in I}p_i\leq\alpha/|I|$. More powerful local intersection tests can be substituted whenever valid.
+
+The <closed testing procedure> rejects an elementary hypothesis $H_i$ only when every local test $\phi_I$ with $i\in I$ rejects its intersection hypothesis. If $I_0\ne\varnothing$, the intersection $H_{I_0}$ is true. Rejecting any true $H_i$ requires rejection by its local test $\phi_{I_0}$, so
+$$
+\boxed{\operatorname{FWER}\leq\mathbb P(\phi_{I_0}=1)\leq\alpha.}
+$$
+If $I_0=\varnothing$, there is no possible false rejection. This proves <closed-testing control of the familywise error rate>. The same argument applies if <intersection hypotheses> themselves are reported as rejected: requiring all their supersets to reject includes $I_0$ whenever the reported intersection is true.
+
+Finally, consider the given hierarchical family as a <laminar family of sets>. Call a set $I\in\mathcal I$ true when $I\subseteq I_0$, so its entire <intersection hypothesis> is true. Let $\mathcal M$ be the inclusion-maximal true sets in $\mathcal I$. Distinct members of $\mathcal M$ are disjoint: if they met, laminarity would make one contain the other, contradicting maximality. Consequently,
+$$
+\sum_{J\in\mathcal M}|J|\leq|I_0|\leq m.
+$$
+Every true set $I$ lies in a maximal true $J$. If $H_I$ is rejected by the prescribed adjusted <p-value> rule, the maximum over its ancestors includes $J$, hence
+$$
+p_J\leq\frac{\alpha|J|}{m}.
+$$
+Thus the event of any false rejection is contained in the union of these events over the disjoint maximal true sets. Using validity of each $p_J$ under its true intersection and the <union bound>,
+$$
+\boxed{\mathbb P(\text{at least one false rejection})
+\leq\sum_{J\in\mathcal M}\frac{\alpha|J|}{m}\leq\alpha.}
+$$
+Equivalently, with probability at least $1-\alpha$ every rejection is correct. This proves <familywise error control for a laminar hypothesis family>. It requires neither independence nor the presence of all possible intersections or singletons in $\mathcal I$. Empty index sets are excluded, as required by the denominator $|J|$; if there are no true sets the result is immediate. Adjusted values exceeding one can be truncated at one without changing decisions for $\alpha<1$.
+
 = 4
 {parent=Paper 32}
 {scope}
 
 = Solution
 {parent=4}
+
+Put $\Omega=\Sigma^{-1}$, the <precision matrix>. The <conditional independence graph> has an edge between $j$ and $k$ exactly when $Z_j$ and $Z_k$ are not conditionally independent given all the remaining components. For the <multivariate normal distribution>,
+$$
+\boxed{\{j,k\}\text{ is absent}\iff\Omega_{jk}=0.}
+$$
+Indeed, the conditional density of the pair given the others has its quadratic term determined by the corresponding two-by-two principal submatrix of $\Omega$; its cross term vanishes exactly when $\Omega_{jk}=0$, making the two conditional Gaussian variables independent. This is a <Gaussian graphical model>.
+
+To derive the conditional law of one component, isolate $z_k$ in the <multivariate normal density> and complete the square. The terms involving it are
+$$
+-\frac12\Omega_{kk}(z_k-\mu_k)^2-(z_k-\mu_k)\Omega_{k,-k}(z_{-k}-\mu_{-k}).
+$$
+Therefore
+$$
+\boxed{Z_k\mid Z_{-k}=z_{-k}\sim N\left(\mu_k-\frac{\Omega_{k,-k}}{\Omega_{kk}}(z_{-k}-\mu_{-k}),\ \frac1{\Omega_{kk}}\right).}
+$$
+Equivalently, its mean is $\mu_k+\Sigma_{k,-k}\Sigma_{-k,-k}^{-1}(z_{-k}-\mu_{-k})$ and its variance is the <Schur complement> $\Sigma_{kk}-\Sigma_{k,-k}\Sigma_{-k,-k}^{-1}\Sigma_{-k,k}$. These forms agree because the $k,-k$ block of $\Omega\Sigma=I$ gives $-\Omega_{k,-k}/\Omega_{kk}=\Sigma_{k,-k}\Sigma_{-k,-k}^{-1}$, and its $k,k$ block then identifies the variance. This proves the relevant <conditional multivariate normal distribution> formula.
+
+In particular, the population regression of component $k$ on the other components has coefficients
+$$
+\boxed{\theta_{jk}=-\frac{\Omega_{jk}}{\Omega_{kk}}\quad(j\ne k),}
+$$
+intercept $a_k=\mu_k-\mu_{-k}^{\mathsf T}\theta_{-k,k}$, and a Gaussian residual independent of the predictors with variance $1/\Omega_{kk}$. These are the <conditional regression coefficients from a Gaussian precision matrix>. The coefficient is zero exactly when the corresponding edge is absent. Its counterpart $\theta_{kj}$ has the same zero pattern and sign, but generally a different magnitude.
+
+This motivates <nodewise regression>: for each $k$, regress $X_k$ on $X_{-k}$, estimating an intercept as well. For sparse graph estimation, use the <nodewise Lasso> criterion
+$$
+\frac1{2n}\|X_k-a_k\mathbf1-X_{-k}b\|_2^2+\lambda_k\|b\|_1.
+$$
+The <Lasso> penalty encourages many fitted coefficients to be zero and remains usable when the number of predictors exceeds the sample size. Ordinary unpenalized sample regressions would usually give a dense estimated graph. Separate regressions can disagree about a pair, so an undirected graph can use the <OR rule for nodewise graph selection>, retaining an edge if either fitted direction is nonzero, or the more conservative <AND rule for nodewise graph selection>, retaining it only if both are nonzero. These are choices for combining estimated neighbourhoods, rather than identities forced by finite-sample fits.
+
+The printed joint objective uses a <Group Lasso> penalty on the unordered pairs
+$$
+g_{jk}=(\Theta_{jk},\Theta_{kj}),\qquad\sum_{j<k}\|g_{jk}\|_2.
+$$
+This is <paired group Lasso for Gaussian graph estimation>. Each group represents a single undirected edge, coupling its two directional regressions. A sum of group norms encourages entire pairs to be zero; a squared group norm would give smooth ridge-type shrinkage instead of edge deletion. The constraint $\Theta_{kk}=0$ removes self-prediction, and the intercepts are not penalized.
+
+The free symbols called $\mu_k$ in the objective are regression intercepts, not generally the marginal means of the original Gaussian vector. Profiling them out gives
+$$
+\widehat a_k=\overline X_k-\overline X_{-k}^{\mathsf T}\widehat\Theta_{-k,k},
+$$
+and replaces all columns by their centred versions in the squared-error terms. This is <profiling intercepts in nodewise regression>. Scaling predictors to comparable units can also help interpret a common penalty, although the displayed objective itself is well defined on the given data.
+
+The grouped <KKT conditions> make the sparsity mechanism precise. With centred residuals $r_k=\widetilde X_k-\widetilde X_{-k}\Theta_{-k,k}$, define
+$$
+c_{jk}=\left(\frac{\widetilde X_j^{\mathsf T}r_k}{n},\ \frac{\widetilde X_k^{\mathsf T}r_j}{n}\right).
+$$
+The <subdifferential> of the <Euclidean norm> at zero is its closed unit ball, and away from zero is $g/\|g\|_2$. Hence a minimizer satisfies
+$$
+\boxed{g_{jk}=0\Longrightarrow\|c_{jk}\|_2\leq\lambda,\qquad
+g_{jk}\ne0\Longrightarrow c_{jk}=\lambda\frac{g_{jk}}{\|g_{jk}\|_2}.}
+$$
+These are the <paired group Lasso optimality conditions>. They jointly threshold the two directional scores, matching the population fact that both directions represent the same edge.
+
+**Estimate the graph by including $\{j,k\}$ exactly when $\|\widehat g_{jk}\|_2>0$.** This graph is undirected by construction. The penalty does not impose $\Theta_{jk}=\Theta_{kj}$, nor does it mathematically require both coordinates of every selected pair to be nonzero. That distinction is appropriate because the population regression coefficients themselves need not have equal magnitudes. The fitted coefficient matrix is not automatically a symmetric positive definite <precision matrix>; its pair supports, rather than its entries as a precision estimate, supply the requested <conditional independence graph>.
