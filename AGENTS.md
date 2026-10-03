@@ -155,3 +155,5 @@ not:
 ```
 \Image[past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2018/iii/paper-316-rotating-frame.png]
 ```
+
+Let's have a `title=` for every Image. It is OK if it repeats the title built into the image itself when one is present.
