@@ -294,6 +294,26 @@ The first is $z\mapsto-1/z$ and has order two; the second is the nonidentity tra
 = Solution
 {parent=12G}
 
+Use the square-root encryption convention called the <Rabin-Williams scheme> in https://www.dpmms.cam.ac.uk/~twk10/Shan.pdf[the Cambridge course notes]. Choose distinct large primes $p,q\equiv3\pmod4$, keep them secret, and publish $N=pq$. A message block $m\in\{0,\ldots,N-1\}$ is encrypted as
+$$
+\boxed{c=m^2\pmod N.}
+$$
+Usually require $\gcd(m,N)=1$; otherwise the message itself reveals a factor. For a <quadratic residue> $c$ modulo $p$, <Euler criterion> gives $c^{(p-1)/2}=1$, so $c^{(p+1)/4}$ is a square root. Compute both signs modulo each prime, then combine the four sign choices by the <Chinese remainder theorem>. For a unit ciphertext there are four roots modulo $N$. Message redundancy identifies the intended root; squaring alone does not identify it uniquely.
+
+To reduce <integer factorization> to recovery of square roots, choose $x$ uniformly from $(\mathbb Z/N\mathbb Z)^\times$, compute $c=x^2$, and ask the alleged decoder for any root $y$ of $c$. Conditional on $c$, the secret $x$ is uniform among its four roots, even if the decoder deterministically chooses $y$. With probability $1/2$, $y\not\equiv\pm x\pmod N$. Then the signs agree modulo one prime and disagree modulo the other. Since
+$$
+N\mid(x-y)(x+y),\qquad\boxed{1<\gcd(x-y,N)<N,}
+$$
+the <greatest common divisor> factors $N$. Independent trials require an expected two successful oracle calls. If a trial's chosen $x$ is not a unit, $\gcd(x,N)$ already factors $N$. This establishes the computational equivalence between factorization and inversion of the squaring map; it does not claim that learning any partial information about a formatted message is equivalent to full inversion.
+
+For <coin flipping by telephone>, Alice publishes $N$ with its factorization secret. Bob chooses uniformly a unit $x$ with $0<x<N/2$ and sends $c=x^2\bmod N$. Alice computes the two roots $r_1,r_2$ in this half interval, selects a binary digit in which they differ, and announces a guess for that digit of Bob's $x$. Bob reveals $x$; Alice verifies its range and square, and their common bit records whether her guess was correct. Alice then reveals $p,q$, so Bob verifies the primes, product, and differing digit.
+
+Conditional on $c$, Bob's original root is equally likely to be $r_1$ or $r_2$, so Alice's guess succeeds with probability $1/2$. Bob cannot change his answer to the other half-interval root without finding a nontrivial second square root, which would factor $N$ by the argument above. Thus, assuming factorization is hard and the prescribed sampling and completed exchange are followed,
+$$
+\boxed{\mathbb P(\text{Alice wins})=\mathbb P(\text{Bob wins})=\tfrac12.}
+$$
+The revealed factors make the completed transcript checkable. The protocol does not prevent a party from aborting communication.
+
 = 13J
 {parent=Section II}
 {scope}
@@ -337,12 +357,63 @@ The <regression diagnostics> show a very large positive residual for Knock Hill 
 = Solution
 {parent=i}
 
+Extend $q$ by zero to $x<0$ and apply the assumed <Fourier inversion theorem>. For sufficiently regular, decaying data and $x>0$ this gives $q(x)=(2\pi)^{-1}\int_{\mathbb R}e^{ikx}\widehat q(k)\,dk$, with $\widehat q(k)=\int_0^\infty e^{-ikx}q(x)\,dx$. If $\operatorname{Im}k\leq0$, the exponential in this last integral is bounded in magnitude by one; it defines a holomorphic transform in the lower half-plane, with its boundary values on the real axis.
+
+The PDF orients $L$ from $i\infty$ down to zero, then from zero to $+\infty$. The function $e^{ikx}\widehat q(-k)$ is holomorphic in the upper half-plane, and for $x>0$ its exponential decays there. Close the two rays through a large first-quadrant arc. <Cauchy integral theorem> and <Jordan lemma> give
+$$
+\boxed{\int_L e^{ikx}\widehat q(-k)\,dk=0.}
+$$
+For example, if $q,q'$ are integrable, integration by parts gives $\widehat q(-k)=O(1/k)$ in that quadrant, which suffices for the arc estimate. Standard limiting arguments extend the identity to the admissible Fourier-inversion class. Adding any constant multiple of this zero integral to ordinary inversion proves
+$$
+\boxed{q(x)=\frac1{2\pi}\int_{\mathbb R}e^{ikx}\widehat q(k)\,dk+\frac c{2\pi}\int_L e^{ikx}\widehat q(-k)\,dk,\quad c\in\mathbb C.}
+$$
+The extra integral is a reflected, zero-supported contribution, not an extra datum.
+
 = ii
 {parent=14e}
 {scope}
 
 = Solution
 {parent=ii}
+
+Set $\Theta=e^{-ikx+ik^2t}$. Expanding the proposed <local relation> gives
+$$
+(\Theta q)_t-[\Theta(-kq+iq_x)]_x=\Theta(q_t-iq_{xx}).
+$$
+Thus its vanishing is exactly $iq_t+q_{xx}=0$. Integrating over $x>0$, using decay at infinity, yields
+$$
+\frac d{dt}\left(e^{ik^2t}\widehat q(k,t)\right)=e^{ik^2t}[kq(0,t)-iq_x(0,t)].
+$$
+Integrate in time and use the initial data to obtain the <global relation>
+$$
+\boxed{\widehat q(k,t)=e^{-ik^2t}\left[\widehat q_0(k)+k\widetilde g_0(k^2,t)-i\widetilde g_1(k^2,t)\right],\quad\operatorname{Im}k\leq0.}
+$$
+Here $\widetilde g_j(z,t)=\int_0^te^{iz\tau}g_j(\tau)\,d\tau$, with $g_0=q(0,\cdot)$ and $g_1=q_x(0,\cdot)$. In particular these finite-time transforms are entire in $z$.
+
+Write $F(k)=e^{ikx-ik^2t}$ and $B_\pm(k)=k\widetilde g_0(k^2,t)\pm i\widetilde g_1(k^2,t)$. Substitution into part (i), including replacing $k$ by $-k$ in the reflected transform, gives
+$$
+q(x,t)=\frac1{2\pi}\left\{\int_{\mathbb R}F\widehat q_0(k)\,dk+c\int_LF\widehat q_0(-k)\,dk+\int_{\mathbb R}FB_-\,dk-c\int_LFB_+\,dk\right\}.
+$$
+For the boundary integrands, rotate the negative real ray to the positive imaginary ray through the second quadrant. There are no singularities, and for $k=a+ib$ with $a\leq0,b\geq0$,
+$$
+\left|e^{ikx-ik^2(t-\tau)}\right|=e^{-bx+2ab(t-\tau)}\leq e^{-bx},\qquad0\leq\tau\leq t.
+$$
+After writing $FB_+$ as its finite time integral, this estimate and the usual smooth-data arc bounds justify the rotation. The positive real ray stays fixed and the new imaginary ray is directed downwards, giving
+$$
+\boxed{\int_{\mathbb R}FB_+\,dk=\int_LFB_+\,dk.}
+$$
+The same argument applies separately to the $\widetilde g_0$ and $\widetilde g_1$ terms. Thus the net boundary integral in the inversion formula is
+$$
+\int_LF\left[(1-c)k\widetilde g_0-i(1+c)\widetilde g_1\right]dk.
+$$
+For <Dirichlet boundary conditions> choose $c=-1$, eliminating the unknown normal derivative. For <Neumann boundary conditions> choose $c=+1$, eliminating the unknown boundary value. The resulting <unified transform> representations are
+$$
+\boxed{q_D(x,t)=\frac1{2\pi}\int_{\mathbb R}F\widehat q_0(k)\,dk+\frac1{2\pi}\int_LF[-\widehat q_0(-k)+2k\widetilde g_0(k^2,t)]\,dk,}
+$$
+$$
+\boxed{q_N(x,t)=\frac1{2\pi}\int_{\mathbb R}F\widehat q_0(k)\,dk+\frac1{2\pi}\int_LF[\widehat q_0(-k)-2i\widetilde g_1(k^2,t)]\,dk.}
+$$
+Each contains only the initial transform and the prescribed boundary transform. The signs depend on the PDF's orientation of $L$, checked above.
 
 = 15E
 {parent=Section II}
@@ -757,12 +828,41 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 = Solution
 {parent=i}
 
+The <Lp space> is the vector space of equivalence classes, modulo equality almost everywhere, of measurable functions $f$ with $\int|f|^p\,d\mu<\infty$, equipped with $\|f\|_p=(\int|f|^p\,d\mu)^{1/p}$. To prove it is a <Banach space>, let $(f_n)$ be Cauchy in this norm. Choose a subsequence $(f_{n_j})$ such that
+$$
+\|f_{n_{j+1}}-f_{n_j}\|_p\leq2^{-j}.
+$$
+Take measurable representatives and put $g_j=|f_{n_{j+1}}-f_{n_j}|$, $G_M=\sum_{j=1}^Mg_j$. The <Minkowski inequality> gives $\|G_M\|_p\leq\sum_j2^{-j}\leq1$. By the <monotone convergence theorem>, $G=\sum_{j\geq1}g_j$ satisfies $\int G^p\,d\mu\leq1$. Consequently $G$ is finite almost everywhere, and the telescoping series
+$$
+f=f_{n_1}+\sum_{j\geq1}(f_{n_{j+1}}-f_{n_j})
+$$
+converges absolutely almost everywhere. Define it arbitrarily on the null exceptional set. The bound $|f|\leq|f_{n_1}|+G$ puts $f$ in $L^p$.
+
+For the tails, monotone convergence and Minkowski again give
+$$
+\|f-f_{n_J}\|_p\leq\left\|\sum_{j\geq J}g_j\right\|_p\leq\sum_{j\geq J}2^{-j}\longrightarrow0.
+$$
+Since the original sequence is Cauchy, the <triangle inequality> then gives $f_n\to f$ in norm, not merely along the subsequence. Hence
+$$
+\boxed{L^p(E,\mathcal E,\mu)\text{ is complete for every }1\leq p<\infty.}
+$$
+This proof needs no finiteness or sigma-finiteness assumption on the measure space.
+
 = ii
 {parent=26k}
 {scope}
 
 = Solution
 {parent=ii}
+
+Suppose $X_n\to X$ in probability. For a fixed real $t$ and any $\delta>0$, split according to $|X_n-X|\leq\delta$. The supplied exponential inequality and the bound $|e^{itX_n}-e^{itX}|\leq2$ give
+$$
+|\varphi_{X_n}(t)-\varphi_X(t)|\leq\mathbb E|e^{itX_n}-e^{itX}|\leq|t|\delta+2\mathbb P(|X_n-X|>\delta).
+$$
+Let $n\to\infty$, then $\delta\downarrow0$. Thus the <characteristic functions> converge pointwise to $\varphi_X$. The <Lévy continuity theorem> states that pointwise convergence of characteristic functions to a characteristic function continuous at zero implies <convergence in distribution>. Every characteristic function is continuous at zero, so
+$$
+\boxed{X_n\xrightarrow{\mathbb P}X\ \Longrightarrow\ X_n\Rightarrow X.}
+$$
 
 = iii
 {parent=26k}
@@ -771,12 +871,32 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 = Solution
 {parent=iii}
 
+The independent standard <Gaussian random variables> have mean zero and variance one. For $m>n$, the mixed products have expectation zero, giving
+$$
+\|Y_m-Y_n\|_2^2=\mathbb E\left(\sum_{j=n+1}^m\alpha_jX_j\right)^2=\sum_{j=n+1}^m\alpha_j^2\longrightarrow0
+$$
+uniformly over $m>n$ as $n\to\infty$. Thus $(Y_n)$ is Cauchy in the <L2 space>. Its completeness, proved in (i), supplies
+$$
+\boxed{\exists Y\in L^2:\quad\|Y_n-Y\|_2\longrightarrow0.}
+$$
+Moreover $L^2$ convergence implies convergence of the means and second moments: $\mathbb EY=0$ and $\mathbb EY^2=\lim_n\sum_{j\leq n}\alpha_j^2=\sigma^2$.
+
 = iv
 {parent=26k}
 {scope}
 
 = Solution
 {parent=iv}
+
+Finite independent Gaussian sums are Gaussian; directly, multiplication of their <characteristic functions> gives
+$$
+\varphi_{Y_n}(t)=\prod_{j=1}^ne^{-\alpha_j^2t^2/2}=\exp\left(-\frac{t^2}{2}\sum_{j=1}^n\alpha_j^2\right)\longrightarrow e^{-\sigma^2t^2/2}.
+$$
+By <Markov inequality>, $\mathbb P(|Y_n-Y|>\epsilon)\leq\epsilon^{-2}\|Y_n-Y\|_2^2\to0$. Part (ii) makes the same sequence converge in distribution to $Y$, and the characteristic-function estimate there makes $\varphi_{Y_n}\to\varphi_Y$. Uniqueness of distributions determined by characteristic functions therefore yields
+$$
+\boxed{Y\sim N(0,\sigma^2).}
+$$
+If $\sigma^2=0$, all coefficients vanish and $Y=0$ almost surely; $N(0,0)$ here denotes that degenerate distribution.
 
 = 27J
 {parent=Section II}
@@ -790,12 +910,27 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 = Solution
 {parent=i}
 
+For the natural <filtration> $\mathcal F_t=\sigma(X_s:0\leq s\leq t)$, a nonnegative random time $\tau$ is a <stopping time> when $\{\tau\leq t\}\in\mathcal F_t$ for every $t\geq0$: whether it has occurred can be decided from the observations already made.
+
+For a time-homogeneous finite-state continuous-time <Markov chain>, the <strong Markov property> says that, on $\{\tau<\infty\}$, conditional on $\mathcal F_\tau$, the process $(X_{\tau+s})_{s\geq0}$ has the law of a fresh chain started at $X_\tau$ and is independent of the earlier history given that state. In particular, with transition matrix $P_s=e^{sQ}$,
+$$
+\boxed{\mathbb E[f(X_{\tau+s})\mid\mathcal F_\tau]=(P_sf)(X_\tau)\quad\text{on }\{\tau<\infty\}.}
+$$
+The property applies also to bounded functions of several future times or of the entire future path.
+
 = ii
 {parent=27j}
 {scope}
 
 = Solution
 {parent=ii}
+
+Let $Z_t=\int_0^tX(s)\,ds$ and set $a=q+\lambda$. Starting from $-1$, the first holding time has <exponential distribution> of rate $a$. Its joint density with a jump to $+1$ is $qe^{-au}\,du$. Before such a jump $Z$ decreases to $-u$, so the remaining rise needed to exceed $c$ is $c+u$. If instead the jump is to the absorbing state zero, the level stays nonpositive and never exceeds $c>0$.
+
+Conditioning on this first jump and using the <strong Markov property> gives
+$$
+\boxed{\psi_-(c)=\int_0^\infty qe^{-(q+\lambda)u}\psi_+(c+u)\,du.}
+$$
 
 = iii
 {parent=27j}
@@ -804,12 +939,31 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 = Solution
 {parent=iii}
 
+Starting from $+1$, the level reaches $c$ at time $c$ if the first holding time exceeds $c$. This has probability $e^{-ac}$; surviving beyond $c$ also makes the level strictly greater than $c$, as required by the strict event. A switch to $-1$ at time $u<c$ has density $qe^{-au}\,du$, leaves level $u$, and requires a later rise of $c-u$. Absorption before reaching $c$ cannot succeed. Therefore
+$$
+\boxed{\psi_+(c)=e^{-(q+\lambda)c}+\int_0^cqe^{-(q+\lambda)u}\psi_-(c-u)\,du.}
+$$
+Holding times have continuous distributions, so the single endpoint $u=c$ has no effect on the formula.
+
 = iv
 {parent=27j}
 {scope}
 
 = Solution
 {parent=iv}
+
+Assume $\psi_+(c)=e^{-Ac}$ with $A\geq0$. Part (ii) gives
+$$
+\psi_-(c)=\frac{q}{a+A}e^{-Ac},\qquad a=q+\lambda.
+$$
+Insert this into (iii). If $A\ne a$, the convolution becomes
+$$
+e^{-Ac}=e^{-ac}+\frac{q^2}{(a+A)(a-A)}(e^{-Ac}-e^{-ac}).
+$$
+Equality for all $c>0$ forces $q^2=(a+A)(a-A)$, hence $A^2=a^2-q^2=\lambda(2q+\lambda)$. The case $A=a$ would instead give $e^{-ac}$ times a nonzero term linear in $c$, so is impossible. Thus
+$$
+\boxed{A=\sqrt{\lambda(2q+\lambda)},\qquad\psi_+(c)=e^{-c\sqrt{\lambda(2q+\lambda)}},\quad\psi_-(c)=\frac{q}{q+\lambda+A}e^{-Ac}.}
+$$
 
 = v
 {parent=27j}
@@ -818,6 +972,16 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 = Solution
 {parent=v}
 
+A path that reaches level $c$ from below does so while in state $+1$, because $Z$ is continuous and has slope $X$. At the first crossing time, the residual exponential holding time is memoryless and the <strong Markov property> restarts the chain from $+1$. Conditional on ever reaching $c$, the probability of subsequently exceeding $c+d$ is therefore exactly the original probability of exceeding $d$. Hence
+$$
+\psi_+(c+d)=\psi_+(c)\psi_+(d),\qquad\psi_+(0+)=1.
+$$
+The zero-level limit is one because the initial $+1$ holding time is positive almost surely. Also $0<\psi_+(c)\leq1$, and it is nonincreasing. Consequently $h(c)=-\log\psi_+(c)$ is nondecreasing and additive. First $h$ is linear on positive rationals, then monotonicity gives the same result on all positive reals. Thus
+$$
+\boxed{\psi_+(c)=e^{-Ac}\text{ for some }A\geq0.}
+$$
+Absorption can be viewed as killing at rate $\lambda$, independent of sign changes at rate $q$; this ensures the maximum is finite almost surely and makes the positive decay rate found in (iv) natural.
+
 = 28K
 {parent=Section II}
 {scope}
@@ -825,6 +989,26 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 
 = Solution
 {parent=28K}
+
+For a <decision rule> $\delta$ and loss $L$, its <risk function> is $R(\theta,\delta)=\mathbb E_\theta L(\theta,\delta(X))$. It is an <admissible estimator> if there is no rule with risk everywhere no larger and somewhere strictly smaller. A <Bayes decision rule> minimizes $\int R(\theta,\delta)\,\pi(d\theta)$ for a specified prior $\pi$. A <minimax decision rule> minimizes $\sup_\theta R(\theta,\delta)$ over all rules.
+
+Here the <maximum-likelihood estimator> is $\delta_0(X)=X$, and its squared-error risk is
+$$
+\boxed{R(\theta,\delta_0)=\sum_{i=1}^3\mathbb E_\theta(X_i-\theta_i)^2=3.}
+$$
+Write the proposed estimator as $\delta(X)=X+g(X)$ with $g(x)=-x/\|x\|^2$ for $x\ne0$, and assign any value at zero, an event of probability zero. Expanding the squared loss gives
+$$
+R(\theta,\delta)=3+\mathbb E_\theta\|g(X)\|^2+2\sum_i\mathbb E_\theta[(X_i-\theta_i)g_i(X)].
+$$
+<Stein's lemma> for a unit-covariance normal vector says $\mathbb E[(X_i-\theta_i)g_i(X)]=\mathbb E[\partial_i g_i(X)]$ when the relevant derivatives and expectations are integrable. With $r=\|x\|$,
+$$
+\|g(x)\|^2=r^{-2},\qquad\sum_{i=1}^3\partial_ig_i(x)=-\frac3{r^2}+\frac{2\sum_i x_i^2}{r^4}=-r^{-2}.
+$$
+The singularity causes no difficulty in three dimensions: $r^{-2}$ is locally integrable against the volume element $r^2dr\,d\Omega$, and the normal tails control infinity. More formally apply Stein's lemma first to $g_\epsilon(x)=-x/(r^2+\epsilon)$, then let $\epsilon\downarrow0$; its squared norm and derivative magnitudes are bounded by constants times $r^{-2}$, so <dominated convergence> justifies the limit. Consequently
+$$
+\boxed{R(\theta,\delta)=3-\mathbb E_\theta\frac1{\|X\|^2}<3\quad\text{for every }\theta\in\mathbb R^3.}
+$$
+The expectation is finite and strictly positive. Thus this <James–Stein estimator> strictly dominates the maximum likelihood estimator, which is inadmissible under the specified squared-error loss.
 
 = 29J
 {parent=Section II}
@@ -838,6 +1022,15 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 = Solution
 {parent=i}
 
+Set $R=1+r$, $a=\mu-RS_0$, and $M=(\gamma V)^{-1}$. The terminal wealth is $W_1=Rw_0+\theta^T(S_1-RS_0)$, a <normal random variable> with mean $Rw_0+\theta^Ta$ and variance $\theta^TV\theta$. Its <moment-generating function> gives
+$$
+\mathbb E[-e^{-\gamma W_1}]=-\exp\left[-\gamma(Rw_0+\theta^Ta)+\frac{\gamma^2}{2}\theta^TV\theta\right].
+$$
+Maximizing this expected <exponential utility> is equivalent to maximizing the strictly concave <quadratic form> $\theta^Ta-(\gamma/2)\theta^TV\theta$. Since the nonsingular covariance $V$ is positive definite, the unique stationary point is the unique maximum:
+$$
+\boxed{\theta^*=M(\mu-RS_0),\qquad x^*=w_0-S_0^TM(\mu-RS_0).}
+$$
+
 = ii
 {parent=29j}
 {scope}
@@ -845,12 +1038,32 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 = Solution
 {parent=ii}
 
+With $x=0$, the <budget constraint> is $S_0^T\theta=w_0$. On this hyperplane the riskless term is constant, so maximize $\theta^T\mu-(\gamma/2)\theta^TV\theta$. The <Lagrange multiplier> equation gives $\theta=M(\mu-\eta S_0)$. If $S_0\ne0$, let $d=S_0^TMS_0>0$ and impose the budget constraint:
+$$
+\boxed{\eta=\frac{S_0^TM\mu-w_0}{S_0^TMS_0},\qquad\theta^*=M(\mu-\eta S_0),\qquad x^*=0.}
+$$
+Positive definiteness makes the objective strictly concave on the hyperplane, proving this stationary point is the global constrained optimum. If $S_0=0$, the cash-free constraint is feasible only when $w_0=0$; in that degenerate case the optimum is $M\mu$. The displayed quotient, including the one in the question, presupposes $S_0\ne0$.
+
 = iii
 {parent=29j}
 {scope}
 
 = Solution
 {parent=iii}
+
+Assume $S_0\ne0$ and keep $d=S_0^TMS_0>0$, $\eta=(S_0^TM\mu-w_0)/d$. The constraint $x\geq0$ is $S_0^T\theta\leq w_0$. If the unrestricted optimum in (i) lies in this half-space, it remains optimal. Its cash holding is
+$$
+x_{\rm free}=w_0-S_0^TM\mu+Rd=d(R-\eta).
+$$
+Thus it has strictly positive cash precisely when $\eta<R$. If $\eta>R$, the free optimum violates the constraint, so strict concavity and the <Karush-Kuhn-Tucker conditions> put the optimum on the boundary, where it is the cash-free solution in (ii). At equality the two solutions coincide. Therefore
+$$
+\boxed{\theta^*=M[\mu-\max(R,\eta)S_0],\qquad x^*=\max(0,w_0-S_0^TM\mu+Rd).}
+$$
+In particular,
+$$
+\boxed{x^*=0\iff\frac{S_0\cdot(\gamma V)^{-1}\mu-w_0}{S_0\cdot(\gamma V)^{-1}S_0}\geq1+r.}
+$$
+The multiplier for the inequality is $\max(0,\eta-R)$, explicitly checking the complementary-slackness condition.
 
 = 30A
 {parent=Section II}
@@ -864,12 +1077,28 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 = Solution
 {parent=i}
 
+In phase-space coordinates $z=(x,v)$, the <characteristic equations for a transport equation> are the <Hamilton equations>
+$$
+\dot X=\nabla_vH(X,V),\qquad\dot V=-\nabla_xH(X,V),\qquad (X(0),V(0))=(\xi,\eta).
+$$
+Smoothness of $H$ gives a unique local <Hamiltonian flow> $\Phi_t(\xi,\eta)=(X(t),V(t))$. Along it the chain rule gives $d[f(X,V,t)]/dt=0$. Thus
+$$
+\boxed{f(x,v,t)=f_I(\Phi_{-t}(x,v)).}
+$$
+The inverse is the backward autonomous flow, so this formula defines the unique local classical solution wherever the characteristic reaches the initial hypersurface. A smooth Hamiltonian on all of $\mathbb R^{2n}$ need not have a globally complete flow; the formula is understood on the interval and region where both flows exist. A common global time interval requires the corresponding completeness or growth assumption.
+
 = ii
 {parent=30a}
 {scope}
 
 = Solution
 {parent=ii}
+
+Every value of the solution is transported unchanged from its initial characteristic endpoint. Therefore the formula from (i) immediately gives
+$$
+\boxed{f_I\geq0\ \Longrightarrow\ f(x,v,t)=f_I(\Phi_{-t}(x,v))\geq0.}
+$$
+More generally the <Hamiltonian transport equation> preserves the range of the initial values while its characteristic solution exists: it neither creates negative values nor changes values by a source term.
 
 = iii
 {parent=30a}
@@ -878,12 +1107,28 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 = Solution
 {parent=iii}
 
+The characteristic vector field $b=(\nabla_vH,-\nabla_xH)$ is a <divergence-free vector field>:
+$$
+\nabla_z\cdot b=\sum_{i=1}^n(H_{x_iv_i}-H_{v_ix_i})=0.
+$$
+The <Jacobian determinant> $J_t=\det D\Phi_t$ obeys $\dot J_t=(\nabla\cdot b)(\Phi_t)J_t=0$, with $J_0=1$. Thus the flow preserves phase-space volume, the <Liouville theorem in Hamiltonian mechanics>. Changing variables $(x,v)=\Phi_t(\xi,\eta)$ and using (i) gives
+$$
+\boxed{\int_{\mathbb R^{2n}}F(f(x,v,t))\,dx\,dv=\int_{\mathbb R^{2n}}F(f_I(\xi,\eta))\,d\xi\,d\eta.}
+$$
+This applies on intervals where the flow is a diffeomorphism of the phase space and the integrals are defined; for finite conservation statements require integrability. For instance compactly supported initial data and $F(0)=0$ give the usual setting. An arbitrary smooth $F$ need not make these integrals finite on infinite-volume space, and merely smooth $H$ does not exclude escape of characteristics to infinity. Equivalently $F(f)_t+\nabla_z\cdot[bF(f)]=0$, with no flux through infinity, proves the same <Casimir invariant of a transport equation> conservation.
+
 = iv
 {parent=30a}
 {scope}
 
 = Solution
 {parent=iv}
+
+If $H=a(v)$, the characteristics have constant velocity variable $V(t)=\eta$ and $X(t)=\xi+t\nabla a(\eta)$. This flow is globally defined for every finite $t$ at each $(\xi,\eta)$. Therefore
+$$
+\boxed{f(x,v,t)=f_I(x-t\nabla a(v),v).}
+$$
+Direct differentiation gives $f_t+\nabla a(v)\cdot\nabla_xf=0$ and the initial value at $t=0$.
 
 = 31A
 {parent=Section II}
@@ -893,6 +1138,26 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 = Solution
 {parent=31A}
 
+The <asymptotic expansion> means that for every fixed integer $M\geq0$,
+$$
+f(n)-\sum_{k=0}^Ma_kn^{-2k}=o(n^{-2M})\qquad(n\to\infty).
+$$
+It concerns the successive finite truncations; the infinite series need not converge. Because the assertion holds at every order, one may equivalently bound the remainder after order $M$ by $O(n^{-2M-2})$.
+
+Put $h(t)=(1+t^2)^{-1}$ and $b=2\pi$. For integer $n$, $\sin(nb)=\sin0=0$ and $\cos(nb)=\cos0=1$. Two <integrations by parts> give
+$$
+I(n)=\frac{h'(b)-h'(0)}{n^2}-\frac1{n^2}\int_0^bh''(t)\cos(nt)\,dt.
+$$
+Repeating exactly $M$ times gives
+$$
+I(n)=\sum_{k=1}^M\frac{(-1)^{k-1}[h^{(2k-1)}(b)-h^{(2k-1)}(0)]}{n^{2k}}+\frac{(-1)^M}{n^{2M}}\int_0^bh^{(2M)}(t)\cos(nt)\,dt.
+$$
+All derivatives are integrable on this compact interval. The <Riemann-Lebesgue lemma> says their oscillatory integrals tend to zero, proving the expansion at every order, including $a_0=0$. Since $h$ is even, its odd derivatives vanish at zero. Now $h'(t)=-2t/(1+t^2)^2$ and $h'''(t)=24t(1-t^2)/(1+t^2)^4$, so
+$$
+\boxed{a_0=0,\qquad a_1=-\frac{4\pi}{(1+4\pi^2)^2},\qquad a_2=\frac{48\pi(4\pi^2-1)}{(1+4\pi^2)^4}.}
+$$
+The restriction to integer $n$ is essential to this even-power endpoint expansion: otherwise the first integration by parts has a generally nonzero $n^{-1}$ boundary term.
+
 = 32A
 {parent=Section II}
 {scope}
@@ -901,17 +1166,64 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 = Solution
 {parent=32A}
 
+A Hamiltonian system on a $2d$-dimensional <symplectic manifold> is <Liouville integrable> when it has $d$ first integrals, including the Hamiltonian, whose differentials are independent on a dense regular region and which pairwise have zero <Poisson bracket>. The <Arnold-Liouville theorem> states that a compact connected regular common level set is a $d$-torus; near it there are <action-angle variables> $(I,\theta)$ in which the Hamiltonian depends only on $I$ and the motion is $\dot I=0$, $\dot\theta=\nabla_IH$. Without compactness, the torus conclusion needs modification.
+
+Here $q_1$ is a <cyclic coordinate>, so $p_1=\ell$ is conserved and $\{H,p_1\}=0$. The <Hamilton equations> are
+$$
+\dot q_1=\frac{p_1}{q_2^2},\quad\dot q_2=p_2,\quad\dot p_1=0,\quad\dot p_2=\frac{p_1^2}{q_2^3}-\frac{k}{q_2^2}.
+$$
+The differentials $dH,dp_1$ are independent away from the circular-orbit critical set, establishing integrability. Put $r=q_2$; on a fixed angular-momentum level,
+$$
+p_2^2=2E+\frac{2k}{r}-\frac{\ell^2}{r^2}.
+$$
+For a bounded noncollision orbit require $\ell\ne0$ and $-k^2/(2\ell^2)<E<0$. Its two turning radii are
+$$
+\boxed{\alpha=\frac{k-\sqrt{k^2+2E\ell^2}}{-2E},\qquad\beta=\frac{k+\sqrt{k^2+2E\ell^2}}{-2E}.}
+$$
+They are positive and $\alpha<\beta$, and $p_2^2=(-2E)(r-\alpha)(\beta-r)/r^2$. In terms of $u=1/r$ and the angular coordinate, eliminating time gives $u''+u=k/\ell^2$. Thus
+$$
+r=\frac{\ell^2}{k[1+e\cos(q_1-q_*)]},\qquad e^2=1+\frac{2E\ell^2}{k^2}<1.
+$$
+After an angular change of $2\pi$ the phase-space state returns to itself, and the elapsed time is finite because $r$ is bounded away from zero and infinity. This proves periodicity; a torus alone would only guarantee quasiperiodic motion. At $E=-k^2/(2\ell^2)$ the orbit is circular and remains periodic. For $E\geq0$ the allowed radial motion is unbounded. The collision case $\ell=0$ reaches the excluded boundary $r=0$ and is not a periodic orbit in the given phase space.
+
+With the usual action convention $(2\pi)^{-1}\oint p\,dq$, the angular cycle gives $I_1=\ell$, and the two radial legs give
+$$
+\boxed{I_1=p_1,\qquad I_2=\gamma\int_\alpha^\beta\frac{\sqrt{(r-\alpha)(\beta-r)}}r\,dr,\qquad\gamma=\frac{\sqrt{-2E}}\pi.}
+$$
+For completeness, substitute $r=(\alpha+\beta)/2+(\beta-\alpha)\cos\theta/2$ to evaluate the integral as $\pi[(\alpha+\beta)/2-\sqrt{\alpha\beta}]$. Therefore $I_2=k/\sqrt{-2E}-|\ell|$ and $H=-k^2/[2(I_2+|I_1|)^2]$. The two frequencies have equal magnitude, consistent with the closed Kepler orbits. The circular limit has $I_2=0$ and $\alpha=\beta$.
+
 = 33D
 {parent=Section II}
 {scope}
 {title2=Principles of Quantum Mechanics}
 
-= i
-{parent=33d}
-{scope}
-
 = Solution
-{parent=i}
+{parent=33D}
+
+On the <tensor product> state space, the total <angular momentum> is $\mathbf J=\mathbf J^{(1)}\otimes I+I\otimes\mathbf J^{(2)}$, conventionally abbreviated $\mathbf J^{(1)}+\mathbf J^{(2)}$. Operators on different factors commute. Define $J_\pm^{(i)}=J_1^{(i)}\pm iJ_2^{(i)}$. Expanding the square gives
+$$
+\boxed{\mathbf J^2=(\mathbf J^{(1)})^2+(\mathbf J^{(2)})^2+2J_3^{(1)}J_3^{(2)}+J_+^{(1)}J_-^{(2)}+J_-^{(1)}J_+^{(2)}.}
+$$
+The first three terms commute with $J_3=J_3^{(1)}+J_3^{(2)}$. In a mixed term one subsystem's magnetic quantum number increases and the other's decreases, so its commutator with total $J_3$ is zero. Hence $\boxed{[\mathbf J^2,J_3]=0}$.
+
+Use the standard identities $[J_3,J_\pm]=\pm J_\pm$ and $J_\pm|j,m\rangle=\sqrt{(j\mp m)(j\pm m+1)}|j,m\pm1\rangle$. The PDF has the commutator in the reversed order with unchanged sign and prints $m+1$ also for lowering; these are sign/label slips. The standard identities are consistent with the meaning of raising and lowering and are used here.
+
+Put $s=j_1+j_2$. The unique product state of magnetic quantum number $-s$ is
+$$
+\boxed{|s,-s\rangle=|j_1,-j_1\rangle|j_2,-j_2\rangle.}
+$$
+For $j_1,j_2>0$, define the orthonormal product states $|a\rangle=|j_1,-j_1+1\rangle|j_2,-j_2\rangle$ and $|b\rangle=|j_1,-j_1\rangle|j_2,-j_2+1\rangle$. Raising the preceding state gives
+$$
+|s,-s+1\rangle=\sqrt{\frac{j_1}s}|a\rangle+\sqrt{\frac{j_2}s}|b\rangle.
+$$
+The normalized orthogonal combination is annihilated by $J_-$, because its two lowering amplitudes cancel. It is consequently the lowest-weight state with $J=s-1$:
+$$
+\boxed{|s-1,-s+1\rangle=\sqrt{\frac{j_2}s}|a\rangle-\sqrt{\frac{j_1}s}|b\rangle,}
+$$
+up to an overall phase. For $j_1=3,j_2=1$, the outcome $m_1=-3,m_2=0$ is the $|b\rangle$ component. The <Born rule> therefore gives
+$$
+\boxed{\mathbb P(m_1=-3,m_2=0\mid|3,-3\rangle)=\frac34.}
+$$
 
 = 34E
 {parent=Section II}
@@ -921,6 +1233,35 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 = Solution
 {parent=34E}
 
+With outgoing-channel index first, the <scattering matrix> convention is $\psi_b\sim I_b+\sum_{a=\pm}S_{ab}O_a$ as $|x|\to\infty$. An even potential commutes with <parity>, so its incoming even and odd channels remain separate: $\boxed{S_{+-}=S_{-+}=0}$.
+
+For the odd channel, on $0<x<a$ write $\psi_-(x)=C\sin(kx)$, while on $x>a$ its prescribed normalization is $e^{-ikx}-S_{--}e^{ikx}$. A <delta potential> keeps the wavefunction continuous and imposes $\psi'(a+)-\psi'(a-)=U_0\psi(a)$, with $U_0=2mV_0/\hbar^2$. Thus the exterior logarithmic derivative is $k\cot(ka)+U_0$. Matching gives
+$$
+S_{--}=e^{-2ika}\frac{k\cot(ka)+U_0+ik}{k\cot(ka)+U_0-ik}.
+$$
+Multiplying numerator and denominator by $2\sin(ka)$ and using exponential forms yields
+$$
+\boxed{S_{--}(k)=e^{-2ika}\frac{(2k-iU_0)e^{ika}+iU_0e^{-ika}}{(2k+iU_0)e^{-ika}-iU_0e^{ika}}.}
+$$
+For real $k,U_0$, the numerator of the fraction is the complex conjugate of its denominator, and the prefactor has modulus one. Hence $\boxed{|S_{--}|^2=1}$, conservation of probability flux in this single elastic parity channel. In particular the minus sign built into $O_-$ makes the free odd-channel matrix element equal to one.
+
+For an odd <bound state>, continue to $k=i\kappa$, $\kappa>0$. A pole means the outgoing solution is exponentially decaying on both sides. Its denominator vanishes when
+$$
+\kappa[1+\coth(\kappa a)]+U_0=0,\qquad\boxed{2\kappa=-U_0(1-e^{-2\kappa a}).}
+$$
+The function $2\kappa/(1-e^{-2\kappa a})$ rises strictly from $1/a$ to infinity: differentiation reduces positivity to $e^{2\kappa a}>1+2\kappa a$. Thus there is exactly one positive solution if $-U_0>1/a$, and none otherwise. The numerator does not vanish at that solution, so the pole is genuine. Consequently
+$$
+\boxed{\text{exactly one odd bound state exists iff }U_0a<-1,\quad E=-\hbar^2\kappa^2/(2m).}
+$$
+At equality the zero-energy threshold solution is not square integrable.
+
+For repulsive strong barriers put $u=U_0a\gg1$ and $z=ka=\pi+\delta$. The pole equation is $z\cot z+u-iz=0$. Since $\cot\delta=\delta^{-1}-\delta/3+O(\delta^3)$, multiplication by $\delta$ gives $\pi+(u+1-i\pi)\delta+O(\delta^2)=0$. Iterating in $u^{-1}$ yields
+$$
+\delta=-\frac\pi u+\frac{\pi-i\pi^2}{u^2}+O(u^{-3}),\qquad
+\boxed{\alpha\sim-\frac\pi{U_0a},\qquad\gamma\sim\left(\frac\pi{U_0a}\right)^2.}
+$$
+This lower-half-plane <resonance pole> is an odd standing wave trapped between the barriers and slowly leaking by tunnelling. Its complex energy is $E_R-i\Gamma/2$, with $\Gamma\simeq2\hbar^2\pi\gamma/(ma^2)>0$. The factor $e^{-iEt/\hbar}$ then decays rather than grows; $\gamma>0$ encodes the positive escape rate.
+
 = 35D
 {parent=Section II}
 {scope}
@@ -928,6 +1269,33 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 
 = Solution
 {parent=35D}
+
+The <microcanonical ensemble> describes an isolated system at fixed energy, volume and particle number. The <canonical ensemble> describes fixed particle number and volume with heat exchange at a prescribed temperature. The <grand canonical ensemble> additionally allows particles to exchange with a reservoir, prescribing temperature, volume and chemical potential. Their respective equilibrium probabilities are uniform on the accessible energy shell, proportional to $e^{-\beta E_n}$, and proportional to $e^{-\beta(E_n-\mu N_n)}$. For stable short-range systems in the <thermodynamic limit>, concentration of relative energy and particle-number fluctuations and concavity of entropy make their bulk predictions equivalent; phase coexistence or nonadditive interactions require care.
+
+For the microcanonical case restrict the allowed states to the fixed-energy shell of size $\Omega$, imposing $p_n=0$ outside it. Maximize the <Gibbs entropy> subject to $\sum p_n=1$. A <Lagrange multiplier> gives $-k_B(\log p_n+1)+\lambda=0$ on the shell, so
+$$
+\boxed{p_n=1/\Omega\text{ on the shell},\qquad S=k_B\log\Omega.}
+$$
+For the canonical case impose both normalization and $\sum p_nE_n=U$. Stationarity of $-k_B\sum p_n\log p_n-\lambda(\sum p_n-1)-k_B\beta(\sum p_nE_n-U)$ gives $p_n\propto e^{-\beta E_n}$. Thus
+$$
+\boxed{p_n=e^{-\beta E_n}/Z,\qquad Z=\sum_ne^{-\beta E_n},\qquad\beta=(k_BT)^{-1}.}
+$$
+The last identification follows from $\partial S/\partial U=1/T$. Entropy is strictly concave in the probabilities, so these stationary distributions are maxima.
+
+For the independent three-level particles, put $z=\epsilon/(k_BT)$ and $Z_1=1+2\cosh z$. The full <partition function> is $Z_1^N$ because the particles occupy labeled lattice sites. Differentiation gives
+$$
+\boxed{\overline E=-\frac{2N\epsilon\sinh z}{1+2\cosh z},\qquad C=Nk_Bz^2\frac{2\cosh z+4}{(1+2\cosh z)^2}.}
+$$
+The heat capacity also equals $N\operatorname{Var}(E_1)/(k_BT^2)$, confirming positivity. As $T\to+\infty$, the three occupations become equal:
+$$
+\boxed{\overline E\sim-\frac{2N\epsilon^2}{3k_BT}\to0,\qquad C\sim\frac{2N\epsilon^2}{3k_BT^2}\to0.}
+$$
+As $T\downarrow0$, all particles occupy their unique lowest state:
+$$
+\boxed{\overline E=-N\epsilon+N\epsilon e^{-z}+O(e^{-2z}),\qquad C\sim Nk_Bz^2e^{-z}\to0.}
+$$
+
+A <negative temperature> is possible because the total energy is bounded above. An equilibrated population inversion has more particles at $+\epsilon$ than at $-\epsilon$. For example probabilities $(p_-,p_0,p_+)=(1,2,4)/7$ correspond to $T=-\epsilon/(k_B\log2)$ and mean energy $3N\epsilon/7$. This is a macroscopic occupation pattern; an isolated individual microstate is not itself assigned a temperature. At the positive zero-temperature limit the ground state is unique, so the entropy tends to zero: **the system obeys the third law of thermodynamics**. The negative-temperature branch likewise approaches the unique highest-energy state as $T\to0^-$; it does not introduce residual ground-state entropy.
 
 = 36C
 {parent=Section II}
@@ -937,6 +1305,34 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 = Solution
 {parent=36C}
 
+In the <Landau-Ginzburg theory> functional, $B^2/(2\mu_0)$ is the magnetic field energy density; the covariant-gradient term is the carrier kinetic energy including phase gradients and electromagnetic coupling. The terms $\alpha|\psi|^2+\beta|\psi|^4$ give the local condensation energy. With the normalization in the question, $n=|\psi|^2$ is the carrier density.
+
+For a uniform field-free equilibrium, minimize $\alpha n+\beta n^2$ over $n\geq0$. Stability for large $n$ requires $\beta>0$, and a nonzero minimum requires $\alpha<0$. Therefore
+$$
+\boxed{n=-\frac\alpha{2\beta}>0.}
+$$
+The factor two follows from the question's quartic coefficient $\beta$, rather than a convention using $\beta/2$.
+
+Let $D_A=-i\hbar\nabla-qA$. Under the <gauge transformation>,
+$$
+D_{A+\nabla\Lambda}(e^{iq\Lambda/\hbar}\psi)=e^{iq\Lambda/\hbar}D_A\psi.
+$$
+Its squared magnitude is unchanged, $|\psi|$ is unchanged, and $B=\nabla\times A$ is unchanged. Thus the full energy has <gauge invariance>.
+
+For uniform $n$, write $\psi=\sqrt n\,e^{i\phi}$. The kinetic density is $n(\hbar\nabla\phi-qA)^2/(2m)$. Varying $A$ with compactly supported variations and integrating the magnetic term by parts gives
+$$
+\delta E=\int\left[\frac1{\mu_0}\nabla\times B+\frac{nq^2}{m}\left(A-\frac\hbar q\nabla\phi\right)\right]\cdot\delta A\,d^3x.
+$$
+At a minimum its coefficient vanishes, giving the <London equation>
+$$
+\boxed{\nabla\times B=-\frac{\mu_0q^2n}{m}\left(A-\frac\hbar q\nabla\phi\right).}
+$$
+Taking another curl, using $\nabla\cdot B=0$ and a smooth phase so $\nabla\times\nabla\phi=0$, yields
+$$
+\boxed{\nabla^2B=\frac B{\lambda_L^2},\qquad\lambda_L=\sqrt{\frac{m}{\mu_0q^2n}}.}
+$$
+For a planar surface this has the decaying solution $B(x)=B(0)e^{-x/\lambda_L}$ inside the material; the growing solution is excluded by boundedness in the bulk. Hence magnetic fields penetrate only a surface layer of thickness $\lambda_L$ and vanish deep in the macroscopic bulk, the <Meissner effect>. This conclusion uses the uniform-density, smooth-phase setting; a vortex has a singular phase and a nonuniform core and is outside those assumptions.
+
 = 37D
 {parent=Section II}
 {scope}
@@ -944,6 +1340,28 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 
 = Solution
 {parent=37D}
+
+Using the affine parameter and the normalization requested for the <geodesic Lagrangian>,
+$$
+\boxed{L=-2\dot u\dot v+\dot x^2+\dot y^2-2H(u,x,y)\dot u^2.}
+$$
+The coordinate $v$ is cyclic. Its <Euler-Lagrange equation> gives $\ddot u=0$. The transverse coordinate equations give $\ddot x+H_x\dot u^2=0$ and $\ddot y+H_y\dot u^2=0$. For the remaining coordinate,
+$$
+\frac{\partial L}{\partial\dot u}=-2\dot v-4H\dot u,\qquad\frac{\partial L}{\partial u}=-2H_u\dot u^2.
+$$
+Its Euler-Lagrange equation, after using $\ddot u=0$, is
+$$
+\boxed{\ddot u=0,\quad\ddot x+H_x\dot u^2=0,\quad\ddot y+H_y\dot u^2=0,\quad\ddot v+2(H_x\dot x+H_y\dot y)\dot u+H_u\dot u^2=0.}
+$$
+Compare with $\ddot x^a+\Gamma^a_{bc}\dot x^b\dot x^c=0$. With indices $(1,2,3,4)=(u,v,x,y)$, the complete list of nonzero <Christoffel symbols>, including symmetry of the lower indices, is
+$$
+\boxed{\Gamma^2_{11}=H_u,\quad\Gamma^2_{13}=\Gamma^2_{31}=H_x,\quad\Gamma^2_{14}=\Gamma^2_{41}=H_y,\quad\Gamma^3_{11}=H_x,\quad\Gamma^4_{11}=H_y.}
+$$
+All contracted symbols $\Gamma^d_{ad}$ vanish. For $R_{11}$, the first derivative term in the supplied <Ricci tensor> formula is $\partial_vH_u+\partial_xH_x+\partial_yH_y=H_{xx}+H_{yy}$, since $H$ is independent of $v$. The second derivative term vanishes because the trace symbols vanish. The third term vanishes for the same reason, and every possible product in the last term requires a zero symbol with upper index $1$ or a lower $2$, so it also vanishes. Thus
+$$
+\boxed{R_{uu}=H_{xx}+H_{yy},\qquad R_{ab}=0\text{ for the other components}.}
+$$
+The <vacuum Einstein equations> with zero cosmological constant require $R_{ab}=0$, and therefore $\boxed{H_{xx}+H_{yy}=0}$. The wave profile of this <plane-fronted gravitational wave> is harmonic in the transverse plane for each fixed $u$.
 
 = 38B
 {parent=Section II}
@@ -953,6 +1371,39 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 = Solution
 {parent=38B}
 
+The outer fluid is at rest, so its pressure is independent of $x$ and $dP/dx=0$. Using <incompressibility>, the longitudinal <boundary-layer equation> becomes the conservative momentum equation
+$$
+\partial_x(\rho u^2)+\partial_y(\rho uv-\mu u_y)=0.
+$$
+Integrating across the jet and using $u,u_y\to0$ and $uv\to0$ at both transverse infinities gives
+$$
+\boxed{\frac{dF}{dx}=0,\qquad F=\rho\int_{-\infty}^{\infty}u^2\,dy.}
+$$
+Put $\nu=\mu/\rho$. The momentum-flux scaling gives $U^2\delta\sim F/\rho$, while balancing longitudinal convection with transverse viscous diffusion gives $U^2/x\sim\nu U/\delta^2$. Eliminating $U$ or $\delta$ yields
+$$
+\boxed{\delta\propto x^{2/3},\qquad U\propto x^{-1/3}.}
+$$
+
+Choose the precise width convention $U\delta^2=\nu x$ and take $U$ to be the centre-line velocity. For the <self-similar solution> with streamfunction $\psi=U\delta f(\eta)$, $\eta=y/\delta$,
+$$
+u=U f',\qquad v=\frac{U\delta}{3x}(2\eta f'-f),\qquad u_x=\frac Ux\left(-\frac{f'}3-\frac{2\eta f''}3\right).
+$$
+The $\eta f'f''$ terms cancel in $uu_x+vu_y$, leaving $-U^2[(f')^2+ff'']/(3x)$. Since $u_{yy}=Uf'''/\delta^2$, the dimensionless profile equation is
+$$
+\boxed{f'''+\frac13\left(ff''+(f')^2\right)=0.}
+$$
+For a symmetric jet choose its streamfunction zero at the axis. The boundary and amplitude conditions are $f(0)=0$, $f''(0)=0$, $f'(0)=1$, and $f'(\eta)\to0$ as $\eta\to\pm\infty$, with $f$ bounded and $f''\to0$. The momentum normalization is
+$$
+\boxed{F=\rho U^2\delta J,\qquad J=\int_{-\infty}^{\infty}[f'(\eta)]^2\,d\eta.}
+$$
+It determines the dimensional constants in $U,\delta$; one should not independently impose $J=1$ after fixing both the centre-line and width conventions.
+
+Indeed integrating the profile equation once and using its far-field conditions gives $f''+ff'/3=0$. With the axis conditions, $f'=1-f^2/6$, and therefore
+$$
+\boxed{f(\eta)=\sqrt6\tanh(\eta/\sqrt6),\qquad f'(\eta)=\operatorname{sech}^2(\eta/\sqrt6),\qquad J=\frac{4\sqrt6}{3}.}
+$$
+Consequently $\delta=(\rho J\nu^2/F)^{1/3}x^{2/3}$ and $U=[F^2/(\rho^2J^2\nu)]^{1/3}x^{-1/3}$. The transverse velocity describes entrainment; the profile need not have $f(\infty)=0$ when its axial velocity vanishes there.
+
 = 39B
 {parent=Section II}
 {scope}
@@ -960,6 +1411,33 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 
 = Solution
 {parent=39B}
+
+Use an <acoustic velocity potential> $\varphi$ with $\mathbf u=\nabla\varphi$ and $p'=-\rho_0\varphi_t$. It obeys the <wave equation> $\varphi_{tt}=c_0^2\nabla^2\varphi$. The rigid walls require zero normal velocity, hence <Neumann boundary conditions> on the transverse variables. Separation gives
+$$
+\varphi=\operatorname{Re}\left\{A e^{i(kx-\omega t)}\cos(my/\alpha)\cos(nz/\beta)\right\},\qquad m,n\in\{0,1,2,\ldots\}.
+$$
+Define $\kappa_{mn}^2=m^2/\alpha^2+n^2/\beta^2$. The <dispersion relation>, <phase velocity> and <group velocity> for positive $k,\omega$ are
+$$
+\boxed{\omega=c_0\sqrt{k^2+\kappa_{mn}^2},\qquad c=\frac\omega k=c_0\sqrt{1+\frac{\kappa_{mn}^2}{k^2}},\qquad c_g=\frac{c_0k}{\sqrt{k^2+\kappa_{mn}^2}}=\frac{c_0^2}{c}.}
+$$
+For a dispersive mode, $\omega(0)=c_0\kappa_{mn}>0$, $c$ decreases from infinity to $c_0$, and $c_g$ increases from zero to $c_0$. The $(0,0)$ mode has $\omega=c_0k$ and $c=c_g=c_0$: it propagates without dispersion.
+
+\Image[paper-1-waveguide-dispersion.png]
+{title=Acoustic waveguide dispersion and velocities; a nonzero transverse wavenumber is compared with the nondispersive mode}
+
+Let $\mathcal A=\pi^2\alpha\beta$ be the cross-sectional area. The appropriate time and cross-sectional average at fixed $x$ is
+$$
+\langle h\rangle=\frac{\omega}{2\pi\mathcal A}\int_0^{2\pi/\omega}\int_0^{\pi\alpha}\int_0^{\pi\beta}h\,dz\,dy\,dt.
+$$
+Write $F_{mn}(y,z)$ for the product of cosines and $Q=\mathcal A^{-1}\int F_{mn}^2\,dy\,dz$. Its transverse eigenvalue and wall conditions give $\int|\nabla_\perp F_{mn}|^2=\kappa_{mn}^2\int F_{mn}^2$ by integration by parts. The <kinetic energy density> and compressive acoustic energy density are $\rho_0|\mathbf u|^2/2$ and $(p')^2/(2\rho_0c_0^2)$. Time averaging each squared real oscillation contributes a factor $1/2$, so
+$$
+\boxed{\langle E_{\rm kin}\rangle=\frac{\rho_0|A|^2Q}{4}(k^2+\kappa_{mn}^2)=\frac{\rho_0|A|^2Q\omega^2}{4c_0^2}=\langle E_{\rm comp}\rangle.}
+$$
+This holds for every dispersive mode, and also for the zero mode.
+
+For localized smooth initial data, a dispersive mode contains integrals of the form $\int a(k)e^{it[kV-\omega(k)]}\,dk$ along $x=Vt$. When $0<V<c_0$, a stationary point exists at $k_* =\kappa_{mn}V/\sqrt{c_0^2-V^2}$. It is nondegenerate because $\omega''(k)=c_0\kappa_{mn}^2/(k^2+\kappa_{mn}^2)^{3/2}>0$. The <stationary phase method> therefore gives an oscillatory amplitude $O(t^{-1/2})$ for each excited dispersive mode, and for their sum under sufficient mode summability.
+
+At $V=c_0$, no dispersive mode has a finite stationary wavenumber; with smooth localized data these contributions decay, while the nondispersive right-moving pulse retains its original amplitude. Thus a general disturbance with nonzero zero-mode component has **an undiminished $O(1)$ pulse on the sound-speed ray**. If that component is absent, this surviving contribution is absent too. For $V>c_0$, <finite propagation speed> puts a compactly supported initial disturbance outside this ray for all sufficiently large $t$, so **the field is eventually zero**. Rapidly localized, rather than strictly compact, data give a correspondingly negligible tail instead.
 
 = 40A
 {parent=Section II}
@@ -973,6 +1451,16 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 = Solution
 {parent=i}
 
+Take $b$ to be the vector of $f_{ij}$ and absorb $h^{-2}$ into $A$. Its diagonal entry is $-10/(3h^2)$, each axial-neighbour entry is $2/(3h^2)$ and each diagonal-neighbour entry is $1/(6h^2)$. Since these weights agree in both directions, $A$ is a <symmetric matrix>.
+
+Extend a grid vector $u$ by zero to the whole integer lattice. Let $\mathcal E_a$ contain unordered axial-neighbour pairs and $\mathcal E_d$ unordered diagonal-neighbour pairs. Only finitely many differences involving nonzero values contribute. Each lattice vertex has total neighbour weight $4(2/3)+4(1/6)=10/3$, so expanding the squared differences gives
+$$
+\boxed{u^TAu=-\frac1{h^2}\left[\frac23\sum_{\{v,w\}\in\mathcal E_a}(u_v-u_w)^2+\frac16\sum_{\{v,w\}\in\mathcal E_d}(u_v-u_w)^2\right].}
+$$
+It is nonpositive. If it vanishes, every axial difference vanishes. The axial lattice is connected and $u$ is zero outside the finite interior square, forcing $u=0$. Thus $u^TAu<0$ for every nonzero $u$: $\boxed{A\text{ is negative definite}}$.
+
+Reordering the grid replaces $A$ by $P^TAP$ for a <permutation matrix> $P$. This preserves symmetry and the sign of the quadratic form, proving the assertion for any ordering. Multiplying the whole system by $h^2$ merely rescales $A$ by a positive number and has the same conclusions.
+
 = ii
 {parent=40a}
 {scope}
@@ -980,9 +1468,35 @@ Thus its translated tangent space is the vector space of skew-symmetric matrices
 = Solution
 {parent=ii}
 
+Let $D=-10I/(3h^2)$ be the diagonal part of $A$. The <weighted Jacobi method> is
+$$
+\boxed{u^{(r+1)}=(1-\omega)u^{(r)}+\omega D^{-1}[b-(A-D)u^{(r)}].}
+$$
+Equivalently it is $u^{(r+1)}=u^{(r)}+\omega D^{-1}(b-Au^{(r)})$. In grid form, all neighbours on the right are taken from the old iterate:
+$$
+\boxed{u_{ij}^{(r+1)}=(1-\omega)u_{ij}^{(r)}+\omega\left[\frac15\sum_{\rm axial}u^{(r)}+\frac1{20}\sum_{\rm diagonal}u^{(r)}-\frac{3h^2}{10}f_{ij}\right].}
+$$
+The boundary values stay zero at every step. The iteration matrix is $T_\omega=I-\omega D^{-1}A$.
+
 = iii
 {parent=40a}
 {scope}
 
 = Solution
 {parent=iii}
+
+For $\omega=1$, the <Jacobi method> iteration matrix $T=I-D^{-1}A$ has zero diagonal, nonnegative axial entries $1/5$, and diagonal-neighbour entries $1/20$. Its row sums are at most one; they are strictly below one at grid points next to the Dirichlet boundary. Its graph is connected by the positive axial entries.
+
+To prove the strict <spectral radius> bound, let $Tz=\lambda z$ with $z\ne0$ and choose a component of maximum magnitude $M>0$. Then
+$$
+|\lambda|M\leq\sum_wT_{vw}|z_w|\leq M\sum_wT_{vw}\leq M,
+$$
+so $|\lambda|\leq1$. If equality held, every positive-weight neighbour of a maximal component would also have modulus $M$, and that row would have sum one. Propagating along axial edges reaches a boundary-adjacent row, whose sum is strictly less than one, a contradiction. This also covers a one-point interior grid, for which $T=0$. Hence
+$$
+\boxed{\rho(T)<1.}
+$$
+The standard convergence theorem for a stationary linear iteration says it converges from every initial vector exactly when its iteration matrix has spectral radius below one. Since $A$ is invertible by (i), the error satisfies $e^{(r)}=T^re^{(0)}\to0$ and
+$$
+\boxed{\omega=1\text{ converges to the unique solution of }Au=b.}
+$$
+Weak row diagonal dominance alone would not prove convergence; the connection to a strictly deficient boundary row supplies the required strictness.
