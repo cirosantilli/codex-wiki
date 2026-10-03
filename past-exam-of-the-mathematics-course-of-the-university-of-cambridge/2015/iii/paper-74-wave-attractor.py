@@ -1,0 +1,44 @@
+"""Original ray-geometry figure. Output only its PNG basename to cwd.
+Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7; respect caller MPLCONFIGDIR.
+"""
+import os
+from pathlib import Path
+os.environ.setdefault('MPLCONFIGDIR',str(Path.cwd()/'.paper-74-mplconfig'))
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyArrowPatch
+
+def loop(x0):
+ zl=np.sqrt(x0/8);zr=(-3+np.sqrt(329-32*x0))/16
+ segments=[]
+ for zlo,zhi,sgn,C in [(0,zl,-1,x0),(zl,1,1,-x0),(1,zr,-1,16-x0),(zr,0,1,6+3*zr-8*zr*zr)]:
+  z=np.linspace(zlo,zhi,140);segments.append((C+sgn*8*z*z,z))
+ return segments
+
+def main():
+ fig,ax=plt.subplots(figsize=(11,6.5),dpi=100,facecolor='white');ax.set_facecolor('white')
+ ax.fill([0,6,9,0],[0,0,1,1],color='#f0f7fa');ax.plot([0,6,9,0,0],[0,0,1,1,0],color='#324555',lw=2)
+ x=1.6
+ for n in range(7):
+  pieces=loop(x)
+  for X,Z in pieces:ax.plot(X,Z,color='#80b6d0',lw=1,alpha=.65)
+  x=pieces[-1][0][-1]
+ pieces=loop(40/9)
+ for X,Z in pieces:
+  ax.plot(X,Z,color='#c34d3b',lw=2.7)
+  i=60;ax.add_patch(FancyArrowPatch((X[i],Z[i]),(X[i+10],Z[i+10]),arrowstyle='-|>',mutation_scale=14,color='#c34d3b',lw=1.7))
+ vertices=[(40/9,0),(0,np.sqrt(5)/3),(32/9,1),(8,2/3)]
+ for x,z in vertices:ax.plot(x,z,'o',c='#c34d3b',ms=5)
+ ax.annotate(r'$(40/9,0)$',xy=vertices[0],xytext=(3.1,-.13),fontsize=11,arrowprops={'arrowstyle':'-','color':'#555'})
+ ax.annotate(r'$(0,\sqrt{5}/3)$',xy=vertices[1],xytext=(.55,.8),fontsize=11,arrowprops={'arrowstyle':'-','color':'#555'})
+ ax.annotate(r'$(32/9,1)$',xy=vertices[2],xytext=(2.4,1.12),fontsize=11,arrowprops={'arrowstyle':'-','color':'#555'})
+ ax.annotate(r'$(8,2/3)$',xy=vertices[3],xytext=(8.2,.79),fontsize=11,arrowprops={'arrowstyle':'-','color':'#555'})
+ ax.axhline(3/16,c='#89989f',lw=.9,ls=':');ax.text(6.8,.2,r'Slope criticality at $z=3/16$',fontsize=9,color='#596a70')
+ ax.set_xlim(-.25,10);ax.set_ylim(-.16,1.22);ax.set_xlabel('$x$');ax.set_ylabel('$z$')
+ ax.set_title('Clockwise spatial ray attractor in the trapezoidal basin',fontsize=15,pad=10)
+ ax.text(.5,-.15,'Red: periodic orbit. Blue: successive ray loops. Bottom reflection is a formal geometric idealization; WKB fails near z = 0.',transform=ax.transAxes,ha='center',fontsize=9)
+ fig.subplots_adjust(left=.07,right=.97,top=.91,bottom=.19)
+ fig.savefig(Path.cwd()/'paper-74-wave-attractor.png',facecolor='white',transparent=False);plt.close(fig)
+if __name__=='__main__':main()

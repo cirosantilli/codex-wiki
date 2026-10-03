@@ -15,12 +15,20 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=a}
 
+The <likelihood function> for the ordered arrival times of a <Poisson process>, including the absence of further arrivals before $T$, is
+$$
+\boxed{L(\lambda)=\lambda^n e^{-\lambda T}},\qquad 0<t_1<\cdots<t_n<T.
+$$
+The arrival-time constraint does not depend on $\lambda$. Equivalently, the <Poisson distribution> of the total count gives $L(\lambda)=e^{-\lambda T}(\lambda T)^n/n!$, which differs by a parameter-independent factor. Conditional on the count, the <Poisson process conditional arrival times> have density $n!/T^n$, independent of $\lambda$. Thus **the total count contains all the information about the rate when the exposure is known**; it is a <sufficient statistic>.
+
 = b
 {parent=1}
 {scope}
 
 = Solution
 {parent=b}
+
+A <conjugate prior> is a family of <prior distributions> whose members remain in that family after updating by the <likelihood function>. Here multiplying a shape-rate <gamma distribution> density by the <Poisson process> likelihood changes its power of $\lambda$ and its exponential rate, leaving a <gamma distribution>. The parameters change with the observations; <conjugate prior> does not mean that the <Bayesian posterior> equals the <prior distribution>.
 
 = c
 {parent=1}
@@ -29,12 +37,29 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=c}
 
+By <Poisson-gamma conjugacy>, the <posterior density> is proportional to
+$$
+\lambda^{a-1}e^{-b\lambda}\lambda^n e^{-T\lambda}
+=\lambda^{a+n-1}e^{-(b+T)\lambda}.
+$$
+Thus **the shape-rate posterior is**
+$$
+\boxed{\lambda\mid\mathcal D\sim\operatorname{Gamma}(A,B),\quad A=a+n,\quad B=b+T.}
+$$
+Its <posterior mean> is $A/B$ and its <variance> is $A/B^2$. The parameter $B$ is a rate, rather than a scale.
+
 = d
 {parent=1}
 {scope}
 
 = Solution
 {parent=d}
+
+Independent increments of the <Poisson process> give $M\mid\lambda\sim\operatorname{Poisson}(\lambda)$ for a one-hour interval. The <Poisson distribution> therefore gives
+$$
+\boxed{\mathbb P(M=0\mid\lambda)=e^{-\lambda}.}
+$$
+This conditional probability still depends on the unknown rate.
 
 = e
 {parent=1}
@@ -43,12 +68,39 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=e}
 
+The <posterior predictive probability> averages the conditional probability over the <Bayesian posterior>. Using its <gamma distribution> density,
+$$
+p_0=\frac{B^A}{\Gamma(A)}\int_0^\infty\lambda^{A-1}e^{-(B+1)\lambda}\,d\lambda
+=\boxed{\left(\frac{b+T}{b+T+1}\right)^{a+n}}.
+$$
+For fixed $a,b$ and $n/T\to\widehat\lambda<\infty$,
+$$
+\log p_0=-A\log(1+1/B)=-\frac{A}{B}+O(A/B^2)=-\frac nT+o(1).
+$$
+Consequently $p_0/e^{-n/T}\to1$, and both tend to $e^{-\widehat\lambda}$. This is reasonable because the <posterior mean> tends to the observed rate and the <posterior variance> tends to zero. Averaging $e^{-\lambda}$ then approaches evaluating it at the estimated rate: **with abundant observations, predictive uncertainty about the rate vanishes**.
+
 = f
 {parent=1}
 {scope}
 
 = Solution
 {parent=f}
+
+There is a notation problem here. The <posterior predictive probability> $p_0$ calculated above is already a fixed number conditional on $a,b,n,T$. Literally,
+$$
+\boxed{\mathbb P(p_0<1/2\mid\mathcal D)=\mathbf1\!\left\{(B/(B+1))^A<1/2\right\}.}
+$$
+No simulation is needed for that interpretation. The known exposure $T$ is also necessary, despite its omission from this part's list of inputs.
+
+The natural uncertain quantity is instead $q(\lambda)=\mathbb P(M=0\mid\lambda)=e^{-\lambda}$. For its <posterior probability> of being below one half, draw the rate from its <gamma distribution> <Bayesian posterior> and average an indicator. Rough <BUGS> code is
+\C[[
+model {
+  lambda ~ dgamma(a+n, b+T)
+  q <- exp(-lambda)
+  belowHalf <- step(lambda-log(2))
+}
+]]
+The monitored average of `belowHalf` estimates **$\mathbb P(\lambda>\log2\mid\mathcal D)$**, equivalently $1-F_{\operatorname{Gamma}(A,B)}(\log2)$. The equality boundary has zero probability. This code samples the already updated <Bayesian posterior>; adding the count <likelihood function> again would count the data twice.
 
 = g
 {parent=1}
@@ -57,12 +109,38 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=g}
 
+For an <inhomogeneous Poisson process>, the <likelihood function> is the product of the intensities at arrivals times the exponential of minus the integrated intensity. The integrated intensity is $\theta+2(T-\theta)=2T-\theta$. There are $j(\theta)$ arrivals at rate one and $n-j(\theta)$ at rate two, so
+$$
+\boxed{L(\theta)=e^{\theta-2T}2^{n-j(\theta)}\ \propto\ e^\theta2^{-j(\theta)},\qquad 0<\theta<T.}
+$$
+Set $t_0=0$ and $t_{n+1}=T$ to include changes before the first or after the last arrival. An arrival exactly at the change has probability zero, so the convention for $j$ at that point does not affect the <Bayesian posterior>.
+
 = h
 {parent=1}
 {scope}
 
 = Solution
 {parent=h}
+
+A <uniform prior> on $(0,T)$ makes the <posterior density> proportional to the <Poisson change-point posterior> likelihood above. The <zeros trick> introduces an observed zero with <Poisson distribution> mean $K-\log L(\theta)$, making its <likelihood function> equal to $e^{-K}L(\theta)$. Choose $K=T+n\log2+1$; since $\log L(\theta)\le n\log2$, this mean is strictly positive. Rough <BUGS> code, with `zero=0` supplied as data, is
+\C[[
+model {
+  theta ~ dunif(0,T)
+  for (i in 1:n) {
+    before[i] <- step(theta-time[i])
+  }
+  j <- sum(before[])
+  logL <- theta-2*T+(n-j)*log(2)
+  zero ~ dpois(K-logL)
+}
+]]
+For $n=0$, omit the array and set `j <- 0`. Monitor the sampled `theta` to obtain its <posterior mean>, <credible interval> and interval probabilities.
+
+There is also an exact sampling method. On $(t_j,t_{j+1})$ the <posterior density> is proportional to $2^{-j}e^\theta$, so choose the interval with weights
+$$
+w_j=2^{-j}(e^{t_{j+1}}-e^{t_j}),\qquad j=0,\ldots,n.
+$$
+Then draw $U$ from a <uniform distribution> on $(0,1)$ and set $\theta=\log(e^{t_j}+U(e^{t_{j+1}}-e^{t_j}))$. **These weighted interval draws sample the posterior directly**, without asking a local <Markov chain Monte Carlo> update to cross its discontinuities.
 
 = 2
 {parent=Paper 35}
@@ -75,12 +153,30 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=a}
 
+For a regular one-parameter <sampling distribution>, the <Fisher information> and <Jeffreys prior> are
+$$
+I(\theta)=\mathbb E_\theta\left[\left(\frac{\partial}{\partial\theta}\log p_Y(Y\mid\theta)\right)^2\right],
+\qquad \boxed{\pi_J(\theta)\propto\sqrt{I(\theta)}}.
+$$
+Under the usual differentiation and integrability conditions, $I(\theta)=-\mathbb E_\theta[\partial_\theta^2\log p_Y(Y\mid\theta)]$. This <prior distribution> transforms as a density under smooth one-to-one reparameterizations, so the rule is coordinate invariant. Its integral need not be finite; <posterior propriety> must still be established if it is an <improper prior>.
+
 = b
 {parent=2}
 {scope}
 
 = Solution
 {parent=b}
+
+For a <binomial distribution>, the <score function> is
+$$
+\frac{Y}{\theta}-\frac{n-Y}{1-\theta}
+=\frac{Y-n\theta}{\theta(1-\theta)}.
+$$
+Its squared <expected value> is $I(\theta)=n/[\theta(1-\theta)]$, using the <binomial distribution> <variance> $n\theta(1-\theta)$. Hence the <Jeffreys prior> is
+$$
+\boxed{\pi_J(\theta)=\frac1{\pi\sqrt{\theta(1-\theta)}},\quad 0<\theta<1,}
+$$
+the <beta distribution> $\operatorname{Beta}(1/2,1/2)$. The factor $\sqrt n$ is independent of $\theta$ and disappears on normalization.
 
 = c
 {parent=2}
@@ -89,12 +185,31 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=c}
 
+Independent <Jeffreys priors> and the two independent <binomial distribution> likelihood factors give, by <beta-binomial conjugacy>,
+$$
+\boxed{p_M\mid\mathcal D\sim\operatorname{Beta}(7/2,3/2),\qquad p_T\mid\mathcal D\sim\operatorname{Beta}(3/2,7/2).}
+$$
+The <Bayesian posteriors> remain independent because each observation factor involves only its own probability. Their <posterior means> are respectively **$0.7$ and $0.3$**. Notice that $p_T$ is the probability of saying milk first when tea was first, rather than the probability of a correct tea identification.
+
 = d
 {parent=2}
 {scope}
 
 = Solution
 {parent=d}
+
+In <Markov chain Monte Carlo>, retain the derived quantity $\delta=p_M-p_T$ at every iteration. Rough <BUGS> code using the actual observations is
+\C[[
+model {
+  pM ~ dbeta(0.5,0.5)
+  pT ~ dbeta(0.5,0.5)
+  milkAnswers ~ dbin(pM,4)
+  teaAnswers ~ dbin(pT,4)
+  delta <- pM-pT
+  positive <- step(delta)
+}
+]]
+Supply `milkAnswers=3` and `teaAnswers=1`. Summarize `delta` by its <posterior mean>, empirical <quantiles> and <credible interval>; the average of `positive` estimates $\mathbb P(p_M>p_T\mid\mathcal D)$. Here **$\mathbb E[\delta\mid\mathcal D]=0.4$**. Check <Markov chain Monte Carlo convergence diagnostics> before interpreting the simulation. Since both <Bayesian posteriors> are independent known <beta distributions>, direct independent sampling is an equally valid, simpler way to obtain the same summaries.
 
 = e
 {parent=2}
@@ -107,6 +222,12 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=1}
 
+Start with the <beta distribution> draw in the <Beta-binomial exchangeable coupling>. Write $s=\alpha+\beta$ and
+$$
+m=\frac\alpha s,\qquad v=\frac{\alpha\beta}{s^2(s+1)}.
+$$
+These are the <expected value> and <variance> of $p_M$. The fixed $n$ in this coupling is a dependence parameter chosen by the investigator, not necessarily the observed number of cups. The four numbered stages together address the single printed correlation request.
+
 = 2
 {parent=e}
 {scope}
@@ -114,12 +235,26 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=2}
 
+Conditional on $p_M$, the auxiliary <binomial distribution> gives $\mathbb E[X/n\mid p_M]=p_M$ and $\operatorname{Var}(X/n\mid p_M)=p_M(1-p_M)/n$. Thus **large $n$ makes $X/n$ close to $p_M$**. The <law of total variance> also gives
+$$
+\operatorname{Var}(X)=n m(1-m)+n(n-1)v
+=\frac{n\alpha\beta(s+n)}{s^2(s+1)}.
+$$
+The <latent variable> encodes the first draw increasingly accurately.
+
 = 3
 {parent=e}
 {scope}
 
 = Solution
 {parent=3}
+
+The next <beta distribution> has conditional <expected value> and <variance>
+$$
+\mathbb E[p_T\mid X]=\frac{\alpha+X}{s+n},\qquad
+\operatorname{Var}(p_T\mid X)=\frac{(\alpha+X)(\beta+n-X)}{(s+n)^2(s+n+1)}.
+$$
+For large $n$, its <expected value> approaches $X/n$, while its <variance> is at most $1/[4(s+n+1)]$. The final draw therefore stays close to the first. These are <prior distributions> for the cup probabilities: the auxiliary count is a device for constructing dependence, rather than additional observed tea data.
 
 = 4
 {parent=e}
@@ -128,12 +263,29 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=4}
 
+The <law of iterated expectation> yields
+$$
+\mathbb E[p_T\mid p_M]=\frac{\alpha+n p_M}{s+n},\qquad
+\operatorname{Cov}(p_M,p_T)=\frac n{s+n}v.
+$$
+One may obtain $\operatorname{Var}(p_T)=v$ either from its unchanged <marginal distribution> proved below or directly from the <law of total variance>: the variance of its conditional mean is $nv/(s+n)$ and its expected conditional variance is $sv/(s+n)$. Hence the <correlation coefficient> is exactly
+$$
+\boxed{\operatorname{Corr}(p_M,p_T)=\frac n{n+\alpha+\beta}\longrightarrow1.}
+$$
+Also $\mathbb E[(p_T-p_M)^2]=2v s/(s+n)\to0$. **The two probabilities become close while keeping their original beta marginals.**
+
 = f
 {parent=2}
 {scope}
 
 = Solution
 {parent=f}
+
+Apply the <law of iterated expectation> to the auxiliary <binomial distribution>:
+$$
+\boxed{\mathbb E[X]=\mathbb E[\mathbb E[X\mid p_M]]=n\mathbb E[p_M]=\frac{n\alpha}{\alpha+\beta}.}
+$$
+This expectation is over the full <prior distribution> construction, not over a particular observed auxiliary count.
 
 = g
 {parent=2}
@@ -142,12 +294,27 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=g}
 
+Using the conditional <beta distribution> <expected value> and the <law of iterated expectation>,
+$$
+\mathbb E[p_T]=\mathbb E\left[\frac{\alpha+X}{s+n}\right]
+=\frac{\alpha+n\alpha/s}{s+n}
+=\boxed{\frac\alpha{\alpha+\beta}}.
+$$
+Equality of the <expected values> alone does not prove equality of the <marginal distributions>; the later <exchangeability> argument does.
+
 = h
 {parent=2}
 {scope}
 
 = Solution
 {parent=h}
+
+Multiply the <beta distribution> density of $p_M$, the conditional <binomial distribution> mass of $X$, and the conditional <beta distribution> density of $p_T$. With $B(a,b)$ the <beta function>, the full joint density, relative to counting measure in $x$ and Lebesgue measure in the two probabilities, is
+$$
+\boxed{f(p_T,x,p_M)=\frac{\binom nx}{B(\alpha,\beta)B(\alpha+x,\beta+n-x)}
+(p_Tp_M)^{\alpha+x-1}[(1-p_T)(1-p_M)]^{\beta+n-x-1}.}
+$$
+Here $x=0,\ldots,n$ and both probabilities lie in $(0,1)$. **The printed joint expression omits the factor $1/B(\alpha+x,\beta+n-x)$.** It is a constant when $x$ is fixed and only the two probabilities vary, but is not a constant for the full <joint probability distribution>. Keeping it is essential when summing over the <latent variable>.
 
 = i
 {parent=2}
@@ -156,12 +323,25 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=i}
 
+Two <exchangeable random variables> satisfy $(X,Y)\overset d=(Y,X)$: their <joint probability distribution> is unchanged by swapping the coordinates. Thus for every measurable set $A$,
+$$
+\mathbb P(X\in A)=\mathbb P((X,Y)\in A\times\mathcal Y)
+=\mathbb P((Y,X)\in A\times\mathcal Y)=\mathbb P(Y\in A).
+$$
+**<Exchangeability> implies identical <marginal distributions>**, but does not imply <independence>.
+
 = j
 {parent=2}
 {scope}
 
 = Solution
 {parent=j}
+
+For each auxiliary count $x$, the correctly normalized joint expression above is symmetric in $p_M,p_T$. Summing it over $x=0,\ldots,n$ preserves that symmetry, so these are <exchangeable random variables>. Their <marginal distributions> are therefore identical. Since $p_M$ was generated from a <beta distribution>,
+$$
+\boxed{p_T\sim\operatorname{Beta}(\alpha,\beta).}
+$$
+The <Beta-binomial exchangeable coupling> changes the dependence, while leaving both <prior distributions> unchanged.
 
 = 3
 {parent=Paper 35}
@@ -174,12 +354,24 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=a}
 
+At zero a centered <normal distribution> with <standard deviation> $\sigma$ has density $1/(\sqrt{2\pi}\sigma)$. The two prior standard deviations are $1/\sqrt{n_0}$ and $c/\sqrt{n_0}$, giving
+$$
+\boxed{p_0(0)/p_1(0)=c.}
+$$
+The wider <prior distribution> has a lower density at its center.
+
 = b
 {parent=3}
 {scope}
 
 = Solution
 {parent=b}
+
+Let $q_0=n_0$, $q_1=n_0/c^2$ and $y=\overline y$. These are the two prior <precision parameters>. Completing the square in $n(\beta-y)^2+q_i\beta^2$ gives the <normal-normal conjugacy> update
+$$
+\boxed{\beta\mid y,H_i\sim N\left(\frac{n}{n+q_i}y,\frac1{n+q_i}\right),\qquad i=0,1.}
+$$
+Thus the <posterior mean> is a precision-weighted average of the observed mean and the prior center zero. The <posterior variance> is the reciprocal of the total precision.
 
 = c
 {parent=3}
@@ -188,12 +380,28 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=c}
 
+Write $\overline Y=\beta+\varepsilon$, with independent $\varepsilon\sim N(0,1/n)$ and $\beta\mid H_i\sim N(0,1/q_i)$. The <convolution of independent random variables> is again a <normal distribution>, so the prior predictive laws are
+$$
+\boxed{\overline Y\mid H_i\sim N(0,V_i),\qquad V_i=1/n+1/q_i.}
+$$
+These are predictive distributions before observing $y$, hence the <Bayesian model evidence> for the observed mean. The residual information in the original observations is common to both models and cancels in their <Bayes factor>.
+
 = d
 {parent=3}
 {scope}
 
 = Solution
 {parent=d}
+
+Divide the two <normal distribution> predictive densities to obtain the <Bayes factor>
+$$
+\boxed{B_{01}(y)=\sqrt{\frac{V_1}{V_0}}\exp\left[-\frac{y^2}{2}\left(\frac1{V_0}-\frac1{V_1}\right)\right].}
+$$
+At $y=0$ this becomes
+$$
+\boxed{B_{01}(0)=\sqrt{\frac{n_0/n+c^2}{n_0/n+1}}.}
+$$
+The wider <prior distribution> spreads its predictive mass over more possible means, giving the narrower model more <Bayesian model evidence> for observations very near zero. Away from zero, the exponential term opposes that factor.
 
 = e
 {parent=3}
@@ -202,12 +410,27 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=e}
 
+Under the point hypothesis $\beta=0$, the <test statistic> $\sqrt n\,\overline Y$ has a standard <normal distribution>. The observed statistic is three, giving a two-sided <p-value> $2[1-\Phi(3)]\simeq0.00270$. This is conventionally strong evidence against that point hypothesis. The narrow model $H_0$ is a continuous <prior distribution> around zero, rather than a point hypothesis.
+
+For $n_0/n=100$ and $c=100$, <normal-normal conjugacy> gives
+$$
+\boxed{\beta\mid y,H_0\sim N\left(\frac{3}{101\sqrt n},\frac1{101n}\right),\qquad
+\beta\mid y,H_1\sim N\left(\frac{300}{101\sqrt n},\frac{100}{101n}\right).}
+$$
+The narrow-model <posterior mean> is strongly pulled toward zero and its <standard deviation> is about $0.0995/\sqrt n$. The wide-model <posterior mean> is about $2.9703/\sqrt n$, very close to the observation, with <standard deviation> about $0.9950/\sqrt n$. **Each model produces a markedly different posterior**, so choosing between them requires their predictive evidence.
+
 = f
 {parent=3}
 {scope}
 
 = Solution
 {parent=f}
+
+**The requested conclusion is false for the printed parameter values.** They give $V_0=1.01/n$ and $V_1=101/n$. Substituting $y=3/\sqrt n$ in the <Bayes factor> yields
+$$
+\boxed{B_{01}=10\exp\left(-\frac{891}{202}\right)\simeq0.12144<1.}
+$$
+Thus **the Bayes factor favours $H_1$ by about $8.23$ to one**, not $H_0$. Nor does the conclusion hold for arbitrary large $n_0,c$: both parameters enter the expression explicitly. With $n_0/n=100$, taking a much wider alternative, for example $c=1000$, would instead give $B_{01}\simeq1.1563>1$. That is a different prior assumption and cannot repair the printed calculation silently.
 
 = g
 {parent=3}
@@ -216,6 +439,12 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=g}
 
+With equal model <prior probabilities>, <Bayes factor> updating gives $w_0=B_{01}/(1+B_{01})$ and $w_1=1/(1+B_{01})$. The <Bayesian model averaging> <posterior density> is therefore
+$$
+\boxed{p(\beta\mid y)=\frac{B_{01}}{1+B_{01}}p_0(\beta\mid y)+\frac1{1+B_{01}}p_1(\beta\mid y).}
+$$
+This is a two-component <mixture model> of the <normal distributions> already derived. For the numerical observation above, **$w_0\simeq0.10829$ and $w_1\simeq0.89171$**. Consequently it is predominantly the wide-model posterior, not predominantly the narrow one.
+
 = h
 {parent=3}
 {scope}
@@ -223,12 +452,33 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=h}
 
+Put $\kappa_i=n/(n+q_i)$. The <posterior mean> of the <Gaussian practical-null mixture> is
+$$
+\mathbb E[\beta\mid y]=[w_0(y)\kappa_0+w_1(y)\kappa_1]y.
+$$
+Near zero, $B_{01}(0)>1$, so the narrow component has high <posterior probability> and $\kappa_0$ is small when $n_0\gg n$. This pulls the <Bayesian model averaging> posterior toward zero. For the given ratios, writing $z=\sqrt n\,y$ gives
+$$
+B_{01}(y)=10e^{-99z^2/202},\qquad B_{01}>1\ \Longleftrightarrow\ |z|<2.16753\ldots.
+$$
+Thus the order statement $y=O(n^{-1/2})$ alone does not guarantee strong pull toward zero: $z=3$ already has the opposite model preference.
+
+As $|y|$ grows, $V_1>V_0$ makes $B_{01}(y)\to0$, and the <mixture model> approaches $N(\kappa_1 y,1/(n+q_1))$. **Its center is exactly $\kappa_1 y$, and approximately $y$ only for a sufficiently diffuse wide prior**, meaning $q_1\ll n$. Here $\kappa_1=100/101$, so the relative displacement is about one percent. Large observations alone do not remove this finite-prior shrinkage.
+
 = i
 {parent=3}
 {scope}
 
 = Solution
 {parent=i}
+
+In a <normal linear model>, attach a <continuous spike-and-slab prior> to each <regression coefficient>. With suitably scaled predictors, introduce indicators $\gamma_j\sim\operatorname{Bernoulli}(\pi)$ and set
+$$
+\beta_j\mid\gamma_j=0\sim N(0,s_{0j}^2),\qquad
+\beta_j\mid\gamma_j=1\sim N(0,s_{1j}^2),\quad s_{0j}\ll s_{1j}.
+$$
+The narrow component describes practically negligible effects; the wide component permits substantial ones. Fit the joint <Bayesian posterior> of coefficients, indicators and any unknown residual variance. <Bayesian model averaging> gives shrinkage toward zero for poorly supported effects, while $\mathbb P(\gamma_j=1\mid\mathcal D)$ quantifies wide-component support. A shared <beta distribution> prior on $\pi$ can represent uncertainty about how many effects are substantial.
+
+**Select on scientifically meaningful effect size**, for example a high $\mathbb P(|\beta_j|>\delta_j\mid\mathcal D)$ for a prechosen threshold in meaningful predictor units. Membership in the wide component alone does not imply a large realized effect: its <normal distribution> still permits values near zero. Correlated predictors also require interpretation of the joint <Bayesian posterior>, rather than treating each coefficient as an isolated test.
 
 = 4
 {parent=Paper 35}
@@ -241,12 +491,25 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=a}
 
+The <log odds ratio> for treatment relative to control is the difference of the two <log odds>:
+$$
+\log\frac{\theta_T/(1-\theta_T)}{\theta_C/(1-\theta_C)}
+=(\alpha+\beta/2)-(\alpha-\beta/2)=\boxed{\beta}.
+$$
+Thus the treatment-to-control <odds ratio> is **$e^\beta$**. Its direction refers to whatever event the binomial count records.
+
 = b
 {parent=4}
 {scope}
 
 = Solution
 {parent=b}
+
+The intercept is the midpoint of the two <log odds>:
+$$
+\boxed{\alpha=\tfrac12[\operatorname{logit}\theta_C+\operatorname{logit}\theta_T].}
+$$
+Equivalently $e^\alpha$ is the geometric mean of the two odds. The <logistic function> evaluated at $\alpha$ represents a central event probability, and approximates the average of the two group probabilities when $\beta$ is small. **It is not generally their arithmetic average**, nor is $\alpha$ specifically the control-group <log odds>.
 
 = c
 {parent=4}
@@ -255,12 +518,22 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=c}
 
+Use a proper <normal distribution> prior centered at zero on the <log odds ratio>. For example,
+$$
+\boxed{\beta\sim N(0,1)}
+$$
+puts approximately 95 percent of its mass between $-2$ and $2$, giving <odds ratios> roughly between $e^{-2}$ and $e^2$, close to $1/8$ and $8$. Centering at zero treats reciprocal <odds ratios> symmetrically. If the desired central 95 percent interval is exactly $(1/8,8)$, use <standard deviation> $\log8/\Phi^{-1}(0.975)\simeq1.0610$. **A soft prior is appropriate for implausibility**, whereas a bounded <uniform prior> would declare effects outside the limits impossible.
+
 = d
 {parent=4}
 {scope}
 
 = Solution
 {parent=d}
+
+Calling the effects <exchangeable random variables> means that their joint <prior distribution> is unchanged by permuting study labels. In a <hierarchical Bayesian model>, conditional independent draws $\beta_j\mid\mu,\tau\sim N(\mu,\tau^2)$ achieve this, and integrating shared <hyperparameters> induces dependence between studies. This permits <partial pooling> without asserting that all effects are identical.
+
+The assumption is reasonable when the studies concern comparable treatments, populations, outcomes and follow-up, and no known study characteristic gives one effect a systematically different prior center. Relevant differences can instead enter a <linear regression> for study effects, after which the residual effects may be exchangeable. **The numerical table counts deaths**, so its event probabilities are mortality probabilities and $\beta_j<0$ indicates a lower mortality <odds ratio>. Interpreting those counts as beneficial responses would reverse the clinical meaning.
 
 = e
 {parent=4}
@@ -269,12 +542,45 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=e}
 
+The overall mean $\mu$ and the <between-study heterogeneity> $\tau$ encode different information. A proper broad <normal distribution> prior such as $\mu\sim N(0,2^2)$ is one possible weak prior for the mean <log odds ratio>; information about the spread of trials alone does not determine its center.
+
+A concrete <prior calibration for normal random-effect range> can make the factor-of-50 statement simultaneous across all six trials. Conditional on $\tau$, each pair difference has <normal distribution> $\beta_j-\beta_k\sim N(0,2\tau^2)$. Set $R=\log50$, $m=\binom62=15$, $z=\Phi^{-1}(1-0.05/(2m))$ and
+$$
+\boxed{\tau\sim\operatorname{Uniform}(0,A),\qquad A=\frac{R}{\sqrt2\,z}\simeq0.9424.}
+$$
+For every $\tau\le A$, each pair exceeds $R$ in absolute value with probability at most $0.05/m$. The <union bound> therefore gives $\mathbb P(\max_j\beta_j-\min_j\beta_j>R)\le0.05$, and integrating over the <uniform prior> preserves that bound. This is one explicit interpretation of “very unlikely”; a different elicited probability would change the bound. A smoother proper scale prior could be calibrated similarly.
+
+The proposed $1/\tau$ <improper prior> is unsuitable. The observed-data <likelihood function> approaches the positive common-effect likelihood as $\tau\downarrow0$. After restricting $\mu$ and the intercepts to a compact interior region, it is bounded below there by a positive constant. Hence
+$$
+\int_0^\varepsilon L(\mu,\tau)\frac{d\tau}{\tau}=\infty.
+$$
+This is an <improper posterior from a log-uniform random-effect scale prior>. **Proper conditional sampling distributions do not repair the improper joint posterior**, and an arbitrary tiny cutoff would make inference depend on that cutoff.
+
 = f
 {parent=4}
 {scope}
 
 = Solution
 {parent=f}
+
+Represent the independent locally flat intercept <prior distributions> by broad finite <uniform priors>, for example on $(-10,10)$; this is proper and approximately constant over plausible mortality logits. With $A$ calibrated above, rough <BUGS> code is
+\C[[
+model {
+  mu ~ dnorm(0,0.25)
+  tau ~ dunif(0,A)
+  invtau2 <- pow(tau,-2)
+  for (j in 1:J) {
+    alpha[j] ~ dunif(-10,10)
+    beta[j] ~ dnorm(mu,invtau2)
+    logit(thetaC[j]) <- alpha[j]-beta[j]/2
+    logit(thetaT[j]) <- alpha[j]+beta[j]/2
+    rC[j] ~ dbin(thetaC[j],nC[j])
+    rT[j] ~ dbin(thetaT[j],nT[j])
+    oddsRatio[j] <- exp(beta[j])
+  }
+}
+]]
+Use $J=6$ and supply treated death counts $(3,7,5,102,32,22)$ with totals $(38,114,69,1533,209,680)$, and control death counts $(3,14,11,127,40,39)$ with totals $(39,116,93,1520,218,674)$. In <BUGS>, the second `dnorm` argument is a <precision parameter>, so `0.25` corresponds to <variance> four. Initialize the positive scale away from zero. Monitor $\mu,\tau$ and study <odds ratios>, checking <Markov chain Monte Carlo convergence diagnostics> and sensitivity to the finite intercept bounds and scale <prior distribution>. **The fitted hierarchy combines binomial sampling uncertainty with between-study heterogeneity.**
 
 = g
 {parent=4}
@@ -283,12 +589,35 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=g}
 
+For the common <Bayesian deviance> convention $D=-2\log L$ used in all three models,
+$$
+p_D=\overline D-D(\overline\theta),\qquad
+\operatorname{DIC}=\overline D+p_D=D(\overline\theta)+2p_D.
+$$
+Here `Dhat` is $D(\overline\theta)$, an at-posterior-mean fit measure, and $p_D$ is an effective parameter count. The independent model's `Dhat` of 53.1 is almost identical to the exchangeable model's 53.2; both improve on the common model's 57.8. The common model's $p_D=7$ corresponds to six intercepts plus one shared effect. Independence uses roughly twelve effective parameters. <Partial pooling> reduces the exchangeable model's effective complexity to about 8.7 while retaining nearly the same fitted <likelihood function> as independence.
+
+**The exchangeable model has the lowest reported DIC, but the common model is competitive.** Their difference is only about 1.3, whereas independence is worse by about 6.3. The <deviance information criterion> measures penalized fit for a predictive comparison, not model <posterior probabilities>, and these numbers do not establish overwhelming evidence for heterogeneity. The displayed exchangeable $\overline D+p_D$ is $61.9+8.7=70.6$, rather than the printed 70.5; rounding of the underlying values can account for a tenth and does not change this interpretation.
+
 = h
 {parent=4}
 {scope}
 
 = Solution
 {parent=h}
+
+Conditional on $\mu,\psi>0$, let $\lambda\sim\chi^2_4$ and independently $Z\sim N(0,1)$. The <normal distribution> with the stated <precision parameter> can be generated as
+$$
+\beta_j=\mu+\frac{2\psi Z}{\sqrt\lambda}.
+$$
+Therefore
+$$
+\boxed{\frac{\beta_j-\mu}{\psi}=\frac Z{\sqrt{\lambda/4}}\sim t_4,}
+$$
+by the defining <normal distribution> and <chi-squared distribution> representation of <Student's t-distribution>. Its density is
+$$
+f(\beta_j\mid\mu,\psi)=\frac3{8\psi}\left(1+\frac{(\beta_j-\mu)^2}{4\psi^2}\right)^{-5/2}.
+$$
+Thus **$\mu$ is the location and $\psi$ is the scale**, not the <standard deviation>: $\operatorname{Var}(\beta_j\mid\mu,\psi)=2\psi^2$. Each study gets its own independent chi-squared draw in this <Student t random-effect model>.
 
 = i
 {parent=4}
@@ -297,9 +626,19 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_35.pdf
 = Solution
 {parent=i}
 
+The <Student t random-effect model> is useful when most studies are comparable but occasional genuine departures are more frequent than a <normal distribution> hierarchy allows. Its heavier tails permit a study effect far from $\mu$ without forcing a large common <between-study heterogeneity> scale on every study. In the <Gaussian scale mixture> representation, a small study-specific $\lambda_j$ lowers its <precision parameter> and weakens its shrinkage.
+
+**Use this as robust partial pooling when occasional atypical effects are plausible.** Known systematic population or design differences should still be modeled explicitly; a heavy tail cannot identify or correct <within-study bias> by itself.
+
 = j
 {parent=4}
 {scope}
 
 = Solution
 {parent=j}
+
+Fit both the normal and <Student t random-effect model> with comparable proper <prior distributions>. Compare priors on the same spread measure: a <normal distribution> scale $\tau$ is a <standard deviation>, whereas the $t_4$ <standard deviation> is $\sqrt2\psi$.
+
+Use a <posterior predictive check>: draw study effects and binomial counts from each fitted hierarchy and compare replicated dispersion and extreme study contrasts with the observations. For predicting a new study, generate a new effect from the hierarchy rather than reusing an existing fitted effect. A <leave-one-out cross-validation> with entire studies held out can compare integrated predictive probabilities for both arms of each omitted trial, averaging over <hyperparameters> and its unobserved study effect. <Leave-one-study-out influence analysis> also reveals whether the difference is driven by a single trial.
+
+**Prefer the heavier-tailed hierarchy if it improves the relevant predictive checks and held-out study predictions robustly to reasonable prior choices.** The <deviance information criterion> can supplement the comparison, but its effective parameter count can depend on the latent-variable representation, and six studies give limited information about tail shape. A small numerical criterion difference alone is insufficient evidence.

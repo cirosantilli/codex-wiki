@@ -15,6 +15,37 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_61.pdf
 = Solution
 {parent=a}
 
+Use the positive-sign <quantum Fourier transform>
+$$
+F_N|x\rangle=\frac1{\sqrt N}\sum_{j=0}^{N-1}e^{2\pi ijx/N}|j\rangle.
+$$
+Orthogonality of the finite-group characters makes $F_N$ a <unitary operator>. Here $r$ is the least positive period. The injectivity within one period implies $r\mid N$: write $N=qr+s$, $0\leq s<r$. Periodicity gives $f(s)=f(N)=f(0)$, and injectivity forces $s=0$. Put $L=N/r$.
+
+Start with two available <computational basis> states $|0\rangle|0\rangle$. Apply $F_N$ to the first register and query the <modular-addition quantum oracle>:
+$$
+|0\rangle|0\rangle\longmapsto\frac1{\sqrt N}\sum_x|x\rangle|0\rangle
+\longmapsto\frac1{\sqrt N}\sum_x|x\rangle|f(x)\rangle.
+$$
+Measure the second register. For some $t\in\{0,\ldots,r-1\}$, the first register becomes the normalized coset state
+$$
+\frac1{\sqrt L}\sum_{h=0}^{L-1}|t+hr\rangle.
+$$
+The <quantum Fourier transform of a periodic coset state> is
+$$
+\frac1{\sqrt r}\sum_{s=0}^{r-1}e^{2\pi ist/r}\left|\frac{sN}{r}\right\rangle.
+$$
+Indeed, the inner geometric sum vanishes unless the Fourier label is a multiple of $N/r$. Measuring that label gives $j=sN/r$ for a uniformly random $s$. Compute, by the <Euclidean algorithm>,
+$$
+R=\frac{N}{\gcd(j,N)}=\frac{r}{\gcd(s,r)}.
+$$
+Thus <exact period recovery from a Fourier sample> succeeds whenever $s$ is <coprime> to $r$, and
+$$
+\boxed{\Pr(R=r)=\frac{\varphi(r)}r=\Omega\!\left(\frac1{\log\log N}\right)}.
+$$
+Here $\varphi$ is the <Euler totient function>. The classical number-theory input is the <totient lower bound from the Mertens product>: for sufficiently large $m$, $\varphi(m)/m\geq c/\log\log m$ for an absolute $c>0$, with the finitely many small cases handled separately. For $r=1$ recovery is certain; for $r=2$ its probability is $1/2$. The useful asymptotic probability statement is a lower bound, hence $\Omega$ notation; it can be much larger for particular periods, for example a prime period.
+
+There is one oracle query, two Fourier transforms and two measurements. The final <greatest common divisor> and division use <polynomial time> in $\log N$. This meets the specified primitive-operation model without assuming that an arbitrary-$N$ Fourier gate is free in another gate model. If a constant success probability is wanted, repeat independently $O(\log\log N)$ times and return the <least common multiple> of the candidates: each candidate divides $r$, and one successful sample makes that <least common multiple> exactly $r$.
+
 = b
 {parent=1}
 {scope}
@@ -26,12 +57,53 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_61.pdf
 = Solution
 {parent=i}
 
+Prepare an additional <qubit> in $|{-}\rangle=(|0\rangle-|1\rangle)/\sqrt2$ by applying $X$ and then the <Hadamard gate> to $|0\rangle$. Apply $H^{\otimes n}$ to the data register. The <Boolean quantum oracle> then produces <quantum phase kickback>:
+$$
+\frac1{\sqrt{2^n}}\sum_x|x\rangle|{-}\rangle
+\stackrel{U_f}{\longmapsto}
+\frac1{\sqrt{2^n}}\sum_x(-1)^{a\cdot x}|x\rangle|{-}\rangle.
+$$
+A final <Walsh-Hadamard transform> gives an amplitude for $z$ equal to
+$$
+\frac1{2^n}\sum_x(-1)^{(a\oplus z)\cdot x}=\delta_{z,a}.
+$$
+To see this identity, the sum factors over the bits; any position at which $a$ and $z$ differ contributes $1-1=0$. This is <Bernstein-Vazirani phase kickback>, and its output is
+$$
+\boxed{|a\rangle|{-}\rangle}.
+$$
+There is exactly one oracle query, $O(n)$ fixed <quantum gates>, and no probabilistic intermediate step. The <ancilla qubit> can be left in $|A\rangle=|{-}\rangle$ or reset to $|0\rangle$ using its known inverse preparation. The construction includes the case $a=0$.
+
 = ii
 {parent=b}
 {scope}
 
 = Solution
 {parent=ii}
+
+The linear decoding must be done coherently, so its output is available inside the next <Boolean quantum oracle> call. Use registers $Z,X$ of $n$ <qubits> and a shared phase <ancilla qubit> in $|{-}\rangle$. Define the <Bernstein-Vazirani decoding controlled by a quantum register>
+$$
+W_g=(H_Z^{\otimes n}\otimes I_X)\,U_g\,(H_Z^{\otimes n}\otimes I_X).
+$$
+The <ancilla qubit> is implicit. For every computational index $x$, the <Walsh-Hadamard transform> calculation gives
+$$
+W_g|z\rangle_Z|x\rangle_X|{-}\rangle
+=|z\oplus a_x\rangle_Z|x\rangle_X|{-}\rangle.
+$$
+In particular $W_g^2=I$ on these states. Initialize $Z$ to $|0\rangle$ and $X$ to $H^{\otimes n}|0\rangle$. The three query stages are
+$$
+\frac1{\sqrt{2^n}}\sum_x|0\rangle|x\rangle|{-}\rangle
+\stackrel{W_g}{\longmapsto}
+\frac1{\sqrt{2^n}}\sum_x|a_x\rangle|x\rangle|{-}\rangle
+\stackrel{U_f}{\longmapsto}
+\frac1{\sqrt{2^n}}\sum_x(-1)^{a\cdot x}|a_x\rangle|x\rangle|{-}\rangle
+\stackrel{W_g}{\longmapsto}
+|0\rangle\frac1{\sqrt{2^n}}\sum_x(-1)^{a\cdot x}|x\rangle|{-}\rangle.
+$$
+The middle equality uses the matching index $z=a_x$, not a classical guess of that string. The second $W_g$ performs <uncomputation>, removing the hidden-string register without losing its phase on $X$. Apply $H^{\otimes n}$ to $X$ to obtain
+$$
+\boxed{|0\rangle_Z|a\rangle_X|{-}\rangle}.
+$$
+This requires precisely two queries to $U_g$ and one to $U_f$, and only $O(n)$ additional fixed <quantum gates>. No measurement of $a_x$ is made: such a measurement would spoil the required coherence. Preparing all registers and the phase <ancilla qubit> uses only the initially available zero states.
 
 = 2
 {parent=Paper 61}
@@ -44,12 +116,41 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_61.pdf
 = Solution
 {parent=i}
 
+Assume $|\xi\rangle$ is normalized and the <Hilbert space> has dimension $d$. The rank-one <orthogonal projection> $P=|\xi\rangle\langle\xi|$ satisfies $P^\dagger=P$ and $P^2=P$.
+
+For $d>1$, $P$ has <eigenvalue> zero on the orthogonal complement of $|\xi\rangle$, so it cannot be a <unitary operator>. The complementary <orthogonal projection> $I-P$ kills $|\xi\rangle$ and is not unitary in any positive dimension. In contrast, the <Householder reflection>
+$$
+R=I-2P
+$$
+is Hermitian and obeys $R^\dagger R=R^2=I-4P+4P^2=I$. Its <eigenvalues> are $-1$ along $|\xi\rangle$ and $+1$ on the orthogonal complement.
+
+\b[For $d>1$, only $I-2|\xi\rangle\langle\xi|$ is unitary. In the exceptional one-dimensional case, $|\xi\rangle\langle\xi|=I$ is also unitary; its complement remains zero.]
+
 = ii
 {parent=2}
 {scope}
 
 = Solution
 {parent=ii}
+
+Let $\Pi_G$ be the <orthogonal projection> onto the good <vector subspace> $G$, and let the normalized input be $|\psi\rangle$. Set $p=\|\Pi_G\psi\|^2=\sin^2\theta$ with $0<\theta<\pi/2$, and define
+$$
+|g\rangle=\frac{\Pi_G|\psi\rangle}{\sqrt p},\qquad
+|b\rangle=\frac{(I-\Pi_G)|\psi\rangle}{\sqrt{1-p}},\qquad
+|\psi\rangle=\sin\theta|g\rangle+\cos\theta|b\rangle.
+$$
+Assuming coherent access to the two reflections, the <amplitude amplification theorem> states that
+$$
+Q=(2|\psi\rangle\langle\psi|-I)(I-2\Pi_G)
+$$
+preserves the plane spanned by $|g\rangle,|b\rangle$ and acts as a rotation, giving
+$$
+\boxed{Q^j|\psi\rangle=\sin((2j+1)\theta)|g\rangle+
+\cos((2j+1)\theta)|b\rangle}.
+$$
+Hence the good-outcome probability is $\sin^2((2j+1)\theta)$. When $p$ is known, choose the nearest nonnegative integer to $\pi/(4\theta)-1/2$. The resulting angle is within $\theta$ of $\pi/2$, so the good probability is at least $\cos^2\theta=1-p$. For small $p$ this is close to one and requires $O(1/\sqrt p)$ iterations. Exact success occurs when $(2j+1)\theta=\pi/2$. Known $p$ also allows <exact amplitude amplification> by <ancilla qubit> dilution or selective phase adjustment when ordinary integer iterations would overshoot.
+
+If $|\psi\rangle=A|0\rangle$ has a known coherent preparation, its reflection is implemented with $A$, $A^\dagger$ and a zero-state phase flip. A coherent membership test supplies the reflection about $G$. Merely possessing an unknown copy of $|\psi\rangle$ does not automatically supply its reflection. For $p=1$ the state is already good; for $p=0$ this two-reflection construction cannot generate a good component. These cases delimit the theorem's algorithmic assumptions.
 
 = iii
 {parent=2}
@@ -58,12 +159,43 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_61.pdf
 = Solution
 {parent=iii}
 
+Prepare the two data <qubits> in $|s\rangle=\tfrac12\sum_{x\in B_2}|x\rangle$ and a phase <ancilla qubit> in $|{-}\rangle$. A single <Boolean quantum oracle> query flips only the marked amplitude. Its success fraction is $p=1/4$, so $\theta=\pi/6$ in <amplitude amplification>. The fixed diffusion reflection $D=2|s\rangle\langle s|-I$ gives $\sin(3\theta)=1$ after one iteration.
+
+Directly, after the query the marked amplitude is $-1/2$ and the other three are $1/2$. Their mean is $1/4$. The diffusion reflection replaces each amplitude $c_x$ by $2(1/4)-c_x$, yielding one at the marked input and zero elsewhere. Thus
+$$
+\boxed{D U_f\bigl(|s\rangle|{-}\rangle\bigr)=|x_*\rangle|{-}\rangle}.
+$$
+Here $U_f$ is understood with its target <ancilla qubit>, and $D$ acts only on the data. It is independent of $f$: $D=H^{\otimes2}(2|00\rangle\langle00|-I)H^{\otimes2}$, with the central diagonal gate implementable using two <Pauli Z gates> and one <controlled-Z gate>. Measuring the data in the <computational basis> therefore finds the unique marked string with certainty after one oracle query.
+
 = iv
 {parent=2}
 {scope}
 
 = Solution
 {parent=iv}
+
+Write $Q=2^n$, $t=(p-1)(q-1)$ and $a=t/Q$. The easy starting state is uniform over all $n$-bit labels, so its good fraction is $a$, not $t/N$. For distinct primes one has $a\geq1/4$. If both primes are odd, $t/N\geq(1-1/3)(1-1/5)=8/15$ and $N/Q\geq1/2$, giving $a\geq4/15$. If one prime is two, the other is an odd prime $q$; since $2q$ has $n$ bits, $q>2^{n-2}$, and $t=q-1\geq2^{n-2}=Q/4$.
+
+The <uniform coprime state for a semiprime> can now be prepared by one exact Grover rotation. Set
+$$
+\lambda=\frac{Q}{4t}=\frac1{4a}\leq1,
+\qquad |b_\lambda\rangle=\sqrt{1-\lambda}|0\rangle+\sqrt\lambda|1\rangle.
+$$
+Prepare
+$$
+|\Psi\rangle=H^{\otimes n}|0^n\rangle\otimes|b_\lambda\rangle.
+$$
+Use the good subspace spanned by $|k\rangle|1\rangle$ with $1\leq k<N$ and $\gcd(k,N)=1$. Its squared overlap with $|\Psi\rangle$ is exactly $a\lambda=1/4$. The <Euclidean algorithm> supplies a <reversible computation> of the membership predicate, including the range check; condition a sign flip on membership and the extra <qubit> being one, then uncompute the workspace. This implements $S_G=I-2\Pi_G$.
+
+The starting-state reflection $D_\Psi=2|\Psi\rangle\langle\Psi|-I$ uses the inverse of its known preparation and a reflection on the all-zero state. Applying $D_\Psi S_G$ once invokes <exact amplitude amplification> at $\theta=\pi/6$, and gives
+$$
+\boxed{D_\Psi S_G|\Psi\rangle
+=\frac1{\sqrt t}\sum_{k\in A}|k\rangle|1\rangle
+=|\xi\rangle|1\rangle}.
+$$
+The extra <qubit> factors off, and the arithmetic workspace is returned to zero. Although the stated range includes $N$, that label is not <coprime> to itself, so the predicate $k<N$ is equivalent and avoids admitting labels outside the intended range.
+
+The supplied $p,q$ determine $t$ in <polynomial time>; no factoring procedure is needed. Binary arithmetic, range comparison, the reversible <greatest common divisor>, the two starting-state reflections and the controlled sign flip all have polynomial-size circuits. Thus the construction takes \b[polynomial time in $n$ in the ideal model allowing the specified one-qubit state preparation]. Exactness uses the rotation with known amplitudes $\sqrt\lambda,\sqrt{1-\lambda}$; with a fixed finite approximate gate library one obtains arbitrary accuracy with precision overhead, rather than an automatic promise of exact state preparation. In the ideal model the preparation succeeds with certainty, without rejection sampling. If desired, the extra $|1\rangle$ can be reset by a <Pauli X gate>.
 
 = 3
 {parent=Paper 61}
@@ -76,6 +208,23 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_61.pdf
 = Solution
 {parent=i}
 
+Let $L=2^n$ and use an $n$-qubit phase register. Begin with $|0^n\rangle|v\rangle$ and apply $H^{\otimes n}$ to the phase register, creating $L^{-1/2}\sum_{m=0}^{L-1}|m\rangle|v\rangle$. Controlled powers implement
+$$
+|m\rangle|v\rangle\longmapsto|m\rangle U^m|v\rangle
+=e^{2\pi im\phi}|m\rangle|v\rangle.
+$$
+For phase <qubit> $j$, counted from the most significant bit, the controlled power is $U^{2^{n-j}}$. It can be built from $2^{n-j}$ calls to the supplied controlled-$U$ gate. By <quantum phase kickback>, the phase-register state is
+$$
+\frac1{\sqrt L}\sum_m e^{2\pi imy/L}|m\rangle=F_L|y\rangle.
+$$
+Apply the inverse <quantum Fourier transform> to obtain the <exact quantum phase estimation> mapping
+$$
+\boxed{V:\ |0^n\rangle|v\rangle\longmapsto|y\rangle|v\rangle}.
+$$
+A <computational basis> measurement of the first register determines $y$ with certainty, hence $\phi=y/L$ and the <eigenvalue> $e^{2\pi i\phi}$. Exactness follows from the promised dyadic phase; no approximation or continued-fraction reconstruction is needed.
+
+With only controlled-$U$ available as a query, the repeated-power construction uses $L-1=2^n-1$ oracle calls. The other Fourier-transform circuitry has polynomial size in $n$ in the ideal phase-gate model. The <cost of exact phase estimation on a dyadic spectrum> is therefore not polynomial in $n$ in this primitive-query model unless powered queries have additional implementations. The task does not require such a polynomial bound.
+
 = ii
 {parent=3}
 {scope}
@@ -83,12 +232,44 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_61.pdf
 = Solution
 {parent=ii}
 
+Since $U$ is a <unitary operator>, its <eigenstates> form an <orthonormal> basis. Expand $|\xi\rangle=\sum_j c_j|v_j\rangle$, with eigenphases $\phi_j=y_j/2^n$. By linearity, the unmeasured <quantum phase estimation> output is
+$$
+\boxed{V\bigl(|0^n\rangle|\xi\rangle\bigr)
+=\sum_j c_j|y_j\rangle|v_j\rangle}.
+$$
+This is generally an <entangled> state, not a phase label attached to an unchanged pure system state. The distinct <eigenvalues> give distinct phase labels, so a <computational basis> measurement yields $y_j$ with <Born rule> probability $|c_j|^2$ and leaves $|v_j\rangle$ in the system register. Before measurement, all relative phases remain coherent; that is essential for the following spectral transformation. If phases were degenerate, a measured label would instead select the corresponding eigenspace component.
+
 = iii
 {parent=3}
 {scope}
 
 = Solution
 {parent=iii}
+
+The binary phase is $\phi=0.i_1\cdots i_n=\sum_{j=1}^ni_j2^{-j}$. Therefore
+$$
+\boxed{\frac{2\pi\phi}{M}=\sum_{j=1}^ni_j\frac{2\pi}{2^jM}}.
+$$
+On the phase register, apply the <tensor product> of <phase gates>
+$$
+D_M=\bigotimes_{j=1}^nP\!\left(\frac{2\pi}{2^jM}\right).
+$$
+Its action on $|y\rangle=|i_1\cdots i_n\rangle$ is multiplication by $e^{2\pi i\phi/M}$. Thus the <positive-phase fractional power of a unitary operator> is implemented by <uncomputation> after coherent phase estimation:
+$$
+|0^n\rangle\sum_jc_j|v_j\rangle
+\stackrel V\longmapsto\sum_jc_j|y_j\rangle|v_j\rangle
+\stackrel{D_M}\longmapsto\sum_jc_je^{2\pi i\phi_j/M}|y_j\rangle|v_j\rangle
+\stackrel{V^\dagger}\longmapsto
+|0^n\rangle\sum_jc_je^{2\pi i\phi_j/M}|v_j\rangle.
+$$
+Hence
+$$
+\boxed{V^\dagger(D_M\otimes I)V\bigl(|0^n\rangle|\xi\rangle\bigr)
+=|0^n\rangle U^{1/M}|\xi\rangle}.
+$$
+The inverse phase-estimation circuit uses controlled powers of $U^{-1}$ built from the supplied inverse oracle, with all other <quantum gates> reversed. No phase-register measurement is made, so arbitrary superpositions are preserved and the <ancilla qubits> return to zero. The straightforward implementation uses $2(2^n-1)$ controlled-unitary queries plus the Fourier and phase circuitry; the arbitrary <phase gates> are accepted exactly as stipulated.
+
+The branch convention matters. This construction uses the phase representative $0<\phi<1$ specified here, corresponding to argument in $(0,2\pi)$. It implements that explicitly defined root, even for $\phi>1/2$. The usual complex principal branch with argument in $(-\pi,\pi]$ would choose a different root on some <eigenvalues>. No substitution of that alternative branch is implicit.
 
 = 4
 {parent=Paper 61}
@@ -105,6 +286,23 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_61.pdf
 = Solution
 {parent=i}
 
+The <J gate> is $J(\alpha)=HP(\alpha)$, with $P(\alpha)=\operatorname{diag}(1,e^{i\alpha})$. Prepare a fresh <qubit> in $|+\rangle$ and apply the <controlled-Z gate> $E$ between it and the input $|\psi\rangle=u|0\rangle+v|1\rangle$. The resulting state is
+$$
+u|0\rangle|+\rangle+v|1\rangle|-\rangle.
+$$
+Measure the input in the <equatorial qubit measurement> basis $|\alpha_s\rangle=(|0\rangle+(-1)^se^{-i\alpha}|1\rangle)/\sqrt2$. The unnormalized output is
+$$
+\frac1{\sqrt2}\left(u|+\rangle+(-1)^se^{i\alpha}v|-\rangle\right)
+=\frac1{\sqrt2}X^sJ(\alpha)|\psi\rangle.
+$$
+Each outcome has probability $1/2$. Thus <one-bit teleportation> realizes
+$$
+\boxed{|\psi\rangle\longmapsto X^sJ(\alpha)|\psi\rangle}
+$$
+on the new <qubit>. Apply the known <Pauli X gate> correction $X^s$ for the literal $J(\alpha)$ output, or keep the correction in a <Pauli frame> and adapt later measurements. The old <qubit> is measured, so this is not cloning the input.
+
+Direct multiplication of the given matrices gives $J(\alpha)X^s=e^{+is\alpha}Z^sJ((-1)^s\alpha)$. The displayed negative exponent in the supplied relation has the wrong sign for exact matrix equality. The discrepancy is only a <global phase> in a fixed measurement branch, so it does not change this measurement implementation or its outcome probabilities. The positive-sign identity is used when tracking exact matrices.
+
 = ii
 {parent=a}
 {scope}
@@ -112,9 +310,68 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2014/paper_61.pdf
 = Solution
 {parent=ii}
 
+An explicit <measurement-based quantum computation> pattern uses six vertices $u_0,u_1,u_2,v_0,v_1,v_2$. Prepare a <graph state> with every vertex in $|+\rangle$ and apply a <controlled-Z gate> for each edge
+$$
+(u_0,u_1),\ (u_1,u_2),\ (v_0,v_1),\ (v_1,v_2),\ (u_2,v_1).
+$$
+The first two links on each wire permit <graph-state preparation of a computational-basis input> followed by the logical <J gate>. Use the following single-qubit measurements:
+
+* Measure $u_0$ and $v_0$ in the $X$ basis, obtaining $s_0,t_0$.
+* Measure $u_1$ in the equatorial basis with angle $(-1)^{s_0}\alpha$, obtaining $s_1$.
+* Measure $v_1$ in the equatorial basis with angle $(-1)^{t_0}\beta$, obtaining $t_1$.
+* Measure $v_2$ in the $Z$ basis, obtaining $m$, and return $b_2=m\oplus s_1\oplus t_1$. The unmeasured $u_2$ can be discarded.
+
+All entangling edges can be made at preparation time because <controlled-Z gates> commute. A future edge that does not touch a currently measured vertex can equivalently be deferred, which allows the <one-bit teleportation> identities to be applied in their logical order.
+
+The two initial $X$ measurements implement $H|+\rangle=|0\rangle$ with <Pauli frames> $X^{s_0},X^{t_0}$ on the logical inputs. The first adaptive <J gate> then has output frame $X^{s_1}Z^{s_0}$ on $u_2$. Propagating through $E_{u_2v_1}$ gives frames
+$$
+X^{s_1}Z^{s_0\oplus t_0}\ \text{on }u_2,
+\qquad X^{t_0}Z^{s_1}\ \text{on }v_1,
+$$
+up to branchwise global phase. The second adaptive <J gate> converts the latter into
+$$
+X^{t_1\oplus s_1}Z^{t_0}\ \text{on }v_2.
+$$
+A $Z$ correction does not alter a computational-basis measurement, while an $X$ correction flips its bit. Consequently the deterministic classical postprocessing is
+$$
+\boxed{b_2=m\oplus s_1\oplus t_1}.
+$$
+This reproduces the output-bit distribution of the original <quantum circuit>, including its known byproduct corrections.
+
+\Image[paper-61-measurement-pattern.png]
+{height=480}
+{title=Six-vertex graph state, adaptive equatorial measurements and classical parity correction for the two-wire circuit}
+
+There is an additional simplification for these particular zero inputs. Since $J(\alpha)|0\rangle=|+\rangle$, $E(|+\rangle|0\rangle)=|+\rangle|0\rangle$, and $J(\beta)|0\rangle=|+\rangle$, the exact final state is $|+\rangle|+\rangle$, independently of the angles. The requested bit is therefore fair. A single isolated graph-state vertex measured in $Z$ already simulates that bit distribution; the six-vertex pattern also explicitly realizes the circuit and its corrections.
+
 = b
 {parent=4}
 {scope}
 
 = Solution
 {parent=b}
+
+Use the <operator norm> induced by the usual vector norm, and assume the input <quantum state> is normalized. Since $J(\alpha)=HP(\alpha)$ and the <Hadamard gate> is unitary, the <J-gate phase-error operator norm> is
+$$
+\|J(\alpha')-J(\alpha)\|
+=\|P(\alpha')-P(\alpha)\|
+=|e^{i\alpha'}-e^{i\alpha}|
+=2\left|\sin\frac{\alpha'-\alpha}{2}\right|
+\leq|\alpha'-\alpha|<\eta.
+$$
+Write the exact and implemented <quantum circuits> as ordered products $C=U_m\cdots U_1$ and $C'=U'_m\cdots U'_1$. The <quantum circuit gate-error telescoping bound> follows from
+$$
+C'-C=\sum_{j=1}^mU'_m\cdots U'_{j+1}(U'_j-U_j)U_{j-1}\cdots U_1.
+$$
+Every surrounding factor is unitary, including gates tensored with identities on other <qubits>, so the <triangle inequality> and the <submultiplicativity of the operator norm> give
+$$
+\|C'-C\|\leq\sum_j\|U'_j-U_j\|<k\eta.
+$$
+The exact <controlled-Z gates> contribute zero to that sum. Thus
+$$
+\||\psi'_{\rm out}\rangle-|\psi_{\rm out}\rangle\|
+\leq\|C'-C\|<k\eta,
+\qquad
+\boxed{0<\eta\leq\frac{\epsilon}{k}\quad(k\geq1)}.
+$$
+The endpoint $\eta=\epsilon/k$ is sufficient because each implemented angle error is strictly smaller than $\eta$. If $k=0$, the circuits are identical and any positive $\eta$ works. The bound controls the stated vector distance with actual gate phases retained, so no adjustment of the global phase of one output is needed.
