@@ -6,6 +6,12 @@
 
 <Image processing> transforms recorded <image signal> data to remove noise, recover detail or extract structure. <Variational image processing> describes desired reconstructions through energies, while <diffusion image processing> describes filtering through evolution equations.
 
+= Image segmentation
+{parent=Image processing}
+{wiki}
+
+<Image segmentation> divides an <image signal> domain into regions according to a chosen criterion, such as approximately constant or smoothly varying intensity. The <Mumford–Shah segmentation model> balances fidelity, within-region smoothness and <image edge> length. An intensity segmentation need not coincide with semantic object identities.
+
 = Image signal
 {parent=Image processing}
 {title2=$u:\Omega\to\mathbb R$}
@@ -62,6 +68,37 @@ A positive tensor $D=a_ne_ne_n^T+a_te_te_t^T$ selects different diffusion streng
 
 <Image smoothing> suppresses rapid fluctuations attributed to noise. Linear <heat equation> <image smoothing> attenuates Fourier frequencies by $e^{-t|\xi|^2}$ but also blurs <image edges>. Nonlinear filtering uses <image signal> geometry to distinguish fluctuations from meaningful transitions.
 
+= Median filter
+{parent=Image smoothing}
+{wiki}
+
+A <median filter> replaces an <image signal> value by the <median> of nearby values. Unlike a linear average, it can reject isolated extreme observations without averaging both sides of an <image edge>. The small-radius response depends on neighbourhood geometry and measure; a uniform disk-area <median> and a circle-boundary <median> have different time scales.
+
+= Disk-median curvature expansion
+{parent=Median filter}
+{title2=$\operatorname{median}_{B_h(x)}u=u+\tfrac16h^2|\nabla u|\operatorname{div}(\nabla u/|\nabla u|)+o(h^2)$}
+
+At a smooth point with nonzero <gradient>, rotate coordinates so $\nabla u=G e_2$. Write $u=u_0+Gy+\tfrac12(Ax^2+2Bxy+Cy^2)+O(|(x,y)|^3)$. A candidate <median> $u_0+dh^2$ has level boundary $y=(dh^2-Ax^2/2)/G+O(h^3)$ in the disk. The area imbalance is $(2d-A/3)h^3/G+o(h^3)$; equal half-areas force $d=A/6$. Here $A=\Delta u-\nabla u^T(D^2u)\nabla u/|\nabla u|^2$ is the tangential second <derivative>, giving the formula. The disk uses uniform area measure, not its boundary measure.
+
+= Gaussian blur
+{c}
+{parent=Image smoothing}
+{wiki}
+{title2=$G_\sigma*g$}
+
+= Gaussian filtering
+{c}
+{synonym}
+
+<Gaussian blur> applies <convolution> with $G_\sigma(x)=(2\pi\sigma^2)^{-n/2}e^{-|x|^2/(2\sigma^2)}$ to an <image signal>. It averages over a spatial scale $\sigma$, suppressing rapid variation while also blurring <image edges>. The <heat-kernel convolution> realizes this filter at time $t=\sigma^2/2$.
+
+= Gaussian filtering Fourier multiplier
+{c}
+{parent=Gaussian blur}
+{title2=$\widehat G_\sigma(\xi)=e^{-\sigma^2|\xi|^2/2}$}
+
+The <Fourier transform of a Gaussian> and the <convolution theorem> give this multiplier with the angular-frequency convention $e^{-ix\cdot\xi}$. In cycles-per-length <frequencies> $k$, it is $e^{-2\pi^2\sigma^2|k|^2}$. Each coordinate has variance $\sigma^2$, and higher <frequencies> receive stronger attenuation.
+
 = Variational image processing
 {parent=Image processing}
 
@@ -73,7 +110,42 @@ A variational model balances agreement with observed data against a regularity o
 {title2=$\int(u-g)^2+\alpha\int|\nabla u|^2+\beta\mathcal H^1(J_u)$}
 {wiki}
 
+= Mumford–Shah segmentation
+{c}
+{synonym}
+
+= Mumford–Shah segmentation model
+{c}
+{synonym}
+
 The energy $\int_{\Omega\setminus K}(u-g)^2+\alpha\int_{\Omega\setminus K}|\nabla u|^2+\beta\mathcal H^1(K)$ balances data fidelity, within-region smoothness and <image edge> length. In its relaxed <SBV space> formulation the <image edge> set is $J_u$. Clipping to the bounded data range, the <SBV compactness theorem> and <lower semicontinuity> prove existence; the full segmentation problem is not <strictly convex>.
+
+= Ambrosio–Tortorelli approximation
+{c}
+{parent=Mumford–Shah functional}
+{title2=$E_\varepsilon(u,v)$}
+
+The <Mumford–Shah functional> can be approximated by an auxiliary edge field $0\le v\le1$ and energy
+$$
+E_\varepsilon=\int(u-g)^2+\alpha(v^2+\eta_\varepsilon)|\nabla u|^2+\beta\left[\varepsilon|\nabla v|^2+\frac{(1-v)^2}{4\varepsilon}\right],\qquad0<\eta_\varepsilon=o(\varepsilon).
+$$
+The field is near one inside regions and near zero across an <image edge>, weakening smoothing there. The profile $v(s)=1-e^{-|s|/(2\varepsilon)}$ has unit edge energy per unit length in this normalization. The https://onlinelibrary.wiley.com/doi/10.1002/cpa.3160430805[1990 construction] is a <Gamma-convergence> approximation; its global-minimizer <limit> does not guarantee global optimality of an alternating numerical solve. Each fixed-field subproblem is quadratic, but the joint energy is nonconvex.
+
+= Segmentation overfitting without an edge penalty
+{parent=Mumford–Shah functional}
+
+Removing the jump-length cost from the <Mumford–Shah functional> lets finer piecewise-constant partitions reduce squared fidelity without charging for their proliferating <image edges>. For <continuous> data on a compact image domain, fine-cell averages converge in squared error while the ordinary within-cell <gradient> is zero. A finite interface penalty makes that geometry costly.
+
+= Nonconvexity of Mumford–Shah segmentation
+{parent=Mumford–Shah functional}
+
+On the unit square, let $g=0$ and take $u_0=\chi_{\{x_1>0.4\}}$, $u_1=\chi_{\{x_1>0.6\}}$. Both have one unit-length jump and zero ordinary <gradient>. Their mean has two unit-length jumps. For squared-error coefficient one, $[E(u_0)+E(u_1)]/2=0.5+\beta$ while $E((u_0+u_1)/2)=0.45+2\beta$, violating <convexity> when $\beta>0.05$. The <Mumford–Shah functional> can therefore be nonconvex even though the fixed-edge reconstruction subproblem is <strictly convex>.
+
+= Fixed-edge Euler-Lagrange equation for Mumford–Shah
+{parent=Mumford–Shah functional}
+{title2=$u-\alpha\Delta u=g,\quad\partial_nu=0$}
+
+For a fixed sufficiently regular <image edge> set, the <Mumford–Shah functional> is a <strictly convex> quadratic energy on the <Sobolev space> of its complement. A <first variation> gives $u-\alpha\Delta u=g$ within each region and separate one-sided <Neumann boundary conditions> on free edges. A jump need not vanish across an edge. The weak solution is unique by the <Lax-Milgram theorem>; this does not prove uniqueness when the edge set is also optimized.
 
 = Edge-free Mumford–Shah limit
 {parent=Mumford–Shah functional}
@@ -87,11 +159,23 @@ As the jump-length weight tends to infinity with the <gradient> weight fixed, th
 
 The infinite gradient-weight limit restricts to <SBV space> <image signals> with $\nabla u=0$ almost everywhere. Their energy is fidelity plus jump length, represented by constants on a <Caccioppoli partition>. Internal perimeter is counted once by $\tfrac12\sum_i\operatorname{Per}(E_i;\Omega)$; adjacent equal-valued regions can be merged.
 
+= Piecewise-constant segmentation contrast threshold
+{parent=Piecewise-constant Mumford–Shah problem}
+{title2=$\beta L<\frac{a(A-a)}A d^2$}
+
+Suppose two constant data intensities differ by $d$, have areas $a$ and $A-a$, and share an internal boundary of length $L$. Keeping the boundary costs $\beta L$ with zero fidelity; merging the two regions costs $a(A-a)d^2/A$ after fitting their common mean. The displayed inequality makes splitting cheaper among these two candidate geometries. This comparison does not prove either geometry is globally optimal among all partitions.
+
 = Segmentation interface curvature balance
 {parent=Piecewise-constant Mumford–Shah problem}
 {title2=$\beta\kappa=(c_j-g)^2-(c_i-g)^2$}
 
 When grey values are fixed but region labels vary, a smooth interface satisfies $\beta\kappa=(c_j-g)^2-(c_i-g)^2$. The <curvature> uses the normal pointing out of region $i$, positive on an outward-oriented circle. It balances the change in data cost against the first variation of interface length. Fixing a full spatial <image signal> instead fixes its jumps and leaves no such boundary-relocation freedom.
+
+= Triple-junction angle in isotropic segmentation
+{parent=Segmentation interface curvature balance}
+{title2=$\theta_1=\theta_2=\theta_3=120^\circ$}
+
+At a freely moving regular junction of three smooth <image edges> with equal isotropic length weights, the endpoint <first variation> requires the sum of their outward unit tangent vectors to vanish. Three unit vectors with zero sum have pairwise angles of $120$ degrees. Different interface weights instead give a weighted force balance, and constrained or singular junctions require separate hypotheses.
 
 = Region means in piecewise-constant segmentation
 {parent=Piecewise-constant Mumford–Shah problem}
@@ -549,6 +633,33 @@ A decision tree adaptively reveals input coordinates until their observed values
 
 The decision-tree depth $D(f)$ of a <Boolean function> $f$ is the smallest possible maximum number of input coordinates queried along any root-to-leaf path of a decision tree computing $f$.
 
+= Certificate complexity of a Boolean function
+{parent=Decision-tree depth}
+{title2=$C(f)=\max_x\min\{|S|:S\text{ certifies }f(x)\}$}
+
+= Query certificate complexity
+{synonym}
+
+A <query certificate> fixes some input coordinates to their values in a chosen input and must force the output for every completion. The smallest such size is $C(f,x)$; maximizing over accepted or rejected inputs gives $C_1(f)$ or $C_0(f)$, and maximizing both gives $C(f)$. A one-sided maximum over an empty output class is defined as zero. This is <query certificate> complexity, distinct from polynomial verification of a witness in <NP>.
+
+= Query certificate
+{parent=Certificate complexity of a Boolean function}
+{title2=$S\subseteq\{1,\ldots,n\}$}
+
+For a <Boolean function> $f$ and a chosen input $x$, a set of coordinates $S$ is a <query certificate> if every $y$ agreeing with $x$ on $S$ has $f(y)=f(x)$. It fixes actual input bits rather than supplying an independently guessed <certificate (complexity)> to an NP verifier. Minimizing its size at each input and then maximizing gives <query certificate complexity>.
+
+= Evasive Boolean function
+{parent=Decision-tree depth}
+{title2=$D(f)=n$}
+
+A <Boolean function> is evasive when every deterministic <decision tree> computing it has a worst-case path that queries all input bits. The <alternating-sum criterion for decision-tree evasiveness> is one sufficient method for proving this lower bound.
+
+= Alternating-sum criterion for decision-tree evasiveness
+{parent=Evasive Boolean function}
+{title2=$\sum_x(-1)^{\operatorname{wt}(x)}f(x)\ne0\Longrightarrow D(f)=n$}
+
+A leaf reached before all $n$ input bits are queried leaves at least one coordinate free. Flipping that coordinate pairs its inputs with opposite alternating signs and equal output. Thus every such leaf contributes zero. If the total alternating sum is nonzero, a depth below $n$ is impossible.
+
 = Decision-tree adversary for a threshold function
 {parent=Decision-tree depth}
 
@@ -634,6 +745,16 @@ An algorithm runs in polynomial time if its worst-case running time is bounded b
 
 $\mathbf P$ is the class of <decision problem>[decision problems] decidable by a <deterministic computation> in <polynomial time>.
 
+= P-completeness
+{c}
+{parent=P (complexity)}
+
+= P-complete
+{c}
+{synonym}
+
+A language in <P> to which every P language has a <logspace many-one reduction>. The reduction strength matters: using arbitrary polynomial-time reductions instead would make completeness trivial for nontrivial P decision problems.
+
 = NP
 {disambiguate=complexity}
 {title2=$\mathbf{NP}$}
@@ -668,6 +789,44 @@ A certificate for a positive instance is a polynomial-length string that makes a
 {wiki}
 
 The space complexity of an algorithm bounds the amount of working memory it uses as a function of input length.
+
+= Nondeterministic space complexity class
+{parent=Space complexity}
+{title2=$\mathrm{NSPACE}(s(n))$}
+
+= NSPACE
+{c}
+{synonym}
+
+Languages accepted by <nondeterministic Turing machines> using $O(s(n))$ work space on every computation path, with acceptance defined by existence of an accepting path. Bounded-space loops do not prevent the reachability interpretation in the finite <configuration graph>.
+
+= Savitch theorem
+{c}
+{parent=Nondeterministic space complexity class}
+{wiki=Savitch's_theorem}
+{title2=$\mathrm{NSPACE}(s)\subseteq\mathrm{SPACE}(s^2),\quad s\geq\log n$}
+
+= Savitch's theorem
+{c}
+{synonym}
+
+Reachability within $2^k$ steps can be tested by enumerating a midpoint and recursively testing two half-paths. Configurations have $O(s)$ bits and recursion depth $O(s)$, yielding deterministic space $O(s^2)$. The <space-bound discovery by exit reachability> permits this simulation without assuming that the supplied function $s$ is constructible.
+
+= Space-bound discovery by exit reachability
+{parent=Savitch theorem}
+{title2=$m\leftarrow2m$}
+
+For a bounded-space machine, start with a logarithmic work budget and test accepting reachability and reachability of a transition leaving the budget. Accept if acceptance is found, double the budget if an exit is reachable, and otherwise reject. If all paths use at most $Cs(n)$ space, doubling stops at $O(s(n))$. Each budget test uses the <Savitch theorem> recursion and the storage is reused. The method discovers a sufficient bound without computing $s(n)$.
+
+= Deterministic space complexity class
+{parent=Space complexity}
+{title2=$\mathrm{SPACE}(s(n))$}
+
+= SPACE
+{c}
+{synonym}
+
+Languages decidable by deterministic <Turing machines> using $O(s(n))$ work-tape cells with a read-only input. Input-head addresses take $O(\log n)$ bits, while the input itself is not charged to work space. The definition does not require the bound to be computed by the deciding machine.
 
 = Polynomial-register real-arithmetic computation
 {parent=Space complexity}
@@ -717,6 +876,11 @@ $\mathbf{NL}$ consists of decision problems solvable by a nondeterministic <loga
 
 A decision problem is NL-complete when it belongs to <NL> and every problem in NL reduces to it by a deterministic logarithmic-space many-one reduction.
 
+= Directed cycle detection
+{parent=NL-complete}
+
+Decide whether a <directed graph> has a nonempty directed cycle; self-loops count. This problem is <NL-complete>. Membership guesses a returning walk of at most the vertex count. For hardness, layer a reachability instance into $N+1$ layers with wait arcs, then add only the backward edge from the target in the last layer to the source in the first. The otherwise acyclic layering has a cycle exactly when the original target is reachable. Zero-length paths must not be treated as cycles.
+
 = ST-connectivity
 {parent=NL-complete}
 {c}
@@ -763,6 +927,12 @@ A polynomial-time reduction transforms instances of one computational problem in
 
 A polynomial-time many-one reduction from a <decision problem> $A$ to a decision problem $B$ is a polynomial-time computable function $r$ satisfying $x\in A$ exactly when $r(x)\in B$.
 
+= Logspace many-one reduction
+{parent=Polynomial-time many-one reduction}
+{title2=$A\leq_m^{\log}B$}
+
+A total mapping $f$ with $x\in A$ exactly when $f(x)\in B$, computed by a deterministic logarithmic-work-space transducer with read-only input and write-only output. Such reductions compose, and are used for <NL-completeness> and <P-completeness>. The output can be polynomially larger than the work storage.
+
 = NP-hardness
 {parent=Polynomial-time many-one reduction}
 {c}
@@ -785,6 +955,14 @@ A decision problem is NP-hard when every problem in <NP> polynomial-time many-on
 
 A decision problem is NP-complete when it is both in <NP> and <NP-hardness>[NP-hard].
 
+= Cook-Levin theorem
+{c}
+{parent=NP-completeness}
+{wiki=Cook–Levin_theorem}
+{title2=$\mathrm{SAT}\text{ is NP-complete}$}
+
+Every <NP> verifier can be compiled into a polynomial-size <Boolean circuit> whose inputs encode its <certificate (complexity)>, and then into an equisatisfiable <conjunctive normal form> by a <Tseitin transformation>. This gives a <polynomial-time many-one reduction> from every <NP> language to <SAT>. Checking a guessed assignment proves membership, so <SAT> is <NP-complete>.
+
 = Subset sum problem
 {parent=NP-completeness}
 {title2=$\sum_{i\in S}s_i=t$}
@@ -799,7 +977,18 @@ Given finitely encoded nonnegative integers $s_i$ and target $t$, the subset sum
 {c}
 {wiki}
 
+= SAT
+{c}
+{synonym}
+
 The Boolean satisfiability problem asks whether a Boolean formula has an assignment making it true.
+
+= 2UN-SAT
+{c}
+{parent=Boolean satisfiability problem}
+{title2=$\text{at most two positive literals per clause}$}
+
+Satisfiability of <conjunctive normal form> formulas whose <clauses> have at most two unnegated variables. It is <NP-complete>: binary AND/OR and unary NOT gate equivalences in a <Tseitin transformation> already satisfy that restriction. <Clauses> may contain arbitrarily many negative <literals>; the total <clause> width is not restricted to two.
 
 = Maximum 2-satisfiability
 {parent=Boolean satisfiability problem}
@@ -832,6 +1021,17 @@ A Boolean formula is a finite expression built from <Boolean variables> and <Boo
 {parent=Boolean formula}
 
 A <Boolean formula> is in conjunctive normal form when it is a conjunction of <Boolean clauses>. It is true precisely when every clause is true; an empty conjunction is true. <3-SAT> restricts each clause to at most three <Boolean literals>.
+
+= Tseitin transformation
+{c}
+{parent=Conjunctive normal form}
+{wiki=Tseytin_transformation}
+
+= Tseytin transformation
+{c}
+{synonym}
+
+Introduce a <Boolean variable> for each gate output and impose its equivalence to the gate's input function with a constant number of <clauses>. A final unit <clause> forces acceptance. For a bounded-fan-in <Boolean circuit>, the formula size is linear in the gate count and it is satisfiable exactly when some input makes the <Boolean circuit> output one. Auxiliary variables extend the satisfying assignments; this is equisatisfiability, not equality as functions of the enlarged variable set.
 
 = Clause of a Boolean formula
 {title2=$\ell_1\lor\cdots\lor\ell_k$}
@@ -911,12 +1111,55 @@ If $\mathbf P\ne\mathbf{NP}$, then <NP> contains a decision problem that is neit
 
 Circuit complexity studies the size and depth of circuits computing finite-input functions.
 
+= NC1
+{c}
+{parent=Circuit complexity}
+{title2=$\mathrm{NC}^1$}
+
+Languages computable by polynomial-size <Boolean circuit> families of bounded fan-in and depth $O(\log n)$. One can specify the nonuniform or logspace-uniform convention explicitly. Balanced constant-size operations give examples such as the <MOD3 binary divisibility problem> without nonuniform advice.
+
+= MOD3 binary divisibility problem
+{c}
+{parent=NC1}
+{title2=$\{x:\operatorname{value}_2(x)\equiv0\pmod3\}$}
+
+= MOD3
+{c}
+{synonym}
+
+For a binary numeral, its remainder is the sum of its bits weighted alternately by $+1$ and $-1$ from the least significant position. A <balanced finite-monoid reduction circuit> adds these residues modulo three in two-bit encodings. A final zero test gives a uniform linear-size logarithmic-depth <Boolean circuit>, proving membership in <NC1>.
+
+= Balanced finite-monoid reduction circuit
+{parent=NC1}
+{title2=$\text{size }O(n),\quad\text{depth }O(\log n)$}
+
+A fixed finite <monoid> operation has a constant-size Boolean truth-table <Boolean circuit> on its constant-bit encodings. Reduce $n$ elements in a balanced binary tree to get linear size and logarithmic depth. Associativity ensures that tree grouping does not change the product. <MOD3> uses addition in the three-element residue group, with input-position signs handled at the leaves.
+
 = Boolean circuit
 {parent=Circuit complexity}
 {c}
 {wiki}
 
 A Boolean circuit is a finite directed acyclic graph of <Boolean operation>[Boolean gates] with designated inputs and outputs.
+
+= Circuit value problem
+{parent=Boolean circuit}
+
+= CIRCUIT VALUE
+{c}
+{synonym}
+
+Given a finite acyclic <Boolean circuit> and its input assignment, determine the output bit. Topological gate evaluation places the problem in <P>; it is a standard <P-complete> problem under <logspace many-one reductions>. <Boolean circuit> evaluation is different from <circuit satisfiability problem>, which asks whether some assignment succeeds.
+
+= AND-NOT circuit value problem
+{c}
+{parent=Circuit value problem}
+
+= AND-NOT CIRCUIT VALUE
+{c}
+{synonym}
+
+The <circuit value problem> restricted to AND and NOT gates remains <P-complete>. Replace each OR by $\neg(\neg x\wedge\neg y)$, using a constant-size gadget. Gate indices and gadget positions can be emitted in <logarithmic space>, and assignments are preserved. Constants, when needed, can be represented by fixed-valued input nodes.
 
 = Circuit satisfiability problem
 {parent=Boolean circuit}
@@ -945,10 +1188,32 @@ The dual of a Boolean function $f$ is $f^*(x)=\neg f(\neg x)$. Swapping AND with
 
 A circuit family $(C_n)$ contains one circuit for each input length $n$. The circuit for one length may be chosen independently of those for other lengths, so a family is a nonuniform model of computation.
 
+= Circuit size class
+{parent=Circuit family}
+{title2=$\mathrm{SIZE}(T(n))$}
+
+= SIZE
+{c}
+{synonym}
+
+The languages whose length-$n$ <indicator functions> have <Boolean circuits> with at most $T(n)$ gates for sufficiently large $n$, over a fixed bounded-fan-in complete basis. The family need not be constructible by one algorithm. Polynomial-size bounds give <p-poly>; the <truth-table upper bound for circuit size> applies even to <undecidable> languages.
+
+= Truth-table upper bound for circuit size
+{parent=Circuit size class}
+{title2=$L\in\mathrm{SIZE}(O(n2^n))$}
+
+OR together one minterm for each accepted length-$n$ input. Each minterm is an AND of the appropriate <Boolean literals>. There are at most $2^n$ minterms, and their negated input wires can be shared, giving $O(n2^n)$ bounded-fan-in gates. This is a nonuniform existence statement, not an algorithm for determining an <undecidable> truth table.
+
 = Polynomial-size circuit family
 {parent=Circuit family}
 
 A circuit family has polynomial size when $C_n$ has at most $n^{O(1)}$ gates.
+
+= Undecidable unary languages with linear-size circuits
+{parent=Polynomial-size circuit family}
+{title2=$U_A=\{1^n:n\in A\}$}
+
+For any set of lengths $A$, choose at length $n$ a constant-zero <Boolean circuit> when $n\notin A$, and an AND of all inputs when $n\in A$. This uses $O(n+1)$ gates. If $A$ is <undecidable>, so is $U_A$, yet it belongs to <p-poly>. Since all <NP> languages are decidable by certificate enumeration, this proves <p-poly> is not equal to <NP>; it does not resolve containment in the other direction.
 
 = P/poly
 {title2=$\mathbf P/\mathrm{poly}$}

@@ -11,6 +11,9 @@ all: media
 
 media: $(FIGURES)
 
+# The phase trajectory reuses the adjacent transport-model generator.
+$(MEDIA_ROOT)/$(FIGURE_SOURCE_ROOT)/2013/iii/paper-71-phase-trajectory.png: $(FIGURE_SOURCE_ROOT)/2013/iii/paper-71-phase-trajectory.py $(FIGURE_SOURCE_ROOT)/2013/iii/paper-71-fields.py
+
 $(MEDIA_ROOT)/%.png: %.py pyproject.toml Makefile
 	mkdir -p -- ./$(dir $@)
 	mkdir -p $(MPLCONFIGDIR)
