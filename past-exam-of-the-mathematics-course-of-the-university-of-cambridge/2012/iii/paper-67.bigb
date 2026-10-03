@@ -15,12 +15,59 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2012/paper_67.pdf
 = Solution
 {parent=a}
 
+Cyclic periodicity on $\mathbb Z_N$ implies that the least positive period $r$ divides $N$: the shifts preserving the <function> form a <subgroup> of the cyclic group. Injectivity within one period says that distinct residue classes modulo $r$ have distinct function values. Write $L=N/r$.
+
+Prepare the <uniform superposition state> by applying the <quantum Fourier transform> to $|0\rangle$, and evaluate $f$ reversibly into a second <quantum register>. This is efficient because the given classical <Boolean circuit> can be converted into a <reversible circuit>, with its workspace cleaned by <uncomputation>. The resulting <quantum state> is
+$$
+\frac1{\sqrt N}\sum_{x=0}^{N-1}|x\rangle|f(x)\rangle.
+$$
+Measuring the function <quantum register> leaves a uniform <coset> state $L^{-1/2}\sum_{j=0}^{L-1}|x_0+jr\rangle$ for some $0\le x_0<r$. The amplitude at $c$ after a <quantum Fourier transform> is
+$$
+\frac{e^{2\pi icx_0/N}}{\sqrt{NL}}\sum_{j=0}^{L-1}e^{2\pi icj/L}.
+$$
+The <finite geometric series> is zero unless $c$ is a multiple of $L$, and then equals $L$. Thus a <computational-basis measurement> produces a uniform <Fourier sample>
+$$
+\boxed{c=s\frac Nr,\qquad s\in\{0,\ldots,r-1\}.}
+$$
+The <exact period recovery from a Fourier sample> computes
+$$
+\widehat r=\frac N{\gcd(c,N)}=\frac r{\gcd(s,r)}.
+$$
+A <greatest common divisor> is computable in time polynomial in $\log N$. The candidate is always a divisor of the true period, and equals it precisely when $s$ is coprime to $r$.
+
+For the success flag, compute $f(\widehat r\bmod N)$ and compare with $f(0)$. If $\widehat r<r$, injectivity within the first period makes these unequal. If $\widehat r=r$, periodicity makes them equal, including $r=N$. Hence **accept and output $\widehat r$ exactly when this comparison succeeds; otherwise report failure**. This is <heralded exact quantum period finding when the period divides the register size>, with no false acceptance. The case $r=1$ succeeds even on the sample $c=0$.
+
+The exact success <probability> is
+$$
+\boxed{P_{\rm success}=\frac{\varphi(r)}r,}
+$$
+where $\varphi$ is the <Euler totient function>. For $r\mid N$, the prime-product formula gives $\varphi(r)/r\ge\varphi(N)/N$. A <Rosser–Schoenfeld totient bound> supplies the needed lower bound $\varphi(N)/N=\Omega(1/\log\log N)$ for large $N$. Every single attempt, including verification, has the assumed polynomial-in-$\log N$ gate cost. Repeating $O(\log\log N)$ times gives constant success <probability> with a certified result whenever one is found.
+
+**The printed $O$ in the totient hint should be a lower-bound statement, $\Omega$.** Literally, $\varphi(N)=O(N/\log\log N)$ is false: at primes $N$, $\varphi(N)=N-1$. Likewise the exact single-sample success <probability> need not be $O(1/\log\log N)$; for prime period it tends to one. The useful intended guarantee is the displayed inverse-log-log lower bound, not a universal upper bound. If an algorithm satisfying the literal success upper bound is desired, one can additionally accept an otherwise certified run only when $k=\lceil\log\log N\rceil$ independent fair bits are all zero. This retains a detectable failure flag and polynomial runtime, and has success at most $2^{-k}=O(1/\log\log N)$, but deliberately weakens the useful guarantee. The standard unsuppressed algorithm above gives the stronger intended performance. Small $N$ can be handled directly. Primary evidence for the totient lower bound is Theorem 15, equations (3.41)–(3.42), in https://denisevellachemla.eu/Rosser-Schoenfeld-1962.pdf .
+
 = b
 {parent=1}
 {scope}
 
 = Solution
 {parent=b}
+
+Let $\omega=e^{2\pi i/3}$. The positive-exponent <quantum Fourier transform> gives $|\xi\rangle=3^{-1/2}\sum_{y=0}^2\omega^{2y}|y\rangle$. Reindexing the <cyclic shift operator> gives
+$$
+S|\xi\rangle=\frac1{\sqrt3}\sum_{z=0}^2\omega^{2(z-1)}|z\rangle=\omega^{-2}|\xi\rangle=\omega|\xi\rangle.
+$$
+Thus **$|\xi\rangle$ is an eigenstate with eigenvalue $\omega$**, with this sign fixed by the printed <quantum Fourier transform> convention.
+
+Prepare the first two <qutrits> in $(\operatorname{QFT}_3|0\rangle)^{\otimes2}$ and the answer <qutrit> in $|\xi\rangle$. The <modular-addition quantum oracle> applies $S^{f(x_1,x_2)}$ to the answer. Its <eigenvalue> produces <quantum phase kickback>, leaving
+$$
+\frac13\sum_{x_1,x_2=0}^2\omega^{a_1x_1+a_2x_2}|x_1,x_2\rangle\otimes|\xi\rangle
+=\operatorname{QFT}_3|a_1\rangle\otimes\operatorname{QFT}_3|a_2\rangle\otimes|\xi\rangle.
+$$
+Apply $\operatorname{QFT}_3^{-1}$ to each input <qutrit>, then measure them in the <computational basis>. The result is
+$$
+\boxed{(a_1,a_2)\text{ with probability }1.}
+$$
+The preparation, inverse transforms and measurements are independent of $f$, and there is exactly one use of $U_f$. This is <qutrit linear-function identification>, the ternary version of <Bernstein-Vazirani phase kickback>.
 
 = 2
 {parent=Paper 67}
@@ -33,12 +80,35 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2012/paper_67.pdf
 = Solution
 {parent=a}
 
+Use the bit-query <Boolean quantum oracle> $O_x|i,b,z\rangle=|i,b\mathbin\oplus x_i,z\rangle$, where $z$ denotes workspace. Initially every <probability amplitude> is independent of $x$, hence is a constant <polynomial>. An input-independent <unitary gate> only forms linear combinations of <probability amplitudes>, so it does not increase their <polynomial degree>.
+
+If $a_{i,b,z}(x)$ is an amplitude before a query, its new value is
+$$
+a'_{i,b,z}(x)=(1-x_i)a_{i,b,z}(x)+x_i a_{i,b\oplus1,z}(x).
+$$
+One query increases <polynomial degree> by at most one. Inductively, after $T$ queries each amplitude has <polynomial degree> at most $T$. The acceptance <probability> is a sum of squared absolute values of the accepting amplitudes, so it is a real <polynomial> of degree at most $2T$. Intermediate <quantum measurements> and classical adaptation can be retained coherently, or handled by summing unnormalized branch probabilities; either approach yields the same degree bound.
+
+An exact algorithm has acceptance <probability> precisely $f(x)$ at every Boolean input. The <multilinear reduction on the Boolean cube> replaces positive powers of each $x_i$ by $x_i$, preserving these values without increasing <polynomial degree>. Therefore the <polynomial method for quantum query lower bounds> gives
+$$
+\boxed{\deg(f)\le2T,\qquad Q_E(f)\ge\left\lceil\frac{\deg(f)}2\right\rceil.}
+$$
+Here $\deg(f)$ is the degree of the unique <multilinear polynomial> representing the <Boolean function>, and $Q_E$ is its <exact quantum query complexity>. Uniqueness follows, for example, by evaluating successively on the indicator vectors of subsets: the value on a subset determines its coefficient once all smaller-subset coefficients are known.
+
 = b
 {parent=2}
 {scope}
 
 = Solution
 {parent=b}
+
+For the three-bit <majority function>, the pair products count how many pairs of input bits are both one. Their sum is zero at <Hamming weights> zero and one, one at weight two, and three at weight three. Subtracting twice the triple product corrects the last value. Hence
+$$
+\boxed{\operatorname{MAJ}(x)=x_1x_2+x_1x_3+x_2x_3-2x_1x_2x_3.}
+$$
+This is a <multilinear polynomial> of degree three, and its top coefficient is nonzero. Uniqueness of the Boolean <multilinear polynomial> excludes a degree-two alternative. The <polynomial method for quantum query lower bounds> therefore yields $T\ge3/2$, and the integer number of queries gives
+$$
+\boxed{Q_E(\operatorname{MAJ})\ge2.}
+$$
 
 = c
 {parent=2}
@@ -47,6 +117,14 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2012/paper_67.pdf
 = Solution
 {parent=c}
 
+First use the allowed one-query algorithm to learn $p=x_1\mathbin\oplus x_2$ exactly. This restricted two-index <Boolean quantum oracle> is realized by relabelling indices $1,2$ in a single query to the original input. Measure its output and choose the second query classically.
+
+If $p=0$, the first two bits agree and their common value is the majority, irrespective of $x_3$. Query $x_1$ and output it. If $p=1$, the first two bits cancel in the vote, so query $x_3$ and output it. Thus
+$$
+\boxed{\operatorname{MAJ}(x)=\begin{cases}x_1,&x_1\oplus x_2=0,\\x_3,&x_1\oplus x_2=1.\end{cases}}
+$$
+The <exact two-query majority algorithm> uses one parity query and one ordinary bit query on every branch, and is correct on all eight inputs. Together with the lower bound this proves **$Q_E(\operatorname{MAJ})=2$**.
+
 = d
 {parent=2}
 {scope}
@@ -54,12 +132,36 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2012/paper_67.pdf
 = Solution
 {parent=d}
 
+Boolean conjunction is multiplication on zero-one inputs. The <block conjunction of three-bit majorities> therefore has the <multilinear polynomial>
+$$
+P_n(x)=\prod_{i=1}^n\left(x_{3i-2}x_{3i-1}+x_{3i-2}x_{3i}+x_{3i-1}x_{3i}-2x_{3i-2}x_{3i-1}x_{3i}\right).
+$$
+The factors use disjoint variables, so their product remains a <multilinear polynomial>. Its monomial containing all $3n$ variables has coefficient $(-2)^n\ne0$; no term has higher degree. By uniqueness, the representing <multilinear polynomial> has degree exactly $3n$. Applying the <polynomial method for quantum query lower bounds> gives
+$$
+\boxed{Q_E(\operatorname{MAJ}_n)\ge\left\lceil\frac{3n}{2}\right\rceil.}
+$$
+This argument concerns <exact quantum query complexity>; the analogous claim for bounded error does not follow from exact polynomial degree.
+
 = e
 {parent=2}
 {scope}
 
 = Solution
 {parent=e}
+
+For a <Boolean function> $f$, its <block sensitivity> at $x$ is the maximum number of pairwise disjoint nonempty index sets $B_j$ such that flipping all bits in each $B_j$ individually changes $f(x)$. Maximize over $x$ to obtain $\operatorname{bs}(f)$.
+
+Choose $x=(110)(110)\cdots(110)$, so every three-bit block has majority one and the conjunction is one. In each block, flipping either of its two one bits alone changes that block's majority to zero and therefore changes the conjunction to zero. These $2n$ singleton index sets are all disjoint, so
+$$
+\operatorname{bs}(\operatorname{MAJ}_n)\ge2n.
+$$
+The supplied bounded-error <quantum query complexity> lower bound now gives
+$$
+\boxed{Q_2(\operatorname{MAJ}_n)=\Omega(\sqrt n).}
+$$
+Here $Q_2$ denotes a fixed two-sided error bound below $1/2$, such as $1/3$.
+
+In fact the <block sensitivity> is exactly $2n$. At a one-input, selecting two one bits from each triple gives a size-$2n$ certificate: any block flip changing the output must touch it, so disjoint sensitive sets number at most $2n$. At a zero-input, one failing triple contains at least two zero bits; fixing those two zeros certifies zero, so at most two disjoint sensitive sets can change the output. The lower-bound witness above attains $2n$. The <certificate complexity of a Boolean function> supplies these upper bounds, though only the witness is needed for the requested result.
 
 = 3
 {parent=Paper 67}
@@ -72,6 +174,34 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2012/paper_67.pdf
 = Solution
 {parent=a}
 
+Use five resource <qubits>, all initially $|+\rangle$, and prepare the <graph state> with edges $\{1,3\}$, $\{2,4\}$, $\{3,4\}$, $\{4,5\}$. The labels here identify resource <vertices>; logical wire 1 travels from vertex 1 to 3, and logical wire 2 travels from 2 to 4 to 5. Each edge is a <controlled-Z gate>, and these entangling gates commute, so all can be applied when preparing the resource.
+
+\Image[paper-67-measurement-graph.png]
+{height=400}
+{title=Five-vertex graph resource, adaptive measurement angle, and classical output corrections for the two-qubit circuit}
+
+Measure vertex 1 in the <equatorial qubit measurement> basis at angle $\alpha$, with outcome $s_1$, and vertex 2 at angle $\beta$, with outcome $s_2$. These measurements can be simultaneous. The <one-bit teleportation> lemma leaves the state on vertices 3 and 4, before the last teleportation, equal up to <global phase> to
+$$
+X_3^{s_1}Z_3^{s_2}X_4^{s_2}Z_4^{s_1}E_{34}(J(\alpha)\otimes J(\beta))|++\rangle.
+$$
+Indeed commuting the two initial $X$ byproducts through $E_{34}$ creates precisely the crossed $Z$ factors. The unused edge from 4 to the fresh vertex 5 is the last <one-bit teleportation> link.
+
+Measure vertex 4 at angle $\theta=(-1)^{s_2}\gamma$, with outcome $s_4$. By the printed <J gate> propagation identities,
+$$
+X^{s_4}J(\theta)X^{s_2}Z^{s_1}=e^{is_2\theta}X^{s_4\oplus s_1}Z^{s_2}J(\gamma).
+$$
+Thus the remaining two-qubit <quantum state> is
+$$
+\left(X_3^{s_1}Z_3^{s_2}\right)\otimes\left(X_5^{s_4\oplus s_1}Z_5^{s_2}\right)|\psi_C\rangle,
+$$
+up to <global phase>, where $|\psi_C\rangle$ is the desired circuit output relabelled onto vertices 3 and 5. The sign choice cancels the unwanted angle reversal caused by the $X$ frame on vertex 4.
+
+Finally measure vertices 3 and 5 in the <computational basis>, obtaining raw results $t_3,t_5$. The <Pauli Z gate> affects only phases, while the <Pauli X gate> flips a computational result. The <five-vertex graph-state circuit simulation> therefore outputs
+$$
+\boxed{b_1=t_3\oplus s_1,\qquad b_2=t_5\oplus s_4\oplus s_1.}
+$$
+This deterministic classical correction reproduces the ideal joint <probability distribution> for every preceding measurement branch. The final fixed-basis measurements may share the second layer with the adaptive measurement of vertex 4, because their projectors act on different <vertices>; measuring them afterwards is also valid.
+
 = b
 {parent=3}
 {scope}
@@ -79,12 +209,50 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2012/paper_67.pdf
 = Solution
 {parent=b}
 
+Replace every <CNOT gate> by $H_jE_{ij}H_j$. The resulting <quantum circuit> contains only <Hadamard gates> and <controlled-Z gates>. Realize each <Hadamard gate> by a fresh <one-bit teleportation> link measured at angle zero, so every internal measurement is in the fixed $X$ basis. Insert a graph edge between the current wire vertices for each <controlled-Z gate>. This gives a suitable <graph state> because the inputs are $|+\rangle$, and entangling gates can be moved to resource preparation: they commute with one another and with earlier measurements on vertices no longer used by the gate.
+
+Track a <Pauli frame> $\bigotimes_iX_i^{p_i}Z_i^{q_i}$. An angle-zero <one-bit teleportation> with raw result $s$ updates the frame on that wire by
+$$
+(p,q)\longmapsto(s\oplus q,p),
+$$
+because $HX^pZ^q$ equals $X^qZ^pH$ up to <global phase>. A <controlled-Z gate> updates $q_i\leftarrow q_i\oplus p_j$ and $q_j\leftarrow q_j\oplus p_i$, leaving the $p$ bits unchanged. These are classical binary updates; no measurement angle depends on them.
+
+All the internal <quantum measurements> consequently have predetermined bases. Their projectors act on distinct resource <vertices> and commute, so **all internal measurements can be performed simultaneously: the logical measurement depth is at most one**. If the output is to be read in the <computational basis>, those fixed-basis measurements can occur in the same layer; a raw output $t_i$ is relabelled $t_i\oplus p_i$. If quantum outputs are retained, the same calculation gives the desired output in a known <Pauli frame>. This <nonadaptive Hadamard–CNOT measurement pattern> concerns measurement depth, not the depth of resource preparation or classical frame computation.
+
 = c
 {parent=3}
 {scope}
 
 = Solution
 {parent=c}
+
+Write the single-qubit gate as $R(\alpha)=HP(\alpha)H$, where $P(\alpha)=\operatorname{diag}(1,e^{i\alpha})$. Thus it is, up to <global phase>, a <rotation about the x-axis>, and it commutes with $X$. Compile it as a <Hadamard gate> followed by the <J gate> $J(\alpha)$. Compile each <CNOT gate> as before into $H_jE_{ij}H_j$. The usual wire-link construction yields a resource <graph state> for the fixed $|+\rangle$ inputs; the same frame algebra also works for logical input states supplied to an open resource.
+
+The point is stronger than counting two gates per rotation: a long circuit must not acquire a new adaptive layer for every rotation. We show that every nonzero-angle basis depends only on outcomes of the angle-zero measurements.
+
+For an $R(\alpha)$ gadget, let the incoming <Pauli frame> be $X^pZ^q$. Denote the angle-zero outcome by $s$, and the subsequent angle-$\theta$ outcome by $t$. The two <one-bit teleportations> give
+$$
+X^tJ(\theta)X^sHX^pZ^q\simeq X^{t\oplus p}Z^{s\oplus q}R(\alpha),\qquad \theta=(-1)^{s\oplus q}\alpha,
+$$
+where $\simeq$ omits a <global phase>. Consequently the rotation gadget updates
+$$
+\boxed{p'=p\oplus t,\qquad q'=q\oplus s.}
+$$
+Only its angle-zero outcome enters the new $Z$ frame. Its arbitrary-angle outcome enters only the $X$ frame, which commutes through all later $R$ gates.
+
+For a <CNOT gate> from $i$ to $j$, call the outcomes of its two angle-zero target-wire measurements $r,u$, in that order. The <Pauli frame> update is
+$$
+p_i'=p_i,\qquad p_j'=p_j\oplus p_i\oplus u,\qquad q_i'=q_i\oplus q_j\oplus r,\qquad q_j'=q_j\oplus r.
+$$
+These follow by applying the preceding <Hadamard gate> and <controlled-Z gate> frame updates twice. In particular, the new $Z$ frames depend on old $Z$ frames and angle-zero outcomes only; they never depend on old $X$ frames or arbitrary-angle outcomes. This is the measurement-level version of the given fact that a <CNOT gate> propagates $X$ operators into products of $X$ operators.
+
+Starting with no frame, induction in the original circuit order now computes every $q$ solely from angle-zero results. Therefore every sign $(-1)^{s\oplus q}$ is known after one simultaneous layer containing **all angle-zero measurements**, including those appearing late in the circuit. Compute those signs classically, and perform **all remaining equatorial measurements in a second simultaneous layer**. An angle zero that occurs accidentally among these remaining choices may stay in that layer. Reordering is valid because, once a branch's bases have been fixed, the projectors on different vertices commute; no second-layer result is needed to choose another second-layer basis.
+
+The <two-layer measurement pattern for CNOT and x-axis rotations> thus has
+$$
+\boxed{\text{logical measurement depth}\le2,}
+$$
+independently of the number or order of gates. Fixed <computational-basis measurements> of classical outputs can be included in layer two, followed by relabelling $t_i\mapsto t_i\oplus p_i$. For quantum outputs the final <Pauli frame> gives the required correction. The depth statement excludes graph preparation and classical processing, as in the definition in the paper.
 
 = 4
 {parent=Paper 67}
@@ -97,12 +265,38 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2012/paper_67.pdf
 = Solution
 {parent=a}
 
+Put $M=2^m$ and prepare $m$ control <qubits> in $|0\rangle^{\otimes m}$ and the target in the supplied <eigenstate> $|\psi\rangle$. Apply a <Hadamard gate> to every control <qubit>. Let $k=\sum_{j=0}^{m-1}2^jk_j$ denote the integer encoded in that <quantum register>.
+
+For every $j$, apply a <controlled unitary gate> $U^{2^j}$ with control $k_j$ and the same target. The <quantum phase kickback> yields
+$$
+\frac1{\sqrt M}\sum_{k=0}^{M-1}|k\rangle U^k|\psi\rangle=\frac1{\sqrt M}\sum_{k=0}^{M-1}e^{2\pi ikx/M}|k\rangle\otimes|\psi\rangle=\operatorname{QFT}_M|x\rangle\otimes|\psi\rangle.
+$$
+Applying $\operatorname{QFT}_M^{-1}$ to the controls therefore produces $|x\rangle$ exactly. A <computational-basis measurement> returns $x$ with certainty, and the algorithm outputs
+$$
+\boxed{\phi=x/2^m.}
+$$
+This is <exact quantum phase estimation>; exactness uses the finite dyadic phase promise, not a rounding argument.
+
+Only a <controlled-U gate> is supplied as a primitive. Its $2^j$ repetitions implement controlled-$U^{2^j}$, so the total number of black-box uses is $\sum_{j=0}^{m-1}2^j=2^m-1$. Access to powers as unit-cost primitives would be a different <quantum query complexity> model. This distinction is the <cost of exact phase estimation on a dyadic spectrum>.
+
 = b
 {parent=4}
 {scope}
 
 = Solution
 {parent=b}
+
+The <quantum circuit> has one control wire per binary digit and one target <quantum register>. Every control starts in $|0\rangle$, receives a <Hadamard gate>, controls the corresponding power $U^{2^j}$, and then enters the collective inverse <quantum Fourier transform>. Only the control register is measured; the target stays in $|\psi\rangle$.
+
+\Image[paper-67-phase-estimation-circuit.png]
+{height=420}
+{title=Exact dyadic phase-estimation circuit with controlled powers, inverse Fourier transform, and little-endian output bits}
+
+The omitted intermediate wires continue the pattern $j=0,1,\ldots,m-1$. The inverse <quantum Fourier transform> black box is defined on the integer basis $|k\rangle$ with $k=\sum_j2^jk_j$, so the displayed ordering introduces no hidden bit reversal. The measured bits satisfy
+$$
+\boxed{x=\sum_{j=0}^{m-1}2^jx_j,\qquad\phi=x/2^m.}
+$$
+Each controlled power box represents $2^j$ sequential controlled-$U$ uses when only that primitive is available.
 
 = c
 {parent=4}
@@ -111,9 +305,39 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2012/paper_67.pdf
 = Solution
 {parent=c}
 
+Let $\lambda=e^{2\pi i\phi}$. In terms of the <Pauli X gate>, the given <unitary operator> is $U_\phi=aI+bX$, with $a=(1+\lambda)/2$ and $b=(1-\lambda)/2$. Since $X|+\rangle=|+\rangle$ and $X|-\rangle=-|-\rangle$,
+$$
+\boxed{U_\phi|+\rangle=|+\rangle,\qquad U_\phi|-\rangle=e^{2\pi i\phi}|-\rangle.}
+$$
+Thus the normalized <eigenvectors> are $|\pm\rangle=(|0\rangle\pm|1\rangle)/\sqrt2$, with <eigenvalues> $1$ and $e^{2\pi i\phi}$ respectively. At $\phi=0$ they coincide as eigenvalues, and the whole two-dimensional <Hilbert space> is the eigenspace; the same chosen eigenbasis remains valid.
+
+Prepare $|-\rangle$ independently of $\phi$ and use the <exact quantum phase estimation> circuit of the preceding parts on the controlled-$U_\phi$ black box. It returns $\phi$ exactly using
+$$
+\boxed{2^m-1=O(2^m)\text{ controlled black-box calls}.}
+$$
+The chosen eigenstate contains all the unknown phase information, unlike $|+\rangle$, whose eigenvalue is independent of $\phi$.
+
 = d
 {parent=4}
 {scope}
 
 = Solution
 {parent=d}
+
+Again put $a=(1+\lambda)/2$, $b=(1-\lambda)/2$. If computational strings $z,y$ differ in $h$ places, the matrix element of $U_\phi^{\otimes n}$ between them is $a^{n-h}b^h$: an unchanged bit contributes $a$, and a flipped bit contributes $b$. Hence the given operator is
+$$
+\boxed{U_\phi^{(n)}=U_\phi^{\otimes n}.}
+$$
+The printed factored expression $a^n(b/a)^h$ is undefined at $a=0$, namely $\phi=1/2$. Its polynomial form $a^{n-h}b^h$ gives the natural continuous extension there, $U_{1/2}^{(n)}=X^{\otimes n}$. For $n\ge2$ the strict promise $\phi<1/n$ avoids that singular value; for $n=1$ the extension is needed to include the allowed phase $1/2$. This is a removable defect of the formula, not a failure of unitarity of the tensor-product operator.
+
+Prepare $|-\rangle^{\otimes n}$. Its <eigenvalue> is $\lambda^n=e^{2\pi in\phi}$, giving <tensor-product eigenphase amplification>. Write $n=2^s$. If $s<m$, then
+$$
+n\phi=\frac{x}{2^{m-s}},\qquad 0\le x<2^{m-s},
+$$
+where the upper bound is exactly the promise $\phi<1/n$. Thus the amplified phase has only $m-s$ unknown binary digits and no modulo-one aliasing. Run <exact quantum phase estimation> with $m-s$ controls on the controlled-$U_\phi^{(n)}$ black box. It returns $x$ exactly, after which division by the original $2^m$ recovers $\phi$.
+
+The number of joint black-box uses is
+$$
+\boxed{2^{m-s}-1=\frac{2^m}{n}-1=O(2^m/n).}
+$$
+If $s\ge m$, the dyadic promise and $\phi<1/n$ force $x=0$, so output $\phi=0$ without querying the oracle. This covers the zero-control edge case without an invalid negative number of phase bits. The improvement counts one supplied controlled-$U_\phi^{(n)}$ call as one query. Implementing such a joint call from $n$ individual controlled-$U_\phi$ calls would remove the claimed factor-$n$ primitive-query saving, and preparing the $n$ target <qubits> is a separate gate cost.
