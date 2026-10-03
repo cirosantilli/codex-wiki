@@ -83,9 +83,28 @@ as it contains a block construct. It places the block construct inside the parag
 
 When in doubt, double check that the HTML output is awesome!
 
-## Header guidelines
+### Include guidelines
 
-### Header pluralization
+When using multiple `\Include`, don't add a blank line between entries. Good:
+
+```
+\Include[file1]
+\Include[file2]
+```
+
+bad:
+
+```
+\Include[file1]
+
+\Include[file2]
+```
+
+Both work but no space is nicer.
+
+### Header guidelines
+
+#### Header pluralization
 
 We prefer plural form strongly unless there is specific reason not to. In particular, simple pluralized magic links seamlessly work:
 
