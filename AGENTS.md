@@ -146,3 +146,12 @@ When dealing with images be mindful of copyright. Only select images compatible 
 For every image you generate, select a reasonable image height or width, as large as needed for good viewing but not larger, and add matching `{height}` to the bigb matching the final image height exactly. It is OK to have large images on the output where needed, better have a large image that is viewable than require users to click tiny images to see them at all.
 
 ASCII art may be acceptable in some cases, e.g. box and arrow diagrams. But don't go overboard on it, e.g. for X-Y graphs, just do an image instead generally.
+
+When linking to images from a subdirectory, e.g. `past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2018/iii/paper-316.bigb` only use the relative path to the image e.g.:
+```
+\Image[paper-316-rotating-frame.png]
+```
+not:
+```
+\Image[past-exam-of-the-mathematics-course-of-the-university-of-cambridge/2018/iii/paper-316-rotating-frame.png]
+```
