@@ -11,12 +11,80 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2006/Paper59.pdf
 = Solution
 {parent=1}
 
+Use $\oplus$ for <exclusive or> and regard all <bits> as elements of $\mathbb F_2$. For every public label $z\in\{0,1\}^m$, Alice computes the <indicator function>
+$$
+u_z(x)=\mathbf1_{\{x=z\}},
+$$
+while Bob computes $v_z(y)=f(z,y)$ from the known <truth table>. Exactly one of the $u_z(x)$ is one, so the <separated Boolean decomposition> is
+$$
+f(x,y)=\bigoplus_{z\in\{0,1\}^m}u_z(x)v_z(y).
+$$
+
+For each $z$, they invoke an independent <PR box> with respective input <bits> $u_z(x),v_z(y)$ and receive outputs $a_z,b_z$. These satisfy $a_z\oplus b_z=u_z(x)v_z(y)$. Alice forms $A=\bigoplus_z a_z$, and Bob forms $B=\bigoplus_z b_z$. Taking the <exclusive or> of all box constraints proves
+$$
+A\oplus B
+=\bigoplus_z(a_z\oplus b_z)
+=\bigoplus_z u_z(x)v_z(y)=f(x,y).
+$$
+Alice sends the single <bit> $A$. Bob combines it with his locally known $B$, obtaining
+$$
+\boxed{f(x,y)=A\oplus B,\qquad\text{one classical bit from Alice to Bob}.}
+$$
+This is <one-bit computation using Popescu–Rohrlich boxes>. It uses $2^m$ boxes; decomposing by Bob's input instead gives $2^n$, so the smaller truth-table factorization uses at most $2^{\min(m,n)}$. No efficiency bound on local calculation or box use is needed for the stated unlimited resource.
+
+Each <PR box> has uniform local output distributions regardless of the other party's input. Independent invocations therefore give Bob a uniform output string before the message, carrying no information about $x$. The useful correlation becomes accessible through Alice's final <bit>; the construction respects the no-signalling property of the boxes.
+
 = 2
 {parent=Paper 59}
 {scope}
 
 = Solution
 {parent=2}
+
+The target states here are <qubit> states, as appropriate to sharing <singlet states> of two <qubits>. Write $|\psi\rangle=\alpha|0\rangle+\beta|1\rangle$ and choose $|\psi^\perp\rangle=-\beta^*|0\rangle+\alpha^*|1\rangle$. These form an <orthonormal basis>, and the shared <Bell state> can be expressed as
+$$
+|\Psi^-\rangle_{AB}
+=\frac{|0\rangle_A|1\rangle_B-|1\rangle_A|0\rangle_B}{\sqrt2}
+=\frac{|\psi\rangle_A|\psi^\perp\rangle_B
+-|\psi^\perp\rangle_A|\psi\rangle_B}{\sqrt2}.
+$$
+Alice knows the classical description of $|\psi\rangle$, so she can perform the <projective measurement> in this basis. The outcome $|\psi^\perp\rangle$ has <probability> $1/2$ and leaves Bob in $|\psi\rangle$, up to an irrelevant overall phase. Alice sends a success <bit>: one for this outcome and zero for the other. Bob keeps his <qubit> only on success. This proves <heralded remote preparation of an arbitrary qubit>:
+$$
+\boxed{p_{\mathrm{success}}=\frac12,\qquad
+\text{one singlet and one classical success flag}.}
+$$
+The other outcome leaves $|\psi^\perp\rangle$ at Bob's side; the protocol makes no claim of success in that branch.
+
+For a block of $n$ targets, share $n$ independent <singlet states>. Alice measures her $j$th <qubit> in the basis $|\psi_j\rangle,|\psi_j^\perp\rangle$. She sends one <bit> indicating whether all $n$ outcomes were of the successful kind. Because the pairs are independent, all-success has <probability> $2^{-n}$; conditioned on it, Bob's joint state is precisely $\bigotimes_{j=1}^n|\psi_j\rangle$. Thus <one-bit heralding of a remote state preparation block> gives
+$$
+\boxed{p_{\mathrm{success}}=2^{-n},\qquad
+n\text{ singlets and one block-success flag}.}
+$$
+On failure Bob discards the block, so he does not need a list of which component states failed.
+
+For <asymptotic remote state preparation by block indexing>, prelabel a supply of independent candidate blocks, each containing $n$ <singlet states>. Alice measures blocks until she finds the first all-success block, of index $J$. She does not send a flag after each trial. Since $q=2^{-n}$ is the success <probability> of each block,
+$$
+\mathbb P(J=j)=q(1-q)^{j-1},\qquad j\geq1.
+$$
+This <geometric distribution> is independent of the target states. The <probability> of never succeeding is $\lim_{k\to\infty}(1-q)^k=0$. Alice needs to communicate only $J$; Bob retrieves the labelled <qubits> in that block, and thereby knows that every requested state was prepared exactly.
+
+Here is an explicit <prefix code for a rare geometric success>. Set $M=2^n$ and divide $J-1=MQ+R$, where $0\leq R<M$. Encode $Q$ as $Q$ ones followed by zero, then encode $R$ in exactly $n$ <bits>. Bob can decode this without knowing any target-state description. The message length is $L=n+Q+1$. With $r=(1-q)^M$,
+$$
+\mathbb P(Q\geq k)=r^k,\qquad
+\mathbb E Q=\sum_{k=1}^\infty r^k=\frac{r}{1-r}.
+$$
+Since $(1-1/M)^M\leq e^{-1}$,
+$$
+\boxed{\mathbb E L=n+\frac1{1-r}\leq n+\frac e{e-1},\qquad
+\frac{\mathbb E L}{n}\longrightarrow1.}
+$$
+This version succeeds exactly with <probability> one and has the stated expected <classical communication> cost. It consumes $n\,\mathbb EJ=n2^n$ <singlet states> on average, compatible with the unlimited entanglement assumption.
+
+There is also a fixed-message-length version. Try at most $K=n2^n$ candidate blocks and send the first successful index, or a zero codeword reporting that none succeeded. Encoding the $K+1$ possibilities uses $\lceil\log_2(K+1)\rceil=n+\log_2n+O(1)$ <bits>. Its failure <probability> is
+$$
+(1-2^{-n})^{n2^n}\leq e^{-n}.
+$$
+Thus \b[fixed-length communication approaches one <bit> per state with success <probability> tending to one; variable-length communication achieves exact eventual success with expected cost approaching one <bit> per state.] Before the index arrives, Bob's unconditional state remains independent of the target descriptions, in agreement with the <no-signalling theorem>.
 
 = 3
 {parent=Paper 59}
@@ -25,9 +93,119 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2006/Paper59.pdf
 = Solution
 {parent=3}
 
+For the <Kraus operators> of the <quantum measurement>, the <Born rule> gives
+$$
+\boxed{p_i=\operatorname{Tr}(A_i\rho A_i^\dagger)
+=\operatorname{Tr}(\rho A_i^\dagger A_i),\qquad
+\rho_i=\frac{A_i\rho A_i^\dagger}{p_i}\quad(p_i>0).}
+$$
+The <density matrix> $A_i\rho A_i^\dagger$ is the unnormalized state of that outcome. It is positive, its trace is $p_i$, and completeness gives $\sum_i p_i=\operatorname{Tr}\rho=1$. There is no conditional state to assign to an event with $p_i=0$.
+
+For a <projective measurement>, each $P_i$ is an <orthogonal projection>, satisfying $P_i=P_i^\dagger=P_i^2$. Completeness becomes $\sum_iP_i=I$. Fix $v$ in the range of $P_j$. Then
+$$
+\|v\|^2=\langle v,Iv\rangle
+=\sum_i\langle v,P_iv\rangle
+=\sum_i\|P_iv\|^2.
+$$
+Since $P_jv=v$, the $j$th summand already equals $\|v\|^2$. All other summands are nonnegative, so $P_iv=0$ for $i\neq j$. Consequently $P_iP_j=0$, and taking adjoints also gives $P_jP_i=0$. This proves the stronger <completeness forces orthogonality of measurement projections>:
+$$
+\boxed{P_iP_j=\delta_{ij}P_i,\qquad [P_i,P_j]=0.}
+$$
+
+For the <unitary dilation of a measurement instrument>, take a <quantum ancilla> with orthonormal states $|0\rangle,|1\rangle,\ldots,|n\rangle$, initially in $|0\rangle$. Define
+$$
+V|\phi\rangle=\sum_{i=1}^n A_i|\phi\rangle\otimes|i\rangle.
+$$
+The completeness equation implies
+$$
+\langle V\phi,V\chi\rangle
+=\sum_i\langle\phi,A_i^\dagger A_i\chi\rangle
+=\langle\phi,\chi\rangle,
+$$
+so $V$ is an <isometry>. Its action on the input subspace can be extended to a <unitary operator> $U$ on the enlarged system:
+$$
+U(|\phi\rangle\otimes|0\rangle)=V|\phi\rangle.
+$$
+Choose <orthonormal bases> in the two complementary subspaces and map one to the other. Their dimensions agree; the extra unused <quantum ancilla> level also ensures this extension is possible for an infinite-dimensional system. After the coupling, the joint <density matrix> is
+$$
+\Omega=U(\rho\otimes|0\rangle\langle0|)U^\dagger
+=\sum_{i,j=1}^n A_i\rho A_j^\dagger\otimes|i\rangle\langle j|.
+$$
+
+Now perform a <projective measurement> on the larger system, with
+$$
+Q_1=I_S\otimes(|0\rangle\langle0|+|1\rangle\langle1|),
+\qquad
+Q_i=I_S\otimes|i\rangle\langle i|\quad(2\leq i\leq n).
+$$
+These are pairwise orthogonal and sum to the full identity. The unused $|0\rangle$ level has zero weight in $\Omega$, so merging it into outcome one adds no <probability>. For every $i$,
+$$
+Q_i\Omega Q_i=A_i\rho A_i^\dagger\otimes|i\rangle\langle i|.
+$$
+Its trace is $p_i$, and taking the <partial trace> over the <quantum ancilla> after normalization gives exactly $\rho_i$. Hence \b[unitary coupling to an <quantum ancilla>, a <projective measurement>, and discarding the <quantum ancilla> reproduce both the <probabilities> and the conditional states of the general measurement.] This is the instrument version of a <Stinespring dilation>, rather than a construction reproducing only the outcome <probabilities>.
+
 = 4
 {parent=Paper 59}
 {scope}
 
 = Solution
 {parent=4}
+
+For each hidden variable $\lambda$, a <deterministic local hidden-variable model> assigns values $a_i(\lambda),b_j(\lambda)\in\{0,\ldots,d-1\}$ to all settings. The responses depend only on the local setting; their averaging distribution is setting independent, as required by <measurement independence>.
+
+Let $T(\lambda)$ be the sum of the nonnegative modular representatives in the <chained modular Bell inequality>. Before reduction modulo $d$, the chain telescopes:
+$$
+\sum_{i=1}^N(a_i-b_i)
++\sum_{i=1}^{N-1}(b_i-a_{i+1})
++(b_N-a_1-1)=-1.
+$$
+Reduction changes this integer only by multiples of $d$. Since all reduced terms are nonnegative,
+$$
+T(\lambda)\geq0,\qquad
+T(\lambda)\equiv-1\equiv d-1\pmod d.
+$$
+The smallest possible nonnegative value in this residue class is $d-1$. Averaging over the hidden variable proves
+$$
+\boxed{I_{N,d}=\mathbb E_\lambda T(\lambda)\geq d-1.}
+$$
+Adding local random seeds to $\lambda$ gives the same result for stochastic <local hidden-variable theories>.
+
+For the <coplanar qubit realization of the chained Bell inequality>, share
+$$
+|\Phi^+\rangle=\frac{|00\rangle+|11\rangle}{\sqrt2}.
+$$
+At angle $\theta$ in the $xz$ plane, use the <projective measurement> of the observable
+$$
+M(\theta)=\cos\theta\,\sigma_z+\sin\theta\,\sigma_x,
+\qquad
+P_a(\theta)=\frac{I+(-1)^aM(\theta)}2,\quad a=0,1.
+$$
+Here $\sigma_x,\sigma_z$ are <Pauli matrices>, and the classical <bit> $a$ records eigenvalue $(-1)^a$. Since $\langle\sigma_z\otimes\sigma_z\rangle=\langle\sigma_x\otimes\sigma_x\rangle=1$ and both crossed <expected values> vanish in this <Bell state>,
+$$
+\langle M(\theta)\otimes M(\phi)\rangle=\cos(\theta-\phi).
+$$
+The one-party <expected values> vanish, so the complete joint <probabilities> are
+$$
+p(a,b\mid\theta,\phi)
+=\frac14\bigl(1+(-1)^{a+b}\cos(\theta-\phi)\bigr).
+$$
+For binary outcomes, $[a-b]$ is one exactly when $a\neq b$, while $[b-a-1]$ is one exactly when $a=b$. Consequently
+$$
+\mathbb E([a-b]_2)=\frac{1-\cos(\theta-\phi)}2,\qquad
+\mathbb E([b-a-1]_2)=\frac{1+\cos(\theta-\phi)}2.
+$$
+
+For $N\geq2$, set $\delta=\pi/(2N)$ and choose Alice's angle $\theta_i=2(i-1)\delta$ and Bob's angle $\phi_i=(2i-1)\delta$. Every adjacent pair $A_i,B_i$ or $B_i,A_{i+1}$ differs by $\delta$, giving expectation $\sin^2(\delta/2)$. The closing pair has angle difference $(2N-1)\delta=\pi-\delta$; its agreement <probability> is also $\sin^2(\delta/2)$. Thus every one of the $2N$ terms contributes equally:
+$$
+\boxed{I_{N,2}^{\mathrm{quantum}}=2N\sin^2\left(\frac{\pi}{4N}\right)<1.}
+$$
+Indeed $\sin x<x$ for $x>0$, so this value is below $\pi^2/(8N)\leq\pi^2/16<1$. For an explicit two-setting instance, Alice measures $\sigma_z,\sigma_x$ and Bob measures $(\sigma_z+\sigma_x)/\sqrt2,(-\sigma_z+\sigma_x)/\sqrt2$. The four relevant <expected values> sum to
+$$
+\boxed{I_{2,2}^{\mathrm{quantum}}=4\sin^2(\pi/8)=2-\sqrt2,}
+$$
+violating the local bound one. At $N=1$ there is no violation; the two terms always sum to one. As $N\to\infty$, the displayed quantum value is asymptotic to $\pi^2/(8N)$ and approaches the algebraic lower bound zero.
+
+The violation rules out a <local hidden-variable theory> with setting-independent preassigned local responses reproducing these quantum correlations. It does not permit faster-than-light communication: the joint formula gives each local outcome <probability> $1/2$, independent of the remote setting, as required by the <no-signalling theorem>. The contradiction concerns the joint correlations and the Bell assumptions, not the ability to send a signal.
+
+\Image[paper-59-chained-bell.png]
+{title=Coplanar chained Bell measurements and their quantum violation of the local bound}

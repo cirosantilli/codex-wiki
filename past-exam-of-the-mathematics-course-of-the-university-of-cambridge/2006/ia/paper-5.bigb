@@ -15,12 +15,26 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=a}
 
+Use the usual unit-cost model for <Standard ML> list constructors and fixed-size arithmetic. The input size $n$ in the list examples is the number of list elements, rather than the size of the integer entries. Inspecting only the first constructor has constant <time complexity>:
+```sml
+fun firstOrZero [] = 0
+  | firstOrZero (x :: _) = x;
+```
+No tail is traversed. **The running time is $\Theta(1)$.**
+
 = b
 {parent=1}
 {scope}
 
 = Solution
 {parent=b}
+
+A <Standard ML> length function visits each list constructor once:
+```sml
+fun length [] = 0
+  | length (_ :: xs) = 1 + length xs;
+```
+Writing $T(n)$ for its <time complexity>, $T(n)=T(n-1)+\Theta(1)$ and $T(0)=\Theta(1)$. Thus **$T(n)=\Theta(n)$**. Arithmetic is treated as unit cost; the example concerns list traversal rather than arbitrary-precision arithmetic.
 
 = c
 {parent=1}
@@ -29,6 +43,12 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=c}
 
+Use <merge sort> on a list of integers:
+```sml
+fun sort xs = mergeSort (op <=) xs;
+```
+Here `mergeSort` denotes the standard <merge sort> implementation: split into two almost equal lists, recursively sort them, and combine them using the <merge algorithm>. Splitting and merging take linear time, and each recursion level has total input length $n$. There are $\Theta(\log n)$ levels, so the worst-case <time complexity> is **$\Theta(n\log n)$**. Equivalently, $T(n)=T(\lfloor n/2\rfloor)+T(\lceil n/2\rceil)+\Theta(n)$.
+
 = d
 {parent=1}
 {scope}
@@ -36,12 +56,32 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=d}
 
+Traverse the whole original list once for each of its elements:
+```sml
+fun scan [] = ()
+  | scan (_ :: xs) = scan xs;
+
+fun scanForEach [] whole = ()
+  | scanForEach (_ :: rest) whole =
+      (scan whole; scanForEach rest whole);
+
+fun quadratic xs = scanForEach xs xs;
+```
+The outer <structural recursion> runs $n$ times, and each `scan whole` visits $n$ constructors. In the ordinary source-evaluation cost model, **the <time complexity> is $\Theta(n^2)$**. This example counts executed traversals, without assuming an optimizing compiler that removes deliberately unused computations.
+
 = e
 {parent=1}
 {scope}
 
 = Solution
 {parent=e}
+
+For a nonnegative integer parameter $n$, make both branches of a <structural recursion> execute:
+```sml
+fun binaryWalk 0 = ()
+  | binaryWalk n = (binaryWalk (n - 1); binaryWalk (n - 1));
+```
+The semicolon sequences two calls, so this is not a conditional choosing just one branch. The recursion tree has $2^n$ leaves and $2^{n+1}-1$ calls. Its <time complexity> satisfies $T(n)=2T(n-1)+\Theta(1)$, giving **$\Theta(2^n)$**. Here $n$ is the parameter specified by the question, not its binary encoding length; only $\Theta(n)$ calls are simultaneously on the stack.
 
 = 2
 {parent=Paper 5}
@@ -55,12 +95,16 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=a}
 
+**False.** The <Windows XP> Executive implements core object management, memory management, process management and input-output services in privileged mode, as part of the kernel image. User applications and environment subsystems invoke these services through controlled entry points; they do not turn the Executive into user-mode code. This distinction is explicit in Microsoft's https://learn.microsoft.com/en-us/windows-hardware/drivers/kernel/windows-kernel-mode-executive-support-library[description of the Executive layer].
+
 = b
 {parent=2}
 {scope}
 
 = Solution
 {parent=b}
+
+**False.** An <access matrix> is an authorization table, not a numerical matrix representing a linear transformation. Its entries are sets of rights, such as permission to read or write an object. “Inverting” its organization means obtaining subject-oriented capability lists from object-oriented <access control lists>, or conversely, by enumerating and regrouping entries. Numerical floating-point matrix inversion has neither the relevant operations nor the relevant semantics, and many access tables are not even square.
 
 = c
 {parent=2}
@@ -69,6 +113,8 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=c}
 
+**True.** In <polled input-output>, a processor reads device status and handles ready work without <interrupt> entry and return overhead. If an operation completes very quickly, or requests arrive continuously at a high rate, a short poll or a batch of polls can cost less than an <interrupt> for every event. <Interrupt-driven input-output> is usually better for long or infrequent waits because the processor can do unrelated work or sleep instead of busy waiting. The useful choice depends on the event rate and latency requirement.
+
 = d
 {parent=2}
 {scope}
@@ -76,12 +122,18 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=d}
 
+**False as a general performance claim.** A <microkernel> moves services into separate protection domains, which can require extra messages, scheduling and address-space transitions. A <monolithic kernel> can often call a service directly within its own privileged address space. The <microkernel> gains isolation and modularity, but these do not imply greater speed. Efficient implementations and particular workloads can change the comparison; the architecture alone gives no universal ordering.
+
 = e
 {parent=2}
 {scope}
 
 = Solution
 {parent=e}
+
+**True in the intended comparison with traditional Unix protection mechanisms.** <Windows XP> provides object-specific <access control lists>, subject tokens containing identities and privileges, and a security reference monitor. Rights can distinguish operations on files, registry keys, processes and other protected objects. Traditional <Unix> file permissions distinguish read, write and execute for owner, group and everyone else; unrestricted root authority also makes privilege separation coarse. The richer <Windows XP> mechanisms can express finer least-privilege policies. Cambridge's https://www.cl.cam.ac.uk/teaching/0809/IntroSec/slides-2up.pdf[access-control notes] describe this architectural contrast.
+
+This is an architectural capability comparison, not a claim that every <Windows XP> installation resists attacks better than every <Unix> installation. More complex authorization is not itself a proof of security; configuration and implementation matter, and <Unix> variants can add <access control lists> and other protection mechanisms. Without specifying that traditional model, the blanket comparison is underspecified.
 
 = 3
 {parent=Paper 5}
@@ -91,6 +143,26 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=3}
 
+Extract one four-bit digit at a time, beginning at the most significant end of the <Java> `int`. A lookup string supplies characters, but no library performs the conversion:
+```java
+static String toHex(int value) {
+    String digits = "0123456789abcdef";
+    String answer = "";
+    boolean started = false;
+    for (int shift = 28; shift >= 0; shift -= 4) {
+        int digit = (value >>> shift) & 15;
+        if (started || digit != 0 || shift == 0) {
+            answer = answer + digits.charAt(digit);
+            started = true;
+        }
+    }
+    return answer;
+}
+```
+The logical right <bit shift> `>>>` inserts zeros, and the <bit mask> `15` retains exactly the low four bits of the shifted word. Each emitted character is therefore the corresponding <hexadecimal> digit. The `started` flag suppresses leading zero digits; the `shift == 0` exception makes zero produce **`"0"`**, rather than an empty string.
+
+A negative <Java> integer uses <two's complement>. Its top bit is set, so the first extracted digit is between eight and fifteen and all eight digits are emitted. We interpret its original 32-bit pattern, without taking an absolute value or negating a potentially unnegatable minimum integer. In particular, **`toHex(19)` returns `"13"`, `toHex(-1)` returns `"ffffffff"`, and `toHex(Integer.MIN_VALUE)` returns `"80000000"`.** There are exactly eight iterations, so for this fixed word size the <time complexity> is constant.
+
 = 4
 {parent=Paper 5}
 {scope}
@@ -98,6 +170,12 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 
 = Solution
 {parent=4}
+
+A <prime number> is an integer greater than one whose only positive divisors are one and itself. In particular, one is not a <prime number>. Every integer greater than one has a <prime number> divisor, by taking its smallest divisor greater than one.
+
+Suppose there were only finitely many <prime numbers> congruent to $-1$ modulo six, and let their product be $P$, with empty product one. The integer $N=6P-1>1$ has no divisor two or three and is divisible by none of the listed <prime numbers>, since $N\equiv-1\pmod{p_j}$. Every <prime number> divisor of $N$ is therefore $1$ or $-1$ modulo six. If all these divisors were $1$ modulo six, their product, with multiplicities, would also be $1$ modulo six. But $N\equiv-1\pmod6$. Hence at least one divisor is an unlisted <prime number> congruent to $-1$ modulo six, a contradiction. **There are infinitely many primes of the form $6k-1$.**
+
+For the other class, suppose its <prime numbers> were a finite list with product $P$. None is divisible by three. The integer $M=4P^2+3$ is odd and is $1$ modulo three, since $P^2\equiv1\pmod3$. Thus a <prime number> divisor $q$ of $M$ satisfies $q>3$. The residue $x=2P$ solves $x^2\equiv-3\pmod q$, so the allowed quadratic-congruence fact gives $q\equiv1\pmod6$. However, for every listed divisor $p_j$, $M\equiv3\pmod{p_j}$, and $p_j>3$, so none divides $M$. We have again found an unlisted <prime number> in the supposedly complete list. **There are infinitely many primes of the form $6k+1$.** Both arguments remain valid for an empty starting list.
 
 = 5
 {parent=Paper 5}
@@ -115,12 +193,34 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=i}
 
+A <FIFO queue> provides an empty queue, an emptiness test, insertion at the rear, inspection of the front item, and removal of the front item. It preserves insertion order: after enqueuing $x$ and then $y$, removing an item returns $x$ first. Inspection and removal on an empty <FIFO queue> must have a specified outcome, such as an <exception handling> case or an option-valued result. In a functional interface, insertion and removal return the new <FIFO queue> rather than updating their argument.
+
 = ii
 {parent=a}
 {scope}
 
 = Solution
 {parent=ii}
+
+Use a <two-list functional queue>. Its representation `(front, rear)` denotes the abstract sequence `front @ rev rear`; the front is nonempty unless the whole <FIFO queue> is empty. Normalize only when the front runs out:
+```sml
+datatype 'a queue = Q of 'a list * 'a list;
+exception EmptyQueue;
+
+fun check ([], rear) = Q (rev rear, [])
+  | check (front, rear) = Q (front, rear);
+
+fun empty () = Q ([], []);
+fun isEmpty (Q (front, _)) = null front;
+fun enqueue x (Q (front, rear)) = check (front, x :: rear);
+
+fun peek (Q ([], _)) = raise EmptyQueue
+  | peek (Q (x :: _, _)) = x;
+
+fun dequeue (Q ([], _)) = raise EmptyQueue
+  | dequeue (Q (x :: front, rear)) = (x, check (front, rear));
+```
+Enqueue prepends to the reversed rear list. Removing the head either leaves a nonempty front or reverses the accumulated rear to restore the invariant. The result pair from `dequeue` contains the removed element and the new <FIFO queue>. The constructor should be hidden behind an abstract interface so clients cannot construct an unnormalized representation that invalidates `isEmpty`.
 
 = iii
 {parent=a}
@@ -129,12 +229,36 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=iii}
 
+The <two-list functional queue> has constant-time `peek` and `isEmpty`, but an individual insertion or removal can cost linear time when it reverses a rear list of length $k$. Its useful guarantee is **constant amortized time per operation along a single history starting from empty**.
+
+For the <amortized analysis>, each item is consed into the rear once, transferred into the front at most once, and removed at most once. Charge its future reversal to the earlier insertion. Thus $m$ operations perform only $O(m)$ total list-cell work. More formally, use potential $\Phi=C\lvert\texttt{rear}\rvert$, with $C$ sufficient to pay the per-cell reversal cost. An insertion into a nonempty front increases $\Phi$ by $C$ and has constant actual cost; a reversal of $k$ cells decreases $\Phi$ by $Ck$, paying its actual cost. With $\Phi_0=0$ and $\Phi_m\geq0$,
+$$
+\sum_{i=1}^m c_i=\sum_{i=1}^m\bigl(c_i+\Phi_i-\Phi_{i-1}\bigr)-\Phi_m=O(m).
+$$
+This <amortized analysis> is deterministic, not an average over a random workload. It assumes subsequent operations use the successive returned versions. If a persistent old version with a long rear is reused repeatedly, each independent dequeue can redo the same reversal. The simple potential accounting does not give constant amortized cost across such a branching history without further <memoization> or a stronger persistent <FIFO queue> implementation.
+
 = b
 {parent=5}
 {scope}
 
 = Solution
 {parent=b}
+
+Generate every <permutation> of the tail, then insert its missing head at every possible position. The helper preserves order among the elements already present:
+```sml
+fun insertEverywhere x [] = [[x]]
+  | insertEverywhere x (y :: ys) =
+      (x :: y :: ys) ::
+      List.map (fn zs => y :: zs) (insertEverywhere x ys);
+
+fun permutations [] = [[]]
+  | permutations (x :: xs) =
+      List.concat
+        (List.map (insertEverywhere x) (permutations xs));
+```
+The first helper result inserts $x$ before $y$; the mapped recursive results put $y$ back at the front and insert $x$ farther along. For a list of length $k$, it yields exactly $k+1$ positions. The empty list has one <permutation>, itself, so the base result is `[[]]`, not `[]`.
+
+For correctness, use <structural induction>. Any <permutation> of `x :: xs` has a unique position containing $x$. Removing that position leaves a <permutation> of `xs`, supplied by the induction hypothesis; reinserting $x$ at its unique position reconstructs the required output. With distinct input elements, neither the tail <permutation> nor the insertion position can be duplicated, so each output occurs once. Consequently **a length-$n$ input yields exactly $n!$ permutations**, in an unrestricted order. The explicit output is large; this is not a polynomial-time enumeration with respect to $n$ alone.
 
 = 6
 {parent=Paper 5}
@@ -152,6 +276,18 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=i}
 
+These <Standard ML> declarations separate the three evaluation and mutation models:
+```sml
+datatype 'a olist = ONil | OCons of 'a * 'a olist;
+
+datatype 'a lnode = LNil | LCons of 'a * (unit -> 'a lnode);
+type 'a llist = unit -> 'a lnode;
+
+datatype 'a mnode = MNil | MCons of 'a * 'a mnode ref;
+type 'a mlist = 'a mnode ref;
+```
+The ordinary <linked list> is immutable and its spine is built eagerly. A <lazy list> is a delayed function producing the next constructor, with another delayed function for its tail; it can describe an infinite stream without constructing it in advance. A <mutable list> uses an <ML reference type> cell for both the root link and every tail link. Updating those cells can remove nodes, including the original head. This <lazy list> representation delays evaluation but does not automatically implement <memoization>; repeated forcing can repeat work or effects.
+
 = ii
 {parent=a}
 {scope}
@@ -159,12 +295,72 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=ii}
 
+For a pure predicate `p`, the ordinary <linked list> version copies only the surviving spine:
+```sml
+fun filterO p ONil = ONil
+  | filterO p (OCons (x, xs)) =
+      if p x then OCons (x, filterO p xs)
+      else filterO p xs;
+```
+For a <lazy list>, return a delayed computation. Searching for the next retained element begins only when this computation is forced:
+```sml
+fun filterL p stream () =
+    case stream () of
+        LNil => LNil
+      | LCons (x, rest) =>
+          if p x then LCons (x, filterL p rest)
+          else filterL p rest ();
+```
+A retained element has a delayed filtered tail, so the whole input is not forced at once. A long run of rejected elements must still be traversed to find the next match. If an infinite <lazy list> has no matching element beyond the current position, forcing the next result does not terminate; laziness does not promise productivity for every predicate.
+
+The destructive <mutable list> version operates on the link reaching the current node:
+```sml
+fun filterM p link =
+    case !link of
+        MNil => ()
+      | MCons (x, tail) =>
+          if p x then filterM p tail
+          else (link := !tail; filterM p link);
+```
+When a node survives, recurse on its tail link. When it fails, bypass it by copying its successor into the same link and inspect that link again, which correctly handles several consecutive rejected nodes. **No new list nodes are allocated.** In particular, changing the root <ML reference type> cell handles deletion of the head. These arguments assume finite acyclic input for the eager and destructive versions and a predicate that does not itself mutate the list. Aliases observe the mutations; a detached node is not promised to disappear from all external references.
+
 = b
 {parent=6}
 {scope}
 
 = Solution
 {parent=b}
+
+Represent a <binary search tree> by:
+```sml
+datatype ('k, 'v) dict = Empty
+    | Branch of ('k, 'v) dict * 'k * 'v * ('k, 'v) dict;
+```
+Assume the provided `lookup d key` returns `NONE` or `SOME value`, and `update d (key, value)` returns the updated <binary search tree>. Traverse the first dictionary, retaining only a key with the same value in the second:
+```sml
+fun intersection equal d1 d2 =
+    let
+        fun visit Empty result = result
+          | visit (Branch (left, key, value, right)) result =
+              let
+                  val r1 = visit left result
+                  val r2 =
+                      case lookup d2 key of
+                          NONE => r1
+                        | SOME other =>
+                            if equal (value, other)
+                            then update r1 (key, value)
+                            else r1
+              in
+                  visit right r2
+              end
+    in
+        visit d1 Empty
+    end;
+```
+For equality-type values, call `intersection (op =) d1 d2`. An explicit value comparison parameter also handles values for which <Standard ML> does not define built-in equality. This distinguishes absent keys from defined values without reserving a sentinel value.
+
+Every inserted entry belongs to both input dictionaries with the same value, so the result agrees with each. Conversely, each common equal-valued entry is visited in `d1`, found in `d2`, and inserted. Any dictionary agreeing with both can contain only those entries. Thus **the result is exactly the largest common dictionary**, not merely an intersection of key sets. If `d1` has $m$ entries, lookup height is $h_2$, and maximum result-tree height during insertion is $h_r$, the <time complexity> is $O(m(1+h_2+h_r))$ for constant-cost comparisons. Logarithmic heights require a balancing assumption; an ordinary unbalanced <binary search tree> can have linear height.
 
 = 7
 {parent=Paper 5}
@@ -182,12 +378,22 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=i}
 
+<FIFO page replacement> orders resident pages by when they were loaded and evicts the oldest arrival. An access to a resident page does not change this order, so an old but heavily used page can be the next victim.
+
+<LRU replacement> records the recency of every page access and evicts the page whose most recent access is oldest. It makes use of <temporal locality>, but exact reference tracking can require expensive per-access hardware or software bookkeeping.
+
+<CLOCK page replacement> arranges frames in a circle with a scanning hand and one reference flag per frame. A use sets the flag. During replacement, the hand clears a set flag and moves on, giving that page another chance; it selects an eligible frame with a clear flag. Recent pages tend to survive a scan. <CLOCK page replacement> approximates recency rather than preserving the exact <LRU replacement> ordering. A dirty victim must be written back before its frame is reused, and pinned frames must be skipped.
+
 = ii
 {parent=a}
 {scope}
 
 = Solution
 {parent=ii}
+
+Emulate reference observations using <page table> protection and <page faults>. When resetting a page's reference state, temporarily revoke access to its resident mapping and invalidate any corresponding <translation lookaside buffer> entry. The first subsequent access traps. The handler recognizes an intentionally protected resident page, sets a software reference flag and restores the mapping without performing a disk read. A later <CLOCK page replacement> scan can use and clear this software flag.
+
+**One protection fault records the first access after each reset**, rather than trapping on every access. All mappings that can access the frame must be considered. The method requires ordinary memory-protection traps, even though hardware reference bits are absent, and adds a fault cost that native reference flags avoid.
 
 = iii
 {parent=a}
@@ -196,6 +402,8 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=iii}
 
+**Choose CLOCK for page replacement in a conventional operating system.** Good <temporal locality> makes recency valuable, and <CLOCK page replacement> captures it reasonably well using cheap reference flags. <FIFO page replacement> ignores accesses after a page arrives, so it can evict a hot page. Exact <LRU replacement> has a stronger recency rule but recording and maintaining the order on every ordinary memory access is usually too costly. This is a practical cost-versus-hit-rate choice, not a theorem that <CLOCK page replacement> minimizes faults on every reference sequence.
+
 = b
 {parent=7}
 {scope}
@@ -203,12 +411,22 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=b}
 
+A <buffer cache> keeps copies of device blocks in main memory, indexed by device identity and block number. It reduces expensive repeated device reads and can combine several modifications into one write. It also gives software a controlled place to hold data while requests are in progress.
+
+On a read, the <operating system> looks up the block. A valid cached copy gives a hit and supplies the data; a miss reserves an eligible buffer, writes its old contents first if dirty, issues the device read, and marks the new contents valid when the transfer completes. A write modifies the buffer and marks it dirty. Under a write-back policy, a later flush or eviction sends it to the device; under write-through, completion also waits for the required device write. Dirty state differs from “currently in use”: a pinned or locked buffer cannot simply be reused while a request depends on it.
+
+A <buffer cache> needs synchronization for concurrent readers, writers and in-flight transfers, and should avoid inconsistent independent copies of the same block. Explicit flushes and ordering are needed when durable storage is required; caching alone does not guarantee that an acknowledged in-memory update survives a crash. Replacement chooses among eligible buffers, preserving dirty data before reuse.
+
 = c
 {parent=7}
 {scope}
 
 = Solution
 {parent=c}
+
+**Use LRU replacement, or a modest recency-based approximation, for eligible buffer-cache entries.** Unlike individual memory accesses, <buffer cache> lookups already pass through <operating system> code. Updating an <LRU replacement> list on each lookup is therefore practical: remove the accessed entry from its old position and put it at the most-recent end; choose the oldest unpinned entry as victim. A hash lookup plus a doubly linked recency list makes this bookkeeping constant time.
+
+Good <temporal locality> favors retaining recently used blocks. <FIFO page replacement>'s arrival-only criterion can evict a block used moments ago. <CLOCK page replacement> can save bookkeeping, but the difficulty of observing arbitrary memory references that motivates it is absent for software-mediated block accesses. Dirty victims require write-back, so a policy can favor an old clean buffer or arrange background cleaning without discarding recent hot data. A long one-pass scan can pollute pure <LRU replacement>; scan-resistant variants are useful refinements rather than a reason to ignore recency altogether.
 
 = 8
 {parent=Paper 5}
@@ -226,12 +444,18 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=i}
 
+A <computer bus> conventionally has **address, data and control components**. Address information selects a memory location or device register; data carries the value being transferred; control identifies operations and coordinates timing, direction, completion and arbitration. A clock, request/grant and acknowledge signals are examples of control information. These are logical roles, not a requirement for three physically separate wire groups: implementations may multiplex address and data on the same wires.
+
 = ii
 {parent=a}
 {scope}
 
 = Solution
 {parent=ii}
+
+The processor selects the device's data or control register by presenting its address, either in memory-mapped input-output space or in a distinct port-address space. For a write, it places data on the <computer bus> and asserts the appropriate write control. For a read, it asserts read control and samples the data supplied by the addressed device. The device recognizes the address and uses the bus timing or acknowledge protocol to indicate completion, including wait states if needed.
+
+The processor uses status registers to determine readiness and control registers to request operations. This register-level communication can be arranged using <polled input-output> or <interrupt-driven input-output>; the bus transaction itself and the policy for waiting on a device are separate issues.
 
 = iii
 {parent=a}
@@ -240,12 +464,16 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=iii}
 
+With <direct memory access>, a device can initiate memory transfers, so the processor is no longer the only <computer bus> master. Requests must be arbitrated to prevent conflicting transfers, and the processor may have to wait while the device owns a shared bus. The <operating system> must supply valid stable buffers and arrange safe completion before reusing them. On a noncoherent system, cached processor copies must be flushed or invalidated as appropriate so processor and device agree on data. These extra initiators also need suitable address and protection controls.
+
 = iv
 {parent=a}
 {scope}
 
 = Solution
 {parent=iv}
+
+**Separate buses match different bandwidth, latency and electrical requirements.** Processor-memory traffic needs high bandwidth and short delays, whereas many peripheral devices are slower or use different signaling protocols. Bridges let them communicate without making every memory transfer obey the slowest peripheral's timing. Separating traffic also reduces contention and electrical loading, and permits expansion or compatibility with older device interfaces. Thus a hierarchical <computer bus> organization is useful even though all devices are ultimately reachable from the processor.
 
 = b
 {parent=8}
@@ -258,12 +486,30 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=i}
 
+Add profiling to the timer-<interrupt> handler. When the target <operating-system process> is interrupted while running, record its saved <instruction pointer>, map that address to a code region in the executable, and increment an address histogram. Addresses with many samples identify regions consuming a large fraction of execution time. The executable's code can then be disassembled around these addresses even when source and symbolic names are absent.
+
+This is <statistical program profiling>: uniform samples of running time estimate time spent in code, not exact execution counts. Restrict samples to the desired process and distinguish application execution from unrelated kernel work. A sufficiently fine address histogram and many samples reveal hot loops; varying the sample interval reduces synchronization bias. If exact visit counts rather than time hotspots are needed, arrange breakpoint or single-step traps, or rewrite the binary to add counters, accepting their much larger overhead. **Source code is not required to associate sampled execution with instruction addresses.**
+
 = ii
 {parent=b}
 {scope}
 
 = Solution
 {parent=ii}
+
+Use <strength reduction> on the disassembled hot instructions. In a fixed-width wrapping integer model,
+$$
+\boxed{8x=x\ll3,\qquad 15x=(x\ll4)-x\pmod{2^w}.}
+$$
+The first replacement is a single left <bit shift>. For the second, preserve the original operand in a register, shift a copy left by four and subtract the original:
+```text
+rOriginal = x
+rResult = rOriginal << 4
+rResult = rResult - rOriginal
+```
+This avoids a general multiplication if shifts and subtraction are cheaper on the target processor. The two identities hold for positive and negative <two's complement> operands when only the low $w$ result bits are required.
+
+Because only a binary is available, patch the machine instructions and adjust displaced branches or use a jump to a replacement code block if the new sequence does not fit. Preserve live registers and the calling convention. If later instructions consume overflow or other condition flags, or the original multiplication produces a double-width result or traps on overflow, matching only the low-word arithmetic is insufficient: those effects must be reproduced or the transformation rejected. Finally, measure the modified program; a fast hardware multiply need not be slower than several replacement instructions.
 
 = 9
 {parent=Paper 5}
@@ -277,12 +523,20 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=a}
 
+A graphical-component library can provide `protected void paintComponent(Graphics g)` as a subclass customization hook, as in `javax.swing.JComponent`. A subclass overrides it to draw its own contents while the library retains responsibility for the surrounding painting protocol. A <protected method in Java> is accessible to code in the declaring package and to subclasses in other packages subject to the receiver restriction; it is not simply a public method and not exclusively subclass-visible.
+
+**The benefit is controlled extensibility without exposing an ordinary client operation.** If the method were private, external subclasses could not override and reuse it as the intended hook. If it were public, arbitrary clients could call it outside the normal painting lifecycle and the library would have a wider public contract to maintain. Protected hooks still require documented invariants because subclass code participates in the implementation.
+
 = b
 {parent=9}
 {scope}
 
 = Solution
 {parent=b}
+
+An immutable library value such as `java.lang.String` can be a <final class in Java>. No class can extend it, so a client receiving a `String` cannot secretly receive a subclass that changes the behavior of its methods. This protects assumptions about value semantics in code using strings as keys or trusted identifiers.
+
+**The benefit is a closed implementation contract.** Without `final`, subclasses might override methods inconsistently or introduce behavior incompatible with the library's intended guarantees. Making a class final does not by itself make its fields immutable; a correct immutable implementation also controls its state. The cost is that clients cannot customize it by inheritance and must instead use composition or a different abstraction.
 
 = c
 {parent=9}
@@ -291,6 +545,18 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=c}
 
+A collections library can supply a genuinely <generic method in Java> whose own type parameter connects the input element and the result element type:
+```java
+static <T> java.util.List<T> oneElement(T item) {
+    java.util.List<T> result = new java.util.ArrayList<T>();
+    result.add(item);
+    return result;
+}
+```
+For example, `List<String> xs = oneElement("sample");` is type-checked without a cast. The method can also construct a `List<Integer>` from an integer object. The standard library's `Collections.singletonList` is another example of this type relationship, though its returned list is unmodifiable.
+
+**The benefit is one reusable implementation with compile-time argument/result consistency.** A raw `List` result would lose element-type information, invite unchecked calls and require casts that may fail later. Separate methods for every element type would duplicate code. Merely enclosing a concrete type in angle brackets, such as returning `List<String>`, does not make a method generic; the method here declares `<T>`. <Type erasure> means the guarantee is primarily a source-level type check, not a distinct runtime class for each type argument.
+
 = d
 {parent=9}
 {scope}
@@ -298,12 +564,20 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=d}
 
+A growable-array library should store its backing <Java array> and logical size in <private fields in Java>. Public methods such as `add`, `get` and `remove` can enforce bounds and keep the size consistent with the stored elements. The representation can later change without requiring clients to modify direct field accesses.
+
+**The benefit is preserving invariants through encapsulation.** If clients could assign the size or replace the backing <Java array> directly, they could create negative sizes, report elements that do not exist, or modify entries without the library's checks. Accessor methods should not expose a mutable backing object indiscriminately, since a private field alone does not prevent that indirect route. Private fields also do not provide a general security boundary against privileged reflection or native code; the point here is ordinary library access discipline.
+
 = e
 {parent=9}
 {scope}
 
 = Solution
 {parent=e}
+
+A collections library can specify a `List<E>` <Java interface>, with different implementations such as `ArrayList<E>` and `LinkedList<E>`. A method accepting `List<E>` can iterate or access elements according to the documented list contract without requiring one particular storage representation. Each implementation may also extend its own appropriate class superclass.
+
+**The benefit is separating a usable contract from its implementation.** A parameter restricted to a concrete `ArrayList<E>` would exclude a <linked list> implementation and unnecessarily expose the storage choice. Requiring all providers to extend one concrete class would couple them to its implementation and consume <Java>'s single class-inheritance relationship. Interfaces permit multiple implemented contracts, though clients must rely on the stated contract rather than assuming every optional operation is supported or has the same <time complexity>.
 
 = 10
 {parent=Paper 5}
@@ -317,12 +591,40 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=a}
 
+Allocate a rectangular <Java array>:
+```java
+boolean[][] board = new boolean[1000][1000];
+```
+<Java> initializes every new boolean array element to `false`, so **all cells are initially dead without a filling loop**. This allocates a top-level array of row references and a distinct boolean array for every row.
+
 = b
 {parent=10}
 {scope}
 
 = Solution
 {parent=b}
+
+Count only the existing neighbours, excluding the center, then apply the <Conway Game of Life> transition:
+```java
+static boolean nextCell(boolean[][] old, int i, int j) {
+    int height = old.length;
+    int width = old[0].length;
+    int neighbours = 0;
+    for (int di = -1; di <= 1; di++) {
+        for (int dj = -1; dj <= 1; dj++) {
+            if (di == 0 && dj == 0) continue;
+            int r = i + di;
+            int c = j + dj;
+            if (r >= 0 && r < height && c >= 0 && c < width
+                    && old[r][c]) {
+                neighbours++;
+            }
+        }
+    }
+    return neighbours == 3 || (old[i][j] && neighbours == 2);
+}
+```
+The short-circuit bounds test occurs before indexing a neighbour. Out-of-range cells therefore contribute zero, including at corners, and no opposite-edge wrapping occurs. The center is explicitly excluded. **Birth requires three neighbours; survival requires two or three.** The method accepts a nonempty rectangular board and a valid cell index and does not change the old <Java array>.
 
 = c
 {parent=10}
@@ -331,12 +633,62 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=c}
 
+Use disjoint <Java arrays> for the old and new generations:
+```java
+static void step(boolean[][] old, boolean[][] next) {
+    for (int i = 0; i < old.length; i++) {
+        for (int j = 0; j < old[i].length; j++) {
+            next[i][j] = nextCell(old, i, j);
+        }
+    }
+}
+```
+Every decision reads only `old`, so all cells undergo the simultaneous <Conway Game of Life> transition. The second board must have the same dimensions and share no row arrays with the first. Afterwards swap their references for the following step.
+
+Writing each new cell immediately into the input board would expose a mixture of old and new states to later neighbour counts. The result would depend on the traversal order and would no longer be the specified simultaneous automaton. For example, put the three live cells at $(2,1),(2,2),(2,3)$ on an otherwise dead $5\times5$ board. The simultaneous result is the vertical triple $(1,2),(2,2),(3,2)$. During a naive row-major overwrite, $(1,2)$ becomes live first. The next cell $(1,3)$ now sees that new cell as well as the old cells $(2,2),(2,3)$, so it is incorrectly born with three counted neighbours. This explicitly exhibits the mixture of generations. **A second generation array, or explicit preservation of overwritten old information, is essential.**
+
 = d
 {parent=10}
 {scope}
 
 = Solution
 {parent=d}
+
+A <one-row in-place Life update> needs only one saved row plus a few running sums. Before processing row $i$, `above[j]` stores the old row $i-1$, and all rows $i$ and below are still old. Let a column sum be the number of old live cells in that column in rows $i-1,i,i+1$. The three adjacent column sums, minus the center, give the required neighbour count.
+```java
+static int columnSum(boolean[][] board, boolean[] above,
+                     int i, int j) {
+    int total = above[j] ? 1 : 0;
+    if (board[i][j]) total++;
+    if (i + 1 < board.length && board[i + 1][j]) total++;
+    return total;
+}
+
+static void stepInPlace(boolean[][] board) {
+    int width = board[0].length;
+    boolean[] above = new boolean[width];
+    for (int i = 0; i < board.length; i++) {
+        int left = 0;
+        int middle = columnSum(board, above, i, 0);
+        for (int j = 0; j < width; j++) {
+            int right = j + 1 < width
+                ? columnSum(board, above, i, j + 1) : 0;
+            boolean oldCenter = board[i][j];
+            int neighbours = left + middle + right
+                - (oldCenter ? 1 : 0);
+            boolean newCenter = neighbours == 3
+                || (oldCenter && neighbours == 2);
+            above[j] = oldCenter;
+            board[i][j] = newCenter;
+            left = middle;
+            middle = right;
+        }
+    }
+}
+```
+When column $j$ is processed, `left` and `middle` were computed before their cells were overwritten. `right` is computed now from untouched column $j+1$, including its untouched `above[j+1]` entry. Thus all three sums describe old cells. Saving `oldCenter` into `above[j]` preserves the old current row for the next row's processing; no later computation in the current row rereads that changed entry, because its old contribution is already in the running sums. This proves the inner-loop invariant and then the row invariant by induction.
+
+Initially `above` is all false, representing the dead exterior above the board. The missing left and right columns contribute zero; the bottom row omits any row below it. Hence all four boundaries follow the required convention. **The update takes $O(HW)$ time and one $W$-element auxiliary boolean vector**, which is exactly a 1000-element vector for the requested board. It uses one board array throughout and does not silently keep a second board or two auxiliary rows.
 
 = e
 {parent=10}
@@ -345,10 +697,29 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=e}
 
+Choose bit zero of each integer to represent the leftmost cell in its group of 32 columns. Then use a quotient to choose the word and a remainder to choose the bit:
+```java
+static boolean getBit(int[][] board, int i, int j) {
+    return ((board[i][j >>> 5] >>> (j & 31)) & 1) != 0;
+}
+```
+For valid $0\leq i,j<1024$, `j >>> 5` is $\lfloor j/32\rfloor$ and ranges from zero to 31. The <bit mask> `j & 31` is the offset $j\bmod32$. The logical right <bit shift> brings the desired bit to position zero; the final mask selects only that bit. **Even bit 31 of a negative stored word is extracted correctly**, because `>>>` inserts zeros. A different convention, with the leftmost cell in the most significant bit, would instead shift by `31 - (j & 31)` and must be used consistently.
+
 = 11
 {parent=Paper 5}
 {scope}
 {title2=Numbers and Sets}
+
+= Solution
+{parent=11}
+
+An <equivalence relation> on a <set> $A$ is a <binary relation> that is <reflexive>, <symmetric> and <transitive>: every element is related to itself, related pairs may be reversed, and two consecutive related pairs imply the pair of endpoints is related.
+
+Write $T=R\circ S$, using the printed left-to-right <composition of relations> convention. <Reflexivity> implies $R\subseteq T$ and $S\subseteq T$, and hence $T$ is <reflexive>. Reversing a two-step chain gives
+$$
+T^{-1}=S^{-1}\circ R^{-1}=S\circ R,
+$$
+since $R,S$ are <symmetric>. Also $R\circ R=R$ and $S\circ S=S$: one inclusion is <transitivity>, and the reverse follows by inserting a reflexive step. These elementary identities supply the equivalences below, without presuming that a composite of <equivalence relations> is automatically an <equivalence relation>.
 
 = i
 {parent=11}
@@ -357,12 +728,30 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=i}
 
+A <binary relation> $T$ is <symmetric> exactly when $T=T^{-1}$. By the reversed-chain identity, condition (i) therefore gives $R\circ S=S\circ R$, in particular condition (iii). Conversely, if $S\circ R\subseteq R\circ S$, reversing both sides gives $R\circ S\subseteq S\circ R$. Thus condition (iii) gives equality and therefore <symmetry>. **Conditions (i) and (iii) are equivalent.**
+
 = ii
 {parent=11}
 {scope}
 
 = Solution
 {parent=ii}
+
+If $T$ is <transitive>, then $T\circ T\subseteq T$. Since $S,R\subseteq T$, monotonicity of <composition of relations> gives
+$$
+S\circ R\subseteq T\circ T\subseteq T,
+$$
+which is condition (iii).
+
+Conversely, condition (iii), associativity of <composition of relations>, and the identities $R\circ R=R$, $S\circ S=S$ give
+$$
+\begin{aligned}
+T\circ T&=R\circ S\circ R\circ S\\
+&\subseteq R\circ R\circ S\circ S
+=R\circ S=T.
+\end{aligned}
+$$
+For a direct chain description, start with $xRaSbRcSz$. Replace its middle $aSbRc$ by $aRdSc$ using condition (iii), then use <transitivity> inside $R$ and $S$ to obtain $xRdSz$. Hence $T$ is <transitive>. **Conditions (ii) and (iii) are equivalent.**
 
 = iii
 {parent=11}
@@ -371,12 +760,26 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 = Solution
 {parent=iii}
 
+The preceding proofs show that this inclusion forces both <symmetry> and <transitivity> of $T$; its <reflexivity> already follows from that of $R,S$. It actually forces equality of the composites, not just a one-way inclusion:
+$$
+\boxed{S\circ R\subseteq R\circ S\quad\Longleftrightarrow\quad S\circ R=R\circ S.}
+$$
+This is the <composition of commuting equivalence relations> criterion. It remains to establish the asserted smallest-extension characterization, rather than merely to identify an <equivalence relation>.
+
 = iv
 {parent=11}
 {scope}
 
 = Solution
 {parent=iv}
+
+Assume any of conditions (i)–(iii). The established <reflexivity>, <symmetry> and <transitivity> make $T$ an <equivalence relation>, and it contains both $R,S$. If $E$ is any <equivalence relation> containing $R,S$ and $xRaSz$, then $xEaEz$, so <transitivity> of $E$ gives $xEz$. Thus $T\subseteq E$. This proves that **$T$ is the unique smallest equivalence relation containing $R$ and $S$**. Conversely, condition (iv) explicitly makes $T$ an <equivalence relation>, so it has properties (i) and (ii). Together these implications prove all four conditions equivalent.
+
+For the final integer example, let $g=\gcd(m,n)$. If $x\equiv y\pmod m$ and $y\equiv z\pmod n$, then $z-x$ is a sum of a multiple of $m$ and a multiple of $n$, so $x\equiv z\pmod g$. Conversely, if $g$ divides $z-x$, <Bezout identity> provides integers $a,b$ with $z-x=am+bn$. Set $y=x+am$. Then $y-x$ is divisible by $m$ and $z-y$ by $n$, so $xRySz$. Therefore
+$$
+\boxed{R_m\circ R_n=R_{\gcd(m,n)}=R_n\circ R_m.}
+$$
+Interchanging $m,n$ gives the other equality. The composite is thus exactly congruence modulo the <greatest common divisor>, an <equivalence relation>, and all four equivalent conditions hold.
 
 = 12
 {parent=Paper 5}
@@ -385,3 +788,31 @@ https://www.maths.cam.ac.uk/undergrad/pastpapers/files/2006/PaperIA_5.pdf
 
 = Solution
 {parent=12}
+
+For <finite sets> $A_1,\ldots,A_n$, the <inclusion-exclusion principle> states
+$$
+\boxed{\left|\bigcup_{i=1}^n A_i\right|
+=\sum_{\varnothing\ne J\subseteq\{1,\ldots,n\}}
+(-1)^{|J|+1}\left|\bigcap_{j\in J}A_j\right|.}
+$$
+To prove it, fix an element in exactly $r$ of the <sets>. If $r=0$, it contributes to neither side. If $r\geq1$, its contribution to the right side is
+$$
+\sum_{k=1}^r(-1)^{k+1}\binom rk
+=1-(1-1)^r=1,
+$$
+using the <binomial theorem>. This is exactly its contribution to the union. Summing over the finite ambient union proves the formula. Equivalently, the proof is an identity of elementwise membership indicators, so no unproved rule for overlapping sets is being assumed.
+
+Now let the ambient <set> be all $n!$ <permutations>, and let $E_i$ be those fixing element $i$. A <set intersection> of $k$ specified events $E_i$ has $(n-k)!$ elements: the specified elements are fixed and the others may be permuted freely. Apply <inclusion-exclusion> to the complement of the union of these events. There are $\binom nk$ possible choices of the fixed positions, hence the <derangement> count is
+$$
+\begin{aligned}
+f(n)&=\sum_{k=0}^n(-1)^k\binom nk(n-k)!\\
+&=\boxed{n!\sum_{k=0}^n\frac{(-1)^k}{k!}}.
+\end{aligned}
+$$
+The $k=0$ term counts the whole ambient <set> before subtraction; it is not an omitted empty intersection. The formula also gives $f(0)=1$ and $f(1)=0$.
+
+Dividing by the <factorial> and using the convergent power series for the <exponential function> at $-1$ gives
+$$
+\boxed{\lim_{n\to\infty}\frac{f(n)}{n!}=\sum_{k=0}^\infty\frac{(-1)^k}{k!}=e^{-1}.}
+$$
+The alternating-series estimate supplies the explicit error bound $|f(n)/n!-e^{-1}|\leq1/(n+1)!$. Thus the limiting proportion is established, not merely identified from the first few values.

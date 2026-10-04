@@ -11,12 +11,101 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2007/Paper87.pdf
 = Solution
 {parent=1}
 
+A <lambda term> is built recursively as a variable $x$, an application $MN$, or a <lambda abstraction> $\lambda x.M$. Application associates to the left and abstraction binds occurrences of its variable. We identify consistent renamings of bound variables by <alpha equivalence>. A <beta reduction> contracts $(\lambda x.M)N$ to the <capture-avoiding substitution> $M[x:=N]$, at any subterm. Write $\to_\beta^*$ for finitely many such steps, including none. <Beta equivalence> is the reflexive, symmetric, transitive closure of reduction, so it is represented by a finite zigzag of forward and backward steps.
+
+To prove the <Church-Rosser theorem>, introduce <parallel beta reduction> $\Rightarrow$ by the four rules
+$$
+x\Rightarrow x;\qquad M\Rightarrow M'\ \Longrightarrow\ \lambda x.M\Rightarrow\lambda x.M';
+$$
+$$
+M\Rightarrow M',\ N\Rightarrow N'\ \Longrightarrow\ MN\Rightarrow M'N';
+$$
+$$
+M\Rightarrow M',\ N\Rightarrow N'\ \Longrightarrow\ (\lambda x.M)N\Rightarrow M'[x:=N'].
+$$
+By structural induction every term parallel-reduces to itself. Each ordinary step is a parallel step. Conversely, each parallel step can be performed by an ordinary finite sequence: reduce the displayed subterms recursively, and in the fourth rule contract the root last. Hence $\Rightarrow^*$ and $\to_\beta^*$ are the same relation.
+
+The substitution lemma is
+$$
+M\Rightarrow M',\ N\Rightarrow N'\ \Longrightarrow\ M[x:=N]\Rightarrow M'[x:=N'].
+$$
+Prove it by induction on the parallel-reduction derivation for $M$. The variable case separates $M=x$ from other variables; application and abstraction follow from their inductive hypotheses. For abstraction, rename its binder fresh for $x,N,N'$ before substituting. For a contracted redex, choose its binder $y$ distinct from $x$ and fresh for $N,N'$. The substitution identity $P[y:=Q][x:=N]=P[x:=N][y:=Q[x:=N]]$ follows by structural induction with fresh binders; the variable cases use $y\notin FV(N)$, and application and abstraction preserve the identity. Apply the hypotheses to the body and argument, then the parallel contraction rule and this identity. This proves the lemma for every derivation, including simultaneous contractions inside a redex.
+
+Define the <complete development of a lambda term> by
+$$
+x^\bullet=x,\qquad (\lambda x.M)^\bullet=\lambda x.M^\bullet,
+$$
+$$
+(MN)^\bullet=\begin{cases}P^\bullet[x:=N^\bullet],&M\text{ is syntactically }\lambda x.P,\\M^\bullet N^\bullet,&\text{otherwise}.\end{cases}
+$$
+Only a root redex already present in the source application is contracted by this clause; a newly created root redex need not be contracted.
+
+We claim that **$M\Rightarrow N$ implies $N\Rightarrow M^\bullet$**. Induct on the derivation. The variable and abstraction cases are immediate. In the ordinary application rule, use the inductive developments of both components. If its original function is an abstraction, also contract the resulting root redex by the parallel contraction rule; otherwise just use the application rule, even if the reduct has acquired a new root redex. In the contraction rule, the reduct has form $P'[x:=Q']$, and the substitution lemma with $P'\Rightarrow P^\bullet$, $Q'\Rightarrow Q^\bullet$ gives $P'[x:=Q']\Rightarrow P^\bullet[x:=Q^\bullet]$. This establishes the claim.
+
+Consequently, any two parallel reducts $N,P$ of $M$ each parallel-reduce to $M^\bullet$. Thus parallel reduction has the one-step diamond property. Its finite transitive closure is confluent: fill a finite grid of elementary diamonds to join two finite reduction paths from the same term. Since its closure equals ordinary finite <beta reduction>,
+$$
+M\to_\beta^*N,\quad M\to_\beta^*P\ \Longrightarrow\ \exists Q:\ N\to_\beta^*Q,\ P\to_\beta^*Q.
+$$
+A finite conversion zigzag now also has a common reduct, by induction along it. If the next zigzag step points forward from a term already having a common reduct, join its two outgoing paths by confluence; if it points backward, compose the new forward path to that common reduct. The reverse implication is immediate because two paths to a common reduct form a conversion zigzag. This proves
+$$
+\boxed{M\equiv_\beta N\ \Longleftrightarrow\ \exists Q:\ M\to_\beta^*Q\ \text{and}\ N\to_\beta^*Q.}
+$$
+
+A <beta-normal form> contains no beta-redex, so its only finite reduct is itself. If two normal forms are beta-equivalent, their common reduct must equal both. Hence **a term has at most one <beta-normal form> up to <alpha equivalence>**. The qualification about bound-variable names is essential.
+
+For an example without normal form, take the <Omega combinator>
+$$
+\Omega=(\lambda x.xx)(\lambda x.xx).
+$$
+Its only redex is the root, and contracting it reproduces $\Omega$. Every finite reduct is therefore $\Omega$, which is not a <beta-normal form>. By the theorem it cannot even be beta-equivalent to any normal form.
+
 = 2
 {parent=Paper 87}
 {scope}
 
 = Solution
 {parent=2}
+
+A <combinatory logic term> over free variables $X$ is formed from variables in $X$, the constants $S,K,I$, and application, with no abstraction binder. We may regard $I$ as primitive, or as the abbreviation $SKK$. Application associates to the left. <Weak combinatory reduction> contracts
+$$
+KAB\to A,\qquad SABC\to AC(BC),\qquad IA\to A
+$$
+in any application context. Weak equivalence is the equivalence relation generated by these reductions. There is no additional rule identifying terms merely because they behave alike after application to a fresh argument.
+
+Define <bracket abstraction> on combinatory terms by the following ordered clauses:
+$$
+[x]x=I;\qquad [x]T=KT\ \text{if }x\notin FV(T);\qquad [x](PQ)=S([x]P)([x]Q)\ \text{otherwise}.
+$$
+They cover every term: after excluding the variable case and the case with no free $x$, the term must be an application. Induction gives $FV([x]T)=FV(T)\setminus\{x\}$; no other variable is introduced or removed. For every argument $A$, the same induction gives $([x]T)A\to^*T[x:=A]$: the three cases use respectively the $I$, $K$, and $S$ reductions.
+
+The required translation is
+$$
+\boxed{x^*=x,\qquad(MN)^*=M^*N^*,\qquad(\lambda x.M)^*=[x](M^*).}
+$$
+It has exactly the same set of <free variables> as the original <lambda term>, by the bracket-abstraction identity.
+
+To compare the two reductions, expand the constants into <lambda terms>:
+$$
+S^\lambda=\lambda a.\lambda b.\lambda c.ac(bc),\quad K^\lambda=\lambda a.\lambda b.a,\quad I^\lambda=\lambda a.a,
+$$
+and expand variables and applications homomorphically. Every weak combinatory contraction becomes a finite sequence of <beta reductions>, so weakly equivalent terms have beta-equivalent lambda expansions. We also have
+$$
+([x]T)^\lambda\equiv_\beta\lambda x.T^\lambda.
+$$
+For $T=x$, this is the expansion of $I$. For $x\notin FV(T)$, the expansion of $KT$ beta-reduces to $\lambda x.T^\lambda$, after choosing the binder fresh. For an application, expanding $S([x]P)([x]Q)$ gives
+$$
+\lambda x.([x]P)^\lambda x\,\bigl(([x]Q)^\lambda x\bigr)\equiv_\beta\lambda x.P^\lambda Q^\lambda,
+$$
+by induction and beta contraction. Thus, induction on the lambda syntax gives $(M^*)^\lambda\equiv_\beta M$. Combining these facts proves
+$$
+\boxed{M^*\equiv_{\mathrm{weak}}N^*\ \Longrightarrow\ M\equiv_\beta N.}
+$$
+
+The reverse implication fails for this intensional translation. The beta-equivalent <lambda terms> $M=\lambda x.x$ and $N=\lambda x.((\lambda y.y)x)$ translate respectively to
+$$
+M^*=I,\qquad N^*=[x](Ix)=S(KI)I.
+$$
+Both are weak normal forms: $I$ has no argument, $KI$ has too few arguments to contract, and the outer $S$ has only two arguments. They are syntactically distinct. By the assumed Church–Rosser property of <weak combinatory reduction>, two distinct weak normal forms cannot be weakly equivalent. The same argument works with $I=SKK$, because both fully expanded terms remain distinct weak normal forms. Hence **beta-equivalent <lambda terms> need not have weakly equivalent combinatory translations**.
 
 = 3
 {parent=Paper 87}
@@ -29,12 +118,56 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2007/Paper87.pdf
 = Solution
 {parent=a}
 
+Here a <pointed complete partial order> is a <partially ordered set> $D$ with a least element $\bot_D$ in which every nonempty <directed set> has a <least upper bound>. Directed means that every pair of its elements has an upper bound within that set. A <Scott continuous map> is monotone and preserves these directed suprema. It is not required to preserve the least element; restricting to strict maps would change the categorical claim. If completeness is instead formulated only for increasing countable chains, the same arguments below work with those chains.
+
+Order the <function space of complete partial orders> $[D\to E]$ pointwise: $f\leq g$ means $f(x)\leq g(x)$ for every $x$. Its least element is the constant function with value $\bot_E$. For a directed family $\mathcal F$ of continuous maps, define $h(x)=\sup_{f\in\mathcal F}f(x)$. This is well-defined and is its pointwise <least upper bound>. It is monotone. For any directed $A\subseteq D$,
+$$
+h(\sup A)=\sup_f f(\sup A)=\sup_f\sup_{a\in A}f(a)=\sup_{a\in A}\sup_f f(a)=\sup h[A].
+$$
+The interchange is valid because the combined family $\{f(a):f\in\mathcal F,a\in A\}$ is directed, and either iterated supremum is its <least upper bound>. Thus $h$ is a <Scott continuous map>, proving that **$[D\to E]$ is a <pointed complete partial order>**.
+
+Finite products carry the <product order>, componentwise suprema and least element $(\bot_D,\bot_E)$. The one-element order is a <terminal object>. For the exponential, use the function space with evaluation $\operatorname{ev}(f,x)=f(x)$. To check joint continuity, take a directed family of pairs $(f_i,x_i)$. Then
+$$
+\operatorname{ev}(\sup_i f_i,\sup_i x_i)=\sup_i\sup_j f_i(x_j)=\sup_k f_k(x_k).
+$$
+Indeed, directedness supplies a $k$ above the pairs indexed by both $i$ and $j$, giving $f_i(x_j)\leq f_k(x_k)$. Thus the diagonal values are cofinal in the double family, and evaluation preserves its supremum.
+
+For a continuous $h:A\times D\to E$, its <currying> is $\Lambda h:A\to[D\to E]$, $(\Lambda h)(a)(d)=h(a,d)$. Each section is continuous because $d\mapsto(a,d)$ is; pointwise directed suprema in the $a$ coordinate show that $\Lambda h$ is continuous. Conversely a continuous $g:A\to[D\to E]$ gives the continuous map $\operatorname{ev}\circ(g\times\operatorname{id}_D)$. The two constructions are inverse, because they agree on every pair $(a,d)$. This gives the natural bijection
+$$
+\boxed{\operatorname{Hom}(A\times D,E)\cong\operatorname{Hom}(A,[D\to E]),}
+$$
+with the required evaluation map. Together with the <terminal object> and products, it proves **cartesian closure of pointed complete partial orders with non-strict continuous maps**.
+
 = b
 {parent=3}
 {scope}
 
 = Solution
 {parent=b}
+
+Choose mutually inverse maps $i:D^D\to D$ and $j:D\to D^D$. This is an <extensional reflexive object> in the <cartesian closed category>. Define its application morphism
+$$
+\operatorname{app}=\operatorname{ev}\circ(j\times\operatorname{id}_D):D\times D\to D.
+$$
+For <endomorphisms> $f,g:D\to D$, application in the underlying set $\operatorname{End}(D)$ is $f\cdot g=\operatorname{app}\circ\langle f,g\rangle$.
+
+It is useful to define term interpretation uniformly over any context object $A$. An environment assigns each free variable $x$ a morphism $\rho(x):A\to D$. Variables are interpreted by their assigned maps, and application is interpreted by $\operatorname{app}$ and pairing. For <lambda abstraction>, lift the old environment along $\pi_A:A\times D\to A$, interpret the new variable by $\pi_D$, and let $h:A\times D\to D$ interpret the body. Then set
+$$
+\operatorname{interp}_\rho(\lambda x.M)=i\circ\Lambda h:A\to D.
+$$
+Taking $A=D$ gives interpretations in the requested set of <endomorphisms>. Other context objects are needed in the recursive definition to handle bound variables correctly.
+
+The <beta reduction> rule follows from $ji=\operatorname{id}_{D^D}$ and the evaluation identity for <currying>. Applying the interpreted abstraction to a map $g:A\to D$ gives
+$$
+\operatorname{ev}\circ\langle\Lambda h,g\rangle=h\circ\langle\operatorname{id}_A,g\rangle.
+$$
+Induction on terms identifies this with interpretation of the <capture-avoiding substitution> of the argument for $x$.
+
+For <eta conversion>, suppose $x$ is not free in $M$ and write $f:A\to D$ for the interpretation of $M$. The body $Mx$ on $A\times D$ is the uncurried form of $jf$. Hence
+$$
+\operatorname{interp}(\lambda x.Mx)=i\Lambda(\operatorname{uncurry}(jf))=ijf=f.
+$$
+Thus **beta-eta-equivalent terms have equal interpretations in $\operatorname{End}(D)$**. The full isomorphism, rather than just a retract of the function object, provides the inverse law used in the eta step.
 
 = 4
 {parent=Paper 87}
@@ -43,9 +176,122 @@ https://www.maths.cam.ac.uk/postgrad/part-iii/files/pastpapers/2007/Paper87.pdf
 = Solution
 {parent=4}
 
+An <embedding-projection pair> consists of continuous maps $e:D\to E$, $p:E\to D$ with $pe=\operatorname{id}_D$ and $ep\leq\operatorname{id}_E$ pointwise. Thus $e$ is an order embedding and $ep$ approximates an element of the larger domain from below. Such maps are automatically strict: applying the inequality at $\bot_E$ gives $e(\bot_D)\leq ep(\bot_E)\leq\bot_E$, and applying $p$ then gives $p(\bot_E)=\bot_D$.
+
+Suppose $(\phi_{n-1},\psi_{n-1})$ is such a pair. Composition with fixed continuous maps is continuous on the pointwise <function space of complete partial orders>, so both proposed lifted maps are continuous. Their composite on the smaller function space is
+$$
+\psi_n\phi_n(f)=\psi_{n-1}\phi_{n-1}f\psi_{n-1}\phi_{n-1}=f.
+$$
+Writing $q=\phi_{n-1}\psi_{n-1}\leq\operatorname{id}$, the other composite is $\phi_n\psi_n(g)=qgq\leq g$: for every $x$, $q(g(qx))\leq g(qx)\leq g(x)$ by monotonicity. Thus **the recursion produces <embedding-projection pairs> at every stage**.
+
+Here is an explicit <inverse-limit solution of the reflexive domain equation>. Form
+$$
+D_\infty=\{(x_0,x_1,\ldots):x_n\in D_n,\ \psi_n(x_{n+1})=x_n\text{ for all }n\},
+$$
+ordered coordinatewise. The bottom sequence is coherent by strictness. A directed family has coordinatewise suprema, and continuity of each $\psi_n$ preserves the coherence condition. Thus $D_\infty$ is a <pointed complete partial order>.
+
+Write $\phi_{m,n}:D_m\to D_n$ for the composite embeddings when $m\leq n$, and $\psi_{m,n}:D_n\to D_m$ for the corresponding composite projections, taking both as identities if $m=n$. Define $P_n:D_\infty\to D_n$ by $P_n(x)=x_n$, and define $E_n:D_n\to D_\infty$ by
+$$
+(E_na)_m=\begin{cases}\psi_{m,n}(a),&m\leq n,\\\phi_{n,m}(a),&m\geq n.\end{cases}
+$$
+The pair identities make this sequence coherent, and its coordinates are continuous. They also give $P_nE_n=\operatorname{id}_{D_n}$ and $E_nP_n\leq\operatorname{id}_{D_\infty}$. Put $Q_n=E_nP_n$. Since $E_n=E_{n+1}\phi_n$ and $P_n=\psi_nP_{n+1}$,
+$$
+Q_n=E_{n+1}(\phi_n\psi_n)P_{n+1}\leq Q_{n+1}.
+$$
+At coordinate $m$, $Q_nx$ equals $x_m$ once $n\geq m$, so
+$$
+\boxed{Q_n\uparrow\operatorname{id}_{D_\infty}.}
+$$
+This exhibits the required <embedding-projection pair> for every finite stage.
+
+To prove the function-space isomorphism, observe that $x_{n+1}\in D_{n+1}$ is itself a continuous function $f_n:D_n\to D_n$. Coherence says
+$$
+f_n=\psi_n f_{n+1}\phi_n.
+$$
+Conversely such a coherent function family determines an element of $D_\infty$, with initial coordinate $x_0=\psi_0(f_0)$. Define its action on the limit by
+$$
+\mathcal A(x)=\sup_n E_n f_n P_n\ \in[D_\infty\to D_\infty].
+$$
+The maps inside this supremum increase: substituting coherence expresses the $n$th one as $E_{n+1}q_nf_{n+1}q_nP_{n+1}$ with $q_n=\phi_n\psi_n\leq\operatorname{id}$, which is below the next map. The supremum is continuous by the function-space result in Question 3.
+
+In the other direction, for a continuous $F:D_\infty\to D_\infty$, define $f_n=P_nFE_n$. These satisfy the same coherence equation. Hence define $\mathcal B(F)\in D_\infty$ by
+$$
+\mathcal B(F)_{n+1}=P_nFE_n,\qquad\mathcal B(F)_0=\psi_0(P_0FE_0).
+$$
+For a coherent family, restricting $\sup_nE_nf_nP_n$ back to stage $m$ gives $f_m$: every term with $n\geq m$ restricts exactly to $\psi_{m,n}f_n\phi_{m,n}=f_m$, and the earlier terms are below it. Thus $\mathcal B\mathcal A$ is the identity.
+
+Conversely,
+$$
+\mathcal A\mathcal B(F)=\sup_nQ_nFQ_n=F.
+$$
+For the last equality, $Q_n\uparrow\operatorname{id}$ and continuity give, at every $x$, $\sup_nQ_nF(Q_nx)=\sup_{n,m}Q_nF(Q_mx)=F(x)$; the diagonal is cofinal because the double family increases in both indices. Both $\mathcal A$ and $\mathcal B$ are continuous, by coordinatewise evaluation, continuous composition and directed suprema. Therefore
+$$
+\boxed{D_\infty\cong[D_\infty\to D_\infty]}
+$$
+as complete partial orders with continuous maps, not merely as sets. This supplies the <extensional reflexive object> needed for a beta-eta model, together with all the stated finite-stage pairs.
+
 = 5
 {parent=Paper 87}
 {scope}
 
 = Solution
 {parent=5}
+
+Write products of <endomorphisms> as composition, with the rightmost map applied first. Because $1$ is terminal, the only hom-sets that can contain multiple arrows are $\operatorname{Hom}(1,D)$ and $\operatorname{End}(D)$. If the latter contained only the identity, any point $p:1\to D$ would have $p!=\operatorname{id}_D$, where $!:D\to1$. Then any other point $q$ would satisfy $q=p!q=p$. Thus the category would be a <preorder>. The hypothesis therefore implies $|\operatorname{End}(D)|>1$.
+
+If the product object $D\times D$ were $1$, its universal property applied to arrows from $D$ would give $\operatorname{End}(D)^2\cong\operatorname{Hom}(D,1)$, a singleton, which is impossible. Since there are only two objects, $D\times D=D$. Similarly, if $D^D=1$, the exponential adjunction at $1$ would give
+$$
+\operatorname{Hom}(1,1)\cong\operatorname{Hom}(1\times D,D)\cong\operatorname{End}(D),
+$$
+again impossible. Hence **$D\times D=D^D=D$** as chosen objects.
+
+Let $M=\operatorname{End}(D)$, let $\pi,\pi'$ be the product projections, and let $\varepsilon:D^D\times D\to D$ be evaluation, all now <endomorphisms>. Pairing is $\langle-,-\rangle$, and for $x:D\times D\to D$ write $x^*$ for its <currying>. The product identities and the two inverse exponential identities give
+$$
+\pi\langle x,y\rangle=x,\quad\pi'\langle x,y\rangle=y,\quad\langle\pi z,\pi'z\rangle=z,
+$$
+$$
+\varepsilon\langle x^*\pi,\pi'\rangle=x,\qquad(\varepsilon\langle y\pi,\pi'\rangle)^*=y.
+$$
+This is the structure of a <cartesian closed monoid>.
+
+For the converse, start only from the <monoid> and these identities. The first three make pairing a bijection from $M^2$ to $M$, inverse to $z\mapsto(\pi z,\pi'z)$. In particular
+$$
+\langle x,y\rangle z=\langle xz,yz\rangle,\qquad\langle\pi,\pi'\rangle=1_M,
+$$
+as follows by applying both projections and using uniqueness. Define $U(y)=\varepsilon\langle y\pi,\pi'\rangle$. The last two identities say that $U$ and $(-)^*$ are inverse bijections. These facts also derive, rather than assume, the naturality law
+$$
+\boxed{(x\langle z\pi,\pi'\rangle)^*=x^*z.}
+$$
+Indeed $U(x^*z)=\varepsilon\langle x^*z\pi,\pi'\rangle=U(x^*)\langle z\pi,\pi'\rangle=x\langle z\pi,\pi'\rangle$; applying the inverse bijection proves the law.
+
+Put $e=(\pi')^*$. The law applied to $x=\pi'$ gives, for every $z\in M$,
+$$
+ez=(\pi'\langle z\pi,\pi'\rangle)^*=(\pi')^*=e.
+$$
+Taking $z=e$ proves **$e^2=e$**. This stronger absorption identity is what makes the split object terminal.
+
+Assume first that $M$ is nontrivial; the degenerate case is handled below. Construct the required category using the two idempotents $d=1_M$ and $e$, as a two-object part of the <Karoubi envelope>. Call their objects $D$ and $1$. A morphism from the object with idempotent $a$ to the object with idempotent $b$ is an element $f\in M$ satisfying $bfa=f$. Composition is <monoid> multiplication, and the identity on each object is its idempotent. These laws are well-defined and associative. Its hom-sets are concretely
+$$
+\operatorname{Hom}(D,D)=M,\quad\operatorname{Hom}(D,1)=\{e\},\quad\operatorname{Hom}(1,1)=\{e\},\quad\operatorname{Hom}(1,D)=\{f:fe=f\}.
+$$
+For example, $ef=e$ for every $f$, so the condition for $D\to1$ forces $f=e$. Thus $1$ is terminal, and the original <monoid> appears unchanged at $D$.
+
+Set $D\times D=D$ with projections $\pi,\pi'$ and the given pairing. The product property works for arrows from either object: for global arrows $x,y$ satisfying $xe=x$, $ye=y$, pairing also satisfies $\langle x,y\rangle e=\langle x,y\rangle$. The original projection identities give existence and uniqueness. Products with $1$ are the other object, with its identity and the unique terminal arrow as projections; $1\times1=1$.
+
+For the exponential set $D^D=D$ with evaluation $\varepsilon$. For a parameter object $D$, the given $(-)^*$ and $U$ already establish the universal property. We must additionally verify it for parameter object $1$. An arrow $f:1\times D=D\to D$ is an arbitrary element of $M$. Define its transpose by
+$$
+\kappa(f)=(f\pi')^*.
+$$
+Naturality gives $\kappa(f)z=\kappa(f)$ for every $z$, because $f\pi'\langle z\pi,\pi'\rangle=f\pi'$. In particular $\kappa(f)e=\kappa(f)$, so it really is an arrow $1\to D$.
+
+Its uncurrying is $\varepsilon\langle\kappa(f),1_M\rangle=f$. To see this, start from $U(\kappa(f))=f\pi'$ and compose with $\langle e,1_M\rangle$. Pairing naturality, $\pi'\langle e,1_M\rangle=1_M$, and the absorption property of $\kappa(f)$ give precisely the claimed equality. Conversely, if $g:1\to D$ satisfies $ge=g$, then $gz=gez=ge=g$ for every $z$. Therefore
+$$
+\kappa(\varepsilon\langle g,1_M\rangle)=(\varepsilon\langle g\pi',\pi'\rangle)^*=(\varepsilon\langle g\pi,\pi'\rangle)^*=g.
+$$
+Thus transpose and uncurrying are inverse for the terminal parameter object too. This verifies the full exponential property, rather than only its <endomorphism> instance.
+
+The remaining exponentials are $D^1=D$, $1^D=1$, and $1^1=1$, by the unit product law and terminality. Hence **the constructed two-object category is cartesian closed and $\operatorname{End}(D)=M$**.
+
+For nontrivial $M$, the constructed $D$ is nonterminal because it has more than one <endomorphism>, and $e\ne1_M$ by the absorption identity. This is the case corresponding to the forward non-preorder hypothesis.
+
+If $M$ has one element, all the algebraic identities still hold, but splitting $e=1_M$ alone would make the original object terminal. To satisfy the literal converse's requirement of a nonterminal object, handle this case separately: take the two-object poset category $D<1$. Products are meets, $D^D=1$, $1^D=1$, $D^1=D$, and $1^1=1$, which verify the exponential adjunction on this two-element order. It is cartesian closed, $D$ is nonterminal, and its one-element <endomorphism> <monoid> is $M$. It is a preorder, so it does not recover the forward non-preorder setting or the self-exponential equality. Thus the converse's stated <endomorphism> realization works also in the degenerate case, while the stronger non-preorder reconstruction uses nontrivial $M$.
