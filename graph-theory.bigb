@@ -99,6 +99,29 @@ For a simple <graph>, let $r_{ij}$ count the common neighbours of vertices $i,j$
 
 A shortest path minimizes the sum of edge lengths between two vertices. With nonnegative lengths, a shortest walk can be reduced to a simple path by removing cycles, so exponentially many candidate paths can be searched implicitly. The <Dijkstra algorithm> solves this problem in <polynomial time>.
 
+= Label-setting shortest-path algorithm
+{parent=Shortest path problem}
+
+An algorithm that makes each vertex's distance permanent once it is selected. With nonnegative <directed edge> lengths, the <Dijkstra algorithm> selects the unfinalized vertex with least tentative distance; a shorter route through another unfinalized vertex is impossible because its remaining route has at least that next tentative distance. For an all-to-one problem, incoming <directed edges> to the selected vertex are relaxed. Negative lengths can invalidate this finalization argument.
+
+= Bellman inequalities
+{c}
+{parent=Shortest path problem}
+{title2=$d_i\le c_{ij}+d_j$}
+
+For an all-to-one <shortest path problem> with root $r$ and $d_r=0$, these inequalities ensure that $d_i$ is no larger than any <directed path> length from $i$ to $r$, by summing along that <directed path>. If every finite $d_i$ is also the length of a discovered <directed path>, the inequalities certify exact shortest-path labels. Nodes from which the root is unreachable retain infinite distance and are handled separately.
+
+= Label-correcting shortest-path algorithm
+{parent=Shortest path problem}
+
+An algorithm whose tentative distance labels may be revised repeatedly until all relevant <Bellman inequalities> hold. <Bellman-Ford algorithm> uses this approach: a label is an upper bound supplied by a discovered <directed path>, and relaxing an <directed edge> can replace it with a shorter discovered <directed path>. A finite label is not declared permanent merely because it has been processed.
+
+= Bellman-Ford algorithm
+{c}
+{parent=Shortest path problem}
+
+For an all-to-one <shortest path problem> with root $r$, initialize $d_r^{(0)}=0$ and all other labels to infinity. Set $d_i^{(k)}=\min(d_i^{(k-1)},\min_{(i,j)\in A}\{c_{ij}+d_j^{(k-1)}\})$, keeping the root at zero. Induction identifies the labels with the shortest <directed paths> using at most $k$ <directed edges>. Without a reachable negative <directed cycle>, $|V|-1$ rounds suffice after removing <directed cycles> from a shortest walk. In-place or queue variants repeatedly relax incoming <directed edges> to an improved label. Labels may decrease multiple times, so this is a <label-correcting shortest-path algorithm>.
+
 = Dijkstra algorithm
 {c}
 {parent=Shortest path problem}
@@ -343,6 +366,18 @@ A <polynomial-time many-one reduction> represents each variable by an adjacent l
 
 The binomial random graph $G(n,p)$ has vertex set $\{1,\ldots,n\}$ and includes each of the $\binom n2$ possible edges independently with probability $p$.
 
+= Poisson threshold for vertices lying in no triangle
+{c}
+{parent=Binomial random graph}
+{title2=$\binom{n-1}{2}p^3=\log(n/c)\Longrightarrow T\Rightarrow\operatorname{Po}(c)$}
+
+For a fixed set of $r$ vertices, exclude all triangles meeting that set. Their total expectation is $r\log(n/c)+o(1)$. Distinct triangle pairs sharing an edge contribute $O_r(n^3p^5)=o(1)$ to the <Janson dependency sum>. <Harris' inequality> and <Janson inequality> bound the avoidance probability between matching exponentials, giving $(c/n)^r(1+o(1))$. The <factorial-moment criterion for Poisson convergence> then gives the displayed law.
+
+= Deferred edge exposure in greedy independent-set colouring
+{parent=Binomial random graph}
+
+Construct an <independent set> by choosing a candidate vertex, exposing only its incident edges, and retaining its non-neighbours as candidates. Once the chosen independent set is removed, every exposed edge has a removed endpoint. Thus the remaining internal edges still have their independent original laws, conditional on the revealed history. This special exposure rule permits fresh-binomial estimates for successive classes; an arbitrary adaptively selected vertex subset does not have that property.
+
 = Strictly balanced graph
 {parent=Binomial random graph}
 {title2=$e(F)/v(F)<e(H)/v(H)$}
@@ -488,6 +523,16 @@ Hence $G(n,p)$ contains a triangle with an attached leaf with probability tendin
 
 A graph colouring assigns labels called colours to graph elements subject to specified constraints. A proper vertex colouring gives adjacent vertices different colours.
 
+= Semi-random palette refinement for triangle-free colouring
+{parent=Graph coloring}
+
+Maintain lists of available colours, tentatively colour small random portions, erase conflicts and prune colours used by neighbours. In a <triangle-free graph>, a vertex's neighbours form an <independent set>, which enables local estimates. Track list size and average remaining neighbour congestion per colour; prune unusually congested colours before the next round. Concentration and the <Lovász local lemma> preserve these invariants until lists have enough slack for completion. Tracking averages matters because triangle-free graphs can still contain many four-cycles and need not have uniform per-colour congestion.
+
+= Colour savings from sparse neighbourhoods
+{parent=Graph coloring}
+
+If each neighbourhood misses a fixed positive fraction of the possible pairs at a large degree bound, randomly assign about half that many colours and erase vertices with monochromatic incident edges. A nonadjacent neighbour pair can share a retained colour, giving a <neighbour-colour saving>. Write the number of successful repeated colours as a difference of two <certifiable functions>: colours with a nonadjacent pair, minus those for which a neighbour loses that colour. Both change by at most two under one-coordinate changes and have constant-size certificates. <Talagrand's convex distance inequality> and the <Lovász local lemma> make their linear expected saving simultaneous at all high-degree vertices; low-degree vertices have slack already. This yields a colouring using a fixed positive fraction fewer than the degree bound.
+
 = Coloring entropy weight
 {parent=Graph coloring}
 {title2=$w(G)=|V(G)|\min_\chi H(\chi(Z))$}
@@ -511,6 +556,18 @@ If graphs $G_i$ cover the edges of an $n$-vertex graph with <independence number
 {synonym}
 
 Order the <vertices> of a <graph> and assign each vertex the smallest color not already used by its colored neighbours. This produces a proper <graph coloring> with at most $\Delta+1$ colors when the maximum degree is $\Delta$. The result can depend strongly on vertex order and need not achieve the <chromatic number>.
+
+= Extension of a partial colouring by neighbour-colour savings
+{parent=Greedy coloring}
+{title2=$K-d(v)+S_v\ge1$}
+
+In a proper partial <graph coloring>, let $R_v$ count coloured neighbours and $D_v$ count their distinct colours. The saving $S_v=R_v-D_v$ leaves $K-D_v$ available colours for only $d(v)-R_v$ initially uncoloured neighbours. If the displayed inequality holds at every vertex, ordinary greedy completion succeeds. Each additionally coloured neighbour removes at most one available colour while also reducing the number of uncoloured neighbours by one.
+
+= Neighbour-colour saving
+{parent=Extension of a partial colouring by neighbour-colour savings}
+{title2=$S_v=R_v-D_v$}
+
+The number of coloured neighbours of $v$ minus the number of distinct colours on those neighbours. Repeated colours among pairwise nonadjacent neighbours reduce the number of unavailable colours without increasing the number of neighbours still to colour.
 
 = Three-colourability problem
 {parent=Graph coloring}
@@ -770,25 +827,29 @@ The first term counts colourings after deleting $e$; the second subtracts those 
 Attaching a new <leaf of a graph>[leaf] to a graph multiplies its <chromatic polynomial> by $t-1$, because after colouring the old graph the leaf may receive any colour except its neighbour's.
 
 = Independent set
+{disambiguate=graph theory}
 {parent=Graph theory}
-{wiki=Independent_set_(graph_theory)}
+{wiki}
+
+= Independent set
+{synonym}
 
 An independent set is a set of vertices no two of which are adjacent. In every proper colouring, each colour class is an independent set.
 
 = Independent transversal
-{parent=Independent set}
+{parent=Independent set (graph theory)}
 
 For a <graph> whose vertices are partitioned into parts, an independent transversal is an <independent set> containing exactly one vertex from each part. If a cycle's parts each have twelve vertices, choose one vertex uniformly and independently per part. A cycle edge joining distinct parts is selected at both ends with <probability> $1/144$. Each <event> depends on at most $47$ others, since each part meets at most $24$ cycle edges. The <Lovász local lemma> applies because $48e/144<1$, proving existence for an arbitrary such partition.
 
 = Degree-ordered independent-set entropy bound
-{parent=Independent set}
+{parent=Independent set (graph theory)}
 {title2=$i(G)\leq\prod_i(2^{b_i+1}-1)^{1/d_i}$}
 
 Order vertices by nonincreasing positive degrees $d_i$, and let $b_i$ count preceding neighbors. The <Madiman-Tetali inequality> applied to preceding-neighbor sets and $b_i$ copies of singleton $i$ bounds the entropy of a uniformly chosen <independent set>. In each local term, all-zero neighbor assignment permits two choices at $i$, while every other assignment permits at most one. The maximum-entropy bound gives $\log_2(2^{b_i+1}-1)$ for that term. Complete bipartite graphs $K_{d,d}$ attain equality when one part is ordered before the other.
 
 = Independence number
 {title2=$\alpha(G)$}
-{parent=Independent set}
+{parent=Independent set (graph theory)}
 {wiki}
 
 The independence number is the largest cardinality of an <independent set> in a graph. Since every colour class is independent,
@@ -809,12 +870,12 @@ For a finite simple <graph>, $\alpha(G)\geq\sum_{v\in V(G)}1/(1+\deg v)\geq |V(G
 For every sufficiently large $n$, there is a triangle-free graph $G$ on $n$ vertices with $\alpha(G)<n^{0.7}$. One construction samples $G(2n,(2n)^{-0.69})$: with positive probability it has fewer than $n$ triangles and no independent set of size $n^{0.7}$. Delete one vertex from each triangle and then take an induced $n$-vertex subgraph.
 
 = Greedy independent-set bound
-{parent=Independent set}
+{parent=Independent set (graph theory)}
 
 Every finite graph of maximum degree at most $\Delta$ has an <independent set> of size at least $|V|/(\Delta+1)$. Greedily choose a vertex and delete its closed neighbourhood.
 
 = Locally sparse graph independence bound
-{parent=Independent set}
+{parent=Independent set (graph theory)}
 
 There is an absolute $c>0$ such that if an $n$-vertex graph has maximum degree at most $d$ and every vertex neighbourhood spans at most $d^2/f$ edges, where $2\leq f\leq d^2$, then
 $$
@@ -980,9 +1041,13 @@ The subgraph induced by a vertex set $W$ contains every edge of the original gra
 
 Every finite graph $G$ has a three-colourable subgraph with at least $2e(G)/3$ edges. Give vertices three independent uniform colours and retain edges whose endpoints have different colours. Each edge survives with probability $2/3$, so the expected number surviving is $2e(G)/3$.
 
-= Join of graphs
+= Join
+{disambiguate=graph theory}
 {parent=Graph theory}
-{wiki=Join_(graph_theory)}
+{wiki}
+
+= Join of graphs
+{synonym}
 
 The join $\Gamma_1*\Gamma_2$ is obtained from the <disjoint union of graphs> $\Gamma_1\sqcup\Gamma_2$ by adding every edge between a vertex of $\Gamma_1$ and a vertex of $\Gamma_2$.
 
@@ -999,8 +1064,12 @@ The disjoint union $\Gamma_1\sqcup\Gamma_2$ has the vertices and edges of the tw
 The complete graph $K_r$ has $r$ vertices and every possible edge between distinct vertices.
 
 = Clique
+{disambiguate=graph theory}
 {parent=Complete graph}
-{wiki=Clique_(graph_theory)}
+{wiki}
+
+= Clique
+{synonym}
 
 = Complete subgraph
 {synonym}
@@ -1008,12 +1077,12 @@ The complete graph $K_r$ has $r$ vertices and every possible edge between distin
 A clique in a graph is a vertex set whose induced subgraph is complete. A copy of $K_r$ is therefore an $r$-vertex clique.
 
 = Maximal clique
-{parent=Clique}
+{parent=Clique (graph theory)}
 
 A maximal clique is a <clique> not strictly contained in another clique. This is distinct from a largest clique, whose size equals the <clique number>. In a triangulated <probabilistic graphical model>, maximal cliques are the natural nodes of a <junction tree>.
 
 = Edge-disjoint clique packing
-{parent=Clique}
+{parent=Clique (graph theory)}
 {title2=$Z_r(G)$}
 
 An edge-disjoint clique packing is a collection of $r$-<cliques> no two of which share an <edge>; they may share <vertices>. Its maximum cardinality $Z_r(G)$ changes by at most one when a single <edge> is toggled. Removing that <edge> destroys at most one packed <clique>, which makes this variable suitable for an <edge-exposure martingale>.
@@ -1030,7 +1099,7 @@ Let $X$ count $k$-<cliques> in a <binomial random graph> on $m$ <vertices> and $
 The clique conflict graph has one <vertex> for each $r$-<clique> of a fixed <graph>, and joins two when they share an <edge>. Its <independent sets> correspond exactly to <edge-disjoint clique packings>. The <Caro-Wei bound> converts clique-count and overlap estimates into a packing lower bound.
 
 = Clique number
-{parent=Clique}
+{parent=Clique (graph theory)}
 {title2=$\omega(G)$}
 
 The maximum number of vertices in a <clique> of a <graph>. If the graph contains $K_k$ and no $K_{k+1}$, its clique number is exactly $k$, since every larger <clique> contains a $(k+1)$-<clique>.
@@ -1144,6 +1213,12 @@ An uncapacitated <minimum-cost flow> has nonnegative edge flows without finite u
 {parent=Uncapacitated minimum-cost flow}
 
 A vertex potential in the dual of an <uncapacitated minimum-cost flow> yields the edge inequalities $\pi_i-\pi_j\leq c_{ij}$. Its objective is $\sum_i\pi_i b_i$. Adding a common constant leaves all <network reduced costs> and the objective unchanged when total net supply is zero. Potentials tight on a <spanning tree> are fixed up to this common constant.
+
+= Dual network potentials from shortest-path distances
+{parent=Network dual potential}
+{title2=$\pi_i=-d_i,\quad c_{ij}-\pi_i+\pi_j\ge0$}
+
+In a directed network with no negative-cost directed cycle, add a source having zero-cost arcs to all vertices and compute shortest-path distances $d_i$. The inequalities $d_j\le d_i+c_{ij}$ make $\pi_i=-d_i$ dual feasible for <uncapacitated minimum-cost flow>. Shortest-path tree arcs are tight. An arbitrary spanning tree also fixes tight candidate potentials up to a constant, but it does not guarantee the non-tree inequalities; these must be checked.
 
 = Network reduced cost
 {title2=$r_{ij}=c_{ij}-\pi_i+\pi_j$}
@@ -1528,10 +1603,15 @@ For a finite <flow network>, this is a nondecreasing concave piecewise-linear fu
 
 A flow network with integer capacities has a maximum flow whose value on every edge is an integer. The augmenting-path algorithm proves this because every augmentation preserves integrality.
 
-= Kőnig's theorem for bipartite matching
+= Kőnig's theorem
+{disambiguate=graph theory}
 {c}
 {parent=Max-flow min-cut theorem}
-{wiki=Kőnig's_theorem_(graph_theory)}
+{wiki}
+
+= Kőnig's theorem for bipartite matching
+{c}
+{synonym}
 
 In a finite bipartite graph, the maximum size of a matching equals the minimum size of a vertex cover. It follows by representing matching as an integral flow and vertex covers as finite-capacity cuts.
 
@@ -1843,10 +1923,14 @@ For comparisons at fixed $|S|$, minimizing $|\partial_vS|$ is equivalent to mini
 
 A common neighbour of vertices $u$ and $v$ is adjacent to both of them.
 
-= Degree of a vertex
+= Degree
+{disambiguate=graph theory}
 {title2=$\deg(v)$}
 {parent=Graph theory}
-{wiki=Degree_(graph_theory)}
+{wiki}
+
+= Degree of a vertex
+{synonym}
 
 = Vertex degree
 {synonym}
@@ -1857,25 +1941,25 @@ A common neighbour of vertices $u$ and $v$ is adjacent to both of them.
 The degree of a vertex is the number of edges incident with it, equivalently the cardinality of its neighbourhood in a simple graph.
 
 = Degree sequence
-{parent=Degree of a vertex}
+{parent=Degree (graph theory)}
 {title2=$\mathbf d=(d_1,\ldots,d_n)$}
 
 The degree sequence of a labelled <graph> records the <degree of a vertex> at each label. The <handshaking lemma> gives $\sum_i d_i=2|E|$. A nonincreasing list forgets the assignment of degrees to labels unless a particular ordering is specified.
 
 = Outdegree
-{parent=Degree of a vertex}
+{parent=Degree (graph theory)}
 {title2=$d^+(v)$}
 
 The number of edges of a <directed graph> directed away from a given vertex. Assigning directions to undirected edges is an <orientation of a graph>.
 
 = Average degree of a graph
-{parent=Degree of a vertex}
+{parent=Degree (graph theory)}
 {title2=$\overline d(G)=2e(G)/|V(G)|$}
 
 The average <vertex degree> of a <graph> is the sum of its vertex degrees divided by its order. <Double counting> edge endpoints gives $\overline d(G)=2e(G)/|V(G)|$. It lies between the <minimum degree of a graph> and the <maximum degree of a graph>.
 
 = Regular graph
-{parent=Degree of a vertex}
+{parent=Degree (graph theory)}
 {wiki}
 
 A graph is $d$-regular when every vertex has degree $d$.
@@ -1913,19 +1997,19 @@ If the graph is connected, the $d$-eigenspace is exactly $\operatorname{span}\{\
 A connected regular graph has exactly two distinct adjacency eigenvalues if and only if it is a <complete graph> $K_n$ with $n\geq2$. Its eigenvalues are $n-1$ on the constant vectors and $-1$ on their orthogonal complement.
 
 = Degree-biased vertex distribution
-{parent=Degree of a vertex}
+{parent=Degree (graph theory)}
 
 In a finite graph with at least one edge, the degree-biased vertex distribution assigns probability proportional to the <degree of a vertex>. It is the distribution of an endpoint on a specified side of a uniformly random edge.
 
 = Universal vertex
-{parent=Degree of a vertex}
+{parent=Degree (graph theory)}
 {wiki}
 
 A universal vertex is adjacent to every other vertex of its graph.
 
 = Minimum degree of a graph
 {title2=$\delta(G)$}
-{parent=Degree of a vertex}
+{parent=Degree (graph theory)}
 
 = Minimum degree
 {synonym}
@@ -1936,14 +2020,14 @@ The minimum degree is $\delta(G)=\min_{v\in V(G)}\deg(v)$, the least <degree of 
 
 = Maximum degree of a graph
 {title2=$\Delta(G)$}
-{parent=Degree of a vertex}
+{parent=Degree (graph theory)}
 
 The maximum degree $\Delta(G)$ is the greatest degree of a vertex of $G$.
 
 It is the maximum of the <degree of a vertex> over all vertices.
 
 = Locally finite graph
-{parent=Degree of a vertex}
+{parent=Degree (graph theory)}
 {wiki}
 
 A graph is locally finite when every vertex has finite degree.
@@ -1954,25 +2038,29 @@ A graph is locally finite when every vertex has finite degree.
 
 An exhaustion of a countable <graph> is an increasing <sequence> of finite connected <graph vertex> sets whose union is the whole <graph vertex> set. In a <locally finite graph>, every prescribed finite <graph path> together with all <graph neighbours> of its visited <graph vertices> lies in a sufficiently large exhaustion set. This permits coupling finite-volume and infinite-volume <simple random walks> up to a finite stopping time.
 
-= Cut of a graph
+= Cut
+{disambiguate=graph theory}
 {parent=Graph theory}
-{wiki=Cut_(graph_theory)}
+{wiki}
+
+= Cut of a graph
+{synonym}
 
 A cut is a partition $V=A\sqcup B$ of the vertex set. Its size is the number of edges with one endpoint in each part.
 
 = Edge cutset
-{parent=Cut of a graph}
+{parent=Cut (graph theory)}
 
 An edge cutset separating two vertices is a set of edges whose removal leaves no <path in a graph> between those vertices. For a vertex set containing exactly one of the two vertices, its <edge boundary> is such a cutset.
 
 = Maximum cut
-{parent=Cut of a graph}
+{parent=Cut (graph theory)}
 {wiki}
 
 A maximum cut has greatest size among all cuts of a finite graph.
 
 = Random cut lower bound
-{parent=Cut of a graph}
+{parent=Cut (graph theory)}
 
 Every finite graph with $m$ edges has a <cut of a graph> of size at least $m/2$, and hence a spanning <bipartite graph> with at least $m/2$ edges. Put each vertex independently on either side with equal probability. Every edge crosses with probability $1/2$, so <linearity of expectation> gives expected cut size $m/2$.
 
@@ -1990,7 +2078,7 @@ $$
 and apply <linearity of expectation>.
 
 = Unfriendly partition
-{parent=Cut of a graph}
+{parent=Cut (graph theory)}
 {wiki}
 
 = Unfriendly partition of a graph
@@ -2100,10 +2188,14 @@ The complete bipartite graph $K_{r,s}$ has vertex classes of sizes $r$ and $s$ a
 
 If a <bipartite graph> with class sizes $m,N$ has at least $\beta mN$ <edges>, double count pairs consisting of an $s$-set in the first class and a common neighbour in the second. Convexity of binomial coefficients gives some $S$ with $|N(S)|\ge N\binom{\lfloor\beta m\rfloor}s/\binom ms$. When $s\le\beta m/2$, the quotient is at least $(\beta/2)^s$. This turns density into a large complete bipartite subgraph.
 
-= Star graph
+= Star
+{disambiguate=graph theory}
 {parent=Complete bipartite graph}
 {title2=$K_{1,m}$}
-{wiki=Star_(graph_theory)}
+{wiki}
+
+= Star graph
+{synonym}
 
 = Graph star
 {synonym}
@@ -2216,14 +2308,18 @@ A cyclic ordering of a <directed graph> is considered unchanged by rotations or 
 The cyclic stability is the largest size of an <independent set> appearing consecutively in a representative of a <coherent cyclic order of a digraph>. It is at most the ordinary <independence number>. A set with no forward path between its distinct vertices can be moved into a consecutive block by swapping nonadjacent vertices. Choose a representative minimizing the span of the set; a vertex in a gap can be moved left or right past the block, contradicting minimality unless there are no gaps.
 
 = Tournament
+{disambiguate=graph theory}
 {parent=Directed graph}
 {title2=$u\to v\ \text{or}\ v\to u$}
-{wiki=Tournament_(graph_theory)}
+{wiki}
+
+= Tournament
+{synonym}
 
 A tournament is an orientation of a <complete graph>: between each pair of distinct <vertices> there is exactly one <directed edge>.
 
 = Median order of a tournament
-{parent=Tournament}
+{parent=Tournament (graph theory)}
 
 = Median order
 {synonym}
@@ -2240,7 +2336,7 @@ A median order maximizes the number of forward <directed edges> in a linear orde
 A <graph embedding> into an ordered <tournament> is half-sparse when the displayed inequality holds for every proper final interval $I$. Reserving two extra tournament vertices allows extension at any outward-oriented leaf: the <median order of a tournament> supplies at least half of the later vertices as outneighbours of the parent's image, while half-sparsity leaves at least one of them unused. Adding one image while extending every old final interval by two preserves the inequality.
 
 = Regular tournament
-{parent=Tournament}
+{parent=Tournament (graph theory)}
 {title2=$d^+(v)=d^-(v)=(N-1)/2$}
 
 A regular <tournament> has equal <outdegree> and indegree at every vertex. On $2k+1$ vertices, label by residues modulo $2k+1$ and direct $i\to j$ when $j-i\in\{1,\ldots,k\}$. This gives an explicit regular tournament. It contains no outward-oriented star with more than $k$ leaves.
@@ -2357,23 +2453,27 @@ For a directed or weighted graph, entries instead record directed adjacency or e
 
 For every nonnegative integer $k$, the entry $(A^k)_{uv}$ equals the number of length-$k$ walks from $u$ to $v$. This follows by induction, since matrix multiplication appends one adjacent vertex to each walk.
 
-= Graph distance
+= Distance
+{disambiguate=graph theory}
 {title2=$d(u,v)$}
 {parent=Graph theory}
-{wiki=Distance_(graph_theory)}
+{wiki}
+
+= Graph distance
+{synonym}
 
 The distance $d(u,v)$ between connected vertices is the least length of a path joining them.
 
 = Path metric
 {title2=$\rho$}
-{parent=Graph distance}
+{parent=Distance (graph theory)}
 {wiki}
 
 Given positive edge lengths $\ell(e)$, the path metric is the infimum of $\sum_{e\in\gamma}\ell(e)$ over paths $\gamma$ joining two vertices.
 
 = Graph diameter
 {title2=$d(G)$}
-{parent=Graph distance}
+{parent=Distance (graph theory)}
 
 The diameter of a connected finite graph is the maximum distance between two vertices.
 
@@ -2416,9 +2516,13 @@ With the two vertex classes listed consecutively, a bipartite graph has adjacenc
 
 If a square bipartite adjacency matrix $B$ has nonzero determinant, some product in its Leibniz expansion is nonzero. Its permutation selects one edge at each vertex and therefore gives a perfect matching.
 
-= Matching in a graph
+= Matching
+{disambiguate=graph theory}
 {parent=Graph theory}
-{wiki=Matching_(graph_theory)}
+{wiki}
+
+= Matching in a graph
+{synonym}
 
 = Matchings in a graph
 {synonym}
@@ -2426,7 +2530,7 @@ If a square bipartite adjacency matrix $B$ has nonzero determinant, some product
 A matching is a set of edges with no shared endpoints. It saturates a vertex set when every vertex in that set is incident to one of its edges.
 
 = Stable matching in a bipartite graph
-{parent=Matching in a graph}
+{parent=Matching (graph theory)}
 
 = Stable matching
 {synonym}
@@ -2445,12 +2549,12 @@ If the endpoints of an <edge> rank one another last and one <stable matching in 
 An unmatched vertex in the proposing part proposes to its best untried neighbour. The receiving vertex keeps its preferred proposal, rejecting any other. There are at most as many proposals as <edges>, so this terminates. A rejected proposer can never become preferable to the receiver's final partner, since the receiver's held partner only improves. An edge never proposed along cannot block either: its proposer finishes with a better partner or has exhausted all choices. Thus the final <matching in a graph> is stable.
 
 = Near-perfect matching
-{parent=Matching in a graph}
+{parent=Matching (graph theory)}
 
 In a <graph> with $2n$ <vertices>, a near-perfect <matching in a graph> has $n-1$ <edges> and exactly two unmatched <vertices>.
 
 = Matching generating function
-{parent=Matching in a graph}
+{parent=Matching (graph theory)}
 {title2=$Z_G(\lambda)=\sum_k m_k\lambda^k$}
 
 The coefficient $m_k$ counts <matchings in a graph> with $k$ <edges>. For a <bipartite graph> with $n$ <vertices> on each side, $m_n$ counts <perfect matchings> and equals the <permanent of a matrix> of its bipartite adjacency <matrix>. Positive activity $\lambda$ makes $Z_G$ the normalizing constant of the <weighted matching Markov chain>.
@@ -2462,7 +2566,7 @@ The coefficient $m_k$ counts <matchings in a graph> with $k$ <edges>. For a <bip
 For $0<a\leq b$, expand the <expectation> under the <weighted matching Markov chain> stationary weights to obtain the displayed identity. If the largest <matching in a graph> has $n$ <edges> and $b/a\leq1+1/n$, the observable lies in $[1,e]$. Its sample mean has controlled error by the <Hoeffding inequality>. A product of $J$ ratios, each estimated to relative accuracy $O(\varepsilon/J)$, approximates the full ratio to relative accuracy $O(\varepsilon)$.
 
 = Augmenting path in a matching
-{parent=Matching in a graph}
+{parent=Matching (graph theory)}
 
 An augmenting path alternates between edges outside and inside a <matching in a graph> and joins two unmatched endpoints. Flipping its edges increases the matching size by one. In an assignment equality graph it moves toward a <perfect matching> while preserving zero <reduced costs> on matched edges.
 
@@ -2475,7 +2579,7 @@ The two sides have $n$ <vertices> each. Given a nonperfect <matching in a graph>
 Choose such an augmentation deterministically. Its reverse is specified by at most four <vertices>, giving at most $2n^4$ preimages for a <matching in a graph> of the next size. Thus the <matching generating function> coefficients satisfy $m_k\leq2n^4m_{k+1}$.
 
 = Perfect matching
-{parent=Matching in a graph}
+{parent=Matching (graph theory)}
 {wiki}
 
 A perfect matching saturates every vertex of the graph.
@@ -2500,7 +2604,7 @@ A minimum-weight <perfect matching> pairs every vertex exactly once while minimi
 A one-factorization partitions every edge of a graph into <perfect matchings>. Each matching uses every vertex exactly once. A <total of synthemes> is precisely a one-factorization of the complete graph on six points.
 
 = Maximal matching
-{parent=Matching in a graph}
+{parent=Matching (graph theory)}
 
 A matching is maximal when no edge can be added to it, and maximum when no matching has more edges. Every maximum matching is maximal, and the unmatched vertices of a maximal matching form an independent set.
 
@@ -2508,7 +2612,7 @@ Maximality is a property of a <matching in a graph>, distinct from maximum cardi
 
 = Matching number
 {title2=$\nu(G)$}
-{parent=Matching in a graph}
+{parent=Matching (graph theory)}
 
 = Maximum matching number
 {synonym}
@@ -2518,7 +2622,7 @@ The matching number $\nu(G)$ is the largest number of edges in a matching of $G$
 The matching number $\nu(G)$ is the maximum cardinality of a <matching in a graph>.
 
 = Hall's marriage theorem
-{parent=Matching in a graph}
+{parent=Matching (graph theory)}
 {c}
 {wiki}
 
@@ -2567,7 +2671,7 @@ For Hall's theorem, either every proper nonempty set has one excess neighbour an
 In a $k$-regular bipartite graph, edge counting gives equal vertex-class sizes and $k|S|\leq k|N(S)|$. Hall's theorem therefore supplies a perfect matching.
 
 = Regular-graph matching bound from unmatched vertices
-{parent=Matching in a graph}
+{parent=Matching (graph theory)}
 
 If a $k$-regular graph on $n$ vertices has a maximum matching of size $m$, its unmatched vertices are independent. Counting their incident edges gives $k(n-2m)\leq2(k-1)m$, and hence $m\geq kn/(4k-2)$.
 

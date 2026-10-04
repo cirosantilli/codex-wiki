@@ -3,6 +3,18 @@
 
 A time series is a sequence of observations indexed by time. Time-series analysis models temporal dependence for description, inference, and forecasting.
 
+= Three-point quadratic reproduction forces the identity filter
+{parent=Time series}
+{title2=$(w_{-1},w_0,w_1)=(0,1,0)$}
+
+A symmetric three-point smoother with weights $(a,b,a)$ reproduces constants only if $2a+b=1$. Reproducing quadratic trends also requires $2a=0$, so $a=0$ and $b=1$. Thus the identity <estimator> $X_t$ is unbiased, but there is no nontrivial three-point linear smoother reproducing every quadratic. An assertion excluding even the identity <estimator> is false. This clarifies why the <five-point symmetric quadratic trend smoother> is the first symmetric nontrivial example.
+
+= Five-point symmetric quadratic trend smoother
+{parent=Time series}
+{title2=$(-3,12,17,12,-3)/35$}
+
+For observations $X_t=T_t+\varepsilon_t$ with a quadratic trend and uncorrelated equal-variance errors, a symmetric five-point <linear filter of a stationary time series> has weights $(a,b,c,b,a)$. Reproducing every quadratic requires $2a+2b+c=1$ and $8a+2b=0$. Substitution gives $b=-4a$, $c=1+6a$ and error <variance> $\sigma^2(70a^2+12a+1)$. Its unique minimum occurs at $a=-3/35$, producing the displayed weights and <variance> $17\sigma^2/35$. Negative weights are allowed: this is a linear weighted smoother, not a convex average. Applying a linear filter to a deterministic trend plus stationary errors does not assert that the complete observation process is stationary.
+
 = Turning point test of randomness
 {parent=Time series}
 {title2=$E[P_T]=2(T-2)/3,\quad\operatorname{Var}(P_T)=(16T-29)/90$}
@@ -15,6 +27,31 @@ For independent identically distributed continuous observations, count strict lo
 {title2=$\widehat S_t=KX_t+(1-K)\widehat S_{t-1}$}
 
 With a fixed gain $0<K<1$, exponential smoothing recursively combines the newest observation with the preceding estimate. Iteration assigns geometric weights $K(1-K)^j$ to older observations, together with a diminishing weight on the initial estimate. The <steady-state local-level Kalman gain> gives a probabilistic interpretation of this recursion.
+
+= Double exponential smoothing
+{parent=Exponential smoothing}
+
+Double exponential smoothing supplements a smoothed level with a smoothed slope so that forecasts can extrapolate a local linear trend. Two common versions are <Holt's linear trend method>, with separate level and slope gains, and <Brown's double exponential smoothing>, which applies the same smoothing gain twice. They are different algorithms, not two names for one recursion. Neither version by itself models seasonal variation.
+
+= Brown's double exponential smoothing
+{parent=Double exponential smoothing}
+{c}
+{title2=$a_t=2s_t^{(1)}-s_t^{(2)},\quad b_t=\frac{\alpha}{1-\alpha}(s_t^{(1)}-s_t^{(2)})$}
+
+For $0<\alpha<1$, set $s_t^{(1)}=\alpha X_t+(1-\alpha)s_{t-1}^{(1)}$ and $s_t^{(2)}=\alpha s_t^{(1)}+(1-\alpha)s_{t-1}^{(2)}$. Use the displayed corrected level and slope, then forecast $a_t+hb_t$. For an exact linear trend after initialization transients, the first and second smooths have lags $(1-\alpha)/\alpha$ and twice that lag; their difference recovers the slope and the corrected level removes the lag. This is distinct from <Holt's linear trend method>.
+
+= Holt's linear trend method
+{parent=Double exponential smoothing}
+{c}
+{title2=$\widehat X_{t+h\mid t}=\ell_t+hb_t$}
+
+Update the level and slope by $\ell_t=\alpha X_t+(1-\alpha)(\ell_{t-1}+b_{t-1})$ and $b_t=\beta(\ell_t-\ell_{t-1})+(1-\beta)b_{t-1}$, with gains in $(0,1)$. The first update compares the new observation with the previous level extrapolated one step; the second smooths the latest level increment. The displayed forecast extrapolates that local slope. This is a <double exponential smoothing> method for a nonseasonal trending <time series>.
+
+= Simple exponential smoothing
+{parent=Exponential smoothing}
+{title2=$\ell_t=\alpha X_t+(1-\alpha)\ell_{t-1}$}
+
+For $0<\alpha<1$, update a local level by the displayed recursion and forecast every future horizon by $\ell_t$. Iteration gives geometrically decreasing weights $\alpha(1-\alpha)^j$ on past observations and a vanishing contribution from the initial level. It is useful for a locally stable level without a persistent trend or seasonality. A trend causes lag, motivating <double exponential smoothing>.
 
 = Wold decomposition
 {c}
@@ -84,6 +121,22 @@ The best mean-square linear predictor from a semi-infinite past is the <orthogon
 {synonym}
 
 A state-space model separates a latent transition equation $S_t=FS_{t-1}+Z_t$ from an observation equation $Y_t=HS_t+W_t$. A complete specification includes the initial-state law and its relation to the noise sequences, not just the two equations. Linear second-order models specify covariance structure; Gaussian versions additionally prescribe joint Gaussian laws.
+
+= Three-coordinate state realization of an ARMA(1,1) process
+{parent=State-space model (time series)}
+{title2=$S_t=(X_{t-1},\varepsilon_t,\varepsilon_{t-1})^\top$}
+
+For an <autoregressive moving-average model> of order $(1,1)$, this state has observation row $F=(\phi,1,\theta)$ and transition <matrix>
+$$
+G=\begin{pmatrix}\phi&1&\theta\\0&0&0\\0&1&0\end{pmatrix}.
+$$
+The state noise is $(0,\varepsilon_t,0)^\top$. Its first transition row reconstructs $X_{t-1}$ and its third row shifts the previous <white noise> value.
+
+= Stationary initialization of an ARMA(1,1) state
+{parent=Three-coordinate state realization of an ARMA(1,1) process}
+{title2=$P=\begin{pmatrix}\gamma_0&0&\sigma^2\\0&\sigma^2&0\\\sigma^2&0&\sigma^2\end{pmatrix}$}
+
+For $|\phi|<1$ and centered <independent> <white noise> values, the state above has <expected value> zero and this stationary <covariance matrix>, where $\gamma_0=\sigma^2(1+\theta^2+2\phi\theta)/(1-\phi^2)$. The cross-covariance with the future <white noise> value is zero and that with the contemporaneous <white noise> value is $\sigma^2$. Direct multiplication verifies $P=GPG^\top+Q$.
 
 = Local-level state-space model
 {parent=State-space model (time series)}
@@ -169,6 +222,11 @@ Volatility clustering means that large absolute observations tend to be followed
 
 Seasonality is systematic repetition at a calendar period. It can appear in a deterministic mean, in a periodic variance, or in dependence across seasons. A <seasonal difference operator> removes a fixed periodic mean but <seasonal differencing does not remove periodic variance>. A periodic-looking path alone does not prove a <nonstationary process>.
 
+= Seasonal extraction by a centred moving average
+{parent=Seasonality}
+
+For an additive <time series> $X_t=T_t+S_t+\varepsilon_t$ with period-$m$ seasonal component and $\sum_{j=1}^mS_j=0$, a centred average spanning one complete period removes the seasonal component while estimating the slowly varying trend. When $m$ is even, average two adjacent length-$m$ averages to centre the filter on an observation; the endpoints receive half the usual weights. Estimate each seasonal phase by averaging the corresponding detrended residuals across cycles, then subtract the mean of those phase averages to enforce the zero-sum convention. Multiplicative seasonality instead uses ratios and a mean-one convention. Repeated averaging is filter composition and induces serial dependence even from <white noise>.
+
 = Long-memory time series
 {parent=Time series}
 
@@ -208,6 +266,9 @@ If $X_t=c_t\varepsilon_t$ with a deterministic periodic scale $c_t=c_{t-S}$ and 
 
 = Innovation process
 {parent=Time series}
+
+= Innovation
+{synonym}
 
 An innovation measures the part of the current observation not predicted from past observations. The <linear innovation process> uses <orthogonal projection> onto the past linear span. A <conditional expectation> predictor can use nonlinear information; the two predictors agree for a <Gaussian process>.
 
@@ -327,6 +388,18 @@ A weakly stationary process has constant finite mean and covariance depending on
 {synonym}
 
 An absolutely summable sequence of coefficients defines $Y_t=\sum_s a_sX_{t-s}$ in mean square. It remains weakly stationary and has <covariance> $\gamma_k^Y=\sum_{s,u}a_sa_u\gamma_{k-s+u}$. Its frequency response is $\alpha(\omega)=\sum_sa_se^{is\omega}$.
+
+= Filter generating function
+{parent=Linear filter of a stationary time series}
+{title2=$A(z)=\sum_{j\in\mathbb Z}a_jz^j$}
+
+For absolutely summable linear-filter coefficients, the generating function is the displayed <Laurent series>, absolutely convergent on the <unit circle>. If the filter is one-sided, it is a <power series> analytic inside the <unit disk>. A two-sided filter need not have a nonempty larger annulus of convergence. Substituting the <backshift operator> gives the formal notation $Y=A(B)X$.
+
+= Filter transfer function
+{parent=Filter generating function}
+{title2=$H_A(\lambda)=A(e^{-i\lambda})$}
+
+The transfer function is the <filter generating function> evaluated on the <unit circle>, with a sign convention matching the Fourier representation. Filtering a sinusoid of angular frequency $\lambda$ multiplies its complex amplitude by $H_A(\lambda)$. Its modulus is the <filter gain>; filtering a <weakly stationary process> multiplies its <time-series spectral density> by $|H_A(\lambda)|^2$. Using the opposite Fourier sign conjugates the response for real coefficients and leaves that squared modulus unchanged.
 
 = Composition of absolutely summable time-series filters
 {parent=Linear filter of a stationary time series}
@@ -476,6 +549,18 @@ I_T(\lambda)=\frac1{2\pi T}\left|\sum_{t=1}^TX_te^{-it\lambda}\right|^2.
 $$
 Under suitable short-memory assumptions its expectation approaches the <spectral density of a stationary process>, but its variance generally does not vanish. Smoothing nearby frequencies can provide an estimate with <statistical consistency>.
 
+= Exponential limit of a one-sided periodogram
+{parent=Periodogram}
+{title2=$I_T(\omega)/s(\omega)\xrightarrow{d}\operatorname{Exp}(1)$}
+
+At an interior frequency, the real and imaginary Fourier coefficients of a short-memory <Gaussian> time series converge jointly to <independent> centered normal variables, each with <variance> $s(\omega)/2$, where $s$ is the <one-sided spectral density>. Their squared sum therefore converges to $s(\omega)\chi_2^2/2$. Its <variance> tends to $s(\omega)^2$, so an unsmoothed <periodogram> is not <consistent> when $s(\omega)>0$. Averaging nearby ordinates can reduce this persistent <variance>.
+
+= Finite-record Fourier covariance bound
+{parent=Periodogram}
+{title2=$|\operatorname{Cov}(A_T,B_T)|\leq\frac2{\pi T}\sum_{k<T}k|\gamma_k|$}
+
+For a centered stationary real <Gaussian> sequence, let $A_T$ and $B_T$ be its cosine and sine coefficients with normalization $1/\sqrt{\pi T}$ at a nonzero Fourier frequency. Grouping the double <covariance> sum by lag and extending each lag sum to a whole record leaves at most $2k$ omitted bounded products. The full cosine-sine sum is zero, giving the bound. If $\sum k|\gamma_k|<\infty$, the two coefficients become asymptotically uncorrelated, and their limiting joint <normal distribution> consequently has <independent> components.
+
 = Local periodogram smoothing
 {parent=Periodogram}
 {title2=$\widehat f(\omega)=\sum_j w_{Tj}(\omega)I_T(\omega_j)$}
@@ -559,6 +644,12 @@ A correlogram plots the estimated <autocorrelation function> against lag. The pl
 
 White noise has constant mean, constant variance, and zero autocovariance at every nonzero lag. Gaussian white noise additionally has jointly Gaussian coordinates and is therefore independent across time.
 
+= Discrete Gaussian white noise
+{parent=White noise}
+{title2=$\varepsilon_t\overset{\rm iid}{\sim}N(0,\sigma^2)$}
+
+Discrete <Gaussian> <white noise> is a jointly <Gaussian> sequence with <expected value> zero and <covariance> $\sigma^2$ at lag zero and zero at other lags. Joint normality makes the components <independent>. This is a sequence of ordinary <random variables>, unlike the generalized continuous-time white-noise process.
+
 = Continuous-time Gaussian white noise
 {parent=White noise}
 {title2=$\langle A_i(t)A_j(s)\rangle=q\delta_{ij}\delta(t-s)$}
@@ -594,6 +685,17 @@ $$
 \phi(B)X_t=\theta(B)\varepsilon_t,
 $$
 where $B$ is the backshift operator, $\phi$ and $\theta$ are finite polynomials, and $\varepsilon$ is white noise.
+
+= Autocovariance tail recurrence of a causal ARMA process
+{parent=Autoregressive moving-average model}
+{title2=$\gamma_k-\sum_{j=1}^p\phi_j\gamma_{k-j}=0\quad(k>q)$}
+
+For a causal <autoregressive moving-average model> driven by <independent> <white noise>, multiply its recursion by $X_{t-k}$ and take <covariance>. When $k>q$, all driving <white noise> values in its moving-average term occur strictly after $t-k$, so their <covariances> with $X_{t-k}$ vanish. The resulting homogeneous tail recurrence has the same characteristic roots as the <autoregressive model> recursion. Distinct roots of modulus below one give exponential <autocovariance> decay.
+
+= Canonical identifiability of Gaussian ARMA models
+{parent=Autoregressive moving-average model}
+
+Normalize the autoregressive and moving-average polynomials to have constant coefficient one, cancel common factors, and require all their zeros to lie outside the closed <unit disk>. With positive innovation <variance> these conditions give a causal, invertible, minimal <Gaussian process> representation. To prove identifiability, compare two such models with the same <time-series spectral density>. The ratio of their scaled rational transfer functions and its reciprocal are analytic on a neighbourhood of the closed <unit disk> and have modulus one on its boundary. The <maximum modulus principle> makes the ratio constant; its positive value at zero forces equality of the innovation <variances> and equality of the rational functions. Coprimality and the constant-coefficient normalization then force equality of both polynomials. Without the root restrictions, reciprocal <root reflection of an ARMA representation> and a rescaling of the innovation <variance> can preserve the spectrum, so the unrestricted parameters are not identifiable.
 
 = Autoregressive integrated moving average
 {parent=Autoregressive moving-average model}
@@ -852,6 +954,12 @@ $$
 L=(2\pi\sigma^2)^{-n/2}\sqrt{1-\phi^2}\exp\left[-\frac{(1-\phi^2)(x_1-\mu)^2+\sum_{t=2}^n\{(x_t-\mu)-\phi(x_{t-1}-\mu)\}^2}{2\sigma^2}\right].
 $$
 Conditioning on $X_1$ gives a different likelihood.
+
+= Conditional and stationary AR1 likelihood estimators
+{parent=Stationary Gaussian AR1 likelihood}
+{title2=$\widehat\phi_{\rm cond}=\frac{\sum_{t=2}^TX_tX_{t-1}}{\sum_{t=2}^TX_{t-1}^2}$}
+
+Conditioning on the first observation of a centered <autoregressive process of order one> makes the <maximum-likelihood estimator> of its coefficient the least-squares ratio above, when the optimum is interior. The stationary initial <normal distribution> contributes an additional factor $\sqrt{1-\phi^2}$ and quadratic term $(1-\phi^2)X_1^2$. These change the exact maximizer, but for a fixed interior stationary parameter their score is order one while the conditional score has order $T$, giving the same leading estimator.
 
 = Yule–Walker estimator for an autoregressive process of order one
 {c}
