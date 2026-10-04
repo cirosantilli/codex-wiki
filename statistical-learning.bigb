@@ -9,6 +9,30 @@ Statistical learning constructs predictive rules from data and studies their ris
 
 Learning structure from data without supplied target labels. Examples include extracting <principal components>, clustering and learning representations that efficiently reconstruct inputs.
 
+= Multidimensional scaling
+{parent=Unsupervised learning}
+
+Construct low-dimensional coordinates representing a <dissimilarity matrix>. Different methods preserve different features: <classical multidimensional scaling> approximates a centered <Gram matrix>, while other methods minimize discrepancies between fitted and supplied distances or preserve distance ordering. The method and dimension determine what geometric claims the resulting display supports.
+
+= Classical multidimensional scaling
+{parent=Multidimensional scaling}
+{title2=$G=-\tfrac12HD^{(2)}H,\quad X_k=U_k\Lambda_k^{1/2}$}
+
+= Classical scaling
+{synonym}
+
+= Principal coordinates analysis
+{synonym}
+
+For a symmetric zero-diagonal <dissimilarity matrix> $D$, square each entry to obtain $D^{(2)}$ and put $H=I-\mathbf1\mathbf1^T/n$. Take the <eigenvectors> of $G=-HD^{(2)}H/2$ corresponding to its largest positive <eigenvalues>. Multiplying them by square roots of these <eigenvalues> gives coordinates. If $D$ contains <Euclidean distances>, $G$ is a centered <Gram matrix>, so retaining all positive <eigenvalues> reconstructs those distances exactly. Retaining fewer approximates the <Gram matrix>, not generally the sum of squared errors in raw distances. Negative <eigenvalues> signal failure of an exact Euclidean representation. Coordinates are unchanged in meaning by <orthogonal transformations>.
+
+= Euclidean distance matrix criterion
+{c}
+{parent=Classical multidimensional scaling}
+{title2=$D\text{ is Euclidean}\iff-\tfrac12HD^{(2)}H\succeq0$}
+
+For symmetric nonnegative $D$ with zero diagonal, a centered Euclidean realization implies $D_{ij}^2=G_{ii}+G_{jj}-2G_{ij}$ and hence the displayed double-centering identity. Conversely, if the double-centered matrix is <positive semidefinite>, factor it as $XX^T$. Its reconstructed squared distances equal the original squared distances: their difference has zero double-centering, so is of the form $\mathbf1 a^T+a\mathbf1^T$; the zero diagonal forces $a=0$. The minimum exact embedding dimension is $\operatorname{rank}G$.
+
 = Sparse coding
 {parent=Unsupervised learning}
 
@@ -20,6 +44,12 @@ Represent inputs accurately using few strongly active coefficients, for example 
 {wiki}
 
 Activity-dependent strengthening associated with coactivation of an input and its postsynaptic output. The idealized update $\Delta w_i\propto yx_i$ requires normalization, competition or other constraints to prevent indefinite weight growth.
+
+= Quartic norm stabilization of Hebbian learning
+{parent=Hebbian learning}
+{title2=$\tau\dot w=yx-\alpha y^2w|w|^2$}
+
+With $y=w\cdot x$, the squared weight norm $s=|w|^2$ satisfies $\tau\dot s=2y^2(1-\alpha s^2)$. It moves monotonically toward $s_*=\alpha^{-1/2}$ without crossing it. Explicitly $(s-s_*)/(s+s_*)$ equals its initial value times $\exp[-(4\sqrt\alpha/\tau)\int_0^ty(u)^2\,du]$. Persistent excitation therefore drives $|w|$ to $\alpha^{-1/4}$; without excitation it can remain stationary. This nonlinear normalization avoids the unbounded amplification of unmodified <Hebbian learning>.
 
 = Oja's rule
 {c}
@@ -39,6 +69,13 @@ At the equilibrium $v_i/\sqrt\alpha$, linearization along orthonormal eigenvecto
 {parent=Statistical learning}
 
 Cluster analysis groups observations using similarities or dissimilarities without supplied class labels. A distance choice specifies which features and scales matter. <Agglomerative hierarchical clustering> merges groups recursively, producing partitions at different resolutions rather than one intrinsically determined number of groups.
+
+= K-means clustering
+{parent=Cluster analysis}
+{title2=$\min_{C_1,\ldots,C_K}\sum_{k=1}^K\sum_{i\in C_k}\|x_i-m_k\|^2$}
+{wiki}
+
+For a prescribed number of groups, minimize within-cluster squared Euclidean distances. At fixed assignments, differentiating the objective gives the mean as the optimal centroid. At fixed centroids, assigning each point to a nearest centroid minimizes its contribution. Alternating these steps cannot increase the objective but can converge to a local optimum, so multiple starts are useful. Empty clusters and ties need an explicit handling rule. The method favors roughly spherical groups and depends on variable scaling.
 
 = Jaccard index
 {c}
@@ -81,6 +118,23 @@ The displayed distance is the <normalized Hamming distance>. Each coordinate mis
 {parent=Cluster analysis}
 
 Start with singleton clusters and repeatedly merge the two clusters with the smallest chosen intercluster dissimilarity. <Single-linkage clustering> uses the smallest cross-pair distance; <complete-linkage clustering> uses the largest. Merge heights and sensitivity to ties help assess a proposed number of groups.
+
+= Ward minimum-variance clustering
+{c}
+{parent=Agglomerative hierarchical clustering}
+{title2=$\Delta(A,B)=\frac{|A||B|}{|A|+|B|}\|\bar x_A-\bar x_B\|^2$}
+
+= Ward clustering
+{c}
+{synonym}
+
+Ward clustering merges the pair causing the smallest increase in within-cluster sum of squares. Expanding each cluster's squared deviations about the merged mean gives the displayed increase. Its Euclidean sum-of-squares interpretation must not be asserted for arbitrary non-Euclidean dissimilarities.
+
+= Average-linkage clustering
+{parent=Agglomerative hierarchical clustering}
+{title2=$d(A,B)=\frac1{|A||B|}\sum_{x\in A,y\in B}d(x,y)$}
+
+Average linkage merges the pair with the smallest mean cross-pair dissimilarity. This differs from the minimum used by <single-linkage clustering> and the maximum used by <complete-linkage clustering>. The convention here weights individual cross-pairs equally; weighting already formed clusters equally is a different algorithm.
 
 = Agglomerative clustering of nonmetric dissimilarities
 {parent=Agglomerative hierarchical clustering}
@@ -186,10 +240,38 @@ A regression function is a conditional expected response. For binary labels it e
 
 Principal component analysis finds orthogonal directions of greatest sample variance. Its first loading vector is a unit eigenvector corresponding to the largest eigenvalue of the sample covariance matrix.
 
+= Principal component regression
+{parent=Principal component analysis}
+{wiki}
+
+= PCR
+{c}
+{synonym}
+
+Regress a response on selected <principal component scores> of centered predictors. If $X=UDV^T$ is a <singular value decomposition> and the first $q$ positive-singular-value components are retained, the retained score matrix is $U_qD_q$ and the fitted coefficient in predictor coordinates is $V_qD_q^{-1}U_q^Ty$. The fitted centered response is $U_qU_q^Ty$: this follows by applying the <least-squares normal equations> to the orthogonal score columns. Truncating small singular directions limits variance amplification, but directions of large predictor variance need not be those best predicting the response; select $q$ using prediction assessment rather than explained predictor variance alone.
+
+= Scree plot
+{parent=Principal component analysis}
+{wiki}
+
+A scree plot graphs ordered covariance or correlation <eigenvalues> against component number. A transition from a steep decline to a flatter tail suggests a dimension, but this is a diagnostic rather than a proof of the number of latent factors. In <factor analysis>, it should be combined with model fit, substantive interpretation and uncertainty assessment.
+
+= Principal component loading
+{parent=Principal component analysis}
+{title2=$r_j=\sqrt{\lambda_j}\ell_j$}
+
+Two conventions occur for principal-component loadings: the unit <eigenvector> $\ell_j$ defining a <principal component>, and the scaled vector $r_j=\sqrt{\lambda_j}\ell_j$. For <principal component analysis on a correlation matrix>, the entries of the latter are the correlations between each standardized variable and the component scaled to variance one. Indeed, $\operatorname{Cov}(Z,\ell_j^TZ)=C\ell_j=\lambda_j\ell_j$ and $\operatorname{Var}(\ell_j^TZ)=\lambda_j$. Thus $\|r_j\|^2=\lambda_j$, whereas $\|\ell_j\|=1$; reporting the convention avoids confusing component directions with correlations.
+
 = Principal component
 {parent=Principal component analysis}
 
 A principal component is the projection of centered data onto a unit <eigenvector> of its <covariance matrix>. Ordering the components by their <eigenvalues> orders their variances. Repeated <eigenvalues> allow any <orthonormal basis> of the corresponding <eigenspace>.
+
+= Principal component score
+{parent=Principal component}
+{title2=$z_{ij}=q_j^T(x_i-\bar x)$}
+
+A score is an observation's coordinate along a <principal component> direction. Center an observation by the fitted <sample mean>, apply the fitted variable scaling when using <principal component analysis on a correlation matrix>, then take its <inner product> with the unit <principal component loading> vector. New observations must use the training center and scaling. The score <variance> equals the corresponding <eigenvalue> when the covariance normalization is consistent.
 
 = Explained variance of a principal component
 {parent=Principal component analysis}
@@ -223,6 +305,23 @@ When $\Lambda_{ii}>0$, the normalized sample principal component $w_i=u_i/\sqrt{
 {parent=Statistical learning}
 
 Classification predicts a discrete label from observed covariates.
+
+= Classification tree
+{parent=Classification in statistical learning}
+
+A classification tree partitions predictor space recursively and attaches a class probability vector to each terminal region. For a categorical response, a fitted leaf commonly uses its observed class proportions and predicts their largest entry. Binary numerical splits compare one coordinate with a threshold. Growing a tree greedily by reducing <classification-tree deviance> gives an interpretable rule but does not globally optimize the tree. <Cost-complexity tree pruning> and <cross-validation> control complexity and assess <prediction error>.
+
+= Cost-complexity tree pruning
+{parent=Classification tree}
+{title2=$R_\alpha(T)=R(T)+\alpha|\mathcal L(T)|$}
+
+Pruning balances a tree's empirical loss $R(T)$ against the number of leaves. Increasing $\alpha$ favors a nested sequence of smaller subtrees, obtained by removing splits with the smallest effective cost per removed leaf. Choose complexity using <cross-validation> or a <validation set>, and assess the selected tree on a separate <test set>. The loss can be deviance or misclassification loss; the chosen convention must be specified.
+
+= Classification-tree deviance
+{parent=Classification tree}
+{title2=$D(t)=-2\sum_kn_{tk}\log(n_{tk}/n_t)$}
+
+Maximizing a node's multinomial likelihood gives class probabilities $\widehat p_{tk}=n_{tk}/n_t$. Twice the negative maximized log-likelihood relative to perfect classification is the displayed deviance, with $0\log0=0$. It equals twice the node size times its <Shannon entropy>. A split is chosen by maximizing $D(t)-D(t_L)-D(t_R)$, and tree deviance is the sum over terminal nodes. The training misclassification count is instead $\sum_t(n_t-\max_kn_{tk})$; the two criteria are different.
 
 = Binary classification
 {parent=Classification in statistical learning}
@@ -274,6 +373,11 @@ A classification and regression tree recursively splits covariate space into axi
 {parent=Classification and regression tree}
 
 Recursive partitioning repeatedly selects a split of one current region, then applies the same splitting rule independently to the resulting child regions.
+
+= Surrogate split
+{parent=Recursive partitioning}
+
+A surrogate split uses another predictor to approximate the left-versus-right assignments made by a tree node's primary split. It can route observations whose primary predictor is missing. Surrogates are ranked by agreement with the primary split on observations where both predictors are known, accounting for trivial majority assignments. This differs from simply filling a missing predictor with its <sample mean>.
 
 = Gini impurity
 {c}
@@ -461,6 +565,24 @@ The perceptron is an online linear classifier that adds a misclassified observat
 {wiki}
 
 Cross-validation estimates predictive performance by repeatedly fitting on one part of the data and evaluating on held-out observations.
+
+= Biased cross-validation for density bandwidth
+{parent=Cross-validation}
+{title2=$\operatorname{BCV}(h)=\frac{R(K)}{nh}+\frac{\mu_2(K)^2h^4}{4}[R(\widehat f_h'')-R(K'')/(nh^5)]$}
+
+= Biased density cross-validation
+{synonym}
+
+Subtract the diagonal variance contribution from the derivative estimate's squared norm, then insert the result into <asymptotic mean integrated squared error>. The expected curvature estimate equals $R(f'')+O(h^2)$, apart from a negligible finite-n term. This makes the resulting criterion asymptotically correct even though it is not an exactly unbiased estimate of integrated risk. Under standard conditions its selector is ratio-consistent with the optimal bandwidth and has relative fluctuation order $n^{-1/10}$.
+
+= Least-squares cross-validation for density bandwidth
+{parent=Cross-validation}
+{title2=$\operatorname{CV}(h)=R(\widehat f_h)-\frac2n\sum_i\widehat f_{h,-i}(X_i)$}
+
+= Least-squares density cross-validation
+{synonym}
+
+Minimize the displayed criterion using a <leave-one-out cross-validation> estimate in the second term. Its expectation is the exact <mean integrated squared error> minus $R(f)$, which does not depend on h. With standard smoothness and appropriate search ranges, the chosen bandwidth is asymptotically optimal. Its relative fluctuations are ordinarily of order $n^{-1/10}$, considerably larger than the estimation error achievable by well-chosen plug-in pilots.
 
 = Generalized cross-validation
 {parent=Cross-validation}

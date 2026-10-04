@@ -46,7 +46,7 @@ There are a few important ourbigbook features which you must master and use well
 
   just `{wiki}` would suffice here.
 
-  Only link up to Wikipedia if it matches the exact concept of the header. E.g. this is not great:
+  Only link up to Wikipedia if it matches the exact concept of the header. E.g. this is bad:
 
   ```
   = Scalar multiple
@@ -68,6 +68,63 @@ There are a few important ourbigbook features which you must master and use well
   `{wiki}` is not a tag. It means "That wiki article is exactly about this topic".
 
   Explicit `wiki=` should be used sparingly.
+
+  When you encounter a different name for something that exists on Wikipedia, you usually want to use the Wikipedia name as the main name and a synonym to it. E.g. not great:
+
+  ```
+  = D'Alembert formula
+  {wiki=D'Alembert's_formula}
+  ```
+
+  much better:
+
+  ```
+  = D'Alembert's_formula
+  {wiki}
+
+  = D'Alembert formula
+  {synonym}
+  ```
+
+  but it's OK to make exceptions if the Wikipedia formatting is particularly annoying. One things that I really hate for example is Wikipedia's use of em Dash for multi-name concepts. This usage of wiki= is good therefore:
+
+  ```
+  = Radon-Riesz property
+  {wiki=Radon–Riesz_property}
+  ```
+
+  It's also OK to have explicit wiki when we have a more specific version of the concept due to our focus on STEM, often Wiki uses () which we can omit, e.g. this is OK:
+
+  ```
+  = Series
+  {wiki=Series_(mathematics)}
+  ```
+
+  but perhaps even better would be:
+
+  ```
+  = Series
+  {disambiguate=mathematics}
+  {wiki}
+
+  = Series
+  {synonym}
+  ```
+
+  Another thing to remember is that OurBigBook has strong ASCII conversions for automatic ID generation, so it is OK to keep annoying Unicode european character in people's names e.g. this is better:
+
+  ```
+  = Arzelà theorem
+  ```
+
+  than this:
+
+  ```
+  = Arzela theorem
+  {wiki=Arzelà_theorem}
+  ```
+
+  because we already convert `à` -> `a` to have nice ASCII IDs where reasonable.
 
 Newlines render as `<br>`, so don't indent code, keep long lines. You almost never want a newline, unless it is followed by a block construct. This is fine though:
 
