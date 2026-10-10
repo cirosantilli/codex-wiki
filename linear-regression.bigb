@@ -339,19 +339,63 @@ In <simple linear regression> written as $Y_i=\alpha+\beta(x_i-\bar x)+\varepsil
 {c}
 {synonym}
 
-The residual sum of squares is
+The <residual sum of squares> measures how far the observed responses lie from their <fitted values>. If $r_i=Y_i-\widehat Y_i$ is the $i$th <regression residual>, then
 $$
-\operatorname{RSS}=\sum_i(Y_i-\widehat Y_i)^2.
+\operatorname{RSS}=\sum_{i=1}^n(Y_i-\widehat Y_i)^2=\|Y-\widehat Y\|_2^2.
 $$
+It is the <squared Euclidean norm> of the <regression residual> vector. Squaring prevents positive and negative deviations from cancelling and gives large deviations more weight. In the constructed five-point example in <linear regression>, the <regression residuals> are $(1/5,1/5,-4/5,1/5,1/5)$, so the <residual sum of squares> is $4/5$.
+
+<Ordinary least squares> minimizes the <residual sum of squares> over the chosen <linear regression> family; <ridge regression> minimizes the <residual sum of squares> plus a penalty. Consequently the <ridge regression> fit can have a larger <residual sum of squares> than the <ordinary least squares> fit on exactly the same <design matrix>. For the one-predictor construction in <ridge regression>, the <residual sum of squares> rises from $4/5$ to $33/10$ when the penalty changes from $0$ to $10$; that increase is the cost of shrinking the fitted slope.
+
+Dividing the <residual sum of squares> by $n$ gives the <training error> for <squared-error loss>, not an estimate based on fresh responses. Its units are squared response units, and it adds across observations, so raw totals need not be comparable across different response scales or sample sizes. Comparing fits to the same responses is useful, but choosing a <ridge regression> penalty by minimum training <residual sum of squares> favors the unpenalized fit. Assess <prediction error> using a <validation set> or <cross-validation> instead.<Data Mining: 36-462 and 36-662/Model selection and validation 1: Cross-validation>[slides 6–8 and 11–14: fresh-response error, training error and held-out scoring]{ref}
 
 = Ridge regression
 {parent=Linear regression}
 {wiki}
+{title2=$\operatorname{RSS}+\lambda\|\beta\|_2^2$}
 
 = Ridge estimator
 {synonym}
 
-Ridge regression minimizes a squared-error loss plus the quadratic penalty $\lambda\lVert\beta\rVert_2^2$. Its positive penalty stabilizes inversion in collinear or high-dimensional designs.
+<Ridge regression> fits a <linear regression> model while penalizing the size of its slope <regression coefficients>. For a fixed $n\times p$ <design matrix> $X$ containing the slope predictors, observed responses $Y$, and an unpenalized <regression intercept> $\alpha$, the objective is
+$$
+(\widehat\alpha_\lambda,\widehat\beta_\lambda)=\underset{\alpha\in\mathbb R,\,\beta\in\mathbb R^p}{\operatorname{argmin}}\left\{\|Y-\alpha\mathbf1-X\beta\|_2^2+\lambda\|\beta\|_2^2\right\},\qquad\lambda\geq0.
+$$
+Here $\mathbf1$ is the all-ones <vector>, and $\|\beta\|_2^2=\sum_j\beta_j^2$ is the <squared Euclidean norm> of the slopes alone. The first term is the <residual sum of squares>; the second implements <regularization>. No random-error assumption is needed to define this fit. The convention is a summed <squared-error loss>: writing the objective as $n^{-1}\operatorname{RSS}+\lambda_{\mathrm{avg}}\|\beta\|_2^2$ gives the same fit when $\lambda=n\lambda_{\mathrm{avg}}$.<Data Mining: 36-462 and 36-662/Modern regression 1: Ridge regression>[slides 5 and 7: summed squared-error objective and unpenalized intercept]{ref}
+
+For an exact example, reuse the constructed pairs $(x_i,Y_i)=(0,1),(1,2),(2,2),(3,4),(4,5)$ from <linear regression>. Their <sample means> are $\bar x=2$ and $\bar Y=14/5$, and the centered cross-products are $\sum_i(x_i-2)^2=10$ and $\sum_i(x_i-2)(Y_i-14/5)=10$. Thus
+$$
+\widehat\beta_\lambda=\frac{10}{10+\lambda},\qquad\widehat\alpha_\lambda=\frac{14}{5}-2\widehat\beta_\lambda,\qquad\widehat Y_i=\frac{14}{5}+\widehat\beta_\lambda(x_i-2).
+$$
+The <ordinary least squares> line has slope $1$ and <residual sum of squares> $4/5$. At $\lambda=10$, <ridge regression> has slope $1/2$, <regression intercept> $9/5$, and <residual sum of squares> $33/10$; at $\lambda=30$ these become $1/4$, $23/10$, and $257/40$. Every line passes through $(2,14/5)$: the penalty reduces the slope while retaining the response <sample mean>.
+
+\Image[ridge-regression-centered-line-fits.png]
+{title=Exact synthetic ridge fits flatten around the sample mean as training RSS increases}
+
+The computational benefit is visible after <predictor centering>. Write $X_c$ for the <design matrix> with each column's <sample mean> subtracted, and $Y_c=Y-\bar Y\mathbf1$. The <unpenalized intercept in ridge regression> gives $\widehat\alpha_\lambda=\bar Y-\bar x^T\widehat\beta_\lambda$, and the <closed-form ridge regression estimator> solves
+$$
+(X_c^TX_c+\lambda I_p)\widehat\beta_\lambda=X_c^TY_c.
+$$
+For any nonzero <vector> $v$ and $\lambda>0$, $v^T(X_c^TX_c+\lambda I_p)v=\|X_cv\|_2^2+\lambda\|v\|_2^2>0$. This <positive-definite matrix> is therefore invertible even when $X_c$ lacks <full column rank>, including repeated columns or $p\geq n$. The unique penalized slopes resolve the ambiguity of <rank-deficient ordinary least squares>; they do not supply evidence about slope directions absent from the data. This makes <ridge regression> useful for <multicollinearity>.<Advanced Topics in Statistical Learning, Spring 2023/High-Dimensional Regression: Ridge>[p. 1, equations (1)–(2): uniqueness for positive penalty regardless of design rank]{ref}
+
+<Predictor centering> and scaling serve different purposes. Centering handles the free <regression intercept>. Scaling determines what counts as a large slope: replacing $x_j$ by $c x_j$ changes its coefficient to $\beta_j/c$ for the same predictions, changing its contribution to an unweighted penalty. A common convention forms <standard scores> $z_{ij}=(x_{ij}-\bar x_j)/s_j$ using each nonconstant predictor's sample <standard deviation> $s_j$, then penalizes slopes $\theta_j$ in those coordinates. Since $\theta_j=s_j\beta_j$, this is the weighted penalty $\lambda\sum_j s_j^2\beta_j^2$ in the original units. Constant columns have $s_j=0$ and must be removed before this scaling. Scaling is a modelling choice; equal penalties in original units and in standardized units define different fits.<Data Mining: 36-462 and 36-662/Modern regression 1: Ridge regression>[slide 7: center predictors, leave the intercept free and scale predictors to sample variance one]{ref}
+
+The <singular value decomposition> explains the shrinkage. If $X_c=UDV^T$ is the compact decomposition using the $r$ positive <singular values> $d_j$, with columns $u_j$ of $U$, then
+$$
+\widehat Y_\lambda=\bar Y\mathbf1+\sum_{j=1}^r\frac{d_j^2}{d_j^2+\lambda}\,u_j u_j^TY_c.
+$$
+The <principal-component shrinkage by ridge regression> factors are between $0$ and $1$: directions with small <singular values> are damped most. As $\lambda\to\infty$, the <fitted values> approach $\bar Y\mathbf1$; the <vanishing-penalty ridge limit> recovers the <ordinary least squares> fitted vector as $\lambda\downarrow0$, even if the slope estimates at zero penalty are nonunique. The <covariance and bias of a ridge regression estimator> describes the resulting <bias-variance tradeoff>. A penalty can reduce <variance of an estimator> while introducing <bias of an estimator>; the <unbounded directional risk of fixed ridge shrinkage> rules out a uniform improvement for a fixed positive penalty over all possible signals.<Advanced Topics in Statistical Learning, Spring 2023/High-Dimensional Regression: Ridge>[pp. 1–2: shrinkage of fitted principal-component directions]{ref}
+
+For a second exact construction, choose a centered <orthonormal set> of three <vectors>,
+$$
+u_1=\tfrac12(1,-1,1,-1)^T,\qquad u_2=\tfrac12(1,1,-1,-1)^T,\qquad u_3=\tfrac12(1,-1,-1,1)^T,
+$$
+and set $X=(3u_1,u_2)$ and $Y=2\mathbf1+3u_1+u_2+\tfrac12u_3$. The squared <singular values> are $9$ and $1$. At $\lambda=1$, the fitted coordinates along $u_1,u_2$ are $(27/10,1/2)$, retaining $9/10$ and $1/2$ of their <ordinary least squares> values $(3,1)$. At $\lambda=9$ they become $(3/2,1/10)$, retaining $1/2$ and $1/10$. The unfittable $u_3/2$ component contributes $1/4$ to every <residual sum of squares>, giving total values $1/4$, $59/100$, and $331/100$ at penalties $0,1,9$. These are constructed fits, not measured prediction results.
+
+\Image[ridge-regression-singular-direction-shrinkage.png]
+{title=Exact synthetic ridge shrinkage retains the strong singular direction longer than the weak one}
+
+The penalty $\lambda$ is a <hyperparameter>, so fitting slopes at a fixed value and selecting that value are separate tasks. Use a <validation set> or <K-fold cross-validation> to compare candidate penalties by held-out <squared-error loss>. In each split, compute predictor <sample means> and scales from that split's <training data>, apply the same transformation to its <validation set>, and refit the slopes; using held-out information in preprocessing introduces <data leakage>. Minimum training <residual sum of squares> cannot select useful shrinkage: <ordinary least squares> already attains the smallest possible value.<Data Mining: 36-462 and 36-662/Model selection and validation 1: Cross-validation>[slides 5–8 and 11–14: tuning for prediction, training error and refitting on each training fold]{ref} After <model selection>, refit on all <training data> with the selected penalty. A separate <test set> or <nested cross-validation> assesses the entire selection procedure; a low selected validation score alone is no performance guarantee.<On Over-fitting in Model Selection and Subsequent Selection Bias in Performance Evaluation by Gavin C. Cawley and others>[pp. 2079–2080: selection as part of fitting and nested assessment]{ref}
 
 = Gaussian posterior representation of ridge regression
 {c}
@@ -417,7 +461,21 @@ For $X^TX=V\Lambda V^T$, <ridge regression> multiplies the fitted response along
 {title2=$\widehat Y$}
 {parent=Linear regression}
 
-Fitted values are the responses predicted at the training covariates by a fitted regression model.
+<Fitted values> are the predictions at the predictor values used to fit a <regression model>. In <linear regression> with an explicit <regression intercept>,
+$$
+\widehat Y=\widehat\alpha\mathbf1+X\widehat\beta,\qquad r=Y-\widehat Y.
+$$
+Here $X$ is the slope <design matrix>, and $r$ is the <regression residual> vector. The <fitted values> estimate the <regression function> at the observed predictors; they need not equal the observed responses, which may also contain random errors. Prediction at a new predictor <vector> $x_*$ uses $\widehat\alpha+x_*^T\widehat\beta$ with the same centering and scaling used in fitting. A <prediction interval> addresses uncertainty in a new response rather than just displaying this point prediction.
+
+For the five constructed observations in <linear regression>, <ordinary least squares> gives <fitted values> $(4/5,9/5,14/5,19/5,24/5)$. The <ridge regression> fit at $\lambda=10$ instead gives $(9/5,23/10,14/5,33/10,19/5)$. Both fitted vectors have <sample mean> $14/5$ because the <regression intercept> is unpenalized; their <regression residuals> differ and their <residual sums of squares> are $4/5$ and $33/10$, respectively.
+
+For <ordinary least squares>, the <fitted values> are the <orthogonal projection> of $Y$ onto the <column space> of the complete <design matrix>, including its <regression intercept> column. They remain unique even in <rank-deficient ordinary least squares>, although the <regression coefficients> can be nonunique. The <regression residuals> are then <orthogonal> to every column.<Data Mining: 36-462 and 36-662/Regression 1: Different perspectives>[slides 6–10: fitted values, hat matrix, projection and orthogonal residuals]{ref} With centered slopes, <ridge regression> instead satisfies $X_c^Tr=\lambda\widehat\beta_\lambda$, so the <regression residuals> need not be <orthogonal> to the slope columns. Their sum is still zero because the <regression intercept> remains free.
+
+For fixed predictors and scales and a fixed positive penalty, <ridge regression> gives a <linear smoother>,
+$$
+\widehat Y_\lambda=H_\lambda Y,\qquad H_\lambda=\frac{\mathbf1\mathbf1^T}{n}+X_c(X_c^TX_c+\lambda I_p)^{-1}X_c^T.
+$$
+For $\lambda>0$ with at least one nonzero slope direction, this <matrix> is not an <orthogonal projection matrix>: applying it twice shrinks that direction again. Its <effective degrees of freedom> are $1+\sum_{j=1}^r d_j^2/(d_j^2+\lambda)$, where $d_j$ are the positive <singular values> of $X_c$; the extra $1$ counts the free <regression intercept>. If the penalty is selected using $Y$, the resulting fitting rule need not be a <linear smoother>, since its chosen $H_\lambda$ also depends on $Y$.
 
 = Linear smoother
 {title2=$\widehat Y=HY$}

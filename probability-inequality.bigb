@@ -293,25 +293,115 @@ Differentiate $\log\|u\|_q$ with $u=P_tf$ and a changing exponent. The derivativ
 = Hoeffding inequality
 {c}
 {parent=Concentration inequality}
-{wiki}
+{wiki=Hoeffding's_inequality}
+{title2=$\mathbb P(S_n\geq t)\leq e^{-2t^2/V}$}
 
-If independent random variables satisfy $a_i\leq X_i\leq b_i$, then
+= Hoeffding's inequality
+{c}
+{synonym}
+
+The <Hoeffding inequality> turns finite <interval> bounds and <independence> into exponentially small <tail probabilities> for a <sum>. It requires neither a <normal distribution> nor identical <probability distributions>. Let $X_1,\ldots,X_n$ be <independent> <essentially bounded> real <random variables>, with deterministic finite bounds $a_i\leq X_i\leq b_i$ <almost surely>. Define the centered <sum> and its squared-width budget by
 $$
-\mathbb P\left(\sum_i(X_i-\mathbb EX_i)\geq t\right)
-\leq\exp\left(-\frac{2t^2}{\sum_i(b_i-a_i)^2}\right),
+S_n=\sum_{i=1}^n(X_i-\mathbb EX_i),\qquad V=\sum_{i=1}^n(b_i-a_i)^2.
 $$
-with the same bound for the lower tail.
+For $V>0$ and $t>0$,
+$$
+\boxed{\mathbb P(S_n\geq t)\leq e^{-2t^2/V},\qquad \mathbb P(S_n\leq-t)\leq e^{-2t^2/V}.}
+$$
+The <union bound> therefore gives $\mathbb P(|S_n|\geq t)\leq\min\{1,2e^{-2t^2/V}\}$. If $V=0$, every $X_i$ is constant <almost surely>, so $S_n=0$ and both positive-threshold <tail probabilities> vanish. The equal-width version is stated in the authored Stanford notes.<CS229 Supplemental Lecture notes/Hoeffding’s inequality>[§3, p. 6, theorem 4: independent bounded variables and both tails]{ref}
+
+The quantity $V$ is a sum of squared <interval> widths, **not the <variance> of $S_n$**. Centering changes the endpoints to $a_i-\mathbb EX_i$ and $b_i-\mathbb EX_i$, leaving each width unchanged. For example, <independent> <random variables> in $[-2,1]$ and $[4,5]$ have $V=3^2+1^2=10$, whatever their <expected values> or <probability distributions>. A deviation at least three above their total <expected value> has <probability> at most $e^{-18/10}\approx0.165299$. If all widths equal $b-a>0$, the <sample mean> $\overline X_n=n^{-1}\sum_iX_i$ satisfies
+$$
+\mathbb P\left(|\overline X_n-\mathbb E\overline X_n|\geq\varepsilon\right)\leq\min\{1,2\exp(-2n\varepsilon^2/(b-a)^2)\},\qquad\varepsilon>0.
+$$
+
+<Independence> is essential to this general guarantee. Take one <Bernoulli random variable> $B$ with success <probability> $1/2$ and set every $X_i=B$. Each lies in $[0,1]$, but for every $n$ the <sample mean> is either zero or one. Thus $\mathbb P(|\overline X_n-1/2|\geq1/4)=1$, whereas incorrectly inserting these dependent observations into the formula would give $2e^{-n/8}$, less than one for $n\geq6$. Some special dependent models have their own valid <concentration inequalities>; arbitrary <statistical dependence> cannot be ignored.
+
+For the short proof, apply <Markov's inequality> to $e^{\lambda S_n}$ with $\lambda>0$, factor the <expectation> using <independence>, and apply the <Hoeffding lemma> to each factor:
+$$
+\mathbb P(S_n\geq t)\leq e^{-\lambda t}\prod_i\mathbb E e^{\lambda(X_i-\mathbb EX_i)}\leq\exp(-\lambda t+\lambda^2V/8).
+$$
+Minimizing this <quadratic polynomial> at $\lambda=4t/V$ gives the upper <tail probability>; applying it to $-S_n$ gives the lower one. This is the <Chernoff bound> method. The original 1963 article is <Probability Inequalities for Sums of Bounded Random Variables by Wassily Hoeffding>; its publisher record identifies the article, but its full text was unavailable during this source check. The argument above is a direct derivation rather than a claim to have inspected that article's proof.
+
+= Hoeffding sample size for Bernoulli frequencies
+{c}
+{parent=Hoeffding inequality}
+{title2=$n\geq\lceil\log(2/\delta)/(2\varepsilon^2)\rceil$}
+
+Let $B_1,\ldots,B_n$ be <independent and identically distributed> <Bernoulli random variables> with success <probability> $p$, and let $\widehat p_n=n^{-1}\sum_iB_i$ be their observed frequency, a <sample mean>. Since every <interval> width is one, $V=n$. Substituting $t=n\varepsilon$ into the <Hoeffding inequality> gives
+$$
+\mathbb P(\widehat p_n-p\geq\varepsilon)\leq e^{-2n\varepsilon^2},\qquad \mathbb P(|\widehat p_n-p|\geq\varepsilon)\leq\min\{1,2e^{-2n\varepsilon^2}\}.
+$$
+For tolerance $0<\varepsilon<1$ and failure <probability> $0<\delta<1$, solving $2e^{-2n\varepsilon^2}\leq\delta$ yields the sufficient <sample size>
+$$
+\boxed{n\geq\left\lceil\frac{\log(2/\delta)}{2\varepsilon^2}\right\rceil.}
+$$
+Here $\log$ is the <natural logarithm>. For $\varepsilon=0.05$ and $\delta=0.05$, **$n=738$ guarantees an error smaller than $0.05$ with <probability> at least $0.95$**, for every $p\in[0,1]$. The two-sided bound at this <sample size> is approximately $0.0499440$. A specified single direction instead needs $n\geq\lceil\log(1/\delta)/(2\varepsilon^2)\rceil$, or $600$ for these choices. Halving the tolerance multiplies the unrounded sufficient <sample size> by four; reducing the failure <probability> tenfold adds $\log(10)/(2\varepsilon^2)$ before rounding.
+
+This is a conservative sufficient <sample size>, not a necessary minimum. For a specified $p$, the count $K=\sum_iB_i$ has a <binomial distribution>, whose exact upper <tail probability> is
+$$
+\mathbb P(K\geq k)=\sum_{j=k}^n\binom njp^j(1-p)^{n-j},\qquad k\in\{0,\ldots,n\}.
+$$
+For $k>np$, the <Hoeffding inequality> bounds this by $\exp[-2(k-np)^2/n]$. An arbitrary frequency threshold uses $k=\lceil n(p+\varepsilon)\rceil$; if $k>n$, the <event> is impossible. The discreteness of the count and its <variance> $np(1-p)$ can make the exact <tail probability> substantially smaller. At $n=100$, $p=1/2$, $k=60$, the exact upper <tail probability> is about $0.0284440$, while the bound is $e^{-2}\approx0.135335$. At $p=1/10$, $k=20$, the same deviation $\varepsilon=0.1$ gives the same bound but an exact upper <tail probability> about $0.00197856$.
+
+\Image[hoeffding-binomial-tail-comparison.png]
+{title=Exact <binomial distribution> tails compared with the <Hoeffding inequality>}
+{description=Two original specified models, each with $n=100$ <independent> <Bernoulli trials>. Each dot includes its integer threshold $K\geq k$, with horizontal coordinate $\varepsilon=k/n-p$. Exact finite sums are evaluated with rational arithmetic before conversion for plotting. The <Hoeffding inequality> uses the width one in both panels; it does not use the smaller <variance> at $p=1/10$. These are model probabilities, not measured frequencies.}
+
+= Hoeffding confidence interval
+{c}
+{parent=Hoeffding inequality}
+{title2=$r_n=\sqrt{\log(2/\delta)/(2n)}$}
+
+For a fixed positive <sample size> $n$ of <independent and identically distributed> <Bernoulli random variables>, let
+$$
+r_n=\sqrt{\frac{\log(2/\delta)}{2n}},\qquad C_n=[\max\{0,\widehat p_n-r_n\},\min\{1,\widehat p_n+r_n\}].
+$$
+The <Hoeffding inequality> makes $C_n$ a conservative <confidence interval> for $p$: $\mathbb P_p(p\in C_n)\geq1-\delta$ for every $p\in[0,1]$. Indeed, exclusion from the closed <interval> implies $|\widehat p_n-p|>r_n$, an <event> contained in the deviation <event> bounded by $\delta$. Clipping to $[0,1]$ retains coverage because $p$ already lies there. For $n=738$, $\delta=0.05$, and an observed frequency $369/738=1/2$, $r_n\approx0.0499924$, giving approximately $[0.450008,0.549992]$.
+
+Coverage concerns repeated <independent> samples: the unknown $p$ is fixed and the <confidence interval> is random. This fixed-$n$ guarantee does not justify repeatedly checking the same bound and stopping as soon as it looks favorable. The <Hoeffding sample size for Bernoulli frequencies> chooses $n$ in advance; guarantees across repeated inspection times require separate control of the additional <events>, for example through a <union bound> with an allocated failure <probability> at each time.
 
 = Hoeffding lemma
 {c}
 {parent=Hoeffding inequality}
-{wiki}
+{wiki=Hoeffding's_lemma}
+{title2=$\log\mathbb E e^{\lambda(X-\mathbb EX)}\leq\lambda^2(b-a)^2/8$}
 
-If $a\leq X\leq b$ almost surely, then
+= Hoeffding's lemma
+{c}
+{synonym}
+
+The <Hoeffding lemma> controls the entire centered <moment-generating function> using only an <interval> width. For an <essentially bounded> real <random variable> $X$ with finite deterministic bounds $a\leq X\leq b$ <almost surely>, every real $\lambda$ satisfies
 $$
-\log\mathbb E e^{\lambda(X-\mathbb EX)}
-\leq\frac{\lambda^2(b-a)^2}{8}.
+\boxed{\psi(\lambda):=\log\mathbb E e^{\lambda(X-\mathbb EX)}\leq\frac{\lambda^2(b-a)^2}{8}.}
 $$
+Equivalently, $\mathbb E e^{\lambda(X-\mathbb EX)}\leq e^{\lambda^2(b-a)^2/8}$. This single-<random variable> statement needs no <independence> assumption; <independence> enters when applying it to the factors for a <sum> in the <Hoeffding inequality>. Both signs of $\lambda$ are allowed, and equality holds at $\lambda=0$ or when $a=b$.<CS229 Supplemental Lecture notes/Hoeffding’s inequality>[§3, p. 6, lemma 5: all-real-parameter moment-generating function bound]{ref}
+
+In the convention $\log\mathbb E e^{\lambda Y}\leq\lambda^2\sigma^2/2$ for a centered <sub-Gaussian random variable> $Y$, the <Hoeffding lemma> supplies $\sigma^2=(b-a)^2/4$. This upper parameter need not equal the actual <variance>. For a <Bernoulli random variable> $B$ of success <probability> $p$,
+$$
+\log\mathbb E e^{\lambda(B-p)}=\log(1-p+pe^\lambda)-p\lambda\leq\lambda^2/8.
+$$
+The actual <variance> is $p(1-p)$, whereas the supplied parameter is $1/4$ for every $p$. This explains part of the conservatism visible in <Hoeffding sample size for Bernoulli frequencies>.
+
+\Image[hoeffding-bounded-interval-exponential-tilt.png]
+{title=<Exponential tilting> changes the weights but preserves the bounded <interval>}
+{description=The original three-point model has $X=-2,0,2$ with <probabilities> $1/4,1/2,1/4$ and <mean> zero. Left: tilted masses proportional to $\mathbb P(X=x)e^{\lambda x}$ for $\lambda=-1,0,1$ stay within $[-2,2]$. Right: its <cumulant-generating function> $\psi(\lambda)=2\log\cosh\lambda$ stays below the <Hoeffding lemma> bound $2\lambda^2$. Its tilted <variance> is $\psi''(\lambda)=2/\cosh^2\lambda\leq2$, smaller than the general width-only ceiling four.}
+
+A short proof exposes why the constant is $1/8$. Put $Y=X-\mathbb EX$ and define <exponential tilting> by
+$$
+d\mathbb P_\lambda=e^{\lambda Y-\psi(\lambda)}d\mathbb P.
+$$
+The tilted <probability measure> has the same <interval> of possible values, and differentiating the <cumulant-generating function> gives $\psi''(\lambda)=\operatorname{Var}_{\mathbb P_\lambda}(Y)$. Boundedness justifies these <derivatives> for every finite $\lambda$. Under any such tilted law, <Popoviciu's inequality on variances> gives $\psi''(\lambda)\leq(b-a)^2/4$: the <variance> is no larger than the <expected value> of the squared distance from the <interval> midpoint, itself at most $(b-a)^2/4$. Since $\psi(0)=\psi'(0)=0$, the integral form of <Taylor's theorem> yields
+$$
+\psi(\lambda)=\lambda^2\int_0^1(1-s)\psi''(s\lambda)\,ds\leq\lambda^2(b-a)^2/8.
+$$
+This expression handles either sign of $\lambda$ without changing the argument.
+
+The constant $1/8$ cannot be reduced uniformly over all <essentially bounded> real <random variables>. Equal endpoint <probabilities> at $a$ and $b$ give $Y=\pm(b-a)/2$, a scaled <Rademacher random variable>, and
+$$
+\lim_{\lambda\to0}\frac{\log\mathbb E e^{\lambda Y}}{\lambda^2}=\frac{\operatorname{Var}(Y)}2=\frac{(b-a)^2}{8}.
+$$
+Thus the sharpness is already forced near zero by the <variance>; the bound need not be equality at nonzero parameters for a particular <probability distribution>.
 
 = Bennett inequality
 {c}
@@ -649,11 +739,66 @@ At a <median> $m$, this gives upper tail $2e^{-t^2/[4(m+t)]}$ and lower tail $2e
 {c}
 {parent=Probability inequality}
 {wiki}
+{title2=$\mathbb P(\bigcup_i A_i)\leq\min\{1,\sum_i\mathbb P(A_i)\}$}
 
 = Union bound
 {synonym}
 
-The union bound says $P(\bigcup_i A_i)\le\sum_iP(A_i)$.
+<Boole's inequality>, also called the <union bound>, bounds the <probability> that at least one of several <events> occurs by adding their individual <probabilities>. For a finite or <countable> family of <events> $A_i$ in the same <probability space>,
+$$
+\mathbb P\left(\bigcup_i A_i\right)\leq\min\left\{1,\sum_i\mathbb P(A_i)\right\}.
+$$
+The <union> includes outcomes where several <events> occur together. There is no <independence> assumption: adding the individual <probabilities> counts such outcomes repeatedly, which can only make the sum larger. The cap at one uses the total mass of a <probability measure>. For infinitely many <events>, the sum is a nonnegative <series>, possibly infinite; an infinite sum gives only the bound one. This is <countable subadditivity of a measure> specialized to a <probability measure>. See <Probability: Theory and Examples (fifth edition) by Rick Durrett> (Section 1.1, Theorem 1.1.1(ii), printed p. 2).
+
+For example, choose uniformly from the twelve outcomes $\Omega=\{1,\ldots,12\}$, using the <discrete uniform distribution>. Put $A=\{1,2,3,4\}$. If $B=\{5,6,7,8\}$, these are <disjoint events> and their <union> has <probability> $8/12=2/3$, exactly the <union bound>. If $B=\{3,4,5,6\}$, the <union> has only six outcomes, so its exact <probability> is $1/2$, although both individual <probabilities> are still $1/3$ and the bound is still $2/3$. If $B=A$, the exact <probability> falls to $1/3$ with the same bound. These examples isolate <overlap in the union bound> by keeping the individual <probabilities> fixed.
+
+\Image[union-bound-finite-events-overlap.png]
+{title=The same individual <event> <probabilities> give different exact <union> <probabilities> as overlap increases}
+{description=Each panel is a fully specified <discrete uniform distribution> on twelve numbered outcomes. Blue means $A$ only, orange means $B$ only, purple means their <intersection>, and white means neither. The bottom bars compare the exact <union> <probability> with the sum of the individual <probabilities>. The three <unions> contain eight, six, and four outcomes; the sum counts eight in every panel.}
+
+The <union bound> is useful when each <event> is easy to control but their joint behavior is difficult to determine. A short proof uses <indicator functions>: at every outcome,
+$$
+\mathbf 1_{\bigcup_{i=1}^n A_i}\leq\sum_{i=1}^n\mathbf 1_{A_i}.
+$$
+Taking <expected values> and using <linearity of expectation> proves the finite bound.<Introduction to Probability, Statistics, and Random Processes by Hossein Pishro-Nik/6.2.1 The Union Bound and Extension>{ref} For a <countable> family, the finite <unions> increase to the full <union>; <continuity of probability> passes the finite inequalities to the limit. The closure of a <sigma-algebra> under <countable unions> ensures that this limiting <union> is an <event>. For the <continuity of probability> step, see <Probability: Theory and Examples (fifth edition) by Rick Durrett> (Section 1.1, Theorem 1.1.1(iii), printed p. 2).
+
+= Equality in Boole's inequality
+{parent=Boole's inequality}
+{title2=$\mathbb P(A_i\cap A_j)=0\quad(i\ne j)$}
+
+For finitely many <events>, or a <countable> family with finite sum of individual <probabilities>, equality in the uncapped <union bound> holds exactly when every pairwise <intersection> has <probability> zero. Equivalently, at most one <event> occurs <almost surely>. Pairwise <disjoint events> give equality, but literal disjointness is stronger than necessary: shared outcomes of <probability> zero do not change either side. For the capped bound, if the sum exceeds one, equality instead means that the <union> is an <almost sure event>; overlap can then have positive <probability>.
+
+The cap and the disjoint case are both sharp. If the individual <probabilities> sum to at most one, put the <events> on separate pieces of a <sample space> to attain their sum. The twelve-outcome disjoint example does this with two <events> of <probability> $1/3$. If the sum exceeds one, a covering <union> can attain the cap: on the same twelve-outcome <sample space>, $A=\{1,\ldots,8\}$ and $B=\{5,\ldots,12\}$ have sum $4/3$ and exact <union> <probability> one. These are sharpness examples, not an assertion that every overlapping family attains the bound. Positive-<probability> <disjoint events> are also not <independent events>, because their joint <probability> is zero while the product of their individual <probabilities> is positive.
+
+= Overlap in the union bound
+{parent=Boole's inequality}
+{title2=$\sum_i\mathbb P(A_i)-\mathbb P(\bigcup_iA_i)=\mathbb E[N-\mathbf1_{\{N\geq1\}}]$}
+
+For a finite family, the <random variable> $N=\sum_i\mathbf1_{A_i}$ counts the <events> that occur. <Linearity of expectation> gives $\mathbb E N=\sum_i\mathbb P(A_i)$, while $\mathbb P(N\geq1)$ is the exact <union> <probability>. Their difference is
+$$
+\sum_i\mathbb P(A_i)-\mathbb P\left(\bigcup_i A_i\right)=\mathbb E\left[N-\mathbf1_{\{N\geq1\}}\right].
+$$
+An outcome in exactly $k\geq1$ <events> contributes $k-1$ extra counts, weighted by its <probability>. This nonnegative difference vanishes exactly in <equality in Boole's inequality>. For two <events> it is $\mathbb P(A\cap B)$, as the <inclusion-exclusion principle for probabilities> shows. For more <events>, the <Bonferroni inequalities> use pairwise and higher <intersection> information to bound the exact <union> <probability>; blindly subtracting pairwise <intersections> from the sum gives a lower bound, rather than a corrected upper bound.
+
+Severe overlap can make the <union bound> arbitrarily pessimistic. Let all $m$ <events> be the same <event> $A$ with <probability> $1/m$, where $m\geq1$ is an <integer>. A concrete model is the <discrete uniform distribution> on $\{1,\ldots,m\}$ with $A=\{1\}$. The exact <union> <probability> is $1/m$, whereas the sum and capped bound are both one. The ratio is $m$: adding more names for the same <event> does not create more ways to fail. The identity above describes the gap in the uncapped sum; capping at one can reduce that gap.
+
+= Failure-probability budget
+{parent=Boole's inequality}
+{title2=$\mathbb P(\bigcap_iF_i^c)\geq\max\{0,1-\sum_i\delta_i\}$}
+
+A <failure-probability budget> assigns nonnegative numbers $\delta_i$ to a finite or <countable> family of failure <events> $F_i$ in a common <probability space>, with verified bounds $\mathbb P(F_i)\leq\delta_i$. The <union bound> guarantees that the <probability> of any failure is at most $\min\{1,\sum_i\delta_i\}$. By <De Morgan's laws> and the <complement rule of probability>, the <probability> that every requirement succeeds obeys
+$$
+\mathbb P\left(\bigcap_i F_i^c\right)=1-\mathbb P\left(\bigcup_i F_i\right)\geq\max\left\{0,1-\sum_i\delta_i\right\}.
+$$
+Thus $\sum_i\delta_i\leq\delta$ guarantees simultaneous success with <probability> at least $1-\delta$, even when all failure <events> depend on the same observations. The numbers $\delta_i$ are upper allowances; adding them is not a calculation of the exact failure <probability>.
+
+For three requirements, give each a <failure-probability budget> $\delta_i=1/20$. The total budget is $3/20$, so simultaneous success has <probability> at least $17/20$. On a <sample space> of twenty equally likely outcomes, let $F_1=\{1\}$, $F_2=\{2\}$, and $F_3=\{3\}$. These <disjoint events> attain the budget and the success bound. If instead all three failure <events> equal $\{1\}$, their individual <probabilities> are unchanged, but exact failure has <probability> $1/20$ and simultaneous success has <probability> $19/20$. This second model shows how overlap can leave the guarantee conservative.
+
+\Image[union-bound-failure-budget-sample-space.png]
+{title=A shared <failure-probability budget> covers both separate failures and one common failure}
+{description=The two panels each have twenty equally likely numbered outcomes. The blue, orange, and purple marks identify membership in $F_1$, $F_2$, and $F_3$, respectively. Their individual <probabilities> are $1/20$ in both panels. The <union> has three outcomes on the left and one on the right, while the <union bound> is $3/20$ in both. The <event> of simultaneous success is the <complement of an event> of any failure and contains seventeen or nineteen outcomes. These are illustrative <probability> models, not measured failure rates.}
+
+For $n$ requirements, an equal allocation $\delta_i=\delta/n$ is convenient; unequal allocations also work when some requirements are harder to satisfy. For infinitely many requirements indexed by $i\geq1$, the allocation $\delta_i=\delta/2^i$ uses total budget $\delta$ by the <geometric series>. A fixed positive allowance for every requirement instead gives an infinite sum and no positive simultaneous-success guarantee from the <union bound>. The individual <probability> bounds must cover all the failure <events> being combined: omitting possible failure modes leaves the resulting guarantee about the listed requirements only. The same addition of error allowances underlies the <Bonferroni correction> in simultaneous <hypothesis tests>.
 
 = Positive common intersection from pair-intersection probabilities
 {parent=Boole's inequality}

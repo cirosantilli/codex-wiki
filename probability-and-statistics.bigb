@@ -431,6 +431,23 @@ The Gaussian kernel is a translation-invariant <positive-semidefinite kernel> wh
 
 The linear kernel is the ordinary <inner product> on a real vector space.
 
+= Polynomial kernel
+{parent=Positive-semidefinite kernel}
+{wiki}
+{title2=$k(x,z)=(x^Tz+c)^r$}
+
+For $x,z\in\mathbb R^d$, a polynomial kernel is the <positive-semidefinite kernel> $k(x,z)=(x^Tz+c)^r$, where $r$ is a positive integer and $c\geq0$. The case $c=0$ uses <monomials> of total degree $r$; $c>0$ also includes lower degrees. The <feature map> weights matter: listing each distinct <monomial> once with coefficient one generally gives a different <inner product>.<Gaussian Processes for Machine Learning by Carl Edward Rasmussen and Christopher K. I. Williams>[Section 4.2.2, pp. 89–90, equations (4.23)–(4.24): polynomial kernels and weighted monomial features]{ref}
+
+For the homogeneous quadratic case in two dimensions, take the scaled <quadratic feature map>
+$$
+\phi(x_1,x_2)=\begin{pmatrix}x_1^2\\\sqrt2 x_1x_2\\x_2^2\end{pmatrix},\qquad k(x,z)=(x^Tz)^2.
+$$
+The <inner-product> identity is explicit:
+$$
+\phi(x)^T\phi(z)=x_1^2z_1^2+2x_1x_2z_1z_2+x_2^2z_2^2=(x_1z_1+x_2z_2)^2=k(x,z).
+$$
+The factor $\sqrt2$ accounts for the two equal cross terms in the square. Thus an <inner product> of three derived coordinates can be obtained from an <inner product> of the two input coordinates followed by squaring. The <kernel trick> uses this equality inside an algorithm; the <feature map> explains which nonlinear <functions> the algorithm can represent.
+
 = Closure property of positive-semidefinite kernels
 {parent=Positive-semidefinite kernel}
 
@@ -540,7 +557,80 @@ $$
 {parent=Reproducing kernel Hilbert space}
 {wiki}
 
-The kernel trick evaluates feature-space inner products through $k(x,y)$ without explicitly constructing the feature vectors.
+The kernel trick evaluates <inner products> of <feature-map> outputs through $k(x,z)=\langle\phi(x),\phi(z)\rangle$ without explicitly constructing those <vectors>. An algorithm expressed entirely through these <inner products> can therefore operate on nonlinear derived coordinates using only evaluations of a <positive-semidefinite kernel> on the original inputs. A <classifier> linear in the derived coordinates can have a nonlinear boundary in the original coordinates.
+
+The <polynomial kernel> gives a finite, fully visible example: $k(x,z)=(x^Tz)^2$ corresponds to $\phi(x)=(x_1^2,\sqrt2 x_1x_2,x_2^2)^T$. The <XOR separation by a product feature> below makes the interaction coordinate $x_1x_2$ useful, while <dual prediction with a kernel> shows how to predict without calculating it explicitly.
+
+An arbitrary score called a similarity need not be a <positive-semidefinite kernel>. Symmetry alone, even with nonnegative entries, is insufficient: the symmetric <matrix>
+$$
+S=\begin{pmatrix}1&2\\2&1\end{pmatrix}
+$$
+has $a^TSa=-2$ for $a=(1,-1)^T$, so it cannot be a <Gram matrix> of real <inner products>. A <positive-semidefinite kernel> requires a <positive semidefinite matrix> for every finite choice of inputs, not just the observed <training data>.<Gaussian Processes for Machine Learning by Carl Edward Rasmussen and Christopher K. I. Williams>[Section 4.1, p. 80: Gram matrices, quadratic-form definition of positive semidefiniteness, and nonnegative eigenvalues]{ref} The existing <Moore-Aronszajn theorem> connects this requirement to a <reproducing-kernel Hilbert space>; this example needs only finite <linear algebra>.
+
+= XOR separation by a product feature
+{c}
+{parent=Kernel trick}
+{title2=$y=-x_1x_2$}
+
+Give the four corners of the square the <exclusive or> labels: $+1$ when the input signs differ and $-1$ when they agree. In the following order,
+$$
+p_1=(1,1),\quad p_2=(1,-1),\quad p_3=(-1,1),\quad p_4=(-1,-1),\qquad y=(-1,1,1,-1)^T.
+$$
+No <affine function> $g(x)=a_1x_1+a_2x_2+b$ has the required strictly positive scores at $p_2,p_3$ and strictly negative scores at $p_1,p_4$: both pairs have midpoint zero, so $g(p_2)+g(p_3)=2b=g(p_1)+g(p_4)$ would have to be both positive and negative. This also rules out perfect classification by a single threshold with a consistent tie rule.
+
+Under the <polynomial kernel>'s <quadratic feature map>, the two classes become two distinct <vectors>:
+$$
+\phi(p_1)=\phi(p_4)=(1,\sqrt2,1)^T,\qquad \phi(p_2)=\phi(p_3)=(1,-\sqrt2,1)^T.
+$$
+The <hyperplane> $\phi_2=0$ separates them. With $w=(0,-1/\sqrt2,0)^T$ and $b=0$, the score and <classifier> are
+$$
+f(x)=w^T\phi(x)=-x_1x_2,\qquad h(x)=\operatorname{sgn}f(x).
+$$
+All four signed scores $y_i f(p_i)$ equal one. In the input plane the boundary is $x_1x_2=0$, the union of the coordinate axes; in the derived coordinates it is a single <hyperplane>. The <feature map> identifies opposite corners, which is harmless for these labels because opposite corners belong to the same class. A fixed <feature map> would not separate labels that disagree at identical mapped <vectors>.
+
+\Image[kernel-quadratic-xor-feature-separation.png]
+{title=XOR labels in the input square and the quadratic feature slice}
+{description=The dashed diagonals join equal-label input pairs and share their midpoint, obstructing affine separation. In the feature panel all mapped points have third coordinate one; the two coincident pairs are separated by the horizontal hyperplane at second coordinate zero.}
+
+= Dual prediction with a kernel
+{parent=Kernel trick}
+{title2=$f(z)=\sum_i\beta_i k(p_i,z)+b$}
+
+If the weight <vector> lies in the <linear span> of the training <feature-map> outputs, write $w=\sum_i\beta_i\phi(p_i)$. Then
+$$
+f(z)=w^T\phi(z)+b=\sum_i\beta_i k(p_i,z)+b.
+$$
+This is a dual representation: coefficients weight training examples rather than feature coordinates. They need not be positive, and need not be unique when the <kernel matrix> is singular. Some <kernel methods> instead write $\beta_i=\alpha_i y_i$ with $\alpha_i\geq0$ under their own optimization constraints.<The kernel trick by Ryan Giordano>[Kernelizing classification with support vector machines: displayed prediction as a sum of label-weighted kernel evaluations]{ref} The formula is an algebraic conversion for a weight <vector> in this <linear span>, not a claim about every possible weight <vector>. The <representer theorem> gives a broader reason this form appears in regularized <kernel methods>.
+
+For the <XOR separation by a product feature>, let $\Phi$ have rows $\phi(p_i)^T$. The <Gram matrix> of those rows, equivalently the <kernel matrix>, is
+$$
+\Phi=\begin{pmatrix}1&\sqrt2&1\\1&-\sqrt2&1\\1&-\sqrt2&1\\1&\sqrt2&1\end{pmatrix},\qquad
+K=\Phi\Phi^T=\bigl((p_i^Tp_j)^2\bigr)_{ij}=\begin{pmatrix}4&0&0&4\\0&4&4&0\\0&4&4&0\\4&0&0&4\end{pmatrix}.
+$$
+Its <eigenvalues> are $8,8,0,0$, so it is a <positive semidefinite matrix> of <rank> two, not an invertible <matrix>. More generally, for any real coefficient <vector> $a$ and any finite set of inputs,
+$$
+a^TKa=\left\|\sum_i a_i\phi(p_i)\right\|_2^2\geq0.
+$$
+This proves the <positive-semidefinite kernel> condition for the displayed <polynomial kernel> on all of $\mathbb R^2$, rather than checking only this square.
+
+Here $Ky=8y$, so the explicit choice $\beta=y/8$ gives $K\beta=y$ and $\Phi^T\beta=w$. Consequently
+$$
+f(z)=\frac{-k(p_1,z)+k(p_2,z)+k(p_3,z)-k(p_4,z)}8=-z_1z_2.
+$$
+For the new input $z=(1,1/2)$, the four <polynomial kernel> evaluations are $(9/4,1/4,1/4,9/4)^T$. Their weighted sum is $-1/2$, and the <sign function> predicts $-1$. No explicit <feature map> is needed for this calculation. These coefficients were constructed to reproduce the chosen separator; no fitting algorithm or <generalization> guarantee is being asserted.
+
+\Image[kernel-quadratic-gram-dual-evaluation.png]
+{title=Quadratic kernel Gram matrix and a dual prediction for a new input}
+{description=Both panels use the same ordered four square corners. The Gram matrix has eigenvalues eight, eight, zero, zero. The new-input column contains four kernel evaluations, whose signed weighted contributions sum to minus one half.}
+
+= Computational tradeoffs of the kernel trick
+{parent=Kernel trick}
+
+For $d$ input coordinates, the homogeneous quadratic <polynomial kernel> has a weighted <quadratic feature map> with $D=d(d+1)/2$ distinct <monomials>. Computing an <inner product> of already stored mapped <vectors> costs $O(D)$ arithmetic operations, whereas $(x^Tz)^2$ costs $O(d)$ using the input <vectors>. Here $O$ denotes <big O notation>. Higher fixed degrees can make the dimension gap much larger.
+
+Sample count still matters. With $n$ training examples, materializing a dense <kernel matrix> stores $n^2$ numbers and requires $n(n+1)/2$ distinct evaluations using symmetry. A dense direct solve for <kernel ridge regression> typically takes $O(n^3)$ operations after constructing the <kernel matrix>, while a dual prediction with $m$ nonzero coefficients uses $m$ kernel evaluations. Explicit finite <feature maps> can be preferable when $D$ is small relative to $n$, and a stored primal weight <vector> can make prediction depend on $D$ rather than on $n$. <The kernel trick by Ryan Giordano> (sections Ridge regression and The polynomial kernel) explains the change from feature-coordinate equations to training-example equations; neither representation is universally faster.
+
+The <kernel trick> saves explicit feature construction when the <positive-semidefinite kernel> is economical to evaluate; it does not remove the cost of optimization, choose a useful <positive-semidefinite kernel>, or establish <generalization>. <Random Fourier features> illustrate a different tradeoff: replacing the exact <Gaussian kernel> with a finite approximate <feature map> can reduce dependence on the sample count while introducing approximation error.
 
 = Kernel principal component analysis
 {c}
@@ -1664,7 +1754,9 @@ $$
 = Probabilistic coupling
 {synonym}
 
-A coupling of probability distributions $\mu$ and $\nu$ is a joint distribution of $(X,Y)$ whose marginals are $\mu$ and $\nu$.
+A <coupling of probability distributions> $\mu,\nu$ is a <joint probability distribution> of <random variables> $(X,Y)$ whose <marginal distributions> are $\mu,\nu$. It lets us choose the <statistical dependence> between two random constructions while preserving the individual laws. This choice can make a comparison much easier: giving two simulations the same random input may keep their paths close, even though separately generating both paths would hide that relationship.<Markov Chains and Mixing Times, second edition by David A. Levin and others>[§4.2, coupling definition and Example 4.6, printed pp. 49–50]{ref}
+
+For example, two fair coin tosses can be generated independently, with mismatch <probability> $1/2$, or by tossing once and setting $Y=X$, with mismatch <probability> zero. Both constructions have the same two <Bernoulli distributions> as marginals. Their joint laws differ. A <maximal coupling> makes the values agree as often as possible; a <coalescing coupling> arranges permanent agreement of two processes after a random time. Minimizing expected geometric separation instead leads to <Wasserstein distance>.
 
 = Summable-memory coupling
 {parent=Coupling}
@@ -1754,7 +1846,9 @@ For $r,s\in[0,1]$ and a <random variable> $U$ with the <uniform distribution> on
 = Maximal coupling
 {parent=Coupling}
 
-A maximal coupling makes $\mathbb P(X\ne Y)$ as small as possible among all <coupling of probability distributions>[couplings] of its two marginals.
+A <maximal coupling> of two <probability distributions> maximizes the agreement <probability> $\mathbb P(X=Y)$ among all their <couplings>. Equivalently, it minimizes $\mathbb P(X\ne Y)$. The <coupling characterization of total variation distance> identifies the minimum mismatch with the <total variation distance> of the two marginal laws. The term maximal concerns agreement, rather than the size of a <correlation coefficient> or closeness in a geometric <metric>.
+
+On a <finite set>, retain all common <probability mass> at equal pairs and match the excesses elsewhere. The explicit four-outcome example in <coupling characterization of total variation distance> realizes this construction and checks its <marginal distributions>. A <maximal coupling> need not be unique: different joint arrangements of the residual mass can have the same optimal mismatch.
 
 = Wasserstein distance
 {c}
@@ -1830,27 +1924,95 @@ A Markov kernel is Wasserstein contractive with rate $\alpha>0$ when $W_\rho(\mu
 {title2=$\lVert\mu-\nu\rVert_{\mathrm{TV}}$}
 {parent=Probability and statistics}
 
-The total variation distance between probability distributions is
+<Total variation distance> asks how much two <probability distributions> can disagree about the same <event>. For <probability measures> $P,Q$ on one <measurable space> $(S,\mathcal F)$, its definition is
 $$
-\lVert\mu-\nu\rVert_{\mathrm{TV}}
-=\sup_A|\mu(A)-\nu(A)|.
+d_{\mathrm{TV}}(P,Q)=\lVert P-Q\rVert_{\mathrm{TV}}=\sup_{A\in\mathcal F}|P(A)-Q(A)|.
 $$
+The <supremum> ranges over all <measurable sets>, so $d_{\mathrm{TV}}(P,Q)\leq\varepsilon$ guarantees that every yes-or-no prediction has <probability> error at most $\varepsilon$. This <metric> takes values between zero and one; it is zero exactly when the two <probability measures> agree. This makes it useful for comparing a sampling <algorithm>'s output with its target <probability distribution>, and for defining the <mixing time of a Markov chain>.
+
+On a <finite set>, add the excess <probability mass> wherever $P$ exceeds $Q$. That excess is also half the sum of all absolute differences:
+$$
+d_{\mathrm{TV}}(P,Q)=\frac12\sum_{x\in S}|P(x)-Q(x)|=1-\sum_{x\in S}\min\{P(x),Q(x)\}.
+$$
+The last expression reveals the common <probability mass> that the two <probability distributions> can share.<Markov Chains and Mixing Times, second edition by David A. Levin and others>[§4.1, Proposition 4.2 and Remark 4.3, printed p. 48; §4.2, equation (4.13), printed p. 51]{ref} The <coupling characterization of total variation distance> turns this overlap into an actual joint construction; <minimum sum of errors in a simple hypothesis test> gives it a statistical interpretation. One quantity connects probability bookkeeping, comparison of sampling methods, and the limits of a <statistical test>.
+
+= Total variation distance on a finite set
+{parent=Total variation distance}
+{title2=$d_{\mathrm{TV}}(P,Q)=\frac12\sum_x|P(x)-Q(x)|$}
+
+Consider the <probability mass functions> $P=(0.4,0.1,0.2,0.3)$ and $Q=(0.1,0.3,0.3,0.3)$ on the <finite set> $S=\{A,B,C,D\}$. Their difference is $(0.3,-0.2,-0.1,0)$. Thus
+$$
+\boxed{d_{\mathrm{TV}}(P,Q)=\frac12(0.3+0.2+0.1+0)=0.3.}
+$$
+The <event> $E=\{A\}$ attains this difference: $P(E)=0.4$ and $Q(E)=0.1$. Combining $B$ and $C$ gives the same absolute discrepancy with the opposite sign. Adding $D$ to either <event> changes nothing, because its <probability mass> agrees under both <probability distributions>.
+
+\Image[total-variation-probability-discrepancy.png]
+{id=image-total-variation-probability-discrepancy}
+{title=<Total variation distance> as the largest <event> discrepancy}
+{description=An illustrative four-outcome example. The positive and negative excesses each total $0.3$; summing both without the factor $1/2$ counts the same redistribution twice.}
+
+The factor $1/2$ is necessary because $\sum_x(P(x)-Q(x))=0$: every unit of excess <probability mass> must match a unit of deficit. For any <event>, including a negative term cannot increase its signed discrepancy, while omitting a positive term cannot increase it either. Therefore $\{x:P(x)>Q(x)\}$ attains the positive maximum. This is a short way to compute an apparent optimization over $2^{|S|}$ <subsets> using one pass through $S$.
+
+For <probability density functions> $p,q$ relative to the same <measure> $\lambda$, the corresponding identity is $d_{\mathrm{TV}}(P,Q)=\tfrac12\int|p-q|\,d\lambda$. Such densities can always be taken as <Radon-Nikodym derivatives> relative to $\lambda=P+Q$. Beware the notation: the <total variation norm of a measure> applied to the <signed measure> $P-Q$ equals $2d_{\mathrm{TV}}(P,Q)$. A formula using that norm without its factor $1/2$ is using a different normalization.
+
+= Total variation distance and hypothesis testing
+{parent=Total variation distance}
+{title2=$\text{optimal success probability}=\tfrac12(1+d_{\mathrm{TV}}(P,Q))$}
+
+Suppose one observation comes from either $P$ or $Q$, each with prior <probability> $1/2$. A <decision rule> that chooses $P$ on an <event> $E$ and $Q$ otherwise has success <probability>
+$$
+\frac12P(E)+\frac12Q(E^c)=\frac12\bigl(1+P(E)-Q(E)\bigr).
+$$
+On a <finite set>, choosing $E=\{x:P(x)>Q(x)\}$ therefore gives $\tfrac12(1+d_{\mathrm{TV}}(P,Q))$. This is the equal-prior version of <minimum sum of errors in a simple hypothesis test>; allowing a <statistical test> to use an auxiliary <random variable> cannot improve it, because for each outcome the better of the two decisions already maximizes its contribution.
+
+For the four-outcome example, choose $P$ after $A$ and $Q$ after $B$ or $C$, with either decision allowed after $D$. Choosing $Q$ after $D$ yields $\tfrac12(0.4+0.9)=0.65$. **The best success probability is 65%, with a 35% error probability.** A smaller <total variation distance> means the two sources are harder to distinguish from one observation. Unequal prior <probabilities>, unequal costs, or multiple observations change this particular decision problem; the $65\%$ figure is not a universal bound for every experiment.
 
 = Coupling characterization of total variation distance
 {parent=Total variation distance}
+{title2=$d_{\mathrm{TV}}(P,Q)=\min\mathbb P(X\ne Y)$}
 
-The total variation distance is the least possible mismatch probability over all couplings:
+A <coupling of probability distributions> $P,Q$ is a pair of <random variables> $(X,Y)$ with those <marginal distributions>. On a <finite set>, and more generally on a <standard Borel space>, the least achievable mismatch is
 $$
-\lVert\mu-\nu\rVert_{\mathrm{TV}}=\inf\mathbb P(X\ne Y).
+d_{\mathrm{TV}}(P,Q)=\min\{\mathbb P(X\ne Y):(X,Y)\text{ is a coupling of }P,Q\}.
 $$
+A <maximal coupling> attains the minimum; maximal here refers to agreement. An arbitrary <coupling> can have a much larger mismatch.<Markov Chains and Mixing Times, second edition by David A. Levin and others>[§4.2, Example 4.6 and Proposition 4.7, printed pp. 49–52: finite-state coupling and common-mass construction]{ref}
+
+For the four-outcome example, assign the following joint <probability mass>: $(A,A)$ gets $0.1$, $(B,B)$ gets $0.1$, $(C,C)$ gets $0.2$, and $(D,D)$ gets $0.3$. The remaining $0.3$ must have $X=A$; place $0.2$ on $(A,B)$ and $0.1$ on $(A,C)$. Row sums give $P$, column sums give $Q$, and the <diagonal> contains $0.7$. **Agreement can reach 70%; mismatch cannot fall below 30%.**
+
+\Image[total-variation-maximal-coupling.png]
+{id=image-total-variation-maximal-coupling}
+{title=A <maximal coupling> of two four-outcome <probability distributions>}
+{description=The original joint-mass example retains all common <probability mass> on its diagonal. The two off-diagonal entries account for the minimum mismatch $0.3$.}
+
+To see the lower bound, for any <event> $E$,
+$$
+|P(E)-Q(E)|=|\mathbb E(\mathbf1_E(X)-\mathbf1_E(Y))|\leq\mathbb P(X\ne Y).
+$$
+The two <indicator functions> agree whenever $X=Y$. To attain the bound on a <finite set>, keep mass $\min\{P(x),Q(x)\}$ at $(x,x)$ and couple the remaining excesses. The two residual <probability distributions> live on disjoint <subsets>, so their part necessarily mismatches. When the <probability distributions> are identical, the residual part disappears entirely.
+
+This is a choice of joint construction, not a claim that independently drawn observations are usually equal. Two <independent random variables> with the same <continuous probability distribution> can disagree with <probability> one even though their <total variation distance> is zero. The construction of a <maximal coupling> deliberately introduces <statistical dependence> to reveal how similar the marginal laws are.
 
 = Coupling inequality for total variation
 {parent=Total variation distance}
+{title2=$d_{\mathrm{TV}}(\mathcal L(X_t),\mathcal L(Y_t))\leq\mathbb P(T>t)$}
 
-For any coupling of two <Markov chains> and its coalescence time $T$,
+For any <coupling> of <random variables>, the <coupling characterization of total variation distance> gives $d_{\mathrm{TV}}(\mathcal L(X),\mathcal L(Y))\leq\mathbb P(X\ne Y)$, where $\mathcal L$ denotes the <law of a random variable>. If two coupled <Markov chains> stay identical after their coalescence time $T$, then $\{X_t\ne Y_t\}\subseteq\{T>t\}$ and
 $$
 \lVert\mathcal L(X_t)-\mathcal L(Y_t)\rVert_{\mathrm{TV}}\leq\mathbb P(T>t).
 $$
+The persistent agreement is essential: a first meeting time does not give this bound if the chains can separate again. A <coalescing coupling> turns a difficult comparison of <probability distributions> into a concrete question about how long a joint simulation takes to merge.
+
+= Total variation distance under a measurable map
+{parent=Total variation distance}
+{title2=$d_{\mathrm{TV}}(P\circ f^{-1},Q\circ f^{-1})\leq d_{\mathrm{TV}}(P,Q)$}
+
+Applying the same <measurable function> $f$ to observations from two <probability distributions> cannot increase their <total variation distance>. Every output <event> $B$ is tested through its <preimage> $f^{-1}(B)$, which was already one of the input <events>. Therefore
+$$
+d_{\mathrm{TV}}(P\circ f^{-1},Q\circ f^{-1})\leq d_{\mathrm{TV}}(P,Q).
+$$
+For the four-outcome example, recording only whether the result is $D$ makes the output <probability distributions> identical: each is a <Bernoulli distribution> with parameter $0.3$. The original <total variation distance> was $0.3$, but this coarse measurement leaves zero discrepancy. Discarding information can make two sources less distinguishable.
+
+The same contraction holds for a common <Markov kernel> $K$: $d_{\mathrm{TV}}(PK,QK)\leq d_{\mathrm{TV}}(P,Q)$. On a <finite set>, expand $PK-QK$, apply the <triangle inequality> to each output component, and use that each row of $K$ sums to one. A common randomized postprocessing step cannot increase distinguishability either.
 
 = Pinsker's inequality
 {c}
@@ -2015,7 +2177,7 @@ Thus $\mathbb P(Z_2=0)=11/32$ and $\mathbb E[Z_2]=25/16$. The figure shows full 
 
 The contrast is striking: the <expected generation size in a Galton-Watson process> grows as $(5/4)^n$, while the <branching extinction probability> is $1/2$. By generation six, $\mathbb P(Z_6=0)\approx0.462186$ although $\mathbb E[Z_6]\approx3.814697$. Larger surviving families carry the rising <expected value>; that <mean> is an average over possible families, not a forecast of one family's path. The <Galton-Watson extinction fixed point> turns an unbounded number of future generations into a single equation for this <probability>.
 
-The historical question was the disappearance of surnames passed through male descendants. In https://math.uchicago.edu/~shmuel/Modeling/Galton%20Watson.pdf[Watson and Galton, On the Probability of the Extinction of Families, pages 139–140]{ref}, <Francis Galton> formulates a constant-law model counting sons who reach adulthood, and Watson computes later generation <probability distributions> by composing <generating functions>. Those are assumptions of their model, rather than a claim that actual human reproduction follows this <offspring distribution>.
+The historical question was the disappearance of surnames passed through male descendants. In https://math.uchicago.edu/~shmuel/Modeling/Galton%20Watson.pdf[Watson and Galton, On the Probability of the Extinction of Families, pages 139–140], <Francis Galton> formulates a constant-law model counting sons who reach adulthood, and Watson computes later generation <probability distributions> by composing <generating functions>. Those are assumptions of their model, rather than a claim that actual human reproduction follows this <offspring distribution>.
 
 = Offspring distribution of a branching process
 {parent=Galton-Watson process}

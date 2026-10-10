@@ -141,6 +141,26 @@ Use the "Climatology 101 by John Smith" formula when it is unambiguous enough, a
 = Climatology 101 by John Smith (2nd edition)
 ```
 
+You should rarely use a non `{ref}` reference unless you are mentioning something specific about the source. Just saying stuff like:
+
+```
+See this for a good reference: <Great Book by John Smith>.
+```
+
+is depressing. We want beauty delivered here or not. What we usually want is:
+
+```
+The first mention of the word "asdfqwer" was in <Great Book by John Smith> page 12:
+
+> I like my asdfqwer, but I prefer my qwerty.
+
+It was then mentioned again more prominently in <Amazing Book by Mary Jane>
+
+> What is an asdfqwer? We shall never know.
+```
+
+Or you might want to bring up specific examples or facts from such sources, paraphrasing or reusing aspects which justify fair usage such original experimental data or illustrations with historical significance. 
+
 ### OurBigBook header features
 
 There are a few important ourbigbook features which you must master and use well, notably for headers:
@@ -301,7 +321,7 @@ When documenting a generally useful STEM concepts, we want to aim try to have th
 * image, maybe even video generation when it makes sense
 * why the concept is useful and beautiful/interesting
 * discovery history.
-* in the case of the natural sciences, it is extremely important to cover motivating experiments in detail when this applies, early motivating experiments as well as simpler modern versions can both be of interest.
+* in the case of the natural sciences, it is extremely important to cover motivating experiments in detail when this applies, early motivating experiments as well as simpler modern versions can both be of interest. When possible, describe even specifics of the experimental apparatus used, though this is unfortunately often lost to time.
 
 When you are doing another big job, it is OK to just create stubs for concepts without going into all this detail. But when it gets closer to the matter, this is the ideal we should strive for. To one day make the one book to rule them all.
 

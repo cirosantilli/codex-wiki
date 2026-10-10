@@ -147,14 +147,93 @@ When an experiment's configuration is observed, inference conditions on the expe
 {parent=Statistical inference}
 {c}
 
-The <Kolmogorov-Smirnov test> compares an empirical distribution with a specified continuous distribution using the supremum of their discrepancy. Under a simple continuous null, the <probability integral transform> makes its distribution independent of the specified distribution. Fitting parameters generally changes this null law.
+The one-sample <Kolmogorov-Smirnov test> checks <goodness of fit> by comparing an <empirical distribution function> $F_n$ with a specified <cumulative distribution function> $F_0$. Its <Kolmogorov-Smirnov statistic> $D_n$ is the largest vertical gap anywhere between the two curves. Every threshold asks the same concrete question: what proportion of the observations are at or below it, and what <probability> does the proposed <probability distribution> assign there? A large discrepancy supplies evidence against the <null hypothesis>.
+
+For example, four stipulated observations $(1/10,2/5,4/5,9/10)$ compared with the <uniform distribution> on $[0,1]$ give $D_4=3/10$. Just before $4/5$, only two observations have been counted, so the <empirical distribution function> approaches $1/2$, while $F_0$ approaches $4/5$. The <Kolmogorov-Smirnov statistic> section calculates every jump-side gap. These are exact illustrative numbers, not experimental measurements or a claim of <statistical significance>.
+
+The ordinary one-sample calibration assumes <independent and identically distributed> real observations and a <simple hypothesis> $H_0:F=F_0$, with $F_0$ a <continuous function> fixed before inspecting these observations. All <statistical parameters> of $F_0$ must be specified.<NIST and SEMATECH e-Handbook of Statistical Methods/1.3.5.16. Kolmogorov-Smirnov Goodness-of-Fit Test>{ref} Under that <null hypothesis>, the <probability integral transform> gives $U_i=F_0(X_i)$ with the <uniform distribution> on $(0,1)$, retaining <independence>. Consequently the <sampling distribution> of $D_n$ depends on the <sample size> $n$, but not on the particular <continuous> $F_0$. This is the useful sense in which the calibration is distribution-free.
+
+For the <exponential distribution> of rate one, $F_0(x)=1-e^{-x}$ for $x\geq0$. Take $x_i=-\log(1-u_i)$ for the four stipulated $u_i$ above. The <probability integral transform> changes the horizontal coordinates but preserves both the <order statistics> and their cumulative heights, so the same <Kolmogorov-Smirnov statistic> $3/10$ appears on both scales. More generally, for <continuous> $F_0$, the jump-side formulas depend only on $F_0(X_{(i)})$. Strict increase everywhere is unnecessary: intervals on which $F_0$ is constant have <probability> zero under the <null hypothesis>. This explains the invariance without assuming a strictly positive <probability density function>.
+
+\Image[kolmogorov-smirnov-probability-integral-transform.png]
+{title=The probability integral transform preserves the Kolmogorov-Smirnov gap on exponential and uniform scales}
+{description=The same four stipulated points are shown as $x_i=-\log(1-u_i)$ on the left and $u_i\in\{1/10,2/5,4/5,9/10\}$ on the right. Open circles indicate left limits of the <empirical distribution function>, filled circles its values. The gap $3/10$ is approached from below the third observation on both scales.}
+
+The observed <Kolmogorov-Smirnov statistic> is a discrepancy, whereas its <p-value> is a tail <probability> under the <null hypothesis>:
+$$
+p=\Pr_{H_0}(D_n^{\mathrm{new}}\geq d_{\mathrm{obs}}).
+$$
+Here $D_n^{\mathrm{new}}$ is computed from a fresh sample of the same <sample size>. Choose a <significance level> $\alpha$ before the test and reject when the calibrated <p-value> is at most $\alpha$. The value $D_4=3/10$ alone supplies neither a <p-value> nor a rejection decision. Failure to reject does not establish that the <null hypothesis> is true. A finite-sample calibration and the asymptotic <Kolmogorov-Smirnov theorem> are distinct; a cutoff for $D_n$ must be rescaled before use with $\sqrt nD_n$.<NIST and SEMATECH e-Handbook of Statistical Methods/1.3.5.16. Kolmogorov-Smirnov Goodness-of-Fit Test>{ref}
+
+Fitting <statistical parameters> on the tested observations replaces $F_0$ by the random $F_{\widehat\theta}$. The resulting transformed observations need not be <independent and identically distributed> uniforms, so the ordinary reference law fails. The <Lilliefors test> addresses a particular fitted <normal distribution>. More general <parametric bootstrap> calibration must simulate from the fitted <statistical model> and repeat the fitting in every replicate; holding the fitted <statistical parameters> fixed during those comparisons calibrates a different procedure. Such a <parametric bootstrap> requires its own validity justification rather than inheriting exactness from the simple-null test.
+
+For a <discrete probability distribution>, $F_0(X)$ is generally not uniform. Equal observations also arise from rounding, so tied data require a calibration that accounts for the <discrete probability distribution> or the rounding rule. The discrepancy remains meaningful, but continuous-null <p-values> are not automatically valid. <Statistical dependence> likewise changes the reference law. The <two-sample Kolmogorov-Smirnov test> compares two <empirical distribution functions> and has a different calibration.<Kolmogorov-Smirnov Tests (ks.test, R stats documentation)>{ref}
 
 = Kolmogorov-Smirnov statistic
 {parent=Kolmogorov-Smirnov test}
 {c}
 {title2=$D_n=\sup_x|F_n(x)-F(x)|$}
 
-The one-sample <Kolmogorov-Smirnov statistic> is the largest absolute discrepancy between the empirical and specified distribution functions. A common normalized version is $\sqrt nD_n$. For the uniform model with an unknown endpoint, deleting the observed maximum and rescaling the remaining observations by that maximum leaves conditionally independent standard uniform observations; the ordinary test then uses sample size $n-1$.
+For an <empirical distribution function> $F_n$ and a specified <cumulative distribution function> $F_0$, the one-sample <Kolmogorov-Smirnov statistic> is their <Kolmogorov distance>:
+$$
+F_n(x)=\frac1n\sum_{j=1}^n\mathbf1_{\{X_j\leq x\}},\qquad
+D_n=\sup_{x\in\mathbb R}|F_n(x)-F_0(x)|.
+$$
+The displayed sum uses an <indicator function>. With this convention, $F_n$ is <right-continuous>. For distinct observations, its value and its left <one-sided limit> at the $i$th <order statistic> are $F_n(X_{(i)})=i/n$ and $F_n(X_{(i)}^-)=(i-1)/n$.
+
+For <continuous> $F_0$, both jump sides matter. Define the two directional discrepancies by
+$$
+D_n^+=\sup_x(F_n(x)-F_0(x))
+=\max_{1\leq i\leq n}\left\{\frac{i}{n}-F_0(X_{(i)})\right\},
+$$
+$$
+D_n^-=\sup_x(F_0(x)-F_n(x))
+=\max_{1\leq i\leq n}\left\{F_0(X_{(i)})-\frac{i-1}{n}\right\},\qquad
+D_n=\max(D_n^+,D_n^-).
+$$
+Thus $D_n^+$ uses the <empirical distribution function> immediately after a jump, and $D_n^-$ uses its left <one-sided limit>.<NIST and SEMATECH e-Handbook of Statistical Methods/1.3.5.16. Kolmogorov-Smirnov Goodness-of-Fit Test>{ref} A <supremum> need not be attained.
+
+For $n=4$, $F_0(x)=x$ on $[0,1]$, and the stipulated <order statistics> $(1/10,2/5,4/5,9/10)$, the complete calculation is
+$$
+\begin{array}{c|c|c|c|c|c}
+i&X_{(i)}&F_4(X_{(i)}^-)&F_4(X_{(i)})&i/4-F_0(X_{(i)})&F_0(X_{(i)})-(i-1)/4\\\hline
+1&1/10&0&1/4&3/20&1/10\\
+2&2/5&1/4&1/2&1/10&3/20\\
+3&4/5&1/2&3/4&-1/20&3/10\\
+4&9/10&3/4&1&1/10&3/20
+\end{array}
+$$
+The last two columns give the signed directional gaps: $D_4^+=3/20$, $D_4^-=3/10$, and $D_4=3/10$. In contrast, checking only $|F_4(X_{(i)})-F_0(X_{(i)})|$ gives $3/20$ and misses the largest gap approached as $x\uparrow4/5$. At $x=4/5$ itself, the gap has already fallen to $1/20$.
+
+\Image[kolmogorov-smirnov-ecdf-jump-gaps.png]
+{title=Both jump sides determine the exact Kolmogorov-Smirnov statistic}
+{description=The <empirical distribution function> for four stipulated rational observations is compared with the <uniform distribution> on $[0,1]$. Open circles show left <one-sided limits>; filled circles show values at jumps. The green gap is $D_4^+=3/20$ and the magenta gap is the limiting $D_4^-=3/10$.}
+
+The finite formula follows from the behavior between jumps: the <empirical distribution function> $F_n$ is constant and the <cumulative distribution function> $F_0$ is <monotone>, so the largest directional gaps occur at the two interval ends, possibly as <one-sided limits>. The two tails introduce no larger gap. Checking every jump side therefore gives the exact <supremum>.
+
+A common normalized <Kolmogorov-Smirnov statistic> is $\sqrt nD_n$, which equals $3/5$ in this example. Its large-sample reference law comes from the <Kolmogorov-Smirnov theorem>. The unscaled $D_n$ remains the largest difference of cumulative <probabilities>, not a <p-value>.
+
+There is a useful exact exception to the usual warning about fitting <statistical parameters>. Suppose $n\geq2$ <independent and identically distributed> observations have the <uniform distribution> on $(0,\theta)$ with unknown $\theta>0$. Let $M=\max_iX_i$ and let $J$ be the label of its almost surely unique maximizing observation. Conditional on $M=m$ and $J=j$, the surviving labelled observations $(X_i)_{i\ne j}$ are <independent> with the <uniform distribution> on $(0,m)$; after division by $m$ they are <independent and identically distributed> uniforms on $(0,1)$. These are <conditional distributions> defined by <probability density functions>, since the event $M=m$ has <probability> zero.
+
+To check this, the joint <probability density function> of $M$ and $J=j$ is $m^{n-1}/\theta^n$ for $0<m<\theta$. Dividing the original joint <probability density function> $\theta^{-n}$ by this factor gives the conditional survivor <probability density function>
+$$
+m^{-(n-1)}\prod_{i\ne j}\mathbf1_{\{0<x_i<m\}}.
+$$
+This factorization proves the claimed <conditional independence>; scaling removes $m$. Keep the surviving labels in a fixed order, or apply an <independent> random <permutation>. The sorted survivors instead have the joint law of <uniform order statistics> and exhibit <statistical dependence>; sorting does not affect their <empirical distribution function>. Delete the maximum itself, which would otherwise become a forced value $1$, and compute the <Kolmogorov-Smirnov statistic> using <sample size> $n-1$ and jump heights $i/(n-1)$. This gives an exact conditional <Kolmogorov-Smirnov test> under the uniform-endpoint <statistical model>. It does not justify fitting an arbitrary endpoint or other <statistical parameters> and using the ordinary $n$-sample calibration.
+
+= Lilliefors test
+{parent=Kolmogorov-Smirnov test}
+{c}
+{wiki}
+{title2=$\sup_x|F_n(x)-\Phi((x-\overline X)/s)|$}
+
+The <Lilliefors test> calibrates the <Kolmogorov-Smirnov statistic> against a <normal distribution> whose <mean> and <variance> are estimated from the tested observations. In the original procedure, $s^2$ is the <sample variance> with denominator $n-1$, and $\Phi$ is the <standard normal distribution function>. Its reference law includes this fitting step. The original paper's opening procedure and Table 1 explain the changed calibration.<On the Kolmogorov-Smirnov Test for Normality with Mean and Variance Unknown by Hubert W. Lilliefors>[pp. 399-400: opening procedure and Table 1 of the original article; inspected mirrored text]{ref}
+
+= Two-sample Kolmogorov-Smirnov test
+{parent=Kolmogorov-Smirnov test}
+{title2=$D_{n,m}=\sup_x|F_n(x)-G_m(x)|$}
+
+The <two-sample Kolmogorov-Smirnov test> compares two <empirical distribution functions> from <independent> samples, each internally <independent and identically distributed>, under the <null hypothesis> that their underlying <probability distributions> coincide. Both curves are estimated from data, so calibration depends on both <sample sizes>; the usual asymptotic scaling is $\sqrt{nm/(n+m)}D_{n,m}$. Tied data can be handled by an appropriate <permutation test> under the required <exchangeability>, rather than by assuming the untied continuous-null law.<Kolmogorov-Smirnov Tests (ks.test, R stats documentation)>{ref}
 
 = Likelihood principle
 {parent=Statistical inference}
@@ -340,7 +419,7 @@ A <proper scoring rule> makes reporting the true <probability distribution> opti
 $$
 \mathbb E_Q[L(Q,X)]\leq\mathbb E_Q[L(P,X)]\qquad\text{for every admissible }P,Q.
 $$
-This requirement makes a <proper scoring rule> useful for eliciting <probabilities> and comparing <predictive distributions>: deliberately distorting a known forecast cannot improve its expected reward or expected loss. The reward convention and its strict version are set out in https://sites.stat.washington.edu/raftery/Research/PDF/Gneiting2007jasa.pdf[Gneiting and Raftery, Strictly Proper Scoring Rules, Prediction, and Estimation (2007), Section 1]{ref}.
+This requirement makes a <proper scoring rule> useful for eliciting <probabilities> and comparing <predictive distributions>: deliberately distorting a known forecast cannot improve its expected reward or expected loss. The reward convention and its strict version are set out in <Strictly Proper Scoring Rules, Prediction, and Estimation by Tilmann Gneiting and others> (Section 1).
 
 For the <Bernoulli distribution> with $q=0.7$, the <Brier score> has expected loss $(p-0.7)^2+0.21$, and the negative <logarithmic scoring rule> has expected loss $-0.7\ln p-0.3\ln(1-p)$. Both are minimized at the honest report $p=0.7$. The <linear probability score>, by contrast, maximizes its expected reward at $p=1$. These are statements about averaging over both possible outcomes with their actual <probabilities>.
 
@@ -382,7 +461,7 @@ $$
 $$
 The report controls only $(p-q)^2$; the remaining term is the <variance> of the <Bernoulli random variable>. Consequently the <Brier score> is a <strictly proper scoring rule>. At $q=0.7$, the expected loss is $(p-0.7)^2+0.21$, with unique minimum $0.21$ at $p=0.7$. Reporting $p=0.2$ instead gives expected loss $0.46$, despite its better loss on the particular outcome $Y=0$ above.
 
-For several possible categories, the <Brier score> sums the squared differences between reported <probabilities> and observed category indicators. With two categories that sum is $2(p-y)^2$, so its numerical values are twice the binary convention used here, with the same optimizing report. Brier's original https://www.u-cursos.cl/ingenieria/2025/1/CI71C/1/material_docente/bajar?bajar=1&id=8745481[Verification of Forecasts Expressed in Terms of Probability (1950), equation (2)]{ref} averages these category-sum losses over forecasts. Gneiting and Raftery's https://sites.stat.washington.edu/raftery/Research/PDF/Gneiting2007jasa.pdf[Section 3.1, Example 1, and Table 1]{ref} give the category-sum and binary forms as negative rewards; negating them gives the losses described here.
+For several possible categories, the <Brier score> sums the squared differences between reported <probabilities> and observed category indicators. With two categories that sum is $2(p-y)^2$, so its numerical values are twice the binary convention used here, with the same optimizing report. Brier's original https://www.u-cursos.cl/ingenieria/2025/1/CI71C/1/material_docente/bajar?bajar=1&id=8745481[Verification of Forecasts Expressed in Terms of Probability (1950), equation (2)]{ref} averages these category-sum losses over forecasts. <Strictly Proper Scoring Rules, Prediction, and Estimation by Tilmann Gneiting and others> (Section 3.1, Example 1, and Table 1) gives the category-sum and binary forms as negative rewards; negating them gives the losses described here.
 
 = Logarithmic scoring rule
 {parent=Strictly proper scoring rule}
@@ -404,7 +483,7 @@ $$
 =q\ln\frac qp+(1-q)\ln\frac{1-q}{1-p}
 =D_{\rm KL}\!\left(\operatorname{Bernoulli}(q)\Vert\operatorname{Bernoulli}(p)\right).
 $$
-For $0<q<1$, this <Kullback-Leibler divergence> is nonnegative and vanishes only at $p=q$, explaining why the <logarithmic scoring rule> is a <strictly proper scoring rule>. The same <Kullback-Leibler divergence> identity applies to <probability density functions> relative to a common <measure> when the truthful expected <logarithmic loss> is finite and the comparison <expected value> is well defined. See https://sites.stat.washington.edu/raftery/Research/PDF/Gneiting2007jasa.pdf[Gneiting and Raftery (2007), Section 3.1, Example 3, and Section 4.1]{ref}. For sequential forecasts, the existing <prequential log score identity> explains how logarithmic rewards add over observations.
+For $0<q<1$, this <Kullback-Leibler divergence> is nonnegative and vanishes only at $p=q$, explaining why the <logarithmic scoring rule> is a <strictly proper scoring rule>. The same <Kullback-Leibler divergence> identity applies to <probability density functions> relative to a common <measure> when the truthful expected <logarithmic loss> is finite and the comparison <expected value> is well defined.<Strictly Proper Scoring Rules, Prediction, and Estimation by Tilmann Gneiting and others>[Section 3.1, Example 3, and Section 4.1]{ref} For sequential forecasts, the existing <prequential log score identity> explains how logarithmic rewards add over observations.
 
 = Prequential log score identity
 {parent=Logarithmic scoring rule}
@@ -872,7 +951,106 @@ Huber contamination is the epsilon-contamination model in which an arbitrary dis
 = Influence curve
 {synonym}
 
-The influence function is the derivative at zero contamination of a statistical functional $T((1-\varepsilon)F+\varepsilon\delta_x)$.
+An <influence function> asks how much a population answer moves when an infinitesimal fraction of its <probability distribution> is relocated to a specified point. It distinguishes the unbounded response of the <mean> from the bounded response of the <median> and the <Huber location estimator>. The <normal-location influence curves> and <finite contamination bias of normal location> below make that difference quantitative.
+
+Let $T$ be a real-valued <statistical functional>, $F$ a reference <probability measure>, and $\delta_x$ the <Dirac measure> concentrated at $x$. Along the <epsilon-contamination neighborhood> path $F_{\varepsilon,x}=(1-\varepsilon)F+\varepsilon\delta_x$, define the right <derivative>
+$$
+\operatorname{IF}(x;T,F)=\lim_{\varepsilon\downarrow0}\frac{T(F_{\varepsilon,x})-T(F)}{\varepsilon},\qquad
+T(F_{\varepsilon,x})=T(F)+\varepsilon\operatorname{IF}(x;T,F)+o(\varepsilon).
+$$
+The name <influence curve> refers to the same object. The <derivative> is in the signed direction $\delta_x-F$, so the calculation removes baseline mass as well as adding a <Dirac measure>. The definition is a <limit> for each fixed $x$; it does not automatically give a remainder uniform over arbitrarily distant $x$.<The Influence Curve and Its Role in Robust Estimation by Frank R. Hampel>[Frank R. Hampel, The Influence Curve and Its Role in Robust Estimation, p. 383, §2: pointwise right-limit definition along mixtures with a point mass]{ref}
+
+The <statistical functional> must be defined on these contaminated <probability measures>, and the right <derivative> must exist and be finite. For a <mean>, a finite first absolute <moment> suffices. For a <median>, require a unique baseline <median> and a <probability density function> continuous and strictly positive there. For a smooth <M-estimator>, require an isolated population root, justified differentiation of its <expected value>, and a nonzero derivative with respect to the fitted parameter. These are specific conditions for the formulas below. Existence of the pointwise <influence function> alone proves neither an <asymptotic linear representation> nor <pathwise differentiability of a statistical functional>; each needs control of its own remainder and admissible <statistical paths>.
+
+= Influence function of the mean
+{parent=Influence function}
+{title2=$\operatorname{IF}(x;\mu,F)=x-\mu$}
+
+For the <statistical functional> $T(F)=\mu=\mathbb E_F X$, assuming $\mathbb E_F|X|<\infty$, the contaminated <mean> is exactly
+$$
+T(F_{\varepsilon,x})=(1-\varepsilon)\mu+\varepsilon x.
+$$
+Thus the <influence function of the mean> is $x-\mu$, and its <gross-error sensitivity> is infinite on an unbounded sample space. The <linear approximation> is exact here: any fixed positive contamination fraction allows an arbitrarily large change by moving $x$ far enough. No finite second <moment> is needed for this <derivative>, although a finite <variance> is needed for the usual <central limit theorem> for the <sample mean>.
+
+For comparison, the <influence function of the sample median> is
+$$
+\operatorname{IF}(x;\operatorname{Med},F)=\frac{\operatorname{sgn}(x-m)}{2f(m)},\qquad x\ne m,
+$$
+when the <median> $m$ is unique and the <probability density function> $f$ is positive and continuous at $m$. The <sign function> records which side of $m$ receives the contaminating mass. The <influence function of a quantile> supplies the short derivation. With the generalized-inverse <quantile> convention, contamination exactly at $x=m$ leaves the <median> at $m$, giving derivative zero there. If $f(m)$ is very small, this bounded <influence function> can still be large; if $f(m)=0$, the displayed formula is unavailable.
+
+= Influence function of a Huber location estimator
+{parent=Influence function}
+{title2=$\operatorname{IF}(x;T,F)=s\psi_k((x-\theta)/s)/A$}
+
+Fix a scale $s>0$ and cutoff $k>0$. Define the population <Huber location estimator> by the root
+$$
+\mathbb E_F\psi_k\!\left(\frac{X-\theta}{s}\right)=0,\qquad \theta=T(F),\qquad
+A=\mathbb E_F\psi_k'\!\left(\frac{X-\theta}{s}\right)>0.
+$$
+Here $\psi_k$ is the <Huber score>. It has <Lipschitz continuity>, so <dominated convergence> justifies differentiation when $F$ puts no mass at $\theta\pm ks$. Then $A=\mathbb P_F(|X-\theta|<ks)$, and the nonzero derivative identifies the local population root. The <implicit function theorem> applies away from the contaminating score's kinks; its <Lipschitz continuity> also gives the first-order expansion at those kinks. Differentiating its contaminated equation yields
+$$
+0=-\frac A s\operatorname{IF}(x;T,F)+\psi_k\!\left(\frac{x-\theta}{s}\right),\qquad
+\operatorname{IF}(x;T,F)=\frac{s\psi_k((x-\theta)/s)}{A}.
+$$
+The normalization matters: the <Huber score> alone is not the <influence function>. The <gross-error sensitivity> is $sk/A$, while the <rejection point of an influence function> is infinite because the clipped tails stay nonzero. The original clipped estimating criterion and its derivative normalization also appear in the population analysis of <M-estimators>.<Robust Estimation of a Location Parameter by Peter J. Huber>[Peter J. Huber, Robust Estimation of a Location Parameter, §3, p. 78: derivative normalization; §4(iii), p. 79: clipped location criterion and central-mass denominator]{ref}
+
+Scale sets what counts as a large residual. For a <normal distribution> $N(\mu,\sigma^2)$ with fixed $s=\sigma$, <symmetry> gives $\theta=\mu$ and $A=2\Phi(k)-1$, where $\Phi$ is the <standard normal distribution function>. If the scale is instead a <statistical functional> $S(F)$, differentiation of the joint equation adds the scale contribution:
+$$
+\operatorname{IF}(x;T,F)=\frac{s\psi_k(r_x)-B\operatorname{IF}(x;S,F)}{A},\qquad
+r_x=\frac{x-\theta}{s},\quad B=\mathbb E_F\left[r_X\psi_k'(r_X)\right].
+$$
+Under a symmetric baseline and an odd <Huber score>, $B=0$, so scale estimation drops out at first order. This cancellation needs regularity of $S$ and does not protect finite <contamination (statistics)> changes: an inflated <standard deviation> enlarges the physical cutoff $ks$. A robust choice, such as a suitable <scale M-estimator>, needs its own <influence function> and <breakdown point> checked. Fixing a numeric cutoff in raw units also sacrifices scale <equivariance> when units change.<Robust Estimation of a Location Parameter by Peter J. Huber>[Peter J. Huber, Robust Estimation of a Location Parameter, §11, pp. 95-96: estimating location when normal-component scale and contamination fraction are unknown]{ref}
+
+= Normal-location influence curves
+{parent=Influence function}
+
+For $F=N(\mu,\sigma^2)$, put $z=(x-\mu)/\sigma$. The <influence function of the mean>, <influence function of the sample median>, and <influence function of a Huber location estimator> with fixed $s=\sigma$ are respectively
+$$
+\sigma z,\qquad \sigma\sqrt{\frac\pi2}\operatorname{sgn}(z),\qquad
+\frac{\sigma\psi_k(z)}{2\Phi(k)-1}.
+$$
+The first grows without bound, the second jumps at the <median>, and the third clips continuously. For $k=1.345$, $2\Phi(k)-1\simeq0.821375$ and the normalized Huber tail is about $1.63750\sigma$. This illustrates the <optimal bounded influence function for normal location> without asserting that this cutoff is optimal for every contamination model.
+
+\Image[normal-location-influence-curves.png]
+{title=Mean, median, and normalized Huber influence curves for two normal location-scale models}
+
+Both panels are theoretical <normal distributions>, with no sampled or observed data. Doubling $\sigma$ doubles the vertical <influence function> scale and the horizontal clipping distance. Changing $\mu$ translates the curves. The isolated dot marks the actual <median> derivative at the center; connecting its two tails by a vertical segment would misrepresent that value. Bounded influence does not mean every small residual has less effect than on the <mean>: the central Huber slope is $1/(2\Phi(k)-1)>1$, a price paid for reducing sensitivity in the tails.
+
+= Finite contamination bias of normal location
+{parent=Influence function}
+{title2=$b_T(\varepsilon,x)=T(F_{\varepsilon,x})-T(F)$}
+
+Consider the population <statistical model> $F_{\varepsilon,x}=(1-\varepsilon)N(0,1)+\varepsilon\delta_x$. The following are deterministic <statistical functional> calculations, not observed contamination experiments. Compare the actual location bias with the <linear approximation> $\varepsilon\operatorname{IF}(x;T,F)$. The <mean> bias is exactly $\varepsilon x$. For positive $x$ exceeding the shifted <median> and $0\le\varepsilon<1/2$, the generalized-inverse <median> bias is exactly
+$$
+b_{\operatorname{Med}}(\varepsilon,x)=\Phi^{-1}\!\left(\frac{1}{2(1-\varepsilon)}\right).
+$$
+This formula applies to both $x=1$ and $x=8$ throughout the plotted interval $0\le\varepsilon\le0.1$. If the contaminating atom lies inside the <quantile> jump containing probability $1/2$, the generalized-inverse <median> instead equals that atom.
+
+For the <Huber location estimator> with $s=1$ and $k=1.345$, solve its actual population equation, rather than substituting the <influence function>:
+$$
+(1-\varepsilon)g_k(t)+\varepsilon\psi_k(x-t)=0,\qquad g_k(t)=\mathbb E\psi_k(Z-t),\quad Z\sim N(0,1).
+$$
+Writing $a=t-k$ and $b=t+k$, integration of the <normal distribution> gives
+$$
+g_k(t)=\phi(a)-\phi(b)-t\bigl[\Phi(b)-\Phi(a)\bigr]+k\bigl[1-\Phi(b)-\Phi(a)\bigr],
+$$
+where $\phi$ is the <probability density function> of $N(0,1)$. Its <derivative> is $-[\Phi(t+k)-\Phi(t-k)]<0$, so the mixture score is strictly decreasing for $\varepsilon<1$. For $\varepsilon<1/2$, its limits at negative and positive infinity have opposite signs even with arbitrary distant point contamination. The displayed examples use the unique root, evaluated by the <bisection method> to numerical precision.
+
+\Image[normal-location-contamination-bias.png]
+{title=Exact population contamination biases and first-order influence predictions for normal location at contaminating points 1 and 8}
+
+At $x=8$ and $\varepsilon=0.01$, the exact <mean>, <median>, and <Huber location estimator> biases are $0.080000$, $0.012660$, and $0.016541$; the <influence function> predictions are $0.080000$, $0.012533$, and $0.016375$. At $\varepsilon=0.05$, they become $0.400000$, $0.066012$, and $0.086241$, versus predictions $0.400000$, $0.062666$, and $0.081875$. The bounded alternatives control the effect of the distant atom, but their actual response curves bend away from the tangent.
+
+The nearby atom $x=1$ gives a useful comparison: at $\varepsilon=0.05$, the <Huber location estimator> bias is $0.060237$, slightly below its <linear approximation> $0.060874$, whereas the <median> bias is still $0.066012$. The direction and size of approximation error depend on the contaminating location. Even accurate local influence calculations must specify $F$, the scale, the cutoff, and the actual contamination fraction.
+
+= Local influence versus replacement breakdown
+{parent=Influence function}
+
+The <influence function> describes an infinitesimal change at a specified reference <probability distribution>. The <replacement breakdown point> asks how many observations in a particular finite sample can be replaced before an <estimator> becomes unbounded. The <finite-sample maximum bias> records the intervening changes. These are different questions: a bounded <influence function> at one baseline is not a general bound over all <epsilon-contamination neighborhoods>, nor a proof of a positive <replacement breakdown point>.<The Influence Curve and Its Role in Robust Estimation by Frank R. Hampel>[Frank R. Hampel, The Influence Curve and Its Role in Robust Estimation, §4, p. 386: exact asymptotic curve supplemented by behavior at other distributions, especially empirical ones]{ref}
+
+The <mean> illustrates agreement between local and global fragility: its <gross-error sensitivity> is infinite and one replacement can send the <sample mean> arbitrarily far. The <median> has finite <gross-error sensitivity> under the stated positive-density assumptions, while its <sample median> withstands fewer than about half the observations being replaced under ordinary tie conventions. Its population contamination bias above still diverges as $\varepsilon\uparrow1/2$ when the atom remains beyond the shifted <median>. Here $x$ must also move outward; taking that limit with a fixed finite atom would invalidate the displayed <quantile> formula.
+
+For scalar location with a fixed positive scale, the <Huber score> has a direct global argument: if strictly more than half of the sample stays fixed, then beyond every retained observation by more than $ks$, their saturated scores outweigh all possible replaced scores. Every root therefore stays in a bounded interval. This is a separate finite-replacement argument; estimating scale changes its premises. A smooth bounded <influence function> is valuable local protection, but global robustness also depends on the full estimating rule, scale choice, and root selection.
 
 = Rejection point of an influence function
 {parent=Influence function}
@@ -1348,9 +1526,9 @@ The subscript records which <probability distribution> generates the repeated sa
 
 A realized <confidence interval> communicates the precision of an estimate in the target's own units. Reporting $1.2$ alone conceals the difference between an estimate with <standard error> $0.5$ and one with <standard error> $0.05$. A narrow <confidence interval> indicates greater precision for the stated <statistical model>, rather than a guarantee that its assumptions describe the experiment correctly.
 
-Once $x$ is observed, $C(x)$ either contains the fixed target or does not. The 95% statement concerns the random procedure $C(X)$, not a <posterior probability> of 0.95 that this particular interval contains $\theta$. A <credible interval> instead assigns specified <posterior probability> to a region under <Bayesian inference>. These interpretations can differ even when the numerical endpoints agree. The repeated-sampling interpretation is explained in https://www.itl.nist.gov/div898/handbook/eda/section3/eda352.htm[NIST's confidence-limits teaching reference]{ref}.
+Once $x$ is observed, $C(x)$ either contains the fixed target or does not. The 95% statement concerns the random procedure $C(X)$, not a <posterior probability> of 0.95 that this particular interval contains $\theta$. A <credible interval> instead assigns specified <posterior probability> to a region under <Bayesian inference>. These interpretations can differ even when the numerical endpoints agree. The repeated-sampling interpretation is explained in https://www.itl.nist.gov/div898/handbook/eda/section3/eda352.htm[NIST's confidence-limits teaching reference].
 
-Jerzy Neyman's 1937 paper formulates the fixed-target, random-endpoint construction in Section II, especially equation (20) on page 348. Its confidence coefficient must hold across the allowed <statistical parameters>, rather than only at the value suggested by one sample. See https://doi.org/10.1098/rsta.1937.0005[Neyman, Outline of a Theory of Statistical Estimation Based on the Classical Theory of Probability]{ref} and the https://wwwusers.ts.infn.it/~milotti/Didattica/StatisticaAvanzata/Neyman_1937.pdf[original paper scan]{ref}.
+Jerzy Neyman's 1937 paper formulates the fixed-target, random-endpoint construction in Section II, especially equation (20) on page 348. Its confidence coefficient must hold across the allowed <statistical parameters>, rather than only at the value suggested by one sample. See https://doi.org/10.1098/rsta.1937.0005[Neyman, Outline of a Theory of Statistical Estimation Based on the Classical Theory of Probability] and the https://wwwusers.ts.infn.it/~milotti/Didattica/StatisticaAvanzata/Neyman_1937.pdf[original paper scan].
 
 = Normal mean confidence interval with known variance
 {parent=Confidence interval}
@@ -1387,7 +1565,7 @@ p=\mathbb P_{\mu_0}(|Z|\geq2.4)
 =2[1-\Phi(2.4)]
 =0.01639507185\ldots.
 $$
-Thus the <p-value> is a tail <probability> computed under the <null hypothesis>, including departures in both directions. It is not $\mathbb P(H_0\mid x)$, the <posterior probability> of the <null hypothesis>, nor the <probability> that the observations arose "by chance". The <normal distribution> <test statistic> and its calibration appear in https://www.itl.nist.gov/div898/handbook/prc/section2/prc22.htm[NIST's teaching reference for testing a process mean]{ref}; the tail interpretation is stated in https://online.stat.psu.edu/stat200/Lesson05[Penn State's hypothesis-testing notes]{ref}.
+Thus the <p-value> is a tail <probability> computed under the <null hypothesis>, including departures in both directions. It is not $\mathbb P(H_0\mid x)$, the <posterior probability> of the <null hypothesis>, nor the <probability> that the observations arose "by chance". The <normal distribution> <test statistic> and its calibration appear in https://www.itl.nist.gov/div898/handbook/prc/section2/prc22.htm[NIST's teaching reference for testing a process mean]; the tail interpretation is stated in https://online.stat.psu.edu/stat200/Lesson05[Penn State's hypothesis-testing notes].
 
 Choose the <significance level> $\alpha=0.05$ before observing the sample. The <rejection region> is $|Z|>z_{0.975}$, whose <probability> under $H_0$ is exactly 0.05. Here $2.4>1.9599639845\ldots$, so reject $H_0$. This agrees with zero lying outside $[0.22,2.18]$. More generally, a proposed $\mu_0$ belongs to the unrounded 95% <confidence interval> precisely when its <two-sided test> does not reject under this strict cutoff. The equality boundary has <probability> zero in this continuous <statistical model>.
 
@@ -1548,11 +1726,11 @@ which gives the usual two-sided interval from the corresponding quantiles.
 
 <Bayesian statistics> expresses uncertainty about an unknown <statistical parameter> through a <probability distribution>, then uses <Bayes' theorem> to update it after observing data. The <prior distribution> describes uncertainty before the current observations; the <likelihood function> describes how the <statistical model> generates those observations at each parameter value; the <posterior distribution> describes uncertainty conditional on the observations and that model. A physical parameter can have one fixed value while its value remains uncertain to us. Assigning it a <probability distribution> represents that uncertainty under the chosen model, rather than requiring the physical parameter to change randomly between measurements.
 
-For example, suppose ten <Bernoulli trials> are independent conditional on an unknown heads <probability> $\theta$, with a <beta distribution> <prior> $\operatorname{Beta}(2,2)$. Eight heads and two tails give the <posterior distribution> $\operatorname{Beta}(10,4)$ by <beta-binomial conjugacy>. Its <posterior mean> is $10/14=5/7\approx0.714286$, between the <prior> <mean> $1/2$ and observed <binomial proportion> $8/10$. The <Bayesian posterior> below computes the whole update, and the <credible interval> below summarizes its remaining uncertainty. The conjugate update is explained in https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/mit18_05_s22_class15-prep.pdf[MIT 18.05, Reading 15: beta and normal conjugate priors]{ref}.
+For example, suppose ten <Bernoulli trials> are independent conditional on an unknown heads <probability> $\theta$, with a <beta distribution> <prior> $\operatorname{Beta}(2,2)$. Eight heads and two tails give the <posterior distribution> $\operatorname{Beta}(10,4)$ by <beta-binomial conjugacy>. Its <posterior mean> is $10/14=5/7\approx0.714286$, between the <prior> <mean> $1/2$ and observed <binomial proportion> $8/10$. The <Bayesian posterior> below computes the whole update, and the <credible interval> below summarizes its remaining uncertainty. The conjugate update is explained in https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/mit18_05_s22_class15-prep.pdf[MIT 18.05, Reading 15: beta and normal conjugate priors].
 
 The useful feature is that one <posterior distribution> supports several questions: a <posterior mean> estimates a value, a <credible interval> reports a range, and a <posterior predictive distribution> predicts a future observation while averaging over parameter uncertainty. With conditionally independent new data, today's <posterior distribution> can become tomorrow's <prior distribution>. These conclusions remain conditional on the <statistical model> and <prior distribution>; a precise update does not establish that either assumption fits the experiment.
 
-A historical starting point is Thomas Bayes's essay in the 1763 volume of the Royal Society's Philosophical Transactions, communicated after his death by Richard Price. Its opening problem asks for uncertainty about an unknown event <probability> given observed successes and failures: the same direction of reasoning illustrated by the coin example. See https://www.gtfp.cs.rhul.ac.uk/pulskamp/Bayes/bayesessay-rjp.pdf[Bayes and Price, An Essay towards solving a Problem in the Doctrine of Chances, opening letter and problem]{ref}.
+A historical starting point is Thomas Bayes's essay in the 1763 volume of the Royal Society's Philosophical Transactions, communicated after his death by Richard Price. Its opening problem asks for uncertainty about an unknown event <probability> given observed successes and failures: the same direction of reasoning illustrated by the coin example. See https://www.gtfp.cs.rhul.ac.uk/pulskamp/Bayes/bayesessay-rjp.pdf[Bayes and Price, An Essay towards solving a Problem in the Doctrine of Chances, opening letter and problem].
 
 = Likelihood reconstruction from posterior simulation
 {parent=Bayesian statistics}
@@ -1677,7 +1855,7 @@ A <credible interval> is an <interval> $C(d)$ containing a prescribed amount $1-
 $$
 \mathbb P(a\leq\Theta\leq b\mid D=d)=\int_a^b p(\theta\mid d)\,d\theta=1-\alpha.
 $$
-The conditioning includes the chosen <statistical model> and <prior distribution>. For a discrete <posterior distribution>, exact equality may be impossible because of its <probability masses>; an interval can instead be required to contain at least the requested <posterior probability>. An interval compresses the full <posterior distribution> into a range whose uncertainty can be communicated in the parameter's own units. See https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/mit18_05_s22_statistics.pdf#page=68[MIT 18.05, Class 16: probability intervals]{ref}.
+The conditioning includes the chosen <statistical model> and <prior distribution>. For a discrete <posterior distribution>, exact equality may be impossible because of its <probability masses>; an interval can instead be required to contain at least the requested <posterior probability>. An interval compresses the full <posterior distribution> into a range whose uncertainty can be communicated in the parameter's own units. See https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/mit18_05_s22_statistics.pdf#page=68[MIT 18.05, Class 16: probability intervals].
 
 For the eight-head, two-tail example in <Bayesian statistics>, the <posterior density> is $2860\theta^9(1-\theta)^3$ on $[0,1]$. Its <cumulative distribution function>, obtained by <integration> of this <polynomial>, is
 $$
