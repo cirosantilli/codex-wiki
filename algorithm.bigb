@@ -1,0 +1,738 @@
+= Algorithm
+{wiki}
+
+An algorithm is a finite, precise procedure for transforming an <input> into an <output>.
+
+Here "finite" refers to the description: a short <algorithm> can perform arbitrarily many steps on increasingly large <inputs>. Solving a <computational problem> additionally requires termination and the specified <output> on every permitted <input>. State assumptions explicitly: <binary search> requires a <sorted array>.
+
+An <algorithm> is an idea that can have implementations in different <programming languages>. Its explanation should make three things visible: the permitted <inputs>, the rule for each step, and the meaning of the returned <output>. <Algorithm correctness> then separates finding the right answer from eventually finishing; <time complexity> asks how much work finishing requires.
+
+A particularly useful design question is: what knowledge survives each step? In <binary search>, it is the location of every possible match inside the remaining candidate range. Writing that fact as a <loop invariant> turns an intuitive shortcut into a procedure whose discarded candidates can be justified. This often helps discover the <algorithm>, rather than merely check it afterward.
+
+= Matrix-chain multiplication
+{parent=Algorithm}
+
+Given a fixed <sequence> of compatible <matrices> $A_1,\ldots,A_m$, choose a binary parenthesization of $A_1\cdots A_m$ that minimizes the number of scalar multiplications in ordinary <matrix multiplication>. The order of the <matrices> is fixed: parenthesization changes the grouping, not the operand order. <Associativity> preserves the product while intermediate <matrix> dimensions change the cost. The possible binary groupings are counted by the <Catalan number> $C_{m-1}$ for $m\geq1$.
+
+= Greedy algorithm
+{parent=Algorithm}
+{wiki}
+
+A <greedy algorithm> commits to a locally preferred next choice without revisiting earlier choices. Its rule needs a justification to guarantee a globally optimal result: the largest-individual-value rule in the <0-1 knapsack problem> example fails, whereas <Dijkstra's algorithm> correctly settles the smallest tentative distance under its nonnegative-edge assumptions.
+
+= Algorithm correctness
+{parent=Algorithm}
+
+Partial correctness means that, if the <algorithm> terminates on a permitted <input>, its <output> meets the specification. Total correctness additionally requires termination on every permitted <input>.
+
+= Formal verification
+{parent=Algorithm correctness}
+
+Establishing specified properties of a system using <formal proofs> about a precise model. <Formal verification> connects an implementation to a <formal specification>; correctness of the model and its assumptions still matters when applying the result to a physical system.
+
+= Formal specification
+{parent=Formal verification}
+
+A mathematically precise description of permitted behaviour. A <formal specification> for the <microkernel file-read example>'s service could relate an authorized request to the exact returned <bytes>; a <formal specification> of its <microkernel>'s <IPC> need only describe the protected transport operation. They state different obligations.
+
+= Binary correctness
+{parent=Formal verification}
+
+Conformance of compiled machine code to the behaviour of the code model used to justify it. <Binary correctness> can extend <formal verification> across the compilation step; the result applies to the particular compiled artifact and its assumptions.
+
+= Functional correctness
+{parent=Algorithm correctness}
+
+Conformance of an implementation's behaviour to its specified functional requirements. The exact obligations come from the <formal specification>: correct delivery of an <IPC> payload and correct computation of a <file> read are different requirements. Neither requirement by itself supplies a numerical response-time bound.
+
+= Loop invariant
+{parent=Algorithm correctness}
+{wiki}
+
+A statement true whenever execution reaches a chosen point in a loop, usually immediately before its condition is tested. Establish it initially, preserve it through each iteration, and combine it with the exit condition to establish <algorithm correctness>. Termination needs a separate argument.https://www.cs.cornell.edu/courses/cs2112/2019fa/lectures/loopinv/[Cornell CS 2112: loop invariants]{ref}
+
+= Linear search
+{parent=Algorithm}
+{wiki}
+
+= Sequential search
+{synonym}
+
+<Linear search>, also called <sequential search>, examines a finite <sequence> from its beginning, performing an <equality test> on each entry until one matches the target or the entries run out. It needs no <sorted array> or <total order> on the values. This makes it useful for a small collection, a one-off lookup, or data available only in succession: the next entry is enough to make progress.
+
+Specify the answer precisely. For an <array> $A$ of length $n\geq0$ with indices $0,\ldots,n-1$ and target $x$, return the smallest index $j$ satisfying $A_j=x$, or a distinct absent result if no such index exists. Repeated values are allowed. In this contract, finding a later duplicate is insufficient when an earlier match exists. Assume the <input> remains unchanged during the search and each <equality test> terminates with a stable truth value expressing the intended matching relation.
+
+Here is an implementation in <Python>; `None` represents absence and is distinct from the valid index zero:
+``
+def linear_search(entries, target):
+    for index, entry in enumerate(entries):
+        if entry == target:
+            return index
+    return None
+``
+The official <Python> <sequence> method `s.index(x)` likewise specifies the first occurrence, but signals absence by raising `ValueError`. An API's absent-result convention belongs to its contract.<Python 3.14 documentation/Built-in Types, Python 3.14 documentation>[Python 3.14 documentation, Common Sequence Operations: s.index(x), first occurrence and ValueError]{ref}
+
+Take the original unsorted <array> $A=[7,4,7,2,9]$. For $x=7$, the first <equality test> succeeds and returns index $0$; the other $7$ at index $2$ is never inspected. For $x=2$, the checks against $7,4,7$ fail, the check against $2$ succeeds, and the answer is index $3$ after four <equality tests>. For absent target $x=6$, all five <equality tests> fail and the answer is `None`. On the empty <sequence>, there is no entry to inspect: return `None` with zero <equality tests>.
+
+\Image[linear-search-unsorted-array-trace.png]
+{title=<Linear search> on an unsorted <array>: first duplicate, later match, and absent target}
+{description=Indices start at zero. Each numbered cell is one <equality test>; green cells match, orange cells fail, and grey cells are never inspected. The empty <sequence> requires zero <equality tests>.}
+
+Value order never justifies skipping an entry in this <algorithm>. For $x=2$, stopping because the first value $7$ is larger would give a wrong absent result. Any <permutation> of the <input> remains searchable by <linear search>, although the first matching index and number of <equality tests> can change. By contrast, <binary search> uses a <total order> and the <sorted array> property to discard whole candidate ranges. Its logarithmic <time complexity> additionally assumes cheap access to middle entries; a sorted <linked list> does not acquire constant-cost indexed access merely by being sorted. Sorting for a single query also has a cost, and changes positions relative to the original <sequence>.
+
+= Linear search comparison count
+{parent=Linear search}
+{title2=$C$}
+
+Count just the <equality tests> between the target and an entry, excluding loop conditions and index updates. If the first match is at index $j$, <linear search> uses exactly $C=j+1$ <equality tests>. If the target is absent, it uses exactly $C=n$. Thus for $n\geq1$ the best successful case costs one <equality test>, and the worst case costs $n$, attained by absence or a first match at the last index. For $n=0$, the sole outcome is absence with $C=0$.
+
+\Image[linear-search-position-comparison-count.png]
+{title=<Linear search comparison count> depends on the first matching position}
+{description=For length $n=8$, a first match at index $j$ costs $j+1$ <equality tests>; absence costs eight. The dashed mean $4.5$ assumes a successful unique target uniformly located over the eight positions. It does not include absent queries.}
+
+An <expected value> needs a specified <probability distribution>. For $n\geq1$, condition on success, assume the target occurs exactly once, and assume its position $J$ has a <uniform distribution on a finite set> of indices $0,\ldots,n-1$. Then the <expected value> of the <linear search comparison count> is
+$$
+\mathbb E[C\mid\text{success}]=\frac{1}{n}\sum_{j=0}^{n-1}(j+1)=\frac{n+1}{2}.
+$$
+This is the average of the costs $1,2,\ldots,n$ under those assumptions, with no assumption that the <array> is sorted. It is not a universal average for arbitrary queries. For example, with $n=5$, a unique successful target at index $0$ with <probability> $3/4$ and at index $4$ with <probability> $1/4$ has <expected value> $(3/4)\cdot1+(1/4)\cdot5=2$, rather than $3$.
+
+Duplicates also require care about what is sampled. Choose a position uniformly in $[7,4,7,2,9]$, then search for its value. All queries succeed, but the five possible sampled positions give costs $1,2,1,4,5$: both positions holding $7$ cause an immediate match at index $0$. The <expected value> is $13/5$, not $(5+1)/2$. Uniformly choosing an occurrence does not uniformly locate the first match.
+
+More generally, let the success <probability> be $p>0$ and let $q_j$ be the conditional <probability> that the first matching index is $j$, allowing duplicates. Since $\sum_{j=0}^{n-1}q_j=1$, the <expected value> is
+$$
+\mathbb E[C]=p\sum_{j=0}^{n-1}(j+1)q_j+(1-p)n.
+$$
+Under the unique, uniformly located successful-target assumptions this becomes $p(n+1)/2+(1-p)n$. If every query is absent, $p=0$ and $C=n$ without needing conditional probabilities. When $n=0$, success is impossible and $C=0$; the successful-search conditional formula is undefined.
+
+Converting the <linear search comparison count> to execution time needs a cost model. Under constant-cost <equality tests>, next-entry access, and loop bookkeeping, worst-case <time complexity> is $O(n)$ in <Big O notation> for $n\geq1$, with constant overhead even for the empty <sequence>. Variable-length entries can make an <equality test> expensive. On a <linked list>, advance along its links; repeatedly restarting at the head to obtain the next numeric index adds work that the comparison count does not capture. These are exact operation counts and conditional mathematical averages, not runtime measurements.
+
+= Linear search correctness
+{parent=Linear search}
+
+The <loop invariant> just before inspecting index $i$ is: $0\leq i\leq n$, and no entry at an index $k<i$ matches $x$. Initially $i=0$, so there are no earlier entries. A failed <equality test> extends the excluded region by one position and preserves the <loop invariant>. A successful <equality test> at index $i$ establishes a match; the <loop invariant> establishes that it is the first one. At exhaustion, $i=n$ and every entry has failed, so the absent result is correct. The number $n-i$ of remaining entries decreases after each failed <equality test>, proving termination for a finite <sequence>. Together these establish <algorithm correctness> under the assumptions that the <input> is stable and each <equality test> terminates. No step of the argument compares the relative order of values.
+
+= Equality test
+{parent=Algorithm}
+{title2=$a=x$}
+
+A terminating check returning whether two values match under a specified relation. Mathematical equality is one such relation; a chosen <equivalence relation> can instead express matching keys. <Linear search> only needs this check, whereas <binary search> also uses relative order. The cost of an <equality test> depends on the representation and implementation of its operands.
+
+= Strength reduction
+{parent=Algorithm}
+
+Replace an operation by an equivalent operation sequence with lower cost on the target machine. For fixed-width wrapping integers, multiplication by eight equals left shift by three, and multiplication by fifteen equals left shift by four minus the original operand. Condition codes and wider results must also be preserved if the original machine instruction exposes them.
+
+// Destination: computer-science.bigb
+
+= Statistical program profiling
+{parent=Algorithm}
+
+Periodically sample an executing program's <instruction pointer> and accumulate an address histogram. Samples approximate time spent in address regions, rather than exact instruction execution counts. Jittering the sampling interval reduces accidental synchronization with periodic code.
+
+// Destination: computer-science.bigb
+
+= Depth-first search
+{parent=Algorithm}
+{wiki}
+
+= DFS
+{c}
+{synonym}
+
+<Depth-first search> is a <graph search> that follows a branch as far as it can before returning to try the next unexplored branch. Starting at a <vertex> $s$ of an <undirected graph> on a <finite set> of <vertices>, mark $s$ as discovered. Scan its <graph neighbours> in a fixed order: for each undiscovered <vertex>, record the current <vertex> as its <parent in a rooted tree> in the discovery <tree>, mark the new <vertex>, and explore it immediately using <recursion>. Return when its <adjacency list> is exhausted. Discovery marks persist after return, preventing a <graph cycle> from causing repeated exploration. This branch-and-return rule is the maze exploration described in MIT's notes. <6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff/Lecture 14: Graphs II: Depth-First Search>[MIT 6.006, lecture 14: depth-first search, pp. 2–3]{ref}
+
+Use the same unweighted <undirected graph> as <breadth-first search>, with <vertex set> $V=\{A,B,C,D,E,F,G\}$ and <edges>
+$$
+E=\{AB,AC,BD,BE,CE,CF,EG,FG\},
+$$
+where $XY$ denotes the unordered pair $\{X,Y\}$. Visit <graph neighbours> in <lexicographic order> of their one-letter labels, starting at $A$. The discovery order, computed by the diagram's generator, is
+$$
+A,B,D,E,C,F,G.
+$$
+The discovery <edges> in order are $AB,BD,BE,EC,CF,FG$. They form a <rooted tree> spanning the reached <vertices>, with <root of a tree> $A$. The other <edges>, $AC$ and $EG$, remain in the original <graph> but never discover a new <vertex>. In particular, the <graph cycle> $A,B,E,C,A$ causes no repeated discovery.
+
+\Image[depth-first-search-stack.png]
+{title=<Depth-first search>: discovery <edges> and the active <call stack> on seven <vertices>}
+{description=Numbers show first-discovery order. Solid <edges> form the discovery <tree>; dashed <edges> belong only to the original <graph>. The right panel shows the <call stack> from oldest call to current call, including the return from $D$ before entering $E$.}
+
+At $D$ there is no undiscovered <graph neighbour>, so its call returns to $B$. The next call enters $E$, then $C$, then $F$, then $G$. Immediately after discovering $G$, the <call stack> is $A,B,E,C,F,G$, with $G$ on top; $D$ is still discovered but its call has finished. The maximum <call stack> depth is six, although seven <vertices> are discovered. Following the recorded <parent in a rooted tree> backwards at each step reconstructs a <graph path>; here the route from $A$ to $G$ is $A,B,E,C,F,G$, using five <edges>. <Breadth-first search> instead finds $A,B,E,G$, using three <edges>. <Depth-first search> establishes <reachability> but does not guarantee the fewest <edges>.
+
+An explicit <LIFO stack> can replace <recursion>, but its entries and discovery rule must be specified. To reproduce this exact traversal, store one frame per active <vertex>, retaining the next position in its <adjacency list>. Advance the top frame by one <graph neighbour>; if that <vertex> is undiscovered, mark it and push its frame immediately; pop an exhausted frame. Pushing all undiscovered <graph neighbours> at once and marking them on push is a different iterative variant. Even pushing them in reverse <lexicographic order> does not generally reproduce the <parent in a rooted tree> relationships above: $C$ would already be marked while processing $A$, so $E$ could not discover $C$.
+
+With an <adjacency list> representation, constant-cost discovery checks and frame operations, and the <graph neighbours> already ordered, <depth-first search> has <time complexity> $O(|V|+|E|)$ in <Big O notation>. Each reached <vertex> is entered once and each incident <edge> is examined at most twice in an <undirected graph>; initializing all discovery marks costs $O(|V|)$. The <call stack> has depth at most $|V|$, since no active <vertex> repeats. Discovery marks and the recorded <parent in a rooted tree> for each nonroot <vertex> also need $O(|V|)$ auxiliary <space complexity>, excluding storage for the <graph>. Sorting <adjacency lists> to obtain a chosen order is additional work. https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/DepthFirstPaths.java[Sedgewick and Wayne, Algorithms: DepthFirstPaths discovery marks and resource bounds]{ref}
+
+One start explores only its <connected component of a graph>. To cover a disconnected <graph>, start again at every still-undiscovered <vertex> while keeping all discovery marks; the discovery <trees> form a <forest>. <Depth-first search> is useful for <reachability>, constructing a <spanning tree> of a <connected graph>, and organizing the return steps needed by a <depth-first traversal of a tree>. For detecting a <graph cycle> in a <simple graph> that is an <undirected graph>, an <edge> to an already discovered <vertex> other than the current <parent in a rooted tree> closes a <graph cycle>; the immediate return <edge> to that <parent in a rooted tree> is not itself a <graph cycle>.
+
+// Target: computer-science.bigb
+
+= Memoization
+{parent=Algorithm}
+{wiki}
+
+<Memoization> retains a completed <function> result under a <memoization key> and returns that result when an equivalent request recurs. For a terminating <pure function>, repeated evaluation can therefore become lookup rather than repeated work. The benefit is especially striking with <recursion> and <overlapping subproblems>: a large <tree> of calls can refer to a small <directed acyclic graph> of distinct answers. The <memoization cache contract> determines whether reuse is correct; the <memoization cache lifetime> determines whether an answer is still present when wanted.
+
+<Memoization> records computed answers, whereas a <memory cache> retains data from <computer memory>. A <CPU> <cache hit> does not by itself prevent a program from evaluating the same <function> again. <Spreadsheet dependency evaluation> adds an explicit mechanism for invalidating affected <cached cell values> after inputs change; a general <memoization> table does not discover such changes automatically.
+
+A documented early motivation was to let programs improve their efficiency during execution through rote learning: the abstract of a 1968 paper explicitly proposes such a <programming-language> facility.<“Memo” Functions and Machine Learning by Donald Michie>[Donald Michie, “Memo” Functions and Machine Learning, Nature 218, pp. 19–22 (1968), abstract: programming-language rote learning motivated by efficiency during execution]{ref}
+
+= Overlapping subproblems
+{parent=Memoization}
+{wiki}
+
+<Overlapping subproblems> occur when several parts of a calculation request the same smaller problem. <Memoization> can share its answer if the <memoization key> identifies that problem completely. For the <Fibonacci numbers>, both $F_5$ and $F_4$ require $F_3$. In <dynamic programming>, the <dynamic programming state> plays the corresponding role of identifying a reusable continuation. Overlap explains potential savings; the <recurrence relation> and its base cases still need to be correct.
+
+= Memoized Fibonacci evaluation
+{c}
+{parent=Memoization}
+{title2=$F_n$}
+
+The <Fibonacci numbers> give an exact example. For a nonnegative <integer> $n$, their <recurrence relation> is
+$$
+F_0=0,\qquad F_1=1,\qquad F_n=F_{n-1}+F_{n-2}\quad(n\geq2).
+$$
+To obtain $F_5=5$ by direct <recursion>, evaluate $F_4$ and $F_3$ separately; computing $F_4$ also evaluates $F_3$. The full call <tree> has 15 occurrences but just six distinct arguments, $0,1,2,3,4,5$. Shared dependencies form a <directed acyclic graph> because every <directed edge> goes to a strictly smaller argument. <Memoization> evaluates a distinct argument on first demand; filling values in increasing argument order is the corresponding bottom-up <dynamic programming> calculation.<Lecture 15: Recursive Algorithms (6.006 Spring 2020) by Massachusetts Institute of Technology, 6.006 course staff>[MIT 6.006 Spring 2020, Lecture 15: Recursive Algorithms, printed pp. 2–3, Fibonacci Numbers and Re-using Subproblem Solutions]{ref}
+
+\Image[memoization-fibonacci-recursion-and-dependencies.png]
+{title=Repeated calls for <Fibonacci numbers> and their shared <directed acyclic graph> of dependencies}
+{description=The call <tree> contains 15 occurrences for $F_5$. The dependency <graph> contains six distinct arguments and eight <directed edges>. Equal labels have equal colors; arrows in the right panel point from a caller to the value it requires.}
+
+Use an initially empty <hash table> `memo`, shared by every recursive call. Count even the first evaluations of the two base cases, store only completed results, evaluate the left term first, and retain all entries. The following original procedure assumes a nonnegative <integer> argument:
+
+```
+def cached_fib(n, memo):
+    if n in memo:
+        return memo[n]
+    if n < 2:
+        value = n
+    else:
+        value = cached_fib(n - 1, memo) + cached_fib(n - 2, memo)
+    memo[n] = value
+    return value
+```
+
+Every self-call must pass through the <memoization> lookup. Wrapping only the outer call while leaving inner calls uncached retains the repeated work. Test membership rather than whether the stored value is nonzero: $F_0=0$ is a valid completed result.
+
+For cold $F_5$, the lookup arguments are $5,4,3,2,1,0,1,2,3$. The first six are absent; the last three reuse completed answers. Results are stored on return in argument order $1,0,2,3,4,5$, with values $1,0,1,2,3,5$. Thus there are nine wrapper calls, six body evaluations and four <additions>. Repeating $F_5$ with the same table takes one wrapper call and no body evaluation. Requesting $F_6$ next evaluates only its body, reuses $F_5$ and $F_4$, and stores $F_6=8$: three wrapper calls, one body evaluation and two hits.
+
+\Image[memoization-cache-trace-and-lifetime.png]
+{title=An exact <memoization> lookup trace and the effect of retaining or clearing its table}
+{description=The first row records cold $F_5$ lookup order. The table records successive requests with one retained table; clearing it before the final request restores the cold counts. Calls include lookups that immediately return stored values; bodies count only first evaluations.}
+
+The direct-call count satisfies $C_0=C_1=1$ and $C_n=1+C_{n-1}+C_{n-2}$. Its exact solution is $C_n=2F_{n+1}-1$, as substitution into this <recurrence relation> verifies. With the specified <memoization> procedure, a cold call at $n\geq2$ evaluates $n+1$ distinct bodies, makes $n-1$ <additions> and makes $2n-1$ wrapper calls. There are $n-2$ hits: each of the $n-1$ nonbase bodies issues two recursive calls, in addition to the initial call. The difference is between the number of occurrences and the number of distinct subproblems.
+
+= Memoization arithmetic and stack costs
+{parent=Memoization}
+
+Under constant-cost lookup and <integer> <addition>, <memoized Fibonacci evaluation> has <time complexity> $O(n)$ in <Big O notation>, retaining $O(n)$ values. A <hash table> needs its own lookup-cost assumptions; an <array> indexed by $0,\ldots,n$ avoids <hash collisions> in this example. <Memoization> removes repeated bodies, but also pays for keys, lookups and retained answers. A workload without reuse can pay those costs without saving evaluations.
+
+The <call stack> remains. Left-first <recursion> descends through arguments $n,n-1,\ldots,1$ before returning, giving $n$ simultaneously active frames for $n\geq2$. Therefore the auxiliary <space complexity> includes $O(n)$ frames as well as $O(n)$ table entries in the constant-size-value model. An iterative bottom-up <dynamic programming> calculation removes these recursive frames; retaining only the two previous <Fibonacci numbers> suffices when only the final value is wanted, but discards the table useful for later requests.
+
+Exact <Fibonacci numbers> do not remain constant-size values. For $k\geq2$, the <recurrence relation> gives $2^{(k-2)/2}\leq F_k\leq2^{k-1}$, so the representation of $F_k$ as a <binary number> has order $k$ <bits>. With ordinary <addition> costing order $k$ <bit> operations on such operands, the $n-1$ <additions> cost order $n^2$ <bit> operations in total. Retaining all values also requires order $n^2$ <bits> of value storage, before keys and frame overhead. The linear bound counts <additions> under its stated cost model; it is not a linear bound on exact <integer arithmetic> in <bits>.<Lecture 15: Recursive Algorithms (6.006 Spring 2020) by Massachusetts Institute of Technology, 6.006 course staff>[MIT 6.006 Spring 2020, Lecture 15: Recursive Algorithms, printed p. 3, final three bullets: growing Fibonacci bit lengths and addition cost]{ref}
+
+= Memoization cache contract
+{parent=Memoization}
+
+For a terminating <pure function>, a reusable entry must record its correct completed result, and equal <memoization keys> must imply equal results throughout the entry's <memoization cache lifetime>. Reusing that result must also preserve the behavior callers require. These conditions separate correctness from speed: a complete key can be correct even if it rarely repeats.
+
+A procedure using <deterministic computation> can still have a required <side effect>. If a procedure returns $n^2$ and appends an audit record on every call, serving the second call from a table preserves the numerical answer but skips the second record. Likewise, if each call promises a fresh <mutable list>, returning the same stored <mutable list> changes observable sharing and allows a caller to damage later answers. Plain result reuse is unsuitable for those contracts.<Python 3.14 documentation/functools — Higher-order functions and operations on callable objects (Python 3.14 documentation)>[Python documentation, functools.lru_cache: paragraph warning against functions with side effects, distinct mutable results, or impure time/random results]{ref}
+
+Completion matters for <recursion>. Suppose computing key $A$ needs key $B$, and computing $B$ needs $A$. A table containing only completed answers has no answer to return for the second $A$; remembering completed values does not make this <directed cycle> terminate. Marking a key `ACTIVE` before descending detects re-entry, as in <spreadsheet dependency evaluation>, but detection is not a solution of the circular equations. If computation fails, clear its active mark and do not publish an unfinished value. The example using <Fibonacci numbers> avoids this issue through a strictly decreasing argument.
+
+The call counts above assume sequential execution and no eviction. Concurrent requests for an absent key can both begin evaluation before either publishes its result; keeping a table coherent alone does not ensure one body execution per key.<Python 3.14 documentation/functools — Higher-order functions and operations on callable objects (Python 3.14 documentation)>[Python documentation, functools.cache and functools.lru_cache: thread-safe cache updates can still allow repeated evaluation before completion]{ref}
+
+= Memoization key
+{parent=Memoization cache contract}
+{title2=$K(x,c)$}
+
+A <memoization key> identifies all information that determines a reusable answer. Write $x$ for explicit arguments and $c$ for relevant context. For a <function> $f$ and key <function> $K$, the necessary value condition is
+$$
+K(x,c)=K(y,d)\ \Longrightarrow\ f(x,c)=f(y,d).
+$$
+This implication need hold only for contexts in which the entry can be reused. The condition concerns <key equality>, not merely equality of <hash-function> outputs: a <hash table> must resolve <hash collisions> by comparing complete keys. Include the identity or version of the procedure if one table stores results for several procedures or changing implementations.
+
+For an original toy example, let $g(n,a)=an$. Caching only by $n$ after $g(3,2)=6$ incorrectly returns $6$ for $g(3,4)$, whose answer is $12$. The pair $(n,a)$ is complete for this <function>. If $a$ is hidden in mutable configuration, either freeze that configuration for the <memoization cache lifetime>, include a reliable version in the key, or invalidate affected entries before reuse. A version is sufficient only if every relevant change updates it. Object identity alone is likewise insufficient for a <mutable list> whose contents determine the answer.
+
+= Memoization cache lifetime
+{parent=Memoization cache contract}
+
+A <memoization cache lifetime> is the interval over which retained entries are available and valid. One table per top-level request shares recursive subproblems within that request; keeping a table between requests also allows the warm $F_5$ and incremental $F_6$ examples. Clearing it loses those savings. Evicting a correct answer can preserve correctness for a terminating <pure function>, while forcing recomputation; changing an input without invalidating an obsolete answer can break correctness.
+
+Specify who owns the table, when context changes invalidate it, and how long keys and results occupy <computer memory>. In a concrete implementation, retained references can keep arguments and answers alive until removal or clearing.<Python 3.14 documentation/functools — Higher-order functions and operations on callable objects (Python 3.14 documentation)>[Python documentation, functools.lru_cache: cache_clear and retention of argument and return-value references until eviction or clearing]{ref} The <memoization> promise is conditional reuse of valid completed answers, not an automatic guarantee of freshness, termination or bounded <computer memory>.
+
+// Target: computer-science.bigb
+
+= Recursion
+{disambiguate=computer science}
+{parent=Algorithm}
+{wiki}
+
+= Recursion
+{synonym}
+
+<Recursion> solves a problem by invoking the same procedure on smaller instances, with base cases answered directly. For <merge sort>, an empty or one-entry <array> is already sorted, and every larger <array> is split into two shorter parts. The decreasing lengths justify termination; a self-call without a progress rule would not suffice.
+
+= Divide-and-conquer algorithm
+{parent=Algorithm}
+{wiki}
+
+A <divide-and-conquer algorithm> divides a problem into smaller instances, solves them using <recursion>, and combines their answers. In <merge sort>, the division makes two contiguous halves, and the <merge algorithm> combines the resulting <sorted arrays>. The important design step is finding a combination rule cheaper than solving the whole problem afresh.
+
+= Sorting algorithm
+{parent=Algorithm}
+{wiki}
+{title2=$B_0\leq B_1\leq\cdots\leq B_{n-1}$}
+
+A <sorting algorithm> rearranges a finite <sequence> into nondecreasing order under a chosen <total order> on its keys. Its <output> must contain every <input> entry exactly once, including repetitions: producing ordered values is insufficient if entries are lost. <Merge sort> is one such <algorithm>; <stable sorting> adds a requirement about equal keys.
+
+Sorting creates reusable structure: equal <sort keys> become adjacent, and a <sorted array> supports <binary search>. However, an <algorithm correctness> check must establish both <sortedness> and <sorting permutation preservation>. Replacing every entry by the smallest key can produce ordered keys while destroying the original data. <Stable sorting> imposes a third condition when equal <sort keys> occur: retain their arrival order.
+
+For example, take complete <sorting records> $(2,A),(1,B),(2,C),(1,D)$, with the first component as the <sort key> and the letter as associated data. A correct <output> is $(1,B),(1,D),(2,A),(2,C)$. The <sort keys> are ordered, every complete <sorting record> remains, and the equal-key pairs keep $A$ before $C$ and $B$ before $D$. The <output> $(1,D),(1,B),(2,C),(2,A)$ satisfies <sortedness> and <sorting permutation preservation>, but fails <stable sorting>. The <output> $(1,B),(1,B),(2,A),(2,A)$ has the right <multiset> of <sort keys> but loses $C,D$ and duplicates $A,B$; it fails <sorting permutation preservation> of complete <sorting records>.
+
+To express <stable sorting> precisely, label every <input> occurrence by its original position, even when two complete <sorting records> have identical contents. Let $p(i)$ be the <output> position of the occurrence originally at position $i$. Besides <sortedness> and <sorting permutation preservation>, require
+$$
+i<j\ \text{and}\ k(A_i)=k(A_j)\quad\Longrightarrow\quad p(i)<p(j).
+$$
+Here $k$ is the <sort key> <function>. Sorting by the pair $(k(A_i),i)$ under <lexicographic order> gives the same order as <stable sorting> by $k$: the original position breaks ties without discarding associated data. For a two-field ordering, first apply <stable sorting> by the secondary <sort key>, then apply <stable sorting> by the primary <sort key>. The second pass retains the secondary order within each group of equal primary <sort keys>. For instance, $(2,B),(1,C),(2,A),(1,A)$ first becomes $(2,A),(1,A),(2,B),(1,C)$ by letter, then $(1,A),(1,C),(2,A),(2,B)$ by number.
+
+= Sort key
+{parent=Sorting algorithm}
+{title2=$k(A_i)$}
+
+A <sort key> is the value extracted from a complete entry to determine its ordering. Model extraction as a <function> $k$ into a <total order>; compare $k(A_i)$ and $k(A_j)$, while moving the complete entries. Ordering <sorting records> by an age field does not also compare their names. Repeated <sort keys> are allowed, so this induces equal-key groups even when the complete <sorting records> differ. Keep the <sort key> <function> and the comparison rule fixed throughout a sort; inconsistent comparisons need not admit any sorted result.
+
+= Sorting record
+{parent=Sort key}
+
+A complete entry comprising a <sort key> together with any associated data. In $(2,A)$, the <sort key> is $2$ and $A$ stands for the associated data or an identity label. <Sorting permutation preservation> concerns these complete entries, rather than only their extracted <sort keys>.
+
+= Sortedness
+{parent=Sorting algorithm}
+{title2=$k(B_i)\leq k(B_{i+1})$}
+
+For an <output> <sequence> $B$ of length $n$, <sortedness> means
+$$
+k(B_i)\leq k(B_{i+1})\qquad(0\leq i<n-1)
+$$
+under the chosen <total order> on <sort keys>. Its <transitivity> also gives $k(B_i)\leq k(B_j)$ whenever $i<j$. An empty <sequence> and a one-entry <sequence> satisfy <sortedness> without any adjacent comparison. For longer <sequences>, checking adjacent pairs suffices; checking only the first and last <sort keys> does not. For example, $(1,3,2,4)$ passes an endpoint comparison but fails <sortedness> at $3,2$. <Sortedness> alone says nothing about which <input> entries survived.
+
+= Sorting permutation preservation
+{parent=Sorting algorithm}
+{title2=$B_i=A_{\pi(i)}$}
+
+The <output> of a <sorting algorithm> must be a <permutation> of the complete <input> <sequence>. For equal lengths $n$, require a <permutation> $\pi$ of $\{0,\ldots,n-1\}$ such that
+$$
+B_i=A_{\pi(i)}\qquad(0\leq i<n).
+$$
+Equivalently, the <input> and <output> have the same <multiset> of complete entries: each entry has the same multiplicity. Equality of the underlying <sets> is insufficient; $(1,1,2)$ and $(1,2,2)$ have the same <set> of values and the same length but different <multisets>. When tracking occurrences rather than contents, retain original identity labels to check that each one is moved exactly once. A swap preserves this <multiset> automatically; an overwrite need not.
+
+= Insertion sort
+{parent=Sorting algorithm}
+{wiki}
+
+<Insertion sort> grows a sorted prefix of an <array> one entry at a time. In the adjacent-swap version, start with position $i=1$, compare its current <sort key> with the preceding <sort key>, and swap the complete <sorting records> only when the right <sort key> is strictly smaller. Continue leftward until no swap is needed or the entry reaches position zero; then process original position $i+1$. A tie stops the pass. This is the strict comparison and exchange rule in the authored implementation.<Insertion.java by Robert Sedgewick and others>{ref}
+
+Take $A=(2_A,1_B,2_C,1_D)$, where the subscript labels a complete <sorting record> and comparisons inspect only its <sort key>. Starting from index zero, the complete key-comparison trace is:
+
+|| Comparison
+|| Right <sort key> smaller than left?
+|| Action
+|| <Array> after the action
+
+| 1, insert position $1$
+| $1_B<2_A$: yes
+| Swap positions $0,1$.
+| $(1_B,2_A,2_C,1_D)$
+
+| 2, insert position $2$
+| $2_C<2_A$: no
+| Stop this pass on a tie.
+| $(1_B,2_A,2_C,1_D)$
+
+| 3, insert position $3$
+| $1_D<2_C$: yes
+| Swap positions $2,3$.
+| $(1_B,2_A,1_D,2_C)$
+
+| 4, continue leftward
+| $1_D<2_A$: yes
+| Swap positions $1,2$.
+| $(1_B,1_D,2_A,2_C)$
+
+| 5, continue leftward
+| $1_D<1_B$: no
+| Stop this pass on a tie.
+| $(1_B,1_D,2_A,2_C)$
+
+\Image[sorting-stable-insertion-compare-swap-trace.png]
+{id=sorting-stable-insertion-compare-swap-trace}
+{title=<Insertion sort>: five <sort key> comparisons and three complete-entry swaps}
+{description=Each row after the <input> shows the state after one comparison. Orange cells mark an adjacent swap; green cells mark a stopping tie. Identity letters are not compared. Both equal-key groups retain their <input> order, demonstrating <stable sorting>.}
+
+The <loop invariant> is that, before pass $i$, positions $0,\ldots,i-1$ satisfy <sortedness> and contain precisely the entries originally in that prefix. Moving the next entry left through strictly larger <sort keys> extends that prefix, and every swap retains <sorting permutation preservation>. Equal-key entries never cross, giving <stable sorting>. Each leftward step decreases the position, and each completed pass increases the prefix length, so the <algorithm> terminates.
+
+With constant-cost key comparisons and swaps, reverse-ordered distinct <sort keys> cause $1+2+\cdots+(n-1)=n(n-1)/2$ comparisons and swaps. Thus worst-case <time complexity> is $O(n^2)$ in <Big O notation>. An already sorted <array> needs only $n-1$ key comparisons for $n\geq1$ and no swaps. The adjacent-swap version uses constant auxiliary <space complexity>. Small or nearly sorted <arrays> can therefore make <insertion sort> useful despite its quadratic worst case.
+
+= Comparison sort
+{parent=Sorting algorithm}
+{wiki}
+
+= Comparison-based sorting
+{synonym}
+
+A <comparison sort> learns the ordering of <sort keys> only by comparing pairs. The keys are otherwise opaque: their numeric values, digits or encodings cannot choose an <array> index or a branch. It may move complete <sorting records> and retain previous answers. <Merge sort> and the adjacent-swap <insertion sort> are <comparison sorts>; <counting sort> and <radix sort> exploit additional information.
+
+= Comparison sorting lower bound
+{parent=Comparison sort}
+{title2=$C_{\max}(n)\geq\lceil\log_2(n!)\rceil$}
+
+Any deterministic <comparison sort> correct for all orders of $n$ distinct <sort keys> needs at least $\lceil\log_2(n!)\rceil$ comparisons on some <input>. Here $n!$ is a <factorial>, $\log_2$ a <logarithm>, and the brackets denote the <ceiling function>. This is a worst-case requirement, not a requirement on every <input>.<Open Data Structures: An Introduction by Pat Morin/11.1 Comparison-Based Sorting>[Theorem 11.5: deterministic comparison-tree lower bound]{ref}
+
+For three distinct <sort keys>, the diagram has one leaf for each possible ordering of the original entries $a,b,c$. Some paths need two comparisons, others three; two comparisons cannot distinguish all six orders.
+
+\Image[sorting-three-distinct-keys-comparison-decision-tree.png]
+{id=sorting-three-distinct-keys-comparison-decision-tree}
+{title=A comparison <decision tree> distinguishes the six orders of three distinct <sort keys>}
+{description=Each internal node tests the <sort keys> of two fixed original entries. A leaf gives the order in which their complete <sorting records> must be emitted. There are $3!=6$ leaves and maximum depth three. The diagram assumes distinct <sort keys>, so no equality branch is needed.}
+
+For the proof outline, represent adaptive comparisons by a <binary tree>: distinct <sort keys> give only two outcomes per comparison. A leaf fixes an <output> <permutation>; one leaf cannot correctly handle two different strict orders. Hence there must be at least $n!$ leaves. Maximum depth $h$ permits at most $2^h$ leaves, so $2^h\geq n!$ gives the bound. Even a three-way comparator has only two reachable outcomes on this distinct-key family.
+
+The growth follows without a precise approximation to the <factorial>. At least $\lfloor n/2\rfloor$ of its factors are at least $n/2$, so for $n\geq2$,
+$$
+\log_2(n!)\geq\lfloor n/2\rfloor\log_2(n/2).
+$$
+The brackets denote the <floor function>. This gives a constant times $n\log n$ lower bound for large $n$, matching the worst-case comparison growth of <merge sort>.
+
+Distinct <sort keys> are essential to the $n!$ counting argument. Identical <sort keys> do not create $n!$ different strict orders. If all <sort keys> coincide, <stable sorting> returns the arrival order. This does not remove the worst-case bound for a <comparison sort> required to handle arbitrary distinct-key <inputs>.
+
+= Counting sort
+{parent=Sorting algorithm}
+{wiki}
+{title2=$T(n,K)=O(n+K)$}
+
+<Counting sort> uses <integer> <sort keys> in $\{0,\ldots,K-1\}$ directly as indices into an <array> of counts. Constant-cost counting and indexing give $O(n+K)$ <time complexity> in <Big O notation>. To retain complete <sorting records>, cumulative counts locate their <output> ranges; filling each range from its end while scanning the <input> backwards gives <stable sorting>. Emitting bare <sort keys> from counts would discard associated data. The $K$ term matters when the key range is large.<Open Data Structures: An Introduction by Pat Morin/11.2 Counting Sort and Radix Sort>[Theorem 11.7 and stability]{ref}
+
+= Radix sort
+{parent=Sorting algorithm}
+{wiki}
+{title2=$T(n,d,R)=O(d(n+R))$}
+
+<Radix sort> sorts encoded <sort keys> a digit at a time. Its least-significant-digit version uses <stable sorting> on each successive digit, often by <counting sort>. For $d$ digits with $R$ possible values each, it takes $O(d(n+R))$ <time complexity> in <Big O notation>, assuming constant-cost digit extraction and indexing. <Stable sorting> retains the ordering established by earlier digits when a later digit ties. Both digit access and the direct indexing in <counting sort> lie outside the <comparison sort> model, so these bounds do not contradict the <comparison sorting lower bound>.<Open Data Structures: An Introduction by Pat Morin/11.2 Counting Sort and Radix Sort>[Theorem 11.8]{ref}
+
+= Stable sorting
+{parent=Sorting algorithm}
+
+<Stable sorting> preserves the original relative order of entries with equal keys. The entries may carry different names or other information even when their keys coincide. For example, sorting records $(2,\mathrm{Ada}),(1,\mathrm{Bo}),(2,\mathrm{Cy})$ by the numerical key gives $(1,\mathrm{Bo}),(2,\mathrm{Ada}),(2,\mathrm{Cy})$: Ada remains before Cy. This is useful when a previous ordering contains information worth retaining, such as arrival order among equally ranked requests.
+
+= Merge sort
+{parent=Sorting algorithm}
+{wiki}
+{title2=$T(n)=O(n\log n)$}
+
+<Merge sort> is a <divide-and-conquer algorithm> that sorts a finite <array> by splitting it into contiguous halves, sorting each half using <recursion>, and combining the two <sorted arrays> with the <merge algorithm>. An empty or one-entry <array> is returned immediately. For length $n\geq2$, put the first $\lfloor n/2\rfloor$ entries on the left and the remaining $\lceil n/2\rceil$ on the right; the brackets are the <floor function> and <ceiling function>. Always choose the left head on equal keys to obtain <stable sorting>. This is the split, sort, combine structure taught in the MIT lecture notes.https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/90a37c49b07b105ea7a027abc67eddc6_MIT6_006F11_lec03.pdf[MIT 6.006 (2011), lecture 3: merge sort]{ref}
+
+Take the concrete <input> <array>
+$$
+A=(7,2_a,5,2_b,9,1,4,3).
+$$
+The tags identify the entries originally at indices $1$ and $3$, counting from zero. Both keys are $2$; the tags are never compared. Reading downward in the figure follows the splits, then the returned <sorted arrays>. Arrows show dependencies; the level layout groups independent calls rather than giving their chronological execution order.
+
+\Image[merge-sort-split-and-merge.png]
+{title=<Merge sort> splits into base cases and returns <sorted arrays>}
+{description=The tagged keys 2a and 2b retain their original order through <stable sorting>. The <merge algorithm> makes 4, 6 and 7 head comparisons on the three returning levels, for 17 in total.}
+
+The first two halves are $(7,2_a,5,2_b)$ and $(9,1,4,3)$. Their pairs split into one-entry base cases. Applying the <merge algorithm> gives the following fully worked return levels; each number in the last column counts only comparisons between two available heads.
+
+|| Returning level
+|| Resulting <sorted arrays>
+|| Head comparisons
+
+| Pairs
+| $(2_a,7)$, $(2_b,5)$, $(1,9)$, $(3,4)$
+| $1+1+1+1=4$
+
+| Halves
+| $(2_a,2_b,5,7)$, $(1,3,4,9)$
+| $3+3=6$
+
+| Whole <array>
+| $(1,2_a,2_b,3,4,5,7,9)$
+| $7$
+
+In the left-half <merge algorithm>, the head pairs are $(2_a,2_b)$, $(7,2_b)$ and $(7,5)$; it takes $2_a,2_b,5$, then appends $7$. In the final <merge algorithm>, the head pairs are $(2_a,1)$, $(2_a,3)$, $(2_b,3)$, $(5,3)$, $(5,4)$, $(5,9)$ and $(7,9)$. It takes $1,2_a,2_b,3,4,5,7$, then appends $9$. Thus this precise version makes $4+6+7=17$ head comparisons and, ignoring identity tags, returns $(1,2,2,3,4,5,7,9)$.
+
+The elegance of <merge sort> is that it creates exactly the structure its next step needs: two smaller <sorted arrays> make the larger ordering inexpensive. Once the whole <array> is sorted, equal keys are adjacent and <binary search> can serve repeated queries. <Stable sorting> also retains information that the keys alone do not express. If the left-half <merge algorithm> instead takes the right head on the $2_a=2_b$ tie, it returns $(2_b,2_a,5,7)$; the keys are sorted but <stable sorting> has failed.
+
+For <time complexity>, assume each key comparison, entry access and entry copy has constant cost. The <merge algorithm> processes $n$ entries in $O(n)$ time. In <Big O notation>, the resulting <recurrence relation> is
+$$
+T(0),T(1)=O(1),\qquad T(n)=T(\lfloor n/2\rfloor)+T(\lceil n/2\rceil)+O(n)\quad(n\geq2).
+$$
+For $n=2^k$, the balanced levels contain $n$ entries each and there are $k=\log_2 n$ returning levels. Each costs $O(n)$, so the worst-case <time complexity> is $O(n\log n)$. For arbitrary $n$, there are at most $\lceil\log_2 n\rceil$ returning levels, each processing at most $n$ entries, giving the same bound. The worst-case number of head comparisons is also $O(n\log n)$. Here $\log_2$ is the base-two <logarithm>. The MIT notes give this level-by-level analysis for <merge sort>.https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/6d1ae5278d02bbecb5c4428928b24194_MIT6_006S20_lec3.pdf[MIT 6.006 (2020), lecture 3, page 5: merge sort analysis]{ref}
+
+The conventional <array> implementation uses a reusable buffer of $n$ entries for the <merge algorithm>, together with $O(\log n)$ pending calls for <recursion>. Its auxiliary <space complexity> is therefore $O(n)$, beyond the original <array>. This bound describes that implementation. A <linked list> permits a <merge algorithm> that reconnects existing nodes; its storage accounting differs from copying <array> entries into a buffer.
+
+For a short <algorithm correctness> outline, the empty and one-entry base cases are sorted. Assuming <recursion> correctly sorts both shorter halves, the <merge algorithm> returns all their entries in order. Equal keys within a half keep their relative order by the same argument applied to the smaller call; across halves, every left entry originally preceded every right entry, so taking left first preserves <stable sorting>. Both half-lengths decrease for $n\geq2$, establishing termination.
+
+= Merge algorithm
+{parent=Algorithm}
+{wiki}
+{title2=$C(m,n)\leq m+n-1\quad(m,n\geq1)$}
+
+The <merge algorithm> combines two finite sorted <sequences> under the same <total order>, retaining every entry exactly once. Keep a position at the first unconsumed entry, or "head", of each <input>. While both heads exist, compare their keys, append the smaller head to the <output>, and advance only that head's position. On equality take the left head. Once either <sequence> is exhausted, append the other remainder without further key comparisons. Empty <inputs> therefore require no head comparisons. The MIT notes illustrate this two-head combination step.https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/90a37c49b07b105ea7a027abc67eddc6_MIT6_006F11_lec03.pdf[MIT 6.006 (2011), lecture 3: merging sorted arrays]{ref}
+
+For example, the <merge algorithm> applied to $(1,4,7)$ and $(2,3,8,9)$ returns $(1,2,3,4,7,8,9)$:
+
+\Image[merge-two-sorted-sequences.png]
+{title=Five head comparisons in the <merge algorithm>}
+{description=Orange heads are chosen and arrows lead to the next <output> entry. The compared head pairs are (1,2), (4,2), (4,3), (4,8) and (7,8). The left <sequence> then runs out; append (8,9) without further key comparisons.}
+
+The head pairs $(1,2)$, $(4,2)$, $(4,3)$, $(4,8)$ and $(7,8)$ select $1,2,3,4,7$ respectively. After the fifth comparison the left <sequence> is empty, so $(8,9)$ is appended. Seven entries are written, but only five head comparisons occur: tests for exhaustion and appending the remainder are separate operations. This distinction makes the example's count smaller than the bound $3+4-1=6$.
+
+For nonempty <inputs> of lengths $m,n$, each head comparison consumes exactly one entry. After $m+n-1$ such removals at most one entry remains, so both heads cannot still exist. Hence the <merge algorithm> uses at most $m+n-1$ head comparisons. The bound can be attained: $(1,3,5)$ and $(2,4,6,7)$ require six head comparisons before the left <sequence> is exhausted. With constant-cost comparisons, access and copying, writing all $m+n$ entries gives <time complexity> $O(m+n)$ in <Big O notation>. Writing a separate <output> <array> needs $m+n$ entry slots; the two positions require only constant additional storage.
+
+The <merge algorithm> is useful whenever two already ordered collections must become one: it reads each <input> only forwards. This works with <arrays> and <linked lists>, without needing access to arbitrary middle positions. Choosing left on ties preserves each <input>'s internal order and places equal left entries before equal right entries, which is the combination rule needed for <stable sorting> in <merge sort>.
+
+The <loop invariant> behind <algorithm correctness> is that the emitted prefix is sorted, contains exactly the consumed entries, and every emitted key is at most every unconsumed key. Each sorted <sequence> has its smallest remaining key at its head, so the smaller of the two heads is safe to append. The invariant survives each removal; when one <sequence> ends, the other sorted remainder is safe to append in full. Each comparison removes an entry, so termination follows from the finite <input> lengths.
+
+// Target: computer-science.bigb
+
+= Binary search
+{parent=Algorithm}
+{wiki}
+
+<Binary search> finds a target $x$ in a <sorted array> $A$ by inspecting the middle of the remaining candidate range. If the middle entry is smaller than $x$, every entry to its left is also too small; if larger, every entry to its right is too large. One comparison therefore rules out many entries. Equal entries are allowed; this version returns any matching index, without promising the first occurrence.
+
+Use indices starting at zero and inclusive endpoints $L,R$. Initially $L=0$, $R=n-1$, where $n$ is the <array> length. While $L\leq R$, choose
+$$
+m=L+\left\lfloor\frac{R-L}{2}\right\rfloor.
+$$
+The brackets denote the <floor function>. Compare $A_m$ with $x$: return $m$ on equality; set $L=m+1$ if $A_m<x$; otherwise set $R=m-1$. If $L>R$, report absence. The updates exclude the already inspected middle entry. This also handles an empty <array>, whose initial endpoints are $0,-1$. Sedgewick and Wayne specify a <sorted array> as <input> and return a matching index or $-1$ for absence.https://algs4.cs.princeton.edu/code/javadoc/edu/princeton/cs/algs4/BinarySearch.html[Sedgewick and Wayne: BinarySearch API]{ref}
+
+For a fully worked example, take the <sorted array>
+$$
+A=(2,5,8,12,16,23,38,56,72,91,104,130,160,205,260).
+$$
+Search for $x=23$:
+
+|| Step
+|| Candidate indices
+|| Middle index and value
+|| Consequence
+
+| 1
+| $0\ldots14$
+| $m=7$, $A_7=56$
+| $23<56$: retain $0\ldots6$.
+
+| 2
+| $0\ldots6$
+| $m=3$, $A_3=12$
+| $23>12$: retain $4\ldots6$.
+
+| 3
+| $4\ldots6$
+| $m=5$, $A_5=23$
+| Return index $5$.
+
+For $x=24$, the first two steps agree. Next $24>23$ retains only index $6$; inspecting $A_6=38$ sets $R=5$. Now $L=6>5=R$, so the answer is "absent" after four comparisons.
+
+\Image[binary-search-intervals.png]
+{title=Binary search retains only candidates compatible with every comparison}
+{description=Blue cells are current candidates, orange marks the middle entry, and green marks a match. Both searches use the same fifteen-entry sorted array.}
+
+The <loop invariant> is: the <array> stays sorted, $0\leq L\leq R+1\leq n$, and every index containing $x$ lies between $L$ and $R$. It holds initially. The <sorted array> property justifies each exclusion. Returning on equality gives a match; an empty candidate range implies absence. Crucially, this <loop invariant> allows $x$ to be absent from the beginning.
+
+For a nonempty range of size $s=R-L+1$, an unsuccessful comparison leaves at most $\lfloor s/2\rfloor$ candidates. Thus sizes satisfy $s_k\leq\lfloor n/2^k\rfloor$ after $k$ unsuccessful comparisons. This proves termination and, for $n\geq1$, at most $\lfloor\log_2 n\rfloor+1$ middle-entry comparisons. The final singleton still needs inspection: $n=1$ requires one comparison, not zero. For $n=15$, the bound is four. This is the halving argument behind logarithmic <time complexity>.https://www.cs.princeton.edu/courses/archive/fall24/cos126/static/lectures/42Algorithms.pdf[Princeton COS 126: binary search analysis]{ref}
+
+A <decision tree> with $q$ binary tests has at most $2^q$ leaves. Distinguishing $n$ possible matching positions therefore requires $q\geq\lceil\log_2 n\rceil$. This lower bound counts binary tests, whereas the bound above counts three-way comparisons.
+
+= Karatsuba multiplication
+{parent=Algorithm}
+{c}
+{wiki}
+
+<Karatsuba multiplication> is a <divide-and-conquer algorithm> for <multiplication> of <integers>. Splitting each operand into two blocks seems to require four smaller products; the <Karatsuba three-product identity> recovers the two cross terms together from just three products. Repeating that saving through <recursion> changes the <time complexity> from quadratic to $O(n^{\log_2 3})$, where $n$ counts digits in a fixed <positional notation>. The exponent is about $1.585$: the benefit comes from the <algorithm>, even though each splitting step needs more <addition> and <subtraction>.
+
+The <Karatsuba worked multiplication> below computes $1234\cdot5678=7{,}006{,}652$ using $12\cdot56$, $34\cdot78$, and $46\cdot134$. The last operand already shows why “half-size” needs care: <Karatsuba carry handling> and <Karatsuba recursion termination> account for the extra digit. <Karatsuba digit-operation cost> states the operation model; <Karatsuba practical crossover> explains why the asymptotic saving alone does not select a useful threshold.
+
+The original 1962 paper presents a <binary numeral system> automaton construction: its Theorem 2 and proof reduce <multiplication> to taking <squares of numbers>, then reduce a larger <square of a number> to three smaller <squares of numbers>. Its footnote explicitly addresses the extra digit in a sum of halves. The sequential <time complexity> analysis below uses a different operation model from that paper's automaton size and depth bounds, including its <Boolean circuit> realization without feedback.<Multiplication of many-digital numbers by automatic computers by A. Karatsuba and Yu. Ofman>[Karatsuba and Ofman, Multiplication of many-digital numbers by automatic computers, original Russian article, 1962, pp. 293–294: Theorem 2, its proof, and the footnote on p. 294]{ref}
+
+= Karatsuba operand splitting
+{parent=Karatsuba multiplication}
+{c}
+{title2=$x=aB^m+b,\quad y=cB^m+d$}
+
+Fix an <integer> base $B\geq2$. Let $x,y\geq0$ have at most $n$ digits in <positional notation>, treating zero as one digit. For $n>1$, set $m=\lceil n/2\rceil$ using the <ceiling function>, and $q=B^m$. <Euclidean division> gives
+$$
+a=\lfloor x/q\rfloor,\quad b=x-aq,\qquad c=\lfloor y/q\rfloor,\quad d=y-cq,
+$$
+where $0\leq b,d<q$ and $0\leq a,c<B^{n-m}$. The <floor function> selects the high block; the remainder selects the low block. Both operands must use the same $q$, including when their actual digit lengths differ.
+
+For odd $n$, the low block has $m$ digit positions and the high block has $n-m=m-1$. Leading zero padding aligns a shorter operand without changing its <integer> value. Padding to a power-of-two length is optional: the split itself works for every $n$. If power-of-two padding is used, the padded length is less than twice the original length, so it changes only a constant factor in the <asymptotic analysis>.
+
+= Karatsuba three-product identity
+{parent=Karatsuba multiplication}
+{c}
+{title2=$xy=acB^{2m}+((a+b)(c+d)-ac-bd)B^m+bd$}
+
+Compute exactly three smaller products,
+$$
+p_2=ac,\qquad p_0=bd,\qquad p_s=(a+b)(c+d).
+$$
+The <distributive property> gives $p_s=ac+ad+bc+bd$, so the cross coefficient is $h=p_s-p_2-p_0=ad+bc$. Recombine by
+$$
+xy=p_2q^2+hq+p_0,\qquad q=B^m.
+$$
+The saving is that $ad$ and $bc$ are never separately multiplied. Multiplying a digit block by $q$ or $q^2$ shifts its position in <positional notation>; it does not require another general <integer> <multiplication>. <Addition> of the shifted results still requires <Karatsuba carry handling>.
+
+\Image[karatsuba-three-product-dataflow.png]
+{title=Three products recover the Karatsuba cross coefficient}
+{description=The arrows carry exact <integer> values for the <Karatsuba worked multiplication>. Only the three coloured product boxes require recursive <multiplication>; the lower boxes use <subtraction>, digit shifts and <addition>.}
+
+= Karatsuba worked multiplication
+{parent=Karatsuba multiplication}
+{c}
+
+Use <decimal expansion>, $B=10$, $n=4$, $m=2$, and $q=100$. The <Karatsuba operand splitting> is $1234=12\cdot100+34$, $5678=56\cdot100+78$. The <Karatsuba three-product identity> gives
+$$
+\begin{aligned}
+p_2&=12\cdot56=672,\\
+p_0&=34\cdot78=2652,\\
+p_s&=(12+34)(56+78)=46\cdot134=6164,\\
+h&=6164-672-2652=2840,\\
+xy&=672\cdot10000+2840\cdot100+2652=7{,}006{,}652.
+\end{aligned}
+$$
+The third product has a three-digit operand. A small-input base case can evaluate these three products directly, or a smaller threshold can continue <recursion>. Either choice preserves the identity; only the operation count changes.
+
+The same <Karatsuba operand splitting> handles $123\cdot45$: choose $n=3$, $m=2$, and write $123=1\cdot100+23$, $45=0\cdot100+45$. Then $p_2=0$, $p_0=1035$, $p_s=24\cdot45=1080$, and $h=45$, giving $4500+1035=5535$. A zero high block and unequal lengths require no new algebraic rule.
+
+= Karatsuba carry handling
+{parent=Karatsuba multiplication}
+{c}
+
+The blocks in the <Karatsuba three-product identity> are <integers>, not single digits: $p_0$ can need $2m$ positions and $h$ can exceed $q-1$. Concatenating the displayed blocks therefore fails. Accumulate their shifted values with ordinary <addition>, normalizing each digit position by <Euclidean division>: a coefficient $v$ becomes the digit $v\bmod B$, with carry $\lfloor v/B\rfloor$ passed to the next position. <Subtraction> likewise propagates borrows. Although $h\geq0$ for these nonnegative <integers>, intermediate digitwise <subtraction> can still borrow.
+
+In the four-digit <Karatsuba worked multiplication>, grouping by base $q=100$ gives unnormalized coefficients $[672,2840,2652]$, written from high to low. Normalize from the right: $2652=26\cdot100+52$; $2840+26=2866=28\cdot100+66$; $672+28=700=7\cdot100+0$. The final groups are $[7,00,66,52]$, yielding $7{,}006{,}652$. The zero group must retain its two positions.
+
+Since $a,b,c,d<B^m$, their sums are less than $2B^m\leq B^{m+1}$ and can need $m+1$ digits. Allocate that extra digit before the third recursive product; discarding it can change the answer. The GMP manual describes this sum growth and uses a difference-based form to avoid it.<GNU MP 6.3.0 manual/Karatsuba Multiplication>[GNU MP 6.3.0 manual, §15.1.2 Karatsuba Multiplication: sum-based middle product can exceed k limbs; absolute differences and their signs]{ref}
+
+= Karatsuba recursion termination
+{parent=Karatsuba multiplication}
+{c}
+
+For the sum-based <Karatsuba three-product identity>, a safe fixed base-case threshold is three digits or more. Return zero directly if either operand is zero; at or below the threshold, use ordinary digit-by-digit <multiplication>. Otherwise split by the maximum current operand length and invoke <Karatsuba multiplication> on $(a,c)$, $(b,d)$, and $(a+b,c+d)$.
+
+Each recursive operand has at most $\lceil n/2\rceil+1$ digits. This is strictly less than $n$ for $n\geq4$, proving termination. A rule stopping only at one digit does not supply this guarantee: in base two, $3=11_2$ splits into $1,1$, whose sum is $2=10_2$, still two digits. An implementation must choose a sufficient threshold or explicitly handle such nonshrinking calls. Leading zero padding must not be repeatedly added in a way that defeats the decreasing size measure.
+
+For signed <integers>, multiply absolute values with the same nonnegative procedure and restore the sign afterwards. This changes the representation bookkeeping, rather than the three-product identity.
+
+= Karatsuba digit-operation cost
+{parent=Karatsuba multiplication}
+{c}
+{title2=$T(n)=O(n^{\log_2 3})$}
+
+Count a fixed-base digit <addition>, <subtraction>, digit copy, or single-digit <multiplication> as constant cost. Base $B$ stays fixed as $n$ grows; an entire arbitrary-length <integer> <multiplication> is not one constant-cost step. With this model, splitting, sum formation, shifts and recombination require $O(n)$ digit operations. Ordinary digit-by-digit <multiplication> forms $n^2$ digit products for two $n$-position operands. The GMP base-case description uses this rectangular product arrangement.<GNU MP 6.3.0 manual/Basecase Multiplication>[GNU MP 6.3.0 manual, §15.1.1 Basecase Multiplication: rectangular cross-products and O(NM) cost]{ref}
+
+The ideal equal-half <recurrence relation> is
+$$
+T(n)=3T(n/2)+O(n).
+$$
+For $n=2^k$, level $j$ has $3^j$ calls of size $n/2^j$. If each internal call incurs exactly $\alpha$ times its size in additional digit work, that level contributes $\alpha n(3/2)^j$. There are $3^k=n^{\log_2 3}$ leaves. The <geometric series> of internal work is
+$$
+\alpha n\sum_{j=0}^{k-1}(3/2)^j=2\alpha(3^k-2^k).
+$$
+Thus fixed positive leaf cost plus this internal work grows on the order of $n^{\log_2 3}$. In <Big O notation>, $T(n)=O(n^{\log_2 3})$. Removing one of four products at every level matters much more than saving just one at the root.
+
+\Image[karatsuba-recursion-digit-cost.png]
+{title=Karatsuba recursion levels and an explicitly stipulated cost comparison}
+{description=Left: the ideal equal-half <recursion> for $n=8$, with three children per internal call. Right: model counts for $n=2^k$, one unit per leaf and internal overhead $\alpha s$ for size $s$ with $\alpha=1$. The resulting count is $3\cdot3^k-2\cdot2^k$, compared with $n^2$ ordinary digit products. This illustrates the <recurrence relation>; its constants and crossover are stipulated, rather than measured execution times.}
+
+The literal sum-based implementation instead admits the upper bound
+$$
+T(n)\leq3T(\lceil n/2\rceil+1)+Cn
+$$
+for a nondecreasing worst-case cost envelope above a fixed base-case threshold. The extra digit does not change the exponent: since $\lceil n/2\rceil+1\leq n/2+3/2$, subtracting three from the size makes each child's adjusted size at most half its parent's. Stop this comparison at any fixed threshold greater than three; its <recursion> depth is $\log_2 n+O(1)$ and the level-work sum is bounded by the same <geometric series> up to constant factors. Exact call counts can depend on carries, zero shortcuts and the threshold, so they need not equal the ideal $3^j$ at each depth.
+
+= Karatsuba practical crossover
+{parent=Karatsuba multiplication}
+{c}
+
+<Karatsuba digit-operation cost> explains eventual scaling, while a practical base-case threshold depends on the costs of <addition>, <subtraction>, copying and function calls relative to small <integer> <multiplication>. Using $M(n)=An^2+Dn+E$ for a base-case cost, one Karatsuba level costs $3M(n/2)+Fn+G$: the quadratic coefficient falls to $3A/4$, but the linear contribution includes $3Dn/2+Fn$. Small operands can therefore cost more despite the smaller exponent. This comparison and the effect of implementation improvements on the threshold are described in the GMP manual.<GNU MP 6.3.0 manual/Karatsuba Multiplication>[GNU MP 6.3.0 manual, §15.1.2 Karatsuba Multiplication: final paragraphs comparing M(N) and K(N), and effects of base-case speedups on thresholds]{ref}
+
+The plotted crossover belongs only to the stipulated constants in its caption; its ordinary-method curve counts digit products alone, while the Karatsuba curve includes the chosen internal overhead. Selecting a threshold for real software requires measuring the actual implementation on its intended machine. With base $B=2^w$ for a fixed machine digit width $w$, the same analysis counts machine digits; it does not establish a universal crossover in decimal digits, <bits>, or elapsed time.
+
+= Randomized algorithm
+{parent=Algorithm}
+{wiki}
+
+A randomized algorithm makes some choices using random bits.
+
+= Derandomization
+{parent=Randomized algorithm}
+{wiki}
+
+Derandomization converts a randomized construction or algorithm into a deterministic one while preserving its desired guarantee. The <method of conditional probabilities> does this by maintaining a computable <conditional expectation> until all choices are fixed.
+
+= Method of conditional probabilities
+{parent=Derandomization}
+{wiki}
+
+= Method of conditional expectations
+{synonym}
+
+For a random objective with an easily computable <conditional expectation>, reveal one random choice at a time and choose an outcome whose conditional expected objective is at least the current value. Such an outcome exists because the current value is an average of the child values. When all choices are fixed, the actual objective is at least the initial expectation. Biased as well as fair choices work. Efficient expectation updates make the resulting deterministic procedure a <polynomial-time algorithm>.
+
+= Probabilistic Turing machine
+{parent=Randomized algorithm}
+{c}
+{wiki}
+
+A probabilistic Turing machine is a <Turing machine> whose transitions may depend on independent random bits.
+
+= One-sided error
+{parent=Randomized algorithm}
+
+A randomized decision algorithm has one-sided error when one answer is always correct and only the other answer can be mistaken.
+
+= RP
+{disambiguate=complexity}
+{title2=$\mathbf{RP}$}
+{parent=One-sided error}
+{c}
+{wiki}
+
+= RP
+{synonym}
+{c}
+
+$\mathbf{RP}$ contains decision problems with a polynomial-time randomized algorithm that rejects every negative instance and accepts every positive instance with probability at least one half.
+
+= co-RP
+{title2=$\mathbf{co\text{-}RP}$}
+{parent=One-sided error}
+{c}
+
+$\mathbf{co\text{-}RP}$ consists of complements of languages in <RP>. Its algorithms always accept positive instances and reject negative instances with probability at least one half.
+
+= ZPP
+{title2=$\mathbf{ZPP}$}
+{parent=Randomized algorithm}
+{c}
+{wiki}
+
+= Zero-error probabilistic polynomial time
+{synonym}
+
+$\mathbf{ZPP}=\mathbf{RP}\cap\mathbf{co\text{-}RP}$. Equivalently, it consists of problems having an always-correct randomized algorithm with polynomial expected running time.
+
+= Error reduction for a randomized algorithm
+{parent=Randomized algorithm}
+
+Independent repetitions reduce a randomized algorithm's error probability while preserving polynomial running time.
+
+= Polynomial identity testing
+{parent=Randomized algorithm}
+{wiki}
+
+Polynomial identity testing asks whether a polynomial represented implicitly, such as by an arithmetic circuit or a remainder computation, is the zero polynomial.
+

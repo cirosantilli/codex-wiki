@@ -1,0 +1,564 @@
+= Data structure
+{wiki}
+
+A <data structure> organizes stored information together with operations for accessing and changing it. Choosing a <data structure> means choosing which questions should be cheap to answer: an <array> supports access by numbered position, a <hash table> supports lookup by key, and a <priority queue> supports selecting an item by priority. The operations and their <time complexity> matter as much as the stored values.
+
+Suppose three requests arrive as $(5,\mathrm{Ada}),(2,\mathrm{Bo}),(4,\mathrm{Cy})$, where the number is a priority and smaller numbers are more urgent. A <FIFO queue> removes Ada first because she arrived first. A minimum-oriented <priority queue> removes Bo first because $2$ is the least priority. An <array> can store the same three records in arrival order, but finding the least priority by scanning this representation takes three key inspections. A <binary heap> organizes these records so the least priority is immediately available. The information is the same; the representation changes the work needed to use it.
+
+This is a useful design principle: preserve just enough organization for the operations the application needs. Maintaining a <sorted array> gives the whole order, but moving entries to insert a new key can be expensive. A <binary heap> keeps a weaker <heap order> that supports fast repeated selection without maintaining a <sorted array>. A good <data structure> makes an <algorithm>'s next step easy.
+
+= Adjacency list
+{parent=Data structure}
+{wiki}
+{title2=$\mathrm{Adj}[v]$}
+
+An <adjacency list> represents a <graph> by keeping, for each <vertex> $v$, a collection $\mathrm{Adj}[v]$ of the <vertices> reached by its outgoing <edges>. An <array> indexed by <vertex> identifiers can locate each collection; the collection itself may use a <linked list> or an <array>. In an <undirected graph>, each nonloop <edge> supplies an entry at both endpoints.<Algorithms, 4th edition by Robert Sedgewick and others/Graph.java>[Graph.java, class documentation and fields: vertex-indexed adjacency collections; addEdge: entries at both endpoints]{ref}
+
+For a worked example, take the <simple graph>
+$$
+V=\{A,B,C,D,E,F\},\qquad E=\{AB,AC,BC,CD,DE,DF,EF\},
+$$
+where $AB$ denotes the <unordered pair> $\{A,B\}$. Its <adjacency lists>, displayed in label order, are
+$$
+\begin{aligned}
+\mathrm{Adj}[A]&=(B,C), & \mathrm{Adj}[B]&=(A,C), & \mathrm{Adj}[C]&=(A,B,D),\\
+\mathrm{Adj}[D]&=(C,E,F), & \mathrm{Adj}[E]&=(D,F), & \mathrm{Adj}[F]&=(D,E).
+\end{aligned}
+$$
+Thus $C$ has three <neighbours>, although the <graph> has six <vertices>. Its list contains exactly the destinations available for a single step from $C$; no slots are reserved there for $C,E,F$. The fourteen neighbour entries represent seven <edges>, with $CD$ appearing as $D$ in $C$'s list and as $C$ in $D$'s list. The label order makes the example easy to read; an <adjacency list> need not be sorted.
+
+\Image[adjacency-list-six-vertex-graph.png]
+{title=Seven undirected <edges> and their fourteen <adjacency list> entries}
+
+The useful idea is to store existing connections explicitly. <Neighbour enumeration> can then follow exactly the possible next steps, which is what <breadth-first search> and <depth-first search> need. In a <sparse graph>, most pairs of <vertices> have no <edge>; <adjacency lists> avoid reserving a separate <adjacency matrix> entry for every such absence. Whether this saves work depends on the question: <neighbour enumeration> and testing one proposed <edge> have different costs.
+
+= Adjacency list edge conventions
+{parent=Adjacency list}
+
+For a <directed graph>, store $v$ in $\mathrm{Adj}[u]$ for the <edge> $u\to v$. The reverse <edge> $v\to u$ is separate and is stored only if it exists. Consequently, list length is <outdegree>, not <indegree>, and each directed <edge> contributes one entry in total. An incoming-list index is additional storage.<Algorithms, 4th edition by Robert Sedgewick and others/Digraph.java>[Digraph.java, addEdge, adj and outdegree: one entry in the tail's collection; indegree is maintained separately]{ref}
+
+Orient the seven <edges> of our example from earlier to later labels. The resulting <directed graph> has
+$$
+\begin{aligned}
+\mathrm{Adj}[A]&=(B,C), & \mathrm{Adj}[B]&=(C), & \mathrm{Adj}[C]&=(D),\\
+\mathrm{Adj}[D]&=(E,F), & \mathrm{Adj}[E]&=(F), & \mathrm{Adj}[F]&=().
+\end{aligned}
+$$
+There are now seven entries, with <outdegrees> $(2,1,1,2,1,0)$. In particular, $F$ needs an empty list even though it is reached from $D,E$: incoming <edges> do not make $F$'s outgoing list nonempty. Replacing each directed <edge> by an <undirected graph> connection would lose this distinction.
+
+Our running <simple graph> excludes <self-loops> and repeated <edges>. If those restrictions are relaxed, specify how the <adjacency list> encodes them. Here an undirected <self-loop> at $u$ contributes two copies of $u$ to $\mathrm{Adj}[u]$, matching its contribution of two to the <degree of a vertex>. A directed <self-loop> contributes one copy, and one each to <outdegree> and <indegree>. Distinct parallel <edges> retain distinct entries; a <multigraph>'s list length can therefore exceed its number of distinct <neighbours>.<Algorithms, 4th edition by Robert Sedgewick and others/Graph.java>[Graph.java, class documentation: parallel edges and two-entry undirected self-loop convention; addEdge applies both insertions even when v equals w]{ref}<Algorithms, 4th edition by Robert Sedgewick and others/Digraph.java>[Digraph.java, class documentation and addEdge: parallel edges permitted; a directed self-loop adds one outgoing entry and increments indegree once]{ref}
+
+For example, add one undirected <self-loop> at $A$ to the seven-<edge> example. Its list becomes $(B,C,A,A)$, the <vertex degree> of $A$ becomes four, and the total entry count becomes sixteen for eight <edges>. If an application instead stores a <self-loop> once, it must account for its doubled undirected <vertex degree> separately. In a <weighted graph>, an entry can be an <ordered pair> $(v,w)$ meaning destination $v$ and weight $w$; the weight belongs to the <edge>, not to the destination <vertex>.
+
+= Neighbour enumeration
+{parent=Adjacency list}
+
+= Neighbor enumeration
+{synonym}
+
+<Neighbour enumeration> reports the <neighbours> of a specified <vertex>. For a <simple graph>, scan its <adjacency list> and report each entry. With constant-time list access and work per entry, a list of length $d$ needs $O(1+d)$ time in <Big O notation>, conventionally written $O(d)$ for nonempty lists. Use <vertex degree> for an <undirected graph> and <outdegree> for a <directed graph>. Obtaining the list reference can take constant time; consuming it requires visiting every entry.<Algorithms, 4th edition by Robert Sedgewick and others/Digraph.java>[Digraph.java, class documentation and adj: obtaining the collection versus iterating in time proportional to outdegree]{ref}
+
+In our undirected example, enumerating $C$'s <neighbours> reads $A,B,D$: three entries. Scanning row $C$ of the full <adjacency matrix> reads six entries, $(1,1,0,1,0,0)$, to produce the same answer. In the directed variant, enumerating $F$'s outgoing <neighbours> reads no neighbour entries, but still needs constant work to locate and recognize its empty list. For a <multigraph>, scanning lists enumerates incident <edges> with multiplicity; reporting only distinct <neighbours> additionally requires removing repetitions.
+
+For a short <time complexity> argument, each reported entry requires at least one output operation, and one scan suffices. Across all <vertices>, the undirected entry count is $\sum_{v\in V}\deg(v)=2|E|$ by the <handshaking lemma>; the directed count is $\sum_{v\in V}d^+(v)=|E|$. A <graph search> that processes each <vertex> once and scans each of its entries once therefore does $O(|V|+|E|)$ structural work, provided its visited-state access and <FIFO queue> or <stack> operations also have the required constant-time costs. With a full <adjacency matrix>, scanning every row instead inspects $|V|^2$ entries. This is how the representation enters the analysis of <breadth-first search> and <depth-first search>.
+
+= Adjacency list storage and query costs
+{parent=Adjacency list}
+
+Write $n=|V|$ and $m=|E|$. Suppose each <vertex> identifier, list descriptor, link and optional <edge> weight occupies a constant number of <machine words>, and indexed <array> access and identifier comparison take constant time. There are $n$ list descriptors and $m$ directed, or $2m$ undirected, neighbour entries. Hence <adjacency lists> use $O(n+m)$ <machine words> in <Big O notation>. A full <adjacency matrix> has $n^2$ entries, regardless of $m$. These are counts under a storage model, not fixed byte sizes.<Recitation 19: Graph Representations and Traversals (Cornell course page)>[Recitation 19, The Adjacency List and The Adjacency Matrix: directed and undirected entry totals, linear list storage, and quadratic full-matrix storage]{ref}
+
+Our undirected example has six list descriptors and fourteen neighbour entries, versus thirty-six full <adjacency matrix> entries. The numbers $20$ and $36$ count different kinds of logical items: they do not prove a particular byte saving. A <linked list> also needs links; an <array> may have unused capacity. Storing only half of a <symmetric matrix> changes its exact count while leaving quadratic growth. If identifiers or weights require growing numbers of <machine words>, their size must be included in the <space complexity>.
+
+\Image[adjacency-list-matrix-query-tradeoff.png]
+{title=<Adjacency matrix> storage and queries compared with <adjacency lists> on the same six-<vertex> <graph>}
+
+An unsorted <adjacency list> answers "does the <edge> $u\to v$ exist?" by <linear search> through $\mathrm{Adj}[u]$. In the worst case it inspects all $d$ entries, giving $O(1+d)$ time, or $O(d)$ for $d\geq1$. Even if $v$ is absent, an uninspected entry could still contain it, so arbitrary lists require the whole scan. On our example, looking for $CF$ in $C$'s list compares $F$ with $A,B,D$ and fails after three comparisons. A full <adjacency matrix> instead answers from its single $C,F$ entry in $O(1)$ time.<Recitation 19: Graph Representations and Traversals (Cornell course page)>[Recitation 19, The Adjacency List: edge-membership question; The Adjacency Matrix: constant-time edge-existence query]{ref}
+
+Different promises change the query. A <sorted array> of neighbour identifiers permits <binary search> in $O(\log(d+1))$ time, but maintaining order after insertion may require shifting entries. A per-<vertex> <hash table> permits expected constant-time membership under the hashing and load assumptions of that <data structure>; it does not give that guarantee to an arbitrary <adjacency list>. A stored list length can likewise make a <vertex degree> query constant-time even though <neighbour enumeration> still has to visit its entries.
+
+The advantage grows with scale. For a <graph path> on $n\geq2$ <vertices>, $m=n-1$, so there are $2n-2$ undirected neighbour entries and $n$ descriptors, versus $n^2$ full <adjacency matrix> entries. Such a family is a <sparse graph> with $m=O(n)$. For a <complete graph>, $m=n(n-1)/2$, so the undirected neighbour entries already number $n(n-1)$: the <adjacency list> advantage in growth rate disappears. Choose by the workload: following existing <edges> favours <adjacency lists>; many arbitrary pair-membership queries can favour a full <adjacency matrix>. The representation organizes the same <graph> for different questions.
+
+= Priority queue
+{parent=Data structure}
+{wiki}
+
+A <priority queue> stores items with comparable priority keys and supports insertion, inspection of a best-priority item, and removal of a best-priority item. Here we use the minimum convention: keys have a <total order>, and smaller means earlier. The operation `peek` returns a stored item of <minimum> priority without removing it; `extract-min` removes and returns such an item. Both require a nonempty <priority queue>, or an explicitly specified empty-case result. A maximum-oriented <priority queue> reverses the choice.
+
+For the requests $(5,\mathrm{Ada}),(2,\mathrm{Bo}),(4,\mathrm{Cy})$, `peek` returns Bo and leaves all three requests stored. `extract-min` returns Bo and leaves Ada and Cy; another `peek` returns Cy. Inserting $(1,\mathrm{Dee})$ now makes Dee the next request selected. This changing collection need not be a <sorted array>: only the next choice must be available.
+
+Distinct items may share a priority. Inserting $(2,\mathrm{Eli})$ alongside $(2,\mathrm{Bo})$ permits either item to be removed first. A <priority queue> does not inherently promise arrival order on ties. If that policy matters, compare priority first and a unique increasing arrival number second; the resulting <total order> makes earlier arrivals win equal-priority ties. This is analogous to the motivation for <stable sorting>, but it is an extra policy for the <priority queue>.
+
+The interface specifies behavior; the <data structure> determines costs. A <binary heap> implements a <priority queue> with constant-time `peek` and logarithmic-time insertion and `extract-min`, under the cost assumptions below. Scheduling by urgency or by the time of the next event needs exactly this repeated next-item selection. MIT's notes use these applications to motivate the <priority queue> interface.https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/40d4851e550507ca14dc778b9b2266cc_MIT6_006S20_lec8.pdf[MIT 6.006, lecture 8: priority queues and binary heaps, pp. 1–2]{ref}
+
+= Binary heap
+{parent=Priority queue}
+{wiki}
+
+A <binary heap> represents a <priority queue> as a <complete binary tree> obeying a <heap order>. We use the minimum convention: the priority of every <parent in a rooted tree> is no greater than the priorities of its <children in a rooted tree>. Equal priorities are allowed. Each stored entry may be a record carrying a priority key; the numerical example below displays only keys. Reversing the inequalities gives the maximum convention.
+
+The <complete binary tree> can be stored directly in a zero-indexed <array> $A=(A_0,\ldots,A_{n-1})$: read its levels from top to bottom, left to right. The <root of a tree> is at index $0$. The possible <children in a rooted tree> of index $i$ are at $2i+1$ and $2i+2$, and an index denotes a present entry only when it is less than $n$. For $i>0$, its <parent in a rooted tree> is at $\lfloor(i-1)/2\rfloor$, using the <floor function>. Thus the links of the <complete binary tree> are determined by arithmetic rather than separately stored pointers.
+
+Consider
+$$
+A=(2,5,3,9,7,8,4).
+$$
+The <children in a rooted tree> of index $0$ have keys $5,3$; those of index $1$ have keys $9,7$; those of index $2$ have keys $8,4$. The six comparisons $2\le5$, $2\le3$, $5\le9$, $5\le7$, $3\le8$, $3\le4$ establish the <heap order>. At index $4$, the <parent in a rooted tree> is index $\lfloor(4-1)/2\rfloor=1$, carrying key $5$.
+
+\Image[binary-heap-array-and-tree.png]
+{title=One <binary heap> viewed as an <array> and a <complete binary tree>}
+{description=Matching indices identify the same entries in both representations. The <heap order> compares each <parent in a rooted tree> with its <children in a rooted tree>; it does not make a <sorted array>.}
+
+The <array> is visibly not a <sorted array>: $5$ precedes $3$, and $8$ precedes $4$. Nor is the last entry a <maximum>: it is $4$, whereas the <maximum> is $9$ at index $3$. The <heap order> compares ancestors and descendants, without imposing an order between separate branches. Nevertheless, following the <graph path> from the <root of a tree> to any entry gives a chain of nondecreasing priorities. This short argument proves that `peek` can return $A_0$, a <minimum>, without inspecting the other entries.
+
+Insertion appends an entry to the <array>, preserving the shape of the <complete binary tree>, then uses <sift up> to repair the <heap order>. Insert key $1$ into the displayed <binary heap>. It is appended at index $7$, and exchanges with indices $3$, $1$, then $0$:
+$$
+\begin{aligned}
+(2,5,3,9,7,8,4,1)&\longrightarrow(2,5,3,1,7,8,4,9)\\
+&\longrightarrow(2,1,3,5,7,8,4,9)\\
+&\longrightarrow(1,2,3,5,7,8,4,9).
+\end{aligned}
+$$
+The moving key follows $7\to3\to1\to0$; the keys $9,5,2$ each move down one level. Only this chain needs repair.
+
+Now apply `extract-min`. Save key $1$, move the last key $9$ to the <root of a tree>, and shorten the <array> to length $7$. Use <sift down>, always choosing the smaller of the present <children in a rooted tree>:
+$$
+\begin{aligned}
+(9,2,3,5,7,8,4)&\longrightarrow(2,9,3,5,7,8,4)\\
+&\longrightarrow(2,5,3,9,7,8,4).
+\end{aligned}
+$$
+First $9$ exchanges with key $2$ at index $1$, since $2<3$; then with key $5$ at index $3$, since $5<7$. At index $3$, the possible <children in a rooted tree> would be indices $7,8$, both outside the shortened <array>, so the process stops. The returned key is $1$, and the remaining <binary heap> is exactly the original one.
+
+\Image[binary-heap-sift-operations.png]
+{title=<Sift up> inserts 1, then <sift down> restores the original <binary heap> after removing 1}
+{description=The four panels show the start and end of each repair. Colored arrows mark the moving key's <graph path>. The extraction panels contain seven entries: index 3 has no <children in a rooted tree>.}
+
+For a nonempty <binary heap> with $n$ entries, the deepest level is $\lfloor\log_2 n\rfloor$, using the <floor function> and <logarithm>. Each exchange moves one level and uses only a bounded number of comparisons. The resulting <time complexity> bounds, expressed in <Big O notation>, are:
+
+|| Operation
+|| <Time complexity>
+|| Reason
+
+| `peek`
+| $O(1)$
+| Read the <root of a tree>.
+
+| Insert
+| $O(\log n)$ for $n\ge2$
+| Append, then <sift up> through at most the levels of the <complete binary tree>.
+
+| `extract-min`
+| $O(\log n)$ for $n\ge2$
+| Move the last entry, then <sift down> through at most those levels.
+
+| Build from an arbitrary <array>
+| $O(n)$
+| Apply <sift down> from the last index with <children in a rooted tree> back to index $0$.
+
+These bounds assume constant-cost indexed access, key comparisons and exchanges, and available <array> capacity for insertion. Allocating and copying a larger <array> is a separate cost. Empty and one-entry cases take constant work.
+
+To build a <binary heap>, begin at index $\lfloor n/2\rfloor-1$ and work backwards. Entries without <children in a rooted tree> already obey the <heap order>. Each <sift down>, also called <heapify down>, starts with every present smaller <rooted tree> below it already repaired. Most entries are close to the bottom and can move very little; successively longer repair distances occur for geometrically fewer entries. Summing these distances gives $O(n)$ work, rather than charging $O(\log n)$ to every entry. MIT's notes give this bottom-up construction and contrast it with repeated insertion.https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/40d4851e550507ca14dc778b9b2266cc_MIT6_006S20_lec8.pdf[MIT 6.006, lecture 8: implicit indices, heap repair and linear build, pp. 3–6]{ref}
+
+The <Dijkstra algorithm> additionally needs to decrease the priority of an existing <vertex> when its <tentative distance> improves. Given its current index, lowering the key followed by <sift up> takes $O(\log n)$ time for $n\ge2$. An indexed <binary heap> maintains a separate map from item identity to its current index and updates that map after every exchange. For <vertices> numbered in a fixed range, the map can be another <array>, giving constant-time index lookup. An ordinary unindexed <binary heap> supplies no such guarantee: locating an arbitrary item can require scanning $n$ entries. Item identity and priority must remain distinct, especially when several <vertices> have equal <tentative distances>.
+
+The attractive compromise is local organization with global usefulness. A <binary heap> maintains only the <heap order>, yet every `extract-min` gives the next smallest key. Repeated extraction of the original example gives $2,3,4,5,7,8,9$, so a <priority queue> also supplies a <sorting algorithm> without storing a <sorted array> between extractions.
+
+= Heap order
+{parent=Binary heap}
+{title2=$A_{\lfloor(i-1)/2\rfloor}\le A_i\quad(1\le i<n)$}
+
+The minimum convention for <heap order> requires every <parent in a rooted tree> to have priority no greater than each of its <children in a rooted tree>. The displayed formula uses the <array> representation of a <binary heap>. It permits equal priorities and does not require a <sorted array>; the maximum convention reverses the inequality.
+
+= Sift up
+{parent=Binary heap}
+
+After inserting or lowering a key in a minimum-oriented <binary heap>, compare it with its <parent in a rooted tree>. Exchange them while the moving key is smaller, then continue at its new index. Stop at the <root of a tree> or when the <heap order> is satisfied. This repair assumes the rest of the <binary heap> was valid before the insertion or key decrease.
+
+= Sift down
+{parent=Binary heap}
+
+= Heapify down
+{synonym}
+
+To repair a key in a minimum-oriented <binary heap>, choose the smaller-priority present entry among its <children in a rooted tree>. Exchange if that entry is smaller than the moving key, and continue at the new index. Stop when there are no <children in a rooted tree> or the <heap order> holds. The smaller <rooted trees> below the starting entry must already obey the <heap order>; choosing the larger child could leave a violation with the smaller one.
+
+= Hash table
+{parent=Data structure}
+{wiki}
+
+A <hash table> stores records by key: for example, a product number can select its current stock count without scanning every product. A <hash function> selects a <hash bucket> in an <array>, and a collision-handling method such as <separate chaining> retains distinct keys assigned to the same <hash bucket>. The useful idea is to narrow the search to one small collection, while <key equality> decides which record actually matches.
+
+Use a map interface with one value per key: `get(k)` returns the associated value or an explicit absent result; `put(k,v)` replaces the value if an equal key is present, otherwise inserts a new record; `delete(k)` removes the matching record if present. The absent result must be distinguishable from every permitted stored value. Replacing a value does not increase the record count $n$. A <hash collision> between unequal keys must never cause one record to replace the other.<6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff/Lecture 8: Hashing I>[p. 1, dictionary operations and replacement of an existing key]{ref}
+
+Let $x\sim y$ denote the chosen <key equality>, an <equivalence relation>, and let $h_m$ be the bucket-index <hash function> for $m>0$ <hash buckets>. Correctness requires
+$$
+x\sim y\ \Longrightarrow\ h_m(x)=h_m(y),\qquad h_m(x)\in\{0,\ldots,m-1\}.
+$$
+The converse is false: equal bucket indices merely identify candidates for a <key equality> comparison. If an implementation first computes a full hash value $H(k)$ and then reduces it to a bucket index, equal keys must have equal $H$ values too. Keep both <key equality> and the <hash function> stable while a key is stored; changing the key so it selects another <hash bucket> can make its record unreachable. This distinction is explicit in the published `hashCode`/`equals` contract.<Java Platform, Standard Edition 25 API Specification by Oracle/Object (Java SE 25 & JDK 25)>{ref}
+
+For a constructed <integer> example, use <modular arithmetic> to define $h_m(k)=k\bmod m$ and store keys $1,5,9,2$ with values $A,B,C,D$. At $m=4$, three records share <hash bucket> $1$ and one occupies <hash bucket> $2$. The <hash table load factor> is
+$$
+\alpha=\frac{n}{m}=\frac44=1.
+$$
+It is the mean number of records per <hash bucket>, including empty <hash buckets>, not a bound on the longest chain. With <separate chaining>, $\alpha$ may exceed $1$ because records live in the chains rather than one record being confined to each <array> slot.
+
+Growing this example to $m=8$ changes the bucket-index <hash function>: key $5$ now belongs to <hash bucket> $5$, while keys $1,9$ still share <hash bucket> $1$. Every record must be assigned using the new bucket-index <hash function>; copying the old <array> of chain heads unchanged is insufficient. The <hash table load factor> becomes $4/8=1/2$.
+
+\Image[hash-table-resizing-buckets.png]
+{id=hash-table-resizing-buckets}
+{title=<Hash table resizing> recomputes indices but does not guarantee fewer <hash collisions>}
+{description=Original deterministic model using $h_m(k)=k\bmod m$, not a measured implementation. The upper panels retain keys $1,5,9,2$ in four and eight <hash buckets>; chain order is illustrative. The lower counterexample retains all four keys $1,9,17,25$ in <hash bucket> $1$ even after doubling.}
+
+For an insertion-only <sequence> starting empty with constant initial capacity, one policy doubles $m$ before inserting a new key that would make $n>m$. A rebuild for <separate chaining> allocates the new <array> and transfers each existing record directly into its new chain. Since keys are already distinct, transfer needs no duplicate search. With constant-cost hashing and linking, this takes $O(n+m)$ <time complexity>, hence $O(n)$ at a growth threshold. <Amortized analysis> charges the occasional rebuild across many insertions: the old capacities $1,2,4,\ldots,2^r$ form a <geometric series> with sum $2^{r+1}-1$, so total rebuilding work over $N$ insertions is $O(N)$. This gives $O(1)$ amortized resizing overhead; an insertion that triggers a rebuild can still take $O(n)$.<6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff/Lecture 9: Hashing II>[p. 2, rebuilding cost and geometric table doubling]{ref}
+
+The search to check for an existing key is additional work. Bounded <hash table load factor> together with the probabilistic assumptions in <separate chaining> gives expected amortized $O(1)$ insertion, not worst-case $O(1)$. Rehashing alone gives no distribution guarantee: the diagram's keys $1,9,17,25$ all collide modulo both $4$ and $8$. Even a low <hash table load factor> permits a long chain. If supporting shrinkage too, leave a gap between growth and shrink thresholds to avoid repeated rebuilding when insertions and deletions alternate near one threshold.<6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff/Lecture 9: Hashing II>[p. 3, expected bounds and shrinking at one-quarter occupancy]{ref}
+
+= Separate chaining
+{parent=Hash table}
+
+With <separate chaining>, each <hash bucket> in a <hash table> contains a collection of records, often a <linked list>. Lookup computes the bucket index, then follows that chain until a <key equality> comparison succeeds or the chain ends. A <hash collision> therefore affects the search work without merging unequal keys. Deletion searches the same chain and unlinks the matching record; in a singly <linked list>, remembering the preceding record during the search permits the unlink.<Open Data Structures: An Introduction by Pat Morin/5.1 ChainedHashTable: Hashing with Chaining>{ref}
+
+For the four-key <integer> example in <hash table>, insert a new record at the head of its chain after checking that its key is absent. Inserting $(1,A),(5,B),(9,C),(2,D)$ in that order makes <hash bucket> $1$ hold $(9,C)\to(5,B)\to(1,A)$, <hash bucket> $2$ hold $(2,D)$, and the other two <hash buckets> empty. All five subsequent operations below select <hash bucket> $1$ because $5\bmod4=13\bmod4=9\bmod4=1$:
+
+\Image[hash-table-chain-operations.png]
+{id=hash-table-chain-operations}
+{title=<Separate chaining> traces lookup, replacement, deletion and insertion through <key equality>}
+{description=Original deterministic model with $h_4(k)=k\bmod4$. The table counts actual keys inspected, not elapsed machine time. Operations occur from top to bottom; only an absent key adds a new record, and the untouched record $(2,D)$ remains in <hash bucket> $2$.}
+
+`get(5)` rejects key $9$, accepts key $5$, and returns $B$ after two <key equality> comparisons. `get(13)` rejects $9,5,1$ and reports absence after three comparisons. `put(5,B*)` examines $9,5$ and replaces the value without changing $n=4$. `delete(9)` examines just the head record, removes it, and gives $n=3$. Finally, `put(13,E)` rejects $5,1$ before inserting the new head record; $n$ returns to $4$ and the chain is $(13,E)\to(5,B*)\to(1,A)$. The successive <hash table load factors> are $1,1,1,3/4,1$. These counts follow from the stipulated chain order; a different insertion policy changes the successful-search counts.
+
+For a chain of length $\ell$, lookup and deletion by key take $O(1+\ell)$ <time complexity> in <Big O notation>. The same applies to `put` before any resizing, since replacement semantics require checking for an existing equal key. Head insertion alone is $O(1)$ if absence is already known; that is a different precondition. These bounds assume $O(1)$ bucket-index hashing, <array> access, <key equality> comparisons, allocation and link updates. A long <string> or large <integer> can make hashing or comparison depend on its encoded length, so counting record visits alone does not establish constant running time.
+
+Under <simple uniform hashing>, each distinct key's bucket index is an independent <random variable> with a <uniform distribution on a finite set> of $m$ indices. The keys and query are fixed independently of this random assignment. Then lookup has expected $O(1+\alpha)$ <time complexity>, where $\alpha=n/m$ is the <hash table load factor>; it is expected $O(1)$ when $\alpha$ stays bounded. These are model assumptions, not an automatic consequence of using a deterministic <hash function>.<6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff/Lecture 8: Hashing I>[pp. 4–5, chaining worst case and simple uniform hashing assumption]{ref}
+
+Here is the short calculation. For an absent query $q$ and stored keys $k_1,\ldots,k_n$, let $I_i$ be the <indicator random variable> of $h_m(k_i)=h_m(q)$. The number $C$ of records inspected has <expected value>
+$$
+C=\sum_{i=1}^{n}I_i,\qquad \mathbb E[C]=\sum_{i=1}^{n}\mathbb E[I_i]=\frac{n}{m}=\alpha,
+$$
+by <linearity of expectation>. For a present fixed query, scanning its entire chain inspects at most itself plus all other colliding records, with <expected value> $1+(n-1)/m$; stopping at the match only decreases this upper bound. Adding constant hashing and bucket access yields expected $O(1+\alpha)$ for either query. The argument needs pairwise collision bounds; it does not require all the <indicator random variables> to be independent. A <universal hash family> can provide a related bound by random choice of a <hash function> for a fixed key set, as explained in that article.
+
+The worst case remains $O(n)$, and an absent query takes $n$ comparisons if all $n$ records occupy its <hash bucket>. For instance, $1,1+m,1+2m,\ldots,1+(n-1)m$ all collide under $h_m(k)=k\bmod m$. <Separate chaining> remains correct, but a <sequence> of insertions that each checks the existing chain can take quadratic total work. <Amortized analysis> of resizing does not remove this search cost, and an adaptive choice of keys based on a known <hash function> is outside the stated <simple uniform hashing> model.
+
+= Simple uniform hashing
+{parent=Separate chaining}
+
+A probabilistic model assigning distinct keys independent bucket indices with a <uniform distribution on a finite set>. It supplies an <expected value> bound for <separate chaining>, not a guarantee for every deterministic <hash function> or workload.
+
+= Hash bucket
+{parent=Hash table}
+
+The collection of records assigned to one bucket index by a <hash function>. In <separate chaining>, an <array> slot refers to this collection, which may be empty.
+
+= Key equality
+{parent=Hash table}
+{title2=$x\sim y$}
+
+The <equivalence relation> used to decide whether two keys name the same record. A <hash function> must respect <key equality>; a <hash collision> does not establish <key equality>.
+
+= Load factor of a hash table
+{parent=Hash table}
+{title2=$\alpha=n/m$}
+
+= Hash table load factor
+{synonym}
+
+The number $n$ of stored records divided by the number $m>0$ of <hash buckets>. For <separate chaining>, this is the mean chain length over all <hash buckets>, including empty ones.
+
+= Hash table resizing
+{parent=Hash table}
+
+Changing the number of <hash buckets> and reassigning stored records using the new bucket-index <hash function>. <Amortized analysis> of rebuilding and <expected value> bounds for subsequent lookup address different costs.
+
+// Target: computer-science.bigb
+
+= Array
+{disambiguate=data structure}
+{parent=Data structure}
+
+= Array
+{synonym}
+
+A <data structure> storing entries at numbered positions, usually starting at index zero. The fixed-capacity representation considered here puts equal-sized slots consecutively in <computer memory>. The number $n$ of occupied slots can be smaller than the capacity; unused slots provide room for later entries. An <array> of references stores consecutive references, while the objects they identify can be elsewhere. https://opendatastructures.org/ods-java/2_Array_Based_Lists.html[Pat Morin, Open Data Structures, chapter 2: array-based lists]{ref}
+
+Let the first slot have abstract address $b$ and each slot occupy $s$ address units. Then indexed access computes
+$$
+\operatorname{address}(i)=b+i\,s,\qquad 0\leq i<n.
+$$
+For toy values $b=100$, $s=4$, the slots for $A,B,C$ start at $100,104,108$; index $2$ goes directly to $C$ through $100+2\cdot4=108$. These are illustrative slot addresses, not observed allocation addresses. Under the word-RAM (random-access machine) model for <time complexity>, word-sized <arithmetic operations> and any addressed <computer memory> access have constant cost, and the addresses and entries fit in words. Thus one <array> access takes $O(1)$ time in <Big O notation>, independently of the index. This is the access assumption needed by <binary search>. https://opendatastructures.org/ods-java/1_4_Model_Computation.html[Pat Morin, Open Data Structures, section 1.4: the word-RAM model]{ref}
+
+\Image[array-versus-linked-list-layout.png]
+{title=An <array> computes a slot address; a <linked list> follows links}
+
+Inserting $X$ after $B$ in an <array> holding $A,B,C$ with one unused slot produces $A,B,X,C$: first copy $C$ from slot $2$ to slot $3$, then write $X$ into slot $2$. Writing $X$ first would lose $C$ unless it had been saved separately. More generally, insert at index $i$ by copying occupied slots from right to left, then fill the gap; with spare capacity this moves $n-i$ entries and takes $O(1+n-i)$ time in <Big O notation>, so insertion near the middle has $O(n)$ <time complexity>. Removing an entry closes the gap by shifting later entries left. https://opendatastructures.org/ods-java/2_1_ArrayStack_Fast_Stack_O.html[Pat Morin, Open Data Structures, section 2.1.1: indexed access and shifts]{ref}
+
+A fixed-capacity <array> cannot accept another entry when full. A resizable representation can allocate a larger <array> and copy the entries. Doubling capacity when full gives $O(1)$ append cost by <amortized analysis> over a <sequence> starting empty, but a single append that copies $n$ entries still has $O(n)$ worst-case <time complexity>. The outline is a <geometric series>: copied capacities $1,2,4,\ldots,2^k$ sum to $2^{k+1}-1$, less than twice the number of appends that triggered the last copy. Middle insertion still pays for its shifts. https://opendatastructures.org/ods-java/2_1_ArrayStack_Fast_Stack_O.html[Pat Morin, Open Data Structures, sections 2.1.2–2.1.3: resizing and amortized costs]{ref}
+
+= Row-major order
+{parent=Array (data structure)}
+
+= Row-major
+{synonym}
+
+Storage of a multidimensional <array> with the last index varying fastest in consecutive positions. In a two-dimensional <array>, each row is contiguous. <Row-major order> is a layout convention; a program can traverse that <array> by rows or by columns. See the explicit address calculation in <spatial locality>.
+
+= Column-major order
+{parent=Array (data structure)}
+
+= Column-major
+{synonym}
+
+Storage of a multidimensional <array> with the first index varying fastest in consecutive positions. In a two-dimensional <array>, each column is contiguous. Traversing a <row-major> <array> by columns does not change its storage into <column-major order>.
+
+= Sorted array
+{parent=Array (data structure)}
+{title2=$A_0\leq A_1\leq\cdots\leq A_{n-1}$}
+
+An <array> whose entries appear in nondecreasing order under a specified <total order>. The displayed inequalities allow repeated values.
+
+For example, $(2,5,5,9)$ is a <sorted array> of <integers>. Inserting $7$ at index $3$ gives $(2,5,5,7,9)$: with spare capacity, first shift $9$ one slot right. Appending $7$ would violate the <sorted array> property. Updating an entry also requires preserving the <total order>, or removing and reinserting it in a suitable position.
+
+The useful combination is order plus direct indexed access: <binary search> eliminates a whole interval of candidates at each comparison, giving $O(\log n)$ search <time complexity> under constant-cost comparisons and the <array> cost model. A <sorted array> is therefore attractive for many lookups between changes, while keeping it sorted can still require $O(n)$ shifting work per insertion. A sorted <linked list> has the ordering information but does not supply the same constant-cost access to a middle index.
+
+= Circular buffer
+{parent=Data structure}
+
+= Ring buffer
+{synonym}
+
+A <circular buffer> uses a fixed-capacity <array> with indices that wrap through <modular arithmetic>. A front index and an occupied count can represent a <FIFO queue> without shifting entries after removal. The <representation independence> example specifies a rejecting full-buffer policy; overwriting the oldest entry would define different behavior.
+
+= FIFO queue
+{parent=Data structure}
+{c}
+
+= Queue data structure
+{synonym}
+
+A <FIFO queue> is a <data structure> with first-in, first-out behavior: `enqueue` inserts at the rear, `dequeue` removes and returns the front, and `peek` inspects the front without removing it. Removal and inspection require a nonempty <FIFO queue>, or an explicitly defined empty-case result. Enqueue $A,B,C$ in that order, dequeue $A$, then enqueue $D$: the remaining <sequence> is $B,C,D$, with $B$ next. A <LIFO stack> would remove the most recently inserted item instead. A <FIFO queue> models arrival-order service and supplies the next <vertex> for <breadth-first search>; a stochastic service model belongs to <queueing theory>. https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/Queue.java[Sedgewick and Wayne, Algorithms: Queue interface and implementation]{ref}
+
+The <FIFO queue> interface specifies removal order, not <time complexity>. A <linked list> with both front and rear pointers supports `enqueue`, `dequeue` and `peek` in $O(1)$ worst-case time under constant-cost pointer operations and allocation, as in Sedgewick and Wayne's implementation. A plain <array> that deletes its first entry by shifting the remaining $n-1$ entries takes $O(n)$ time per such removal. An <array> with advancing front and rear indices can avoid these shifts; storage and resizing policies still need analysis. The <two-list functional queue> gives a different implementation with constant <amortized analysis> cost along a single sequence of uses. These representation choices matter when deriving the linear <time complexity> of <breadth-first search> in <Big O notation>.
+
+// Destination: computer-science.bigb
+
+= Two-list functional queue
+{parent=FIFO queue}
+
+Represent the abstract sequence by `front @ rev rear`. Keep the front nonempty unless both lists are empty. Prepending to the rear enqueues; when the front is exhausted, reverse the rear once. Along a single sequence of uses, each element crosses between lists at most once, giving constant <amortized analysis> cost per operation. Reusing an old persistent version can repeat a reversal and needs a separate analysis.
+
+// Destination: computer-science.bigb
+
+= Stack
+{disambiguate=data structure}
+{parent=Data structure}
+{wiki=Stack_(abstract_data_type)}
+
+= Stack
+{synonym}
+
+= LIFO stack
+{c}
+{synonym}
+
+A <stack> is a <data structure> with last-in, first-out behavior: `push` adds an item at the top, `pop` removes and returns the top item, and `peek` inspects it without removal. Push $A,B,C$: successive removals return $C,B,A$. Inspection and removal require a nonempty <stack>, or a specified empty-case result. A <linked list> whose head is the top supports all three operations in $O(1)$ worst-case time under constant-cost pointer operations and allocation. The <stack> interface itself does not fix these costs. https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/Stack.java[Sedgewick and Wayne, Algorithms: Stack interface and implementation]{ref}
+
+A <stack> records work that must be resumed in reverse order: the most recent unfinished task is handled first. <Depth-first search> uses this discipline to finish a newly entered branch before resuming the older branch that led to it. <Breadth-first search> uses a <FIFO queue> to resume the oldest pending <vertex> instead. Both are small interfaces whose removal rule changes the shape of a <graph search>.
+
+= Call stack
+{parent=Stack (data structure)}
+{wiki}
+
+A <call stack> stores active procedure calls and the information needed to resume each caller, such as its return location and local variables. A call adds a frame; returning removes that frame and resumes the previous call. When <depth-first search> uses <recursion>, a frame also records where its <adjacency list> scan paused. The active frames describe a <graph path> from the starting <vertex> to the current <vertex>; finished calls have left the <call stack>, although their <vertices> remain marked as discovered.
+
+= Binary tree
+{parent=Data structure}
+{wiki}
+
+A <binary tree>, in the <data structure> convention used here, is a <rooted tree> in which each <vertex> has zero, one or two <children in a rooted tree>, occupying distinct left and right positions. A single left child and a single right child give different <binary trees>. A <vertex> with no <children in a rooted tree> is called a leaf. An empty <binary tree> has no <root of a tree> and is also allowed as a storage case. <Open Data Structures: An Introduction by Pat Morin/6 Binary Trees>[Pat Morin, Open Data Structures, chapter 6: roots, left and right children]{ref}
+
+For example, give the <root of a tree> label $4$, its left child label $2$ and its right child label $6$. Attach $1,3$ as the left and right <children in a rooted tree> of $2$, and $5,7$ as those of $6$. This <binary tree> has seven <vertices>, six <edges>, and <height of a binary tree> $2$: a longest downward <graph path> contains two <edges>. The <binary search tree> lookup illustration below shows this shape alongside the <binary tree> consisting only of successive right children $1,2,\ldots,7$, whose <height of a binary tree> is $6$.
+
+Left and right positions specify an ordered shape, not a numerical <total order> on stored labels. Swapping labels $1$ and $7$ in the first example still gives a <binary tree>, but destroys the <binary search tree> property. Nor must a <binary tree> be balanced: the right-child chain is just as valid. The same shape convention supports a <binary heap>, a <Huffman code>, or a <binary search tree>, each with its own additional rules. The useful idea is to describe two smaller <subtrees> at each <vertex>, making <structural recursion> natural.
+
+For a precise recursive description, a finite <binary tree> is either empty or a <root of a tree> carrying a value together with an <ordered pair> $(L,R)$ of disjoint smaller <binary trees>. The entries of this <ordered pair> are its left and right <subtrees>, each of which may be empty. Thus two <binary tree child slots> exist even when fewer than two <children in a rooted tree> exist; an empty slot does not denote an extra <vertex>. This decomposition is the basis of <structural recursion>.<Introduction to Programming in Java: An Interdisciplinary Approach by Robert Sedgewick and others/4.4 Symbol Tables>[Introduction to Programming in Java, section 4.4, Binary search trees: recursive definition and node representation]{ref}
+
+\Image[binary-tree-ordered-child-slots.png]
+{title=Left and right <binary tree child slots> distinguish shapes even with just one child}
+{description=Solid circles are <vertices>; outlined squares mark empty <binary tree child slots>. The first two <binary trees> differ only in the occupied slot at $A$. The last two have the same four labels but different <height of a binary tree>.}
+
+In the four-<vertex> mixed example, $A$ has left child $B$ and right child $D$, while $B$ has only a right child $C$. Count its <vertices> by <structural recursion>: the empty <binary tree> contributes zero and each nonempty <binary tree> contributes one plus the counts of its left and right <subtrees>. Thus $B$ contributes $1+0+1=2$, and $A$ contributes $1+2+1=4$. The same decomposition computes <height of a binary tree>, supports <inorder traversal>, and supplies short proofs by <structural induction>. It separates shape from the values stored in a <data structure>.
+
+Ignoring values, let $b_n$ count finite <binary tree> shapes with $n$ <vertices>, retaining left and right slots and counting the empty shape once. Splitting at the <root of a tree> gives the <recurrence relation>
+$$
+b_0=1,\qquad b_n=\sum_{i=0}^{n-1}b_i b_{n-1-i}\quad(n\geq1).
+$$
+For each left <subtree> size $i$, choose its shape and the right <subtree> shape independently. This yields the <Catalan numbers>: $b_1=1$, $b_2=2$, and $b_3=2+1+2=5$. The two shapes at $n=2$ are exactly the left-only and right-only examples. Forgetting the slot distinction would change the counting problem.
+
+= Binary tree child slot
+{parent=Binary tree}
+{title2=$(L,R)$}
+
+One of the two distinguished positions, left or right, at a <vertex> of a <binary tree>. Each <binary tree child slot> is occupied by a child and its <subtree>, or is empty. A reference representation can use `null` for an empty <binary tree child slot>. Two slots are capacity for at most two <children in a rooted tree>, rather than a requirement for two actual <vertices>.
+
+= Null child slot count
+{parent=Binary tree child slot}
+{title2=$n+1$}
+
+Every nonempty finite <binary tree> with $n$ <vertices> has exactly $n+1$ empty <binary tree child slots>. There are $2n$ slots altogether, and precisely $n-1$ occupied slots, one for each <edge> of its underlying <tree>. Therefore
+$$
+2n-(n-1)=n+1.
+$$
+This counts missing child references, not <vertices> or leaves. In the mixed four-<vertex> example, $A$ has no empty <binary tree child slots>, $B$ has one, and $C,D$ each have two: $0+1+2+2=5$. The four-<vertex> chain also has five: one at each of its first three <vertices> and two at the last. For $n=0$, there are no <vertices> and hence no child fields; the empty <binary tree> instead has a single empty root position if it is represented by a root reference.
+
+A second proof uses the recursive decomposition. Count every empty <subtree> occurrence, including the root position for the empty <binary tree>: let $e(\varnothing)=1$. For a nonempty <binary tree>, $e(T)=e(L)+e(R)$. If the two <subtrees> have $n_L,n_R$ <vertices>, <structural induction> gives $e(T)=(n_L+1)+(n_R+1)=n+1$. Distinct empty positions may share the same `null` value; these are occurrences, not separately allocated objects. This count is useful when analysing the base cases reached by a <structural recursion> that calls both <subtrees> of every <vertex>.
+
+= Subtree
+{parent=Binary tree}
+
+For a <vertex> $u$ in a <rooted tree>, its <subtree> contains $u$ and every <vertex> reachable by repeatedly following <children in a rooted tree>, together with the connecting <edges>; its <root of a tree> is $u$. In a <binary tree>, the left <subtree> is rooted at the left child, and is empty when that child is absent; the right <subtree> is defined similarly. A <binary search tree> constrains every key in these <subtrees>.
+
+= Height of a binary tree
+{parent=Binary tree}
+{title2=$h$}
+
+For a nonempty <binary tree>, the largest number of <edges> on a downward <graph path> from its <root of a tree> to a leaf. A single <vertex> has <height of a binary tree> $0$; a chain of $n\geq1$ <vertices> has <height of a binary tree> $n-1$. A convenient <recursion> convention assigns an empty <binary tree> height $-1$, giving $h=1+\max(h_L,h_R)$ for the left and right <subtrees>. A <binary search tree> lookup visits at most $h+1$ <vertices>.
+
+The convention counts <edges>, rather than <vertices> on the longest <graph path>. Its recursive form is
+$$
+h(\varnothing)=-1,\qquad h(T)=1+\max\{h(L),h(R)\}\quad(T\ne\varnothing).
+$$
+<Data Structures and Algorithms edited by Peter Ljunglöf and others/9.1 Binary trees>[Data Structures and Algorithms, section 9.1.2, height pseudocode: null returns -1]{ref}
+
+For a leaf, both <subtrees> are empty, giving $1+\max(-1,-1)=0$. For the mixed four-<vertex> example, $h(C)=h(D)=0$, $h(B)=1+\max(-1,0)=1$, and $h(A)=1+\max(1,0)=2$. The four-<vertex> chain has <height of a binary tree> $3$. A convention that counts <vertices> would add one to every nonempty <binary tree> height, so a height formula must specify its convention.
+
+At distance $d$ from the <root of a tree>, there are at most $2^d$ <vertices>: each <vertex> in the preceding level has at most two <children in a rooted tree>. Summing this <geometric series> and using the longest <graph path> gives, for $n\geq1$,
+$$
+n\leq2^{h+1}-1,\qquad \lceil\log_2(n+1)\rceil-1\leq h\leq n-1.
+$$
+The upper bound is attained by a chain; a <perfect binary tree> attains the capacity bound. For $n=4$, the minimum possible <height of a binary tree> is $\lceil\log_2 5\rceil-1=2$, as in the mixed example, while the maximum is $3$. The <binary tree> definition permits both extremes. Small <height of a binary tree> bounds the length of a directed lookup in a <binary search tree>; evaluating the <height of a binary tree> by the displayed <structural recursion> still examines all $n$ <vertices>, requiring $O(n)$ <time complexity> under constant-cost child access and arithmetic.
+
+= Inorder traversal
+{parent=Binary tree}
+
+An <inorder traversal> of a <binary tree> uses <recursion> to visit the left <subtree>, output the current <vertex>, and visit the right <subtree>; an empty <subtree> outputs nothing. This is a <depth-first traversal of a tree> with output between the two recursive calls. It produces sorted keys for a <binary search tree>, but arbitrary labels in a <binary tree> need not appear in <total order>.
+
+// Target: computer-science.bigb
+
+= Binary search tree
+{parent=Binary tree}
+
+A <binary search tree> stores key-value entries in a <binary tree>, with distinct keys drawn from a <total order>. At every <vertex>, all keys in its left <subtree> must be smaller than its own key, and all keys in its right <subtree> must be larger. Thus the entries represent a <partial function> from keys to values: a key has at most one associated value and may be absent. <Open Data Structures: An Introduction by Pat Morin/6 Binary Trees>[Pat Morin, Open Data Structures, section 6.2: the binary search tree property]{ref}
+
+Lookup starts at the <root of a tree>. Compare the target with the current key: equality returns its value, a smaller target continues into the left <subtree>, and a larger target continues into the right <subtree>. Reaching an empty <subtree> reports absence. The ordering rule justifies discarding the other <subtree> at every step; this is the <algorithm correctness> argument for lookup. It applies to the entire <subtree>, even if that <subtree> contains many <vertices>. <Open Data Structures: An Introduction by Pat Morin/6 Binary Trees>[Pat Morin, Open Data Structures, section 6.2.1: exact-match searching]{ref}
+
+In the seven-key example, search for $5$. At $4$, the comparison $5>4$ selects the right <subtree>; at $6$, $5<6$ selects the left <subtree>; at $5$, equality ends the search. The visited keys are $4\to6\to5$, three key comparisons. The right-child chain stores exactly the same keys and satisfies the same <binary search tree> rule, but lookup of $5$ visits $1\to2\to3\to4\to5$, five comparisons. Searching for absent key $8$ visits $4,6,7$ in the first <binary search tree> and all seven keys in the chain before reaching an empty right <subtree>.
+
+\Image[binary-search-tree-search-path.png]
+{title=Lookup of key $5$ in two <binary search trees> containing the same seven keys}
+{description=Orange highlights visited keys and <edges>; green marks the match. The balanced shape has <height of a binary tree> $2$ and requires three visits, while the chain has <height of a binary tree> $6$ and requires five visits for this target.}
+
+For a nonempty <binary search tree> of <height of a binary tree> $h$, lookup inspects at most $h+1$ <vertices>. Under constant-cost key comparisons and child-reference access, its <time complexity> is $O(h+1)$ in <Big O notation>, usually written $O(h)$ for $h\geq1$. With $n$ entries, $h\leq n-1$, giving $O(n)$ worst-case lookup. If the shape is kept balanced so that $h=O(\log n)$, lookup takes $O(\log n)$ for $n\geq2$. The empty and one-entry cases take constant work. The worst-case linear bound also appears in Sedgewick and Wayne's ordinary, unbalanced implementation. https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/BST.java[Sedgewick and Wayne, Algorithms: BST implementation, complexity contract and get method]{ref}
+
+In a shape with every level full, there are $1+2+\cdots+2^h=2^{h+1}-1$ <vertices>, a <geometric series>. This explains how a small <height of a binary tree> can accommodate many entries. The <binary search tree> ordering rule alone does not guarantee this shape or logarithmic <time complexity>. <Breadth-first search> also gains no logarithmic key-lookup guarantee merely from having a <binary tree>: in the displayed balanced example, its left-to-right level order is $4,2,6,1,3,5,7$, so it inspects six keys before finding $5$, and an absent target requires all seven. Directed lookup uses the <total order> to choose one branch.
+
+The ordering requirement includes every ancestor on the <graph path> from the <root of a tree>. Consider the smaller <binary tree> with root key $4$, left child $2$, right child $6$, and right child $3$ under $2$. Key $3$ must satisfy both $2<3$, from its immediate <parent in a rooted tree>, and $3<4$, from its position in the root's left <subtree>. Replacing $3$ by $5$ preserves all immediate parent-child comparisons, including $2<5$, but violates $5<4$. Lookup for $5$ would incorrectly go from $4$ to $6$ and then to an empty left <subtree>, overlooking the stored key.
+
+\Image[binary-search-tree-ordering-constraint.png]
+{title=The <binary search tree> ordering rule constrains an entire <subtree>}
+{description=The valid example has $2<3<4$. The invalid example passes immediate parent-child comparisons, but key $5$ lies in the left <subtree> of key $4$ and violates its inherited upper bound.}
+
+An <inorder traversal> visits a left <subtree>, then its own <vertex>, then a right <subtree>. On the valid small example its output is $2,3,4,6$; on the invalid example it is $2,5,4,6$, exposing the descent from $5$ to $4$. Both seven-key <binary search trees> yield $1,2,3,4,5,6,7$. The theorem is that an <inorder traversal> of a finite <binary search tree> with distinct keys lists every key once in strictly increasing <total order>. For a short proof outline, use <mathematical induction> on the number of <vertices>: each smaller <subtree> produces its own sorted list, and the full ordering rule places every left key before the current key and every right key after it. Concatenating these three parts preserves strict order. Sedgewick and Wayne's `keys` method uses this left-current-right order. https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/BST.java[Sedgewick and Wayne, Algorithms: BST keys method and inherited-bound isBST check]{ref}
+
+This combination is useful and attractive: one <data structure> supports directed lookup and ordered enumeration. An <inorder traversal> costs $O(n)$ <time complexity> for $n$ entries, since it visits every <vertex>; balance accelerates lookup but cannot eliminate the work of outputting all keys.
+
+// Destination: computer-science.bigb
+
+= Dictionary intersection
+{parent=Binary search tree}
+{title2=$D_1\cap D_2$}
+
+For partial maps $D_1,D_2$, retain exactly entries $(k,v)$ for which both maps define the same value $v$ at $k$. Merely sharing a key is insufficient. Traverse one <binary search tree>, look up each key in the other, and insert only equal-value matches into the result.
+
+// Destination: computer-science.bigb
+
+= Complete binary tree
+{parent=Binary tree}
+
+A <complete binary tree> is a <binary tree> whose levels are full except possibly the deepest, which is filled from left to right with no gaps.<Data Structures and Algorithms edited by Peter Ljunglöf and others/9.1 Binary trees>[Data Structures and Algorithms, section 9.1.1: complete shape and binary heap example]{ref}
+
+Here a level groups <vertices> by their <graph distance> from the <root of a tree>. A <binary heap> uses this shape to maintain logarithmic <height of a binary tree>. Completeness differs from the two-children condition of a <full binary tree>.
+
+\Image[binary-tree-full-complete-perfect.png]
+{title=<Full binary trees>, <complete binary trees>, and <perfect binary trees> impose different shape conditions}
+{description=Each panel states all three properties. Outlined positions expose gaps in the last level. In particular, the five-<vertex> example in the lower left is both full and complete but is not perfect.}
+
+For a six-<vertex> example, give $A$ two <children in a rooted tree> $B,C$, give $B$ two <children in a rooted tree> $D,E$, and give $C$ only a left child $F$. The levels have $1,2,3$ <vertices>, and the last occupies its first three positions, so this is a <complete binary tree>. It is not a <full binary tree>, since $C$ has exactly one child. Moving $F$ to the right slot of $C$ preserves $n=6$ and <height of a binary tree> $2$, but leaves a gap before $F$ and destroys completeness. Merely keeping the deepest <vertices> near the left side is insufficient; every earlier position must be occupied.
+
+Number positions by the left-to-right level order of <breadth-first search>, beginning with root position $1$. The children of position $i$ have positions $2i$ and $2i+1$. A nonempty <complete binary tree> occupies exactly positions $1,\ldots,n$, so its <height of a binary tree> is $\lfloor\log_2 n\rfloor$: positions $2^h,\ldots,2^{h+1}-1$ form level $h$. This consecutive occupancy explains the compact <array> representation of a <binary heap>, while <heap order> is a separate condition on values. Neither completeness nor the <binary tree> definition supplies the <binary search tree> ordering rule.
+
+= Full binary tree
+{parent=Binary tree}
+
+A <full binary tree> is a <binary tree> in which every nonleaf has exactly two <children in a rooted tree>; equivalently, no <vertex> has just one child.<Data Structures and Algorithms edited by Peter Ljunglöf and others/9.1 Binary trees>[Data Structures and Algorithms, section 9.1.1: full shape and Huffman coding tree example]{ref}
+
+A binary <Huffman code> with at least two positive-probability symbols has a full code <tree>: a <vertex> with only one child could be suppressed to shorten all codewords below it.
+
+Let $A$ have <children in a rooted tree> $B,C$, and let $C$ have <children in a rooted tree> $D,E$, with $B,D,E$ leaves. Every <vertex> has zero or two <children in a rooted tree>, so this five-<vertex> <binary tree> is full. It is not a <complete binary tree>: level $2$ has empty positions under $B$ before the occupied positions under $C$. Instead put $D,E$ under $B$ and leave $C$ a leaf. The resulting five-<vertex> <binary tree> is both full and complete, yet is not a <perfect binary tree> because its leaves occur at two different distances from the <root of a tree>.
+
+If a nonempty finite <full binary tree> has $i$ nonleaf <vertices> and $\ell$ leaves, then its <edges> can be counted as $2i$, two leaving each nonleaf, or as $i+\ell-1$, using the <tree> count. Hence
+$$
+\ell=i+1,\qquad n=i+\ell=2i+1.
+$$
+Thus $n$ is odd, but odd size alone does not imply fullness: a three-<vertex> chain is a counterexample. Nor does fullness guarantee small <height of a binary tree>. Repeatedly give one continuing <vertex> a leaf in one slot and another continuing <vertex> in the other, ending with two leaves. With $i\geq1$ nonleaf <vertices>, this constructs a <full binary tree> of $n=2i+1$ <vertices> and <height of a binary tree> $i$. The two-children rule permits height growing linearly with size.
+
+= Perfect binary tree
+{parent=Binary tree}
+{title2=$n=2^{h+1}-1$}
+
+A nonempty <binary tree> in which every level, including the deepest, contains all its possible <vertices>. Equivalently, it is a <full binary tree> whose leaves are all at the same <graph distance> from the <root of a tree>.<Data Structures and Algorithms edited by Peter Ljunglöf and others/9.1 Binary trees>[Data Structures and Algorithms, section 9.1.1: perfect shape, equal leaf levels, and Figure 9.4]{ref}
+
+Every <perfect binary tree> is both a <full binary tree> and a <complete binary tree>; the five-<vertex> example above shows that the converse fails even when both properties hold. These definitions fix the terminology used here.
+
+For <height of a binary tree> $h\geq0$, the level sizes are $1,2,4,\ldots,2^h$, giving $n=2^{h+1}-1$ by a <geometric series>. There are $2^h$ leaves. The seven-<vertex> example has level sizes $1,2,4$ and <height of a binary tree> $2$; the single-<vertex> <binary tree> is already perfect, with $h=0$. More generally, joining two <perfect binary trees> of equal <height of a binary tree> under a fresh <root of a tree> gives the next such shape. Equal heights are essential: fullness alone allows unequal leaf distances. A <perfect binary tree> realizes the maximum number of <vertices> for its <height of a binary tree>, making the exponential capacity behind short lookup <graph paths> visible.
+
+// Target: probability-and-statistics.bigb
+
+= Linked list
+{parent=Data structure}
+{wiki}
+
+A <data structure> representing a <sequence> through <linked list nodes> and links between them. In the singly linked representation used here, each <linked list node> holds an item and a `next` reference to its successor. `head` identifies the first <linked list node>; the final `next` is `null`, meaning no successor. An empty <linked list> has `head = null`. Sedgewick and Wayne use this representation to implement both a <stack> and a <FIFO queue>. https://algs4.cs.princeton.edu/13stacks/index.php[Sedgewick and Wayne, Algorithms, section 1.3: linked lists]{ref}
+
+For $A\to B\to C$, place the <linked list nodes> at conceptual <computer memory> positions $40,12,76$, respectively. These deliberately separated labels describe a toy layout, not actual pointer values. The <sequence> order comes from the links, not increasing positions. To read index $2$, begin at `head` and follow two `next` references. For index $i$, this takes $i$ link-following steps and $O(1+i)$ <time complexity>, hence $O(n)$ in the worst case for $n$ <linked list nodes>, under the constant-cost operations assumed for the <array> example. https://opendatastructures.org/ods-java/3_Linked_Lists.html[Pat Morin, Open Data Structures, chapter 3: links versus indexed access]{ref}
+
+Suppose a reference to the existing <linked list node> $B$ is already known. To insert a fresh <linked list node> $X$ after it, first set `X.next = B.next`, preserving the old successor $C$, and then set `B.next = X`. The result is $A\to B\to X\to C$; none of the old items moves. Reversing these assignments would read the newly changed `B.next` and set `X.next = X`, losing the route to $C$ from `head`. This is a two-update <algorithm correctness> argument, rather than a claim that finding the insertion location is free.
+
+\Image[linked-list-insertion-pointer-updates.png]
+{title=Insert a <linked list node> by preserving the successor before redirecting the incoming link}
+
+The two pointer updates take $O(1)$ time in <Big O notation>. The complete insertion has $O(1)$ <time complexity> if the predecessor is already known, allocating and initializing the fixed-size <linked list node> costs $O(1)$, and copying its item has constant cost. Finding $B$ from `head` can instead cost $O(n)$; a position described only by an index does not confer the constant-cost advantage. This makes a <linked list> useful when an <algorithm> already holds the needed <linked list node>, or repeatedly works at the front as a <stack> does.
+
+Deletion similarly needs the incoming link: to remove $X$ after known $B$, set `B.next = X.next`. A reference to $X$ alone does not identify its predecessor in this singly linked representation. The head is a special case: after checking for a nonempty <linked list>, remove it with `head = head.next`. If a tail reference is also maintained, deleting the only <linked list node> must clear that reference too; a stored length must also be updated. Removing a <linked list node> from the <sequence> and reclaiming its storage are separate responsibilities. https://opendatastructures.org/ods-java/3_1_SLList_Singly_Linked_Li.html[Pat Morin, Open Data Structures, section 3.1: head removal and empty-list bookkeeping]{ref}
+
+There are practical costs beyond <Big O notation>. Each singly linked <linked list node> needs a successor reference in addition to its item; separate allocation may add further overhead, while an <array> can reserve unused capacity. Consecutive <array> slots can make a scan reuse nearby contents already brought into a <memory cache>; separated <linked list nodes> can make link following wait for successive <computer memory> fetches. These are layout-dependent effects, not a guarantee that every <array> operation beats every <linked list> operation on every machine. An <array> of references can still lead to scattered objects, and <linked list nodes> can be allocated close together. https://people.freebsd.org/~lstewart/articles/cpumemory.pdf[Ulrich Drepper, What Every Programmer Should Know About Memory, sections 3.3 and 6.2: access patterns and cache use]{ref}
+
+= Linked list node
+{parent=Linked list}
+
+One record holding an item and the references that connect it into a <linked list>. In the singly linked examples, its `next` identifies the successor or is `null`. A <linked list node>'s position in the <sequence> can change when links change, without moving the <linked list node> in <computer memory>.
+
+// Target: computer-science.bigb
+
+= Mutable list
+{parent=Linked list}
+
+A <linked list> whose links are held in <ML reference type> cells and may be changed. Deleting a node updates the link that reaches it, including the root link when the head is removed. Aliases of links observe these mutations; no fresh list spine is needed for destructive filtering.
+
+// Destination: computer-science.bigb
+
+= Lazy list
+{parent=Linked list}
+
+A <linked list> whose future structure is obtained by calling a delayed computation. In <Standard ML>, `unit -> node` delays a computation until demand. Filtering may need to force arbitrarily many rejected elements to produce its next retained element; filtering an infinite list need not produce a result. Delay alone does not imply <memoization>.
+
+// Destination: computer-science.bigb
+

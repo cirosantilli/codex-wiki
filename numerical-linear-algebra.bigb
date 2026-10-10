@@ -1,0 +1,647 @@
+= Numerical linear algebra
+{wiki}
+
+Numerical linear algebra develops stable finite algorithms for matrix computations.
+
+= Matrix preconditioning
+{parent=Numerical linear algebra}
+{title2=$M^{-1/2}AM^{-1/2}$}
+
+Matrix preconditioning transforms a system using an inexpensive auxiliary solve to improve its spectrum. For symmetric positive definite matrices, a positive definite $M$ produces $M^{-1/2}AM^{-1/2}$, preserving the symmetric structure needed by <conjugate gradient method>.
+
+= Matrix preconditioner
+{parent=Matrix preconditioning}
+{title2=$M$}
+
+A matrix preconditioner is an auxiliary invertible matrix whose inverse is cheap to apply and whose use improves the spectrum of a linear system. In symmetric positive definite problems, a positive definite $M$ preserves that structure under the symmetric transformation $M^{-1/2}AM^{-1/2}$.
+
+= Power iteration
+{parent=Numerical linear algebra}
+{wiki}
+{title2=$x_{k+1}=Ax_k/\|Ax_k\|_2$}
+
+<Power iteration> finds a <dominant eigenvalue> and its <eigenvector> by repeatedly applying a <matrix> and rescaling the resulting <vector>. The essential idea is selective amplification: components along different <eigenvectors> grow at different rates, so one direction can eventually dominate. It is the computational form of the <power method> and is useful when applying a large <sparse matrix> to a <vector> is cheap but computing its whole <spectral decomposition> is expensive.
+
+For a square <matrix> over the <real numbers> or <complex numbers> $A$, choose a <unit vector> $x_0$ and repeat
+$$
+y_{k+1}=Ax_k,\qquad x_{k+1}=\frac{y_{k+1}}{\|y_{k+1}\|_2}.
+$$
+Here $\|\cdot\|_2$ is the <Euclidean norm>. If $y_{k+1}=0$, stop before division: the current <vector> is an <eigenvector> for the <zero eigenvalue>, and this iteration cannot continue. Otherwise, in exact arithmetic,
+$$
+x_k=\frac{A^kx_0}{\|A^kx_0\|_2}.
+$$
+Repeated normalization keeps the stored <vectors> at manageable size without changing their directions; it does not guarantee that an individual multiplication cannot exceed the range of <floating-point arithmetic>. The <dominant eigenvalue> means largest <modulus>, which need not mean largest signed real value.<Templates for the Solution of Algebraic Eigenvalue Problems: A Practical Guide/Power Method>{ref}
+
+= Exact two-dimensional power iteration
+{parent=Power iteration}
+{title2=$\tan\theta_k=3^{-k}$}
+
+Consider the <symmetric matrix> and initial <unit vector>
+$$
+A=\begin{pmatrix}2&1\\1&2\end{pmatrix},\qquad x_0=\begin{pmatrix}1\\0\end{pmatrix}.
+$$
+Its <orthonormal eigenbasis> consists of $u_1=(1,1)^T/\sqrt2$ and $u_2=(1,-1)^T/\sqrt2$, with <eigenvalues> $3$ and $1$. Since $x_0=(u_1+u_2)/\sqrt2$, direct multiplication gives
+$$
+A^kx_0=\frac12\begin{pmatrix}3^k+1\\3^k-1\end{pmatrix},\qquad x_k=\frac{u_1+3^{-k}u_2}{\sqrt{1+3^{-2k}}}.
+$$
+The first unnormalized <vectors> are $(1,0)^T$, $(2,1)^T$, $(5,4)^T$, and $(14,13)^T$. If $\theta_k$ is the acute <angle> from the line spanned by the dominant <eigenvector>, then $\tan\theta_k=3^{-k}$. Every application divides the unwanted-to-wanted component ratio by three: normalization changes lengths, while the <spectral gap> selects the direction.
+
+\Image[power-iteration-symmetric-direction-error.png]
+{title=Exact <power iteration> directions and errors for a <symmetric matrix> with <eigenvalues> 3 and 1}
+
+The right panel compares the <power iteration direction error>, <Rayleigh quotient> error, and <eigenpair residual>. With $t_k=3^{-k}$, their exact values are
+$$
+\varepsilon_k=\frac{t_k}{\sqrt{1+t_k^2}},\qquad 3-\rho_k=\frac{2t_k^2}{1+t_k^2},\qquad \|r_k\|_2=\frac{2t_k}{1+t_k^2}.
+$$
+Thus a very accurate <Rayleigh quotient> can appear well before the <eigenvector> is comparably accurate. This is an example of <quadratic Rayleigh-quotient improvement for the power method>.
+
+= Power iteration convergence for a diagonalizable matrix
+{parent=Power iteration}
+{title2=$|\lambda_1|>|\lambda_2|,\quad (V^{-1}x_0)_1\ne0$}
+
+Suppose $A\in\mathbb C^{n\times n}$ is a <diagonalizable matrix>, $n\ge2$, with an <eigenbasis> $v_1,\ldots,v_n$ and <spectral decomposition>
+$$
+A=V\Lambda V^{-1},\qquad V=(v_1\ \cdots\ v_n),\qquad \Lambda=\operatorname{diag}(\lambda_1,\ldots,\lambda_n).
+$$
+Assume the <dominant eigenvalue> $\lambda_1$ is a <simple eigenvalue> and
+$$
+|\lambda_1|>|\lambda_2|\ge\cdots\ge|\lambda_n|,\qquad x_0=\sum_{j=1}^n c_jv_j,\qquad c_1\ne0.
+$$
+Then the normalized <power iteration> approaches the one-dimensional <eigenspace> of $\lambda_1$. Its asymptotic direction-error bound has factor $\gamma=|\lambda_2/\lambda_1|<1$. This <spectral gap> is a gap in <modulus>: if $g=|\lambda_1|-|\lambda_2|$, then $\gamma=1-g/|\lambda_1|$. A small relative gap gives slow convergence.<Templates for the Solution of Algebraic Eigenvalue Problems: A Practical Guide/Power Method>{ref}
+
+The short proof is the exact <eigenbasis> identity
+$$
+\frac{A^kx_0}{c_1\lambda_1^k}=v_1+\sum_{j=2}^n\frac{c_j}{c_1}\left(\frac{\lambda_j}{\lambda_1}\right)^kv_j.
+$$
+The remaining sum has <norm> bounded by a constant times $\gamma^k$. This proves convergence of direction, allowing a changing sign or complex factor. A tiny $c_1$ or a poorly conditioned, <nonorthogonal> <eigenbasis> can delay visible convergence: the <condition number> of $V$ affects constants, while $\gamma$ controls the eventual rate. The bound need not be an equality; if the initial coefficient of the second-largest <eigenvalue> vanishes, the <active spectrum of the power method> gives a faster rate. When $\gamma=0$, all unwanted components disappear after one multiplication.<Numerical Analysis, Spring 2022/Power iteration (2022-03-07 lecture notes)>[§1, PDF pp. 1–2: diagonalizable expansion and nonzero first coordinate of the starting vector]{ref}
+
+The hypothesis is $c_1=(V^{-1}x_0)_1\ne0$, not an ordinary nonzero <inner product> with the right <eigenvector>. Let $w_1^*$ be the first row of $V^{-1}$, a <left eigenvector> normalized so $w_1^*v_j$ is $1$ for $j=1$ and $0$ otherwise; $*$ denotes <conjugate transpose>. Then $c_1=w_1^*x_0$. For a <Hermitian matrix>, choose an <orthonormal eigenbasis> and the criterion becomes $v_1^*x_0\ne0$: the starting <vector> must be <nonorthogonal> to the dominant <eigenvector>. For a general <diagonalizable matrix>, the <nonorthogonal> <eigenbasis> makes these two tests different, as illustrated under <power iteration failure cases>.
+
+= Power iteration direction error
+{parent=Power iteration convergence for a diagonalizable matrix}
+{title2=$\varepsilon_k=\|(I-uu^*)x_k\|_2$}
+
+For a <unit vector> $u$ spanning the target <eigenspace> and a normalized iterate $x_k$, define
+$$
+\varepsilon_k=\|(I-uu^*)x_k\|_2=\sqrt{1-|u^*x_k|^2}.
+$$
+This is the <norm> of the component in the <orthogonal complement> of $u$, equivalently the sine of the acute <angle> to its line. It ignores the arbitrary sign or complex unit factor of an <eigenvector>. Under <power iteration convergence for a diagonalizable matrix>, $\varepsilon_k=O(\gamma^k)$ in <Big O notation>. The <orthogonal projection> defines how we measure direction; it does not assume that the <eigenbasis> of $A$ is <orthogonal>. In computation, the projection form avoids subtracting nearly equal numbers inside the square root.
+
+= Sign and phase in power iteration
+{parent=Power iteration}
+{title2=$x_k=\frac{c_1\lambda_1^k}{|c_1\lambda_1^k|}u_1+O(\gamma^k)$}
+
+Under <power iteration convergence for a diagonalizable matrix>, take $v_1=u_1$ to be a <unit vector>. The displayed formula describes both the dominant <eigenvector> direction and its rotating complex unit factor. With real data and a positive <dominant eigenvalue>, $x_k$ converges to $u_1$ or $-u_1$ according to the sign of $c_1$. With a negative <dominant eigenvalue>, consecutive <vectors> approach opposite signs even though their <power iteration direction error> tends to zero.
+
+For complex data write $\lambda_1=|\lambda_1|e^{i\phi}$, where $\phi$ is its <complex argument>. The leading factor turns by $e^{i\phi}$ per step, so the <vectors> generally do not converge. For example, $A=\operatorname{diag}(2i,1)$ and $x_0=(1,1)^T/\sqrt2$ give $A^kx_0=((2i)^k,1)^T/\sqrt2$: the first component cycles through four phases while the ratio of component <moduli> tends to zero. Its <power iteration direction error> is $2^{-k}/\sqrt{1+2^{-2k}}$. Multiplying $x_k$ by $e^{-i(\arg c_1+k\phi)}$ gives a sequence converging to $u_1$.
+
+A stopping rule based only on $\|x_{k+1}-x_k\|_2$ therefore rejects successful sign-alternating iterations. A comparison invariant under complex unit factors is
+$$
+\min_{|\omega|=1}\|x_{k+1}-\omega x_k\|_2=\sqrt{2-2|x_k^*x_{k+1}|}.
+$$
+Even this comparison can be small for a slowly changing wrong mixture; the <eigenpair residual> supplies a separate diagnostic.
+
+= Power iteration eigenpair diagnostics
+{parent=Power iteration}
+{title2=$\rho_k=x_k^*Ax_k,\quad r_k=Ax_k-\rho_kx_k$}
+
+For each <unit vector> iterate compute the <Rayleigh quotient> $\rho_k=x_k^*Ax_k$ and the <eigenpair residual> $r_k=Ax_k-\rho_kx_k$. Use the same multiplication $Ax_k$ for both diagnostics and the next normalized iterate. For any complex <matrix>, this <Rayleigh quotient> minimizes $\|Ax_k-\mu x_k\|_2$ over complex <scalars> $\mu$, because $x_k^*r_k=0$. Under <power iteration convergence for a diagonalizable matrix>, $\rho_k\to\lambda_1$ and $\|r_k\|_2\to0$, even when the <vectors> alternate signs or phases.<Numerical Analysis, Spring 2022/Power iteration (2022-03-07 lecture notes)>[§3, PDF p. 3: approximate eigenvector equation and Rayleigh quotient]{ref}
+
+A dimensionless stopping quantity is
+$$
+\eta_k=\frac{\|r_k\|_2}{\|A\|_2+|\rho_k|},
+$$
+when the denominator is positive; $\|A\|_2$ is the <operator norm>, and a known upper bound may replace it if computing it is costly. A small <eigenpair residual> certifies a small <backward error of an approximate eigenpair>, but does not establish that the <eigenvalue> found is dominant.
+
+For a <Hermitian matrix> with <orthonormal eigenbasis> $u_j$, write $x_k=\sum_j a_ju_j$. Then the independently useful identity
+$$
+\|r_k\|_2^2=\sum_j|a_j|^2|\lambda_j-\rho_k|^2
+$$
+shows that some <eigenvalue> lies within $\|r_k\|_2$ of $\rho_k$. If a specific target <eigenvalue> $\lambda_1$ is separated from all the others by $\delta_k=\min_{j>1}|\lambda_j-\rho_k|>0$, it also gives $\varepsilon_k\le\|r_k\|_2/\delta_k$. This separation is measured from the computed <Rayleigh quotient>; it differs from the dominant-<modulus> <spectral gap>. For a <nonnormal matrix>, the same <orthogonal> expansion is unavailable and a small <eigenpair residual> alone need not imply a comparably small distance to the <spectrum>.
+
+= Power iteration failure cases
+{parent=Power iteration}
+
+A tied largest <modulus> can prevent even direction convergence. With $D=\operatorname{diag}(2,-2)$ and $x_0=(1,1)^T/\sqrt2$,
+$$
+x_k=\frac1{\sqrt2}\begin{pmatrix}1\\(-1)^k\end{pmatrix},\qquad \rho_k=0,\qquad \|r_k\|_2=2.
+$$
+The two directions form a cycle; neither is an <eigenvector>. There is no dominant-<modulus> <spectral gap>. A tied <modulus> is not a universal failure: an initial <eigenvector> remains on its line, and $A=2I$ preserves every direction. <Subspace iteration> addresses a separated cluster by targeting a <dominant invariant subspace> instead of one <eigenvector>.
+
+An <orthogonal> start can fail despite a strict <spectral gap>. For $A=\begin{pmatrix}2&1\\1&2\end{pmatrix}$ and $x_0=(1,-1)^T/\sqrt2$, the dominant component is zero, so $Ax_0=x_0$ and every iterate equals $x_0$. The <Rayleigh quotient> is exactly $1$ and the <eigenpair residual> is zero, although the <dominant eigenvalue> is $3$. Exact arithmetic never creates a missing component.<Templates for the Solution of Algebraic Eigenvalue Problems: A Practical Guide/Power Method>{ref}
+
+\Image[power-iteration-tied-modulus-orthogonal-start.png]
+{title=Tied <eigenvalue> <moduli>, an <orthogonal> start, and sign alternation in <power iteration>}
+
+The third panel contrasts these failures with $N=\operatorname{diag}(-3,1)$, $x_0=(1,1)^T/\sqrt2$, for which
+$$
+x_k=\frac1{\sqrt{1+3^{-2k}}}\begin{pmatrix}(-1)^k\\3^{-k}\end{pmatrix}.
+$$
+Here the horizontal <eigenvector> direction converges with a strict <spectral gap>, while the normalized <vectors> alternate signs. This is the successful direction convergence described under <sign and phase in power iteration>.
+
+For a <nonorthogonal> <eigenbasis>, even the word “orthogonal” must be used carefully. The <diagonalizable matrix> $C=\begin{pmatrix}3&2\\0&1\end{pmatrix}$ has right <eigenvectors> $v_1=(1,0)^T$, $v_2=(-1,1)^T$, and dominant <left eigenvector> $w_1=(1,1)^T$. For $x_0=(a,b)^T$, the dominant coefficient is $c_1=w_1^Tx_0=a+b$. The starting <vector> $v_2$ is <nonorthogonal> to $v_1$ but stays at the smaller <eigenvalue> $1$; $(0,1)^T$ is <orthogonal> to $v_1$ but has $c_1=1$ and converges to the dominant direction. The <left eigenvector> test, not the right-<eigenvector> <inner product>, controls the outcome.
+
+A <random vector> drawn from a <continuous probability distribution> with a <probability density function> on the full real or complex <vector space> has $c_1\ne0$ with probability one. This avoids the exact missing-component <hyperplane>, but does not guarantee a large component or fast convergence. <Floating-point arithmetic> may seed a missing component, yet a structurally preserved zero can remain zero, so accidental perturbations are not a convergence guarantee.
+
+= Gaussian elimination
+{parent=Numerical linear algebra}
+{c}
+{wiki}
+
+Gaussian elimination applies elementary row operations to reduce a linear system to triangular form. Dense elimination uses $O(n^3)$ arithmetic operations.
+
+= Pivot element
+{parent=Gaussian elimination}
+{title2=$a_{kk}^{(k-1)}$}
+
+A <pivot element> is the current diagonal entry used to eliminate entries below it in <Gaussian elimination>, after any row interchange. At step $k$ it is $a_{kk}^{(k-1)}$, where $A^{(k-1)}$ is the current reduced <matrix>. Computing <elimination multipliers> requires this entry to be nonzero. A zero <pivot element> can reflect an unsuitable row order even for an <invertible matrix>, as <pivoted LU decomposition> illustrates.
+
+= Elimination multiplier
+{parent=Gaussian elimination}
+{title2=$l_{ik}=a_{ik}^{(k-1)}/a_{kk}^{(k-1)}$}
+
+For $i>k$, an <elimination multiplier> is the <scalar> $l_{ik}=a_{ik}^{(k-1)}/a_{kk}^{(k-1)}$ used in the <elementary row operation> $R_i\leftarrow R_i-l_{ik}R_k$. This creates a zero below the <pivot element>. The remaining entries change by $a_{ij}\leftarrow a_{ij}-l_{ik}a_{kj}$ for $j>k$. Storing these <elimination multipliers> gives the subdiagonal entries of $L$ in <LU decomposition>; later row interchanges must also reorder the already stored coefficients.
+
+= Sparse Gaussian elimination
+{parent=Gaussian elimination}
+
+A sparse direct solver performs <Gaussian elimination> while storing and updating only the predicted nonzero entries. A symbolic phase predicts the factor pattern from an elimination ordering, and a numerical phase evaluates the factors. The ordering can greatly alter <fill-in> and arithmetic work. For symmetric positive-definite systems, <Cholesky decomposition> avoids numerical pivoting; general systems require a balance between sparsity and stable pivot selection.
+
+= Leaf elimination of a tree-pattern positive-definite matrix
+{parent=Sparse Gaussian elimination}
+
+Associate an undirected graph with a symmetric matrix's off-diagonal nonzero pattern. Eliminating vertex $i$ updates the remaining matrix by $a_{jk}\mapsto a_{jk}-a_{ji}a_{ik}/a_{ii}$. Only pairs of neighbors of $i$ can acquire <fill-in>. If the graph is a tree, remove leaves successively: each eliminated vertex has at most one remaining neighbor, so only a diagonal entry can change. Every <Schur complement> of a <positive-definite matrix> is positive definite, so no zero pivot forces a different ordering. Leaf removal therefore constructs a <perfect elimination ordering> and a fill-free factorization.
+
+= Symbolic factorization
+{parent=Sparse Gaussian elimination}
+
+<Symbolic factorization> computes possible nonzero positions and update dependencies from a <sparse matrix> pattern and ordering before calculating numerical factor values. The <elimination graph> predicts fill and the <elimination tree> organizes dependencies. Numerical pivoting or exceptional cancellation can make the computed factor pattern differ from this structural prediction.
+
+= Elimination tree
+{parent=Sparse Gaussian elimination}
+{title2=$\operatorname{parent}(j)=\min\{i>j:L_{ij}\ne0\}$}
+
+For a symmetric factorization in a fixed ordering, the <elimination tree> assigns the displayed parent to a column of the lower-triangular factor when that set is nonempty. A column with no later entry is a root. The tree records dependencies of descendant updates on later pivots, supports symbolic factor allocation, and exposes parallel subtrees. It describes the factorization ordering, not merely a spanning tree of the original <matrix graph>.
+
+= Nested dissection
+{parent=Sparse Gaussian elimination}
+
+A <vertex separator> divides the remaining unknowns into disconnected subdomains. Nested dissection recursively eliminates each subdomain before its separator, keeping interaction localized until late in the factorization. For a regular two-dimensional mesh with $N$ unknowns, separators have size $O(\sqrt N)$; the resulting direct factorization uses $O(N^{3/2})$ work and $O(N\log N)$ storage under the usual geometric separator assumptions.
+
+= Minimum degree algorithm
+{parent=Sparse Gaussian elimination}
+
+At each step choose a remaining vertex of minimum degree in the current <elimination graph>. This heuristic reduces the size of the immediate <Schur complement> update and often reduces <fill-in>, but does not guarantee a globally optimal ordering. Its degrees must reflect earlier fill, rather than just the original <graph>.
+
+= Fill-in
+{parent=Sparse Gaussian elimination}
+
+<Fill-in> consists of factor entries that become nonzero despite being zero in the original <sparse matrix>. In symmetric elimination these are the added edges of the <elimination graph>. Removing a high-degree vertex can create many fill entries, whereas a <perfect elimination ordering> creates none. Symbolic fill predicts possible nonzeros before floating-point arithmetic; special cancellation can reduce the numerical pattern.
+
+= Matrix graph
+{parent=Sparse Gaussian elimination}
+
+For a symmetric <sparse matrix>, its <matrix graph> has one vertex per unknown and an edge $i-j$ whenever the off-diagonal entry $a_{ij}$ is structurally nonzero. Simultaneous row and column permutation relabels this <graph>. Nonsymmetric patterns are instead represented by directed or bipartite <graphs> when row and column roles must be distinguished.
+
+= Elimination graph
+{parent=Matrix graph}
+
+One step of symmetric <Gaussian elimination> removes the pivot vertex and connects its remaining neighbors into a <clique>. The rule follows from the <Schur complement> update $a_{ij}\leftarrow a_{ij}-a_{ik}a_{kj}/a_{kk}$. Repeating it predicts the generic factor sparsity; exceptional numerical cancellations can remove structurally predicted entries.
+
+= Fill-path criterion for symmetric elimination
+{parent=Elimination graph}
+
+After eliminating a vertex set $E$, a generic edge between remaining vertices $i,j$ exists exactly when the original <matrix graph> contains a path from $i$ to $j$ whose internal vertices all belong to $E$. Inductively, the new edges at pivot $k$ concatenate two such paths through $k$; conversely split any allowed path at $k$, or retain it when it avoids $k$. This characterizes fill by <graph> reachability.
+
+= Columnwise partial pivoting
+{parent=Gaussian elimination}
+{title2=$PA=LU$}
+
+= Partial pivoting
+{synonym}
+
+At each step of <Gaussian elimination>, select the largest absolute entry in the uneliminated part of the current column and interchange rows to put it on the diagonal. A nonsingular trailing <Schur complement> has a nonzero entry in its first column, so this procedure always finds a nonzero pivot in exact arithmetic. The <permutation matrix> $P$ records row interchanges; earlier multipliers must be interchanged too when assembling the lower-triangular factor. This yields the <LU decomposition> $PA=LU$ with unit diagonal in $L$. Searching within columns and interchanging rows is distinct from interchanging columns.
+
+= Row echelon form
+{parent=Gaussian elimination}
+
+A <matrix> is in row echelon form if zero rows follow all nonzero rows, each nonzero row has a first nonzero entry (pivot) to the right of the pivot in the preceding row, and entries below each pivot vanish. <Elementary row operations> bring every <matrix> to this form: choose a nonzero entry in the earliest nonzero column, swap its row to the top, eliminate entries below it, and continue on the remaining submatrix. The nonzero rows are independent by their successively positioned pivots; the pivot columns are independent and span the <column space>. Thus the number of pivots equals both <row rank> and <column rank>.
+
+= Reduced row echelon form
+{parent=Row echelon form}
+
+A <row echelon form> whose pivots are one and whose pivot columns have zeros in every other row. Over a <field>, each <row space> has a unique such <matrix> after zero rows are removed. It describes a <vector subspace> independently of which initial <basis> was used; <Gaussian binomial coefficients> exploit this uniqueness to count <vector subspaces> over a <finite field>.
+
+= Elementary row operation
+{parent=Gaussian elimination}
+
+= Row operation
+{synonym}
+
+An <elementary row operation> interchanges two rows of a <matrix>, multiplies one row by a nonzero scalar, or adds a scalar multiple of another row to it. These invertible operations are used in <Gaussian elimination>. For a square <matrix>, interchange changes the sign of its <determinant>, multiplication scales its <determinant> by the same scalar, and adding another row leaves its <determinant> unchanged, by multilinearity and alternation.
+
+= Elementary matrix
+{parent=Elementary row operation}
+
+An elementary matrix is obtained by applying one <elementary row operation> to the <identity matrix>. Multiplying $A$ by it on the left performs the same row operation on $A$. Such a <matrix> is invertible: reverse a row swap, reverse a nonzero row scaling by its reciprocal, or reverse adding a multiple of another row by adding its negative. Right multiplication gives an <elementary column operation>. In particular these operations preserve <matrix rank>.
+
+= LU decomposition
+{title2=$A=LU$}
+{c}
+{parent=Numerical linear algebra}
+{wiki}
+
+= LU factorization
+{c}
+{synonym}
+
+An <LU decomposition> writes a <square matrix> as $A=LU$, with $L$ a <lower triangular matrix> and $U$ an <upper triangular matrix>. We use a <unit triangular matrix> $L$, meaning $l_{ii}=1$. The factors record <Gaussian elimination>: $U$ contains the reduced equations, while $L$ stores the <elimination multipliers> needed to reconstruct the original equations. This makes <reusing LU factors for multiple right-hand sides> inexpensive.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§2.4.3, Definition 2.4.2 and equation (2.4.7): unit lower triangular L and upper triangular U]{ref}
+
+For an <invertible matrix>, unpivoted <LU decomposition> requires nonzero <pivot elements> at every elimination step; invertibility alone does not guarantee this. In general use <pivoted LU decomposition>, with the explicit convention $PA=LU$ and a <permutation matrix> $P$. Once the factors exist, solving a <linear system> $Ax=b$ needs <forward substitution> followed by <back substitution>, rather than forming a <matrix inverse>.
+
+= Computed three-by-three LU decomposition
+{c}
+{parent=LU decomposition}
+{title2=$A=LU$}
+
+Here is an original example of <Gaussian elimination> that can be checked entirely with <integers>. Start with
+$$
+A=\begin{pmatrix}2&1&1\\4&5&3\\-2&8&4\end{pmatrix}.
+$$
+The first <pivot element> is $2$. The <elimination multipliers> are $l_{21}=4/2=2$ and $l_{31}=-2/2=-1$. Apply the <elementary row operations> $R_2\leftarrow R_2-2R_1$ and $R_3\leftarrow R_3+R_1$ to obtain
+$$
+A^{(1)}=\begin{pmatrix}2&1&1\\0&3&1\\0&9&5\end{pmatrix}.
+$$
+Now the second <pivot element> is $3$, and $l_{32}=9/3=3$. The <elementary row operation> $R_3\leftarrow R_3-3R_2$ gives
+$$
+U=\begin{pmatrix}2&1&1\\0&3&1\\0&0&2\end{pmatrix},\qquad L=\begin{pmatrix}1&0&0\\2&1&0\\-1&3&1\end{pmatrix},\qquad LU=A.
+$$
+Importantly, $l_{32}$ comes from the current reduced <matrix>, not the original entry $a_{32}=8$. To reconstruct $A$ from $U$, its second row is twice the first row of $U$ plus the second; its third row is minus the first row of $U$ plus three times the second plus the third. These are exactly the coefficients in the <lower triangular matrix> $L$.
+
+\Image[lu-elimination-structure.png]
+{title=<Gaussian elimination> turns a three-by-three <matrix> into an <upper triangular matrix>, while <elimination multipliers> are stored in a <lower triangular matrix>}
+
+The unpivoted calculation here illustrates the structure of <LU decomposition>; applying <partial pivoting> to this particular $A$ would choose a different first row and different factors. Both procedures can represent the same <linear system> when their <permutation matrices> are handled consistently.
+
+= Unit triangular matrix
+{parent=LU decomposition}
+{title2=$t_{ii}=1$}
+
+A <unit triangular matrix> is a <triangular matrix> whose diagonal entries are all one. It is an <invertible matrix> with <determinant> one. In the convention used for <LU decomposition>, $L$ is a unit <lower triangular matrix>, so <forward substitution> needs no division by its diagonal entries.
+
+= Triangular solves for LU decomposition
+{c}
+{parent=LU decomposition}
+{title2=$Ly=Pb,\quad Ux=y$}
+
+Given <pivoted LU decomposition> $PA=LU$, the <linear system> $Ax=b$ is equivalent to $LUx=Pb$. Introduce the intermediate <vector> $y=Ux$: first use <forward substitution> to solve $Ly=Pb$, then <back substitution> to solve $Ux=y$. With unpivoted <LU decomposition>, $P=I$ is the <identity matrix>, so the first right-hand side is simply $b$.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§2.4.4, equation (2.4.8) and Algorithm 2.4.2, and §2.6.3: two triangular solves and permutation of b]{ref}
+
+For the factors in <computed three-by-three LU decomposition> and $b=(7,23,26)^T$, <forward substitution> gives
+$$
+y_1=7,\qquad y_2=23-2(7)=9,\qquad y_3=26+7-3(9)=6.
+$$
+Then <back substitution> gives
+$$
+x_3=6/2=3,\qquad x_2=(9-3)/3=2,\qquad x_1=(7-2-3)/2=1.
+$$
+Direct <matrix multiplication> verifies $A(1,2,3)^T=(7,23,26)^T$. More generally, the <back substitution> recurrence is
+$$
+x_i=\frac{y_i-\sum_{j=i+1}^{n}u_{ij}x_j}{u_{ii}},\qquad i=n,n-1,\ldots,1.
+$$
+The direction matters: the last row contains only $x_n$, whereas the first row generally involves every unknown. No dense <matrix inverse> is needed for either triangular solve.
+
+= Forward substitution
+{parent=Triangular solves for LU decomposition}
+{title2=$y_i=(c_i-\sum_{j<i}l_{ij}y_j)/l_{ii}$}
+
+<Forward substitution> solves a <linear system> $Ly=c$ with a <lower triangular matrix> $L$ and nonzero diagonal, from the first row downward:
+$$
+y_i=\frac{c_i-\sum_{j=1}^{i-1}l_{ij}y_j}{l_{ii}},\qquad i=1,\ldots,n.
+$$
+The first <sum> is empty, so $y_1=c_1/l_{11}$. Each subsequent row uses only components already found. For a <unit triangular matrix> $L$, omit the division because $l_{ii}=1$. The complementary procedure, <back substitution>, solves an <upper triangular matrix> system from the last row upward.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§2.3.2, equations (2.3.7)–(2.3.9), and §2.3.3, Algorithms 2.3.1–2.3.2: forward and backward substitution]{ref}
+
+= Pivoted LU decomposition
+{c}
+{parent=LU decomposition}
+{title2=$PA=LU$}
+
+We fix the convention $PA=LU$: the <permutation matrix> $P$ acts on the rows of $A$, and the same row ordering must be applied to $b$ before the <triangular solves for LU decomposition>. Equivalently, $A=P^TLU$, since $P^{-1}=P^T$. LAPACK documents its factors as $A=PLU$ instead, so check the defining equation rather than just the letter $P$.<DGETRS (LAPACK 3.3.1) by LAPACK project>[LAPACK DGETRS, A argument: factors from DGETRF satisfy $A=PLU$]{ref} <Partial pivoting> selects the largest absolute candidate in the current column, among rows $k,\ldots,n$, before forming <elimination multipliers>.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§2.6.1, Definition 2.6.1; §2.6.2, Definition 2.6.2 and equation (2.6.1): pivot selection and reordered-row factorization]{ref}
+
+A zero first <pivot element> does not imply a <singular matrix>. For example,
+$$
+A_0=\begin{pmatrix}0&1\\2&3\end{pmatrix},\qquad \det A_0=-2,\qquad P=\begin{pmatrix}0&1\\1&0\end{pmatrix},\qquad PA_0=\underbrace{\begin{pmatrix}1&0\\0&1\end{pmatrix}}_{L}\underbrace{\begin{pmatrix}2&3\\0&1\end{pmatrix}}_{U}.
+$$
+Unpivoted <Gaussian elimination> would divide $2$ by zero. Indeed, no $A_0=LU$ with a unit <lower triangular matrix> $L$ exists: $u_{11}=0$ would force $(LU)_{21}=l_{21}u_{11}=0$, contradicting $(A_0)_{21}=2$. One row interchange resolves the obstruction. For $b_0=(1,5)^T$, use $Pb_0=(5,1)^T$; <back substitution> then gives $x=(1,1)^T$. Using the original $b_0$ with these factors would solve a different <linear system>.
+
+<Partial pivoting> bounds each <elimination multiplier> by one in absolute value in exact arithmetic. This helps control <roundoff error>, but intermediate entries can still grow; it is not an unconditional guarantee of <numerical stability> for every <matrix>.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§2.6.4, Example 2.6.6 and the concluding discussion: stability of unpivoted and pivoted factorization]{ref} It also does not remove the original problem's <condition number>. For the <diagonal matrix> $D=\operatorname{diag}(1,\varepsilon)$ with $0<\varepsilon<1$, the <condition number> in the <Euclidean norm> is $\kappa_2(D)=1/\varepsilon$. Row permutations preserve this <condition number>, because they preserve <Euclidean norms>. Even an exact solve changes from $(1,1)^T$ to $(1,1+\eta/\varepsilon)^T$ when the right-hand side changes from $(1,\varepsilon)^T$ to $(1,\varepsilon+\eta)^T$. This sensitivity is a property of the <linear system>, not a zero-<pivot element> failure.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§2.8, Definition 2.8.1, and §2.8.1, Theorem 2.8.1, equations (2.8.5)–(2.8.6): condition number and right-hand-side sensitivity]{ref}
+
+= Reusing LU factors for multiple right-hand sides
+{c}
+{parent=LU decomposition}
+{title2=$AX=B,\quad LY=PB,\quad UX=Y$}
+
+When a fixed <matrix> $A$ is used with several forcing or measurement <vectors>, compute its <pivoted LU decomposition> once. Collect $r$ right-hand sides into the columns of $B=(b^{(1)}\ \cdots\ b^{(r)})$, and the corresponding solutions into $X$. Then
+$$
+AX=B,\qquad LY=PB,\qquad UX=Y.
+$$
+Each column undergoes the same row permutation, <forward substitution> and <back substitution>. Neither $L$, $U$ nor $P$ depends on $B$. This is the useful separation between preparing a <linear system> and applying its solution procedure repeatedly. LAPACK implements it by taking previously computed factors, permuting all right-hand sides, and performing the two triangular solves.<DGETRS (LAPACK 3.3.1) by LAPACK project>[LAPACK DGETRS, version 3.3.1, April 2011, Purpose, NRHS and B arguments, and nontransposed branch: DLASWP followed by lower-unit and upper-nonunit DTRSM calls]{ref}
+
+For the unpivoted factors in <computed three-by-three LU decomposition>, take
+$$
+B=\begin{pmatrix}7&0&4\\23&2&6\\26&4&-8\end{pmatrix},\qquad Y=\begin{pmatrix}7&0&4\\9&2&-2\\6&-2&2\end{pmatrix},\qquad X=\begin{pmatrix}1&0&2\\2&1&-1\\3&-1&1\end{pmatrix}.
+$$
+Direct <matrix multiplication> checks all three identities $LY=B$, $UX=Y$ and $AX=B$. The first column reproduces the previous solve; the other two use exactly the same factors. New right-hand sides can also arrive one at a time. If $A$ changes, these stored factors generally need to be recomputed.
+
+\Image[lu-pivot-repeated-solves.png]
+{title=One row permutation fixes a zero <pivot element>; each new right-hand side reuses the same <LU decomposition> and two triangular solves}
+
+= LU factorization and solve costs
+{c}
+{parent=LU decomposition}
+{title2=$\tfrac23n^3+2rn^2$}
+
+For classical dense <Gaussian elimination> over the <real numbers>, count each scalar <addition>, <subtraction>, <multiplication> or <division> as one <arithmetic operation>. At step $k$, there are $n-k$ <elimination multipliers> to divide out and $(n-k)^2$ remaining entries, each requiring one <multiplication> and one <subtraction>. Thus this implementation's unpivoted factorization count is
+$$
+F(n)=\sum_{k=1}^{n-1}\bigl((n-k)+2(n-k)^2\bigr)=\frac{n(n-1)(4n+1)}6=\frac23n^3+O(n^2).
+$$
+Here $O$ uses <Big O notation>. <Partial pivoting> adds $O(n^2)$ comparisons and row movement, leaving the leading arithmetic count unchanged. The leading $\tfrac23n^3$ count agrees with the standard dense <LU decomposition> analysis.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§2.5.2, Definition 2.5.2; §2.5, equations (2.5.7)–(2.5.8) and Theorem 2.5.1; lower-order counts depend on implementation]{ref}
+
+With unit $L$, <forward substitution> uses $n(n-1)$ <arithmetic operations>. <Back substitution> uses another $n(n-1)$ plus $n$ diagonal divisions. Together these cost $2n^2-n$ per right-hand side; applying a stored row permutation moves $n$ entries and requires no scalar arithmetic. In <Big O notation>, <reusing LU factors for multiple right-hand sides> therefore costs
+$$
+\frac23n^3+2rn^2+O(n^2+rn),
+$$
+whereas refactorizing for each of the $r$ right-hand sides costs $\tfrac23rn^3+O(rn^2)$. For $n=1000$ and $r=10$, the leading counts are about $6.87\times10^8$ versus $6.69\times10^9$ <arithmetic operations>, nearly a tenfold saving. These are operation counts, not measured runtimes: memory access and optimized <matrix multiplication> also affect speed.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§2.5.2, Important note after Definition 2.5.2: flop counts are a rough runtime model; the numerical comparison here is an original calculation]{ref}
+
+= LDL decomposition
+{title2=$A=LDL^T$}
+{parent=Numerical linear algebra}
+{c}
+
+An LDL decomposition of a real symmetric matrix is
+$$
+A=LDL^T,
+$$
+where $L$ is unit lower triangular and $D$ is diagonal. Symmetric elimination computes it one <Schur complement> at a time. The matrix is positive definite exactly when every diagonal pivot in $D$ is positive.
+
+= Eigenpair residual
+{title2=$r=Av-\lambda v$}
+{parent=Numerical linear algebra}
+
+For an approximate eigenpair $(\widetilde\lambda,\widetilde v)$, the residual is
+$$
+r=A\widetilde v-\widetilde\lambda\widetilde v.
+$$
+
+= Backward error of an approximate eigenpair
+{parent=Eigenpair residual}
+
+If $\|\widetilde v\|_2=1$, the smallest operator-norm perturbation that makes $(\widetilde\lambda,\widetilde v)$ an exact eigenpair has norm $\|r\|_2$. One such rank-one perturbation is
+$$
+E=-r\widetilde v^T.
+$$
+
+= Householder QR decomposition
+{parent=Numerical linear algebra}
+{c}
+{wiki}
+
+Successive Householder reflections zero subdiagonal column entries and factor a matrix into an orthogonal factor and an upper-triangular factor.
+
+= Householder reduction of an overdetermined consistent system
+{parent=Householder QR decomposition}
+{title2=$Q^Tb=(c,0)^T$}
+
+For full column rank $A\in\mathbb R^{m\times n}$, a full <QR factorization> gives $Q^TA=(R_1,0)^T$ with invertible upper triangular $R_1$. The equation $Ax=b$ is consistent exactly when the final $m-n$ entries of $Q^Tb$ vanish. If consistent, <back substitution> gives its unique solution. This separates consistency from uniqueness in overdetermined systems.
+
+= Householder tridiagonalization
+{parent=Numerical linear algebra}
+{c}
+{wiki}
+
+Orthogonal Householder similarities reduce a real symmetric matrix to symmetric tridiagonal form.
+
+= Skew-symmetric Householder tridiagonalization
+{parent=Householder tridiagonalization}
+{title2=$A'=A+vw^T-wv^T,\quad w=2Av/(v^Tv)$}
+
+An <orthogonal> similarity preserves skew symmetry, so upper-Hessenberg reduction of a real <skew-symmetric matrix> is automatically tridiagonal with zero diagonal. For a <Householder reflection>, the scalar $v^TAv$ vanishes, eliminating the fourth term of the general similarity update. Storing only one triangle and using the displayed skew rank-two update costs $2n^3/3+O(n^2)$ scalar products, the same leading product count as optimized symmetric tridiagonalization; the simplification saves lower-order work.
+
+= Unshifted QR algorithm
+{parent=Numerical linear algebra}
+
+The unshifted QR algorithm factors $A_k=Q_kR_k$ and forms $A_{k+1}=R_kQ_k=Q_k^TA_kQ_k$, preserving eigenvalues while driving the matrix toward block diagonal form.
+
+This is the zero-shift case of the <QR algorithm>.
+
+= Accumulated QR factorization identity
+{parent=Unshifted QR algorithm}
+{c}
+
+Let
+$$
+\overline Q_k=Q_0Q_1\cdots Q_k,
+\qquad
+\overline R_k=R_kR_{k-1}\cdots R_0.
+$$
+Then
+$$
+A_{k+1}=\overline Q_k^TA\overline Q_k,
+\qquad
+A^{k+1}=\overline Q_k\overline R_k.
+$$
+Thus $\overline Q_k\overline R_k$ is a <QR decomposition> of the matrix power $A^{k+1}$. In particular, the first $r$ columns of $\overline Q_k$ span the same subspace as the first $r$ columns of $A^{k+1}$ whenever those columns are independent.
+
+= Symmetric bandwidth preservation under QR iteration
+{parent=Unshifted QR algorithm}
+
+An unshifted QR step preserves the bandwidth of a real symmetric banded matrix. A Givens-rotation implementation exposes this as bulges created during triangularization and removed when the factors are multiplied in reverse order.
+
+= Simultaneous iteration interpretation of the QR algorithm
+{parent=Unshifted QR algorithm}
+
+The accumulated orthogonal factor in QR iteration is the $Q$ factor of a matrix power, so its leading columns span the same spaces as simultaneous power iteration.
+
+= Two-column dominant-subspace condition
+{parent=Simultaneous iteration interpretation of the QR algorithm}
+
+Let a real <symmetric matrix> have an <orthonormal eigenbasis> $w_1,\ldots,w_n$, with
+$$
+|\lambda_1|\leq\cdots\leq|\lambda_{n-2}|<
+|\lambda_{n-1}|=|\lambda_n|.
+$$
+Write two starting vectors as
+$$
+u=\sum_i b_iw_i,
+\qquad
+v=\sum_i c_iw_i.
+$$
+For two-column <subspace iteration> to recover
+$\operatorname{span}(w_{n-1},w_n)$, the two projections onto that dominant subspace must be independent. The exact condition is
+$$
+\det\begin{pmatrix}
+b_{n-1}&c_{n-1}\\
+b_n&c_n
+\end{pmatrix}
+=b_{n-1}c_n-b_nc_{n-1}\ne0.
+$$
+Requiring each of the four coefficients to be nonzero does not imply this determinant condition.
+
+= Block deflation in the QR algorithm
+{parent=Unshifted QR algorithm}
+
+When an off-block subdiagonal entry tends to zero, QR iteration asymptotically separates the corresponding invariant spectral blocks even if eigenvalues within one block have equal modulus.
+
+= Stationary iterative method for a linear system
+{parent=Numerical linear algebra}
+
+A stationary iteration has the form
+$$
+x^{(k+1)}=Hx^{(k)}+v,
+$$
+with a fixed iteration matrix $H$. It converges for every initial vector exactly when the <spectral radius> satisfies $\rho(H)<1$.
+
+This is an <iterative method> whose update matrix remains fixed.
+
+= Semiconvergence of cyclic Poisson iterations
+{parent=Stationary iterative method for a linear system}
+{title2=$A=C+C^{-1}-2I$}
+
+The periodic second-difference <circulant matrix> has constant <null space>, so solvability requires $\sum b_j=0$. Its <Jacobi method> has eigenvalues $\cos(2\pi j/n)$: for odd $n$ it converges to some solution, while for even $n$ an alternating mode oscillates unless absent from the error. Lexicographic <Gauss-Seidel iteration> converges to some solution for every compatible right-hand side and every initial vector. For $K=-A=D+L+U$, a coordinate sweep decreases the energy $e^TKe/2$ by the sum of squared coordinate changes. This excludes all nonconstant unit-modulus eigenmodes. The constant unit eigenvalue is simple, since the invariant left vector $w=(0,1,\ldots,1,2)^T$ has $w^T\mathbf1=n\ne0$. Neither method is a strict contraction to a unique solution without fixing the constant nullspace.
+
+= Richardson iteration
+{c}
+{parent=Stationary iterative method for a linear system}
+{title2=$x_{n+1}=x_n-\tau(Ax_n-b)$}
+
+For a real symmetric positive definite <matrix> $A$, the error in each <eigenvector> direction is multiplied by $1-\tau\lambda$. Convergence from every initial vector is therefore equivalent to $0<\tau<2/\lambda_{\max}$. At either endpoint there is a nondecaying error direction. The optimal constant parameter is $2/(\lambda_{\min}+\lambda_{\max})$, giving contraction factor $(\lambda_{\max}-\lambda_{\min})/(\lambda_{\max}+\lambda_{\min})$.
+
+= Gauss-Seidel method
+{parent=Stationary iterative method for a linear system}
+{c}
+{wiki=Gauss–Seidel_method}
+
+= Gauss-Seidel iteration
+{c}
+{synonym}
+
+With $A=D+L+U$, the <Gauss-Seidel method> solves $(D+L)x^{(k+1)}=b-Ux^{(k)}$. It uses each newly computed coordinate immediately in the remaining triangular solve. It is <successive over-relaxation> with parameter one, and converges from every start when $A$ is symmetric positive definite.
+
+= Successive over-relaxation
+{parent=Stationary iterative method for a linear system}
+{title2=$\omega$}
+{wiki}
+
+= SOR
+{synonym}
+{c}
+
+For a splitting $A=D+L+U$, <successive over-relaxation> updates
+$$
+(D+\omega L)x^{(k+1)}=[(1-\omega)D-\omega U]x^{(k)}+\omega b.
+$$
+It reduces to the <Gauss-Seidel method> at $\omega=1$. If $A$ is symmetric positive definite, the <Householder-John theorem> applies to $M=D/\omega+L$, $N=(1/\omega-1)D-U$, since $M^T+N=(2/\omega-1)D$ is positive definite for $0<\omega<2$.
+
+= Iteration matrix
+{title2=$H$}
+{parent=Stationary iterative method for a linear system}
+
+For a stationary iteration $x^{(k+1)}=Hx^{(k)}+v$, the matrix $H$ propagates the error by $e^{(k+1)}=He^{(k)}$. Convergence from every initial error is equivalent to $\rho(H)<1$.
+
+= Matrix splitting
+{parent=Stationary iterative method for a linear system}
+{wiki}
+
+A splitting $A=M-N$ with invertible $M$ produces
+$$
+x^{(k+1)}=M^{-1}Nx^{(k)}+M^{-1}b.
+$$
+
+= Householder-John theorem
+{parent=Matrix splitting}
+{c}
+
+Let $A=M-N$ be Hermitian positive definite. If $M^*+N$ is also Hermitian positive definite, then $M$ is invertible and
+$$
+\rho(M^{-1}N)<1.
+$$
+Thus the stationary iteration associated with the splitting converges from every initial vector.
+
+= Jacobi method
+{parent=Stationary iterative method for a linear system}
+{c}
+{wiki}
+
+Writing $A=D+L+U$, where $D$ is diagonal and $L,U$ are strictly triangular, the Jacobi iteration is
+$$
+x^{(k+1)}=D^{-1}\left(b-(L+U)x^{(k)}\right).
+$$
+
+= Skew-tridiagonal Jacobi and Gauss-Seidel iterations
+{parent=Jacobi method}
+
+For $A=\mu^{-1}I+U-U^T$, with $U$ the four-dimensional unit superdiagonal, the <Jacobi method> has eigenvalues $2i\mu\cos(j\pi/5)$, $j=1,\ldots,4$. The <Gauss-Seidel method> has two zero eigenvalues and $-\mu^2(3\pm\sqrt5)/2$. Therefore both methods converge for every starting vector exactly when $0<|\mu|<(\sqrt5-1)/2$. This equality of convergence ranges follows from their spectra, not from positive-definiteness of the nonsymmetric coefficient matrix.
+
+= Weighted Jacobi method
+{parent=Jacobi method}
+
+= Relaxed Jacobi method
+{synonym}
+{c}
+
+= Weighted Jacobi
+{synonym}
+
+With relaxation parameter $\omega$, weighted Jacobi updates by
+$$
+x^{(\nu+1)}
+=x^{(\nu)}+\omega D^{-1}(b-Ax^{(\nu)}).
+$$
+Its <iteration matrix> is $H_\omega=I-\omega D^{-1}A$.
+
+= Weighted Jacobi eigenvalues for a square Dirichlet grid
+{parent=Weighted Jacobi method}
+{title2=$\lambda_{k,l}(H_\omega)$}
+
+For the five-point discretization of $-\Delta+c$ on the unit square, the weighted iteration <eigenvalues> are $1-\omega[4\sin^2(\pi kh/2)+4\sin^2(\pi lh/2)+ch^2]/(4+ch^2)$. A fixed parameter converges for every mesh when $0<\omega\leq1$, but $\omega=1$ poorly damps the highest frequencies.
+
+= Weighted Jacobi method for the one-dimensional Poisson equation
+{parent=Weighted Jacobi method}
+
+For the centered second-difference matrix with diagonal $-2$ and off-diagonals $1$, the weighted-Jacobi eigenvalues are
+$$
+\lambda_k(\omega)
+=1-\omega+\omega\cos\frac{k\pi}{n+1},
+\qquad 1\leq k\leq n.
+$$
+The method converges for every grid size exactly when $0<\omega\leq1$.
+
+= High-frequency smoothing factor of weighted Jacobi
+{title2=$\mu_\omega$}
+{parent=Weighted Jacobi method for the one-dimensional Poisson equation}
+
+For modes with $k/(n+1)\in[1/2,1]$ and large $n$, the worst attenuation factor is
+$$
+\mu_\omega=\max\{|1-\omega|,|1-2\omega|\}.
+$$
+It is minimized by $\omega=2/3$, for which $\mu_\omega=1/3$.
+
+= Exact finite-grid high-frequency Jacobi smoothing optimum
+{parent=High-frequency smoothing factor of weighted Jacobi}
+{title2=$\omega_*=2/(a+b),\quad\mu_*=(b-a)/(a+b)$}
+
+For the one-dimensional Dirichlet second-difference grid, high sine modes have eigenvalues $1-\omega t_k$, with $t_k=1-\cos(k\pi/(n+1))$ and $k\geq\lceil(n+1)/2\rceil$. Let $a$ and $b$ be the smallest and largest of these $t_k$. Convexity gives attenuation $\max(|1-\omega a|,|1-\omega b|)$. Balancing its endpoint values with opposite signs gives the displayed exact minimax choice. For odd $n$, $a=1$; for even $n$, $a=1+\sin(\pi/[2(n+1)])$, and always $b=1+\cos(\pi/(n+1))$. Only in the large-grid or uniform-in-grid limit do these become $\omega_*=2/3$, $\mu_*=1/3$.
+
+= Jacobi convergence for a three-by-three equicorrelation matrix
+{parent=Jacobi method}
+
+For a three-by-three matrix with diagonal entries one and every off-diagonal entry $\alpha$, the <Jacobi method> iteration matrix has eigenvalue $-2\alpha$ on the all-ones vector and eigenvalue $\alpha$ with multiplicity two on its orthogonal complement. Its <spectral radius> is $2|\alpha|$, so Jacobi iteration converges exactly when $|\alpha|<1/2$.
+
+= Jacobi convergence for a symmetric positive-definite tridiagonal matrix
+{parent=Jacobi method}
+
+If $A=D+L+L^T$ is symmetric positive definite and tridiagonal, set $S=\operatorname{diag}(1,-1,1,-1,\ldots)$. Then
+$$
+SAS=D-L-L^T
+$$
+is positive definite. Applying the <Householder-John theorem> to $M=D$ and $N=-(L+L^T)$ proves that the Jacobi iteration converges.
+

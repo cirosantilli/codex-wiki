@@ -7,6 +7,16 @@ Three questions organize error analysis. <Truncation error> measures the approxi
 
 For example, the <square root> $s(a)=\sqrt a$ has relative <condition number> $|as'(a)/s(a)|=1/2$ for $a>0$: a small relative change in $a$ produces about half that relative change in $s(a)$. In contrast, $g(a)=1/(1-a)$ has relative <condition number> $|a/(1-a)|$. Changing $a=0.99$ to $0.9901$ changes $g(a)=100$ to about $101.010101$: an input change of about $0.0101\%$ produces an output change of about $1.0101\%$. This sensitivity exists even with exact arithmetic. MIT's conditioning lecture separates the <condition number> from <roundoff error> in precisely this way.https://ocw.mit.edu/courses/18-335j-introduction-to-numerical-methods-spring-2019/pages/week-2/[Steven G. Johnson, MIT 18.335J, Lecture 5: Condition Numbers, 2019]{ref}
 
+= Numerical method
+{parent=Numerical analysis}
+
+A <numerical method> is an <algorithm> for computing an exact or approximate solution to a mathematical problem through finitely many <arithmetic operations> and other prescribed steps. For example, <Gaussian elimination> solves a <linear system> exactly in exact arithmetic, whereas finite precision can introduce <roundoff error>.
+
+= Numerical algorithm
+{parent=Numerical method}
+
+A <numerical algorithm> implements a <numerical method> through specified finite computation steps, including <arithmetic operations> and any required <function evaluations>.
+
 = Floating-point arithmetic
 {parent=Numerical analysis}
 {wiki}
@@ -431,7 +441,91 @@ Knowing only that a calculated <interval enclosure> contains zero does not certi
 {parent=Numerical analysis}
 {wiki}
 
-A <continuation method> follows solutions of a parameter-dependent equation. Predictor-corrector tracing of a regular implicit curve uses a tangent predictor followed by a <Newton method> correction on a transverse section.
+A <continuation method> follows a <solution branch> of a parameter-dependent equation from a known solution, using nearby solutions to guide the next solve. This is useful when one wants to understand how solutions change, rather than obtain just one isolated answer. A <continuation predictor-corrector step> follows a <tangent vector> and then uses a <Newton method> correction on a transverse section. The same geometry supports both <pseudo-arclength continuation> through a <continuation fold> and <transversal surface intersection tracing>.
+
+Consider the original scalar <polynomial> example
+$$
+F(x,\lambda)=x^3-x+\lambda=0,\qquad \lambda=x-x^3.
+$$
+Its <solution branch> bends back twice in $\lambda$. Increasing $\lambda$ alone eventually stops following the same nearby solutions; following the <curve> in the $(x,\lambda)$ plane can continue around both bends. The <continuation folds> are
+$$
+(x_-,\lambda_-)=\left(-\frac1{\sqrt3},-\frac2{3\sqrt3}\right),\qquad
+(x_+,\lambda_+)=\left(\frac1{\sqrt3},\frac2{3\sqrt3}\right).
+$$
+For $|\lambda|<2/(3\sqrt3)$ there are three distinct real <zeros of a function> at that fixed $\lambda$, all lying on this one connected <curve>. A <continuation method> keeps their geometric relationship visible.
+
+\Image[continuation-cubic-solution-curve-folds.png]
+{title=A connected cubic solution curve with two folds and three solutions at the same parameter value}
+{description=The arrows follow increasing $x$ along $\lambda=x-x^3$, even where $\lambda$ changes direction. The dashed horizontal line $\lambda=0.2$ meets the <solution branch> three times. The marked <continuation folds> are extrema of $\lambda$, not singularities of the full <curve>.}
+
+Every <continuation method> needs a seed, supplied by an independent solve, an explicitly known solution, or another search. Following one <solution branch> does not guarantee finding every <connected component> of the solution set. A large step can miss detail or make the correction converge to a distant solution. At branch intersections or a loss of <rank> of the full <Jacobian matrix>, the regular-<curve> argument needs separate analysis. The seed and component limitations also matter in <transversal surface intersection tracing>.
+
+= Solution branch
+{parent=Continuation method}
+
+A <solution branch> is a portion of a solution set followed continuously as a <curve>. For $F(u,\lambda)=0$ with $u\in\mathbb R^n$, a full <Jacobian matrix> $[F_u\ F_\lambda]$ of <rank> $n$ makes the nearby solution set a one-dimensional <regular level set>. It need not be a <graph of a function> $u(\lambda)$: a <continuation fold> can obstruct that particular choice of parameter while leaving the <solution branch> regular.
+
+= Parameter continuation
+{parent=Continuation method}
+{title2=$F(u(\lambda),\lambda)=0$}
+
+<Parameter continuation> changes $\lambda$ by a small amount and solves again for $u$, using the previous solution as the initial guess for <Newton method>. If $F_u$ is an <invertible matrix>, the <implicit function theorem> gives a local <solution branch> $u(\lambda)$, with
+$$
+\frac{du}{d\lambda}=-F_u^{-1}F_\lambda.
+$$
+Local convergence of <Newton method> also needs regularity and a sufficiently small step: the cited result assumes a <Lipschitz continuous> <derivative> and an invertible $F_u$ at the seed.<Condition Estimates for Pseudo-Arclength Continuation by K. I. Dickson and others>[§2.1, Corollary 2.1, printed pp. 264–265: Lipschitz continuously differentiable map, nonsingular state Jacobian, and a sufficiently small parameter increment]{ref}
+
+For the cubic <polynomial>,
+$$
+F_x=3x^2-1,\qquad F_\lambda=1,\qquad \frac{dx}{d\lambda}=\frac1{1-3x^2}.
+$$
+The <derivative> becomes unbounded at either <continuation fold>, and the scalar <Newton method> divides by $F_x=0$ there. Just beyond the upper <continuation fold>, no nearby real solution exists at the increased $\lambda$, although a distant negative-$x$ solution still exists. Converging to that solution would jump away from the local <solution branch>. Decreasing the parameter step cannot make $x(\lambda)$ a valid smooth local description at the bend.
+
+= Fold of a solution branch
+{parent=Continuation method}
+{title2=$F=0,\quad F_x=0,\quad F_\lambda\ne0,\quad F_{xx}\ne0$}
+
+= Continuation fold
+{synonym}
+
+A nondegenerate <fold of a solution branch> in a smooth scalar equation satisfies the displayed conditions. The <implicit function theorem> still gives $\lambda=\lambda(x)$ because $F_\lambda\ne0$. <Implicit differentiation> gives $\lambda'(x_*)=0$ and $\lambda''(x_*)=-F_{xx}/F_\lambda\ne0$: the parameter has a genuine local extremum on the <curve>.
+
+In the cubic <polynomial>, $F_x=0$ gives $x_*=\pm1/\sqrt3$, and substituting into $F=0$ gives $\lambda_*=2x_*/3$. Furthermore, $F_{xx}=6x_*\ne0$. Yet $\nabla F=(3x^2-1,1)$ never vanishes, so the full <solution branch> remains a <regular level set> everywhere. The obstruction belongs to the projection onto $\lambda$, not to the <curve> itself.
+
+For systems, the cited continuation account uses a one-dimensional <kernel> of $F_u$ and $F_\lambda$ outside its <image of a linear map> to define a simple fold (its Definition 2.2). These conditions make $[F_u\ F_\lambda]$ have full <rank> and support a transverse correction. A nonzero second-order term along the <kernel> is additionally needed to describe a nondegenerate quadratic turning point; in the scalar example this is $F_{xx}\ne0$.<Condition Estimates for Pseudo-Arclength Continuation by K. I. Dickson and others>[§2.2, Definition 2.2, printed p. 265: one-dimensional kernel of the state Jacobian and parameter derivative outside its range]{ref}
+
+= Pseudo-arclength continuation
+{parent=Continuation method}
+{title2=$F(z)=0,\quad t_k^{\mathsf T}(z-z_k)-h=0$}
+
+<Pseudo-arclength continuation> allows both the state and the parameter to change. Write $z=(u,\lambda)$ and choose a <unit vector> $t_k$ in the <kernel> of the full <Jacobian matrix> $DF(z_k)$. A <continuation predictor-corrector step> seeks the next solution on a <hyperplane> perpendicular to $t_k$, a distance $h>0$ along the old <tangent vector>. This adds one equation to $F(z)=0$ and makes the correction a square system. The constraint approximates <arc length>; $h$ is the displacement projected onto the old <tangent vector>, rather than the exact curved distance.<Condition Estimates for Pseudo-Arclength Continuation by K. I. Dickson and others>[§2.2, equations (2.2)–(2.5), printed pp. 265–266: unit tangent and hyperplane normalization; Corollary 2.3 gives local Newton convergence for sufficiently small steps]{ref}
+
+= Continuation predictor-corrector step
+{parent=Pseudo-arclength continuation}
+{title2=$z_{\mathrm p}=z_k+h t_k$}
+
+For the cubic <polynomial>, an oriented, normalized <tangent vector> is
+$$
+t_k=\frac{(1,\ 1-3x_k^2)}{\sqrt{1+(1-3x_k^2)^2}}.
+$$
+Its <Euclidean norm> is one and $DF(z_k)t_k=0$. The sign here follows increasing $x$; for a general <solution branch>, choose the sign of each new <tangent vector> so its <dot product> with the previous one is positive. First predict $z_{\mathrm p}=z_k+h t_k$, then apply <Newton method> starting at $z_{\mathrm p}$ to
+$$
+H(z)=\begin{pmatrix}F(z)\\t_k^{\mathsf T}(z-z_{\mathrm p})\end{pmatrix}=0,\qquad
+DH(z)=\begin{pmatrix}3x^2-1&1\\t_{k,x}&t_{k,\lambda}\end{pmatrix}.
+$$
+The second equation keeps the correction on the transverse line in this two-dimensional example; in higher dimensions it is a <hyperplane>. Solving the <linear system> $DH(z^{(j)})\delta z=-H(z^{(j)})$ and updating $z^{(j+1)}=z^{(j)}+\delta z$ corrects both coordinates together.
+
+\Image[continuation-pseudo-arclength-predictor-corrector.png]
+{title=A tangent predictor and transverse correction step across the upper fold}
+{description=From $z_k=(0.45,0.358875)$ with $h=0.18$, the predictor lies above the largest attainable nearby $\lambda$. Correction along the transverse line returns to the <solution branch> on the far side of the <continuation fold>. Both axes use the same scale, so perpendicularity is visible.}
+
+This step gives $z_{\mathrm p}\approx(0.617556,0.424641)$ and $z_{k+1}\approx(0.635532,0.378840)$. Check both equations: the solution must satisfy $x^3-x+\lambda=0$ and $t_k^{\mathsf T}(z-z_{\mathrm p})=0$. Checking only the first could accept any point on the <solution branch>. The new $x$ exceeds $1/\sqrt3$, so the step crosses the <continuation fold>, even though the predictor's $\lambda$ exceeds $2/(3\sqrt3)$.
+
+At the seed, set $a=3x_k^2-1$. The <determinant> of the correction <Jacobian matrix> with the exact <unit vector> above is
+$$
+\det DH(z_k)=-\sqrt{1+a^2}\ne0.
+$$
+At either <continuation fold>, $a=0$, $t_k=(1,0)$ and $DH(z_k)=\begin{pmatrix}0&1\\1&0\end{pmatrix}$: the correction remains invertible. More generally, if $DF$ has full <rank> and a one-dimensional <kernel> spanned by $t_k$, adding $t_k^{\mathsf T}$ gives an <invertible matrix>, since a <vector> annihilated by both rows must be zero. This is a local argument; the old transverse <hyperplane> need not work arbitrarily far along the <curve>. Reduce $h$ and retry when correction fails, and check the equations and orientation after successful steps. Scaling state and parameter coordinates also matters, because it changes the <Euclidean norm> used to normalize the <tangent vector>.
 
 // Target: analysis.bigb
 
@@ -446,576 +540,7 @@ For a <parametric surface> $F(u,v)$ and a scalar implicit equation $f(P)=0$, set
 
 At regular transverse intersections, the displayed map has a rank-three $3\times4$ <Jacobian matrix>. Its one-dimensional kernel is the parameter tangent, while the physical tangent is parallel to the <cross product> of the surface normals. A <continuation method> predicts along that tangent and corrects $F=0$ together with a transverse section equation using <Newton method>. Patch bounds and component isolation supply seeds; one seed alone cannot discover every disconnected curve or closed loop. Tangency or coincident surfaces violate the regular-curve assumptions and require separate analysis.
 
-= Computer aided geometric design
-{parent=Numerical analysis}
-
-<Computer aided geometric design> studies computational representations, evaluation and manipulation of <curves> and <regular surfaces>, especially using <splines> and <subdivision surfaces>.
-
-// Target: geometry-and-topology.bigb
-
-= Affine equivariance of a geometric basis
-{parent=Computer aided geometric design}
-{title2=$T(\sum_i b_iP_i)=\sum_i b_iT(P_i),\quad\sum_i b_i=1$}
-
-A geometry representation with scalar <partition of unity> basis functions commutes with every <affine map> of its <control points>. For $T(x)=Ax+b$, linearity moves $A$ through the sum and the sum-to-one identity supplies the translation $b$. Positivity is needed for a <convex hull> property, but not for this equivariance. The same argument applies to linear <subdivision matrices> whose rows sum to one. General <projective transformations> require homogeneous <control points> and rational dehomogenization rather than transforming Euclidean controls with unchanged weights.
-
-= Translational penetration depth
-{parent=Computer aided geometric design}
-{title2=$\delta(A,B)=\inf\{\|t\|:\operatorname{int}(A+t)\cap\operatorname{int}B=\varnothing\}$}
-
-For overlapping solid bodies, the penetration depth is the smallest translation needed to remove interior overlap, with orientation fixed. It is distance from the origin to the complement of the translational collision region. Define signed separation as positive ordinary separation for disjoint bodies, zero for contact, and $-\delta$ for interior overlap. Translation-space <branch and bound> can bracket it using certified intersection/containment queries. This convention handles crossing and complete containment; merely negating unsigned boundary distance does not.
-
-= Linear precision of a geometric basis
-{parent=Computer aided geometric design}
-{title2=$\sum_j\phi_j(u)=1,\quad\sum_j\xi_j\phi_j(u)=u$}
-
-= Linear precision
-{synonym}
-
-A basis with the displayed identities reproduces <affine functions> from their values at the precision sites $\xi_j$. For two such bases, the tensor-product precision sites are $(\xi_j,\eta_k)$: summation independently recovers $u$ and $v$. Affine images of this site grid therefore produce exact planar parameterizations, independent of the chosen control-grid representation.
-
-= Control point
-{parent=Computer aided geometric design}
-{title2=$P_i$}
-
-A <control point> is geometric data used to specify a curve or surface through a basis or refinement rule. In a linear representation $C(t)=\sum_i b_i(t)P_i$, moving $P_i$ by $h$ changes the curve by $b_i(t)h$. The support of $b_i$ is therefore precisely its influence region. A <control point> need not lie on the curve: <Bézier curves> interpolate their endpoint controls, whereas generic interior <B-spline> controls are approximated.
-
-= Control net
-{parent=Control point}
-
-= Control polyhedron
-{synonym}
-
-A mesh connecting a surface's <control points> according to the representation's indexing topology. A <tensor-product surface basis> gives a rectangular index grid and quadrilateral cells, even when its points in space are neither planar nor rectangular. The drawn mesh is a geometric skeleton, not generally the exact limit surface or an enclosing solid. Positive <partition of unity> coefficients give a <convex hull> bound on the relevant controls.
-
-= Control polygon
-{parent=Control point}
-
-A <control polygon> joins successive <control points> by <line segments>. It gives an editable geometric skeleton, not usually the exact <curve>. An open <control polygon> has two ends; a closed <control polygon> also joins the last <control point> to the first. Store the first <control point> only once when using cyclic indices, so the closing edge is counted exactly once. Positive <partition of unity> basis functions place the <curve> inside the <convex hull> of its active <control points>; a convergent <subdivision curve> rule refines the <control polygon> toward its limit, with a certified error when an appropriate bound is available.
-
-= Apparent-gravity camera frame
-{parent=Computer aided geometric design}
-
-If $g$ is gravitational <acceleration> and $a$ is the camera's <acceleration>, the locally felt upward vector is $U=a-g$. Choose the travel <unit vector> $X$, set $W=U-(U\cdot X)X$, and, when $W\ne0$, take $Z=W/\|W\|$ and $Y=Z\times X$. These form an <orthonormal basis> with $U$ in the $XZ$ plane. If $U$ is parallel to $X$, the condition leaves the roll angle free even when $U\ne0$; transport a previous transverse axis or choose a well-conditioned coordinate axis and project it into $X^\perp$.
-
-= Subdivision curve
-{parent=Computer aided geometric design}
-
-A <subdivision curve> is the limit of repeated refinement of a <control polygon>, when that limit exists. Each finite stage still consists of <line segments>; the limiting <curve> can have a <continuous> <derivative>. Linear stationary rules, which use the same fixed weighted averages at every stage, can be studied through their <subdivision masks> and often represent <splines>. An <interpolation> rule retains the old <control points>, as in <binary linear interpolatory subdivision>; an approximating rule such as <Chaikin subdivision> generally moves away from them. Increasing the number of <control points> alone does not prove convergence or smoothness.
-
-// Target: analysis.bigb
-
-= Binary linear interpolatory subdivision
-{parent=Subdivision curve}
-{title2=$p'_{2i}=p_i,\quad p'_{2i+1}=(p_i+p_{i+1})/2$}
-
-The centered <subdivision mask> $[1,2,1]/2$ retains old <control points> and inserts edge midpoints. Its <control polygon> is unchanged as a geometric curve by refinement. Its basic limit is the hat $\phi(t)=\max(1-|t|,0)$, with support $[-1,1]$. This <linear spline> representation reproduces constants and linear functions, and is $C^0$ but generally not $C^1$ at its <spline knots>.
-
-= Functional precision set of a subdivision scheme
-{parent=Subdivision curve}
-{title2=$\mathcal P=\{f:\mathcal R_h(f|_{h\mathbb Z})=f\}$}
-
-The <functional precision set of a subdivision scheme> consists of functions exactly reproduced by refining their uniform samples with the scheme's consistent parameter placement. Polynomial precision usually specifies the reproduced polynomial space. If exactness is required for every grid spacing and shift, the binary midpoint-interpolation scheme has precision exactly the <affine functions>. At one fixed grid, its entire reconstruction range is the space of continuous <piecewise linear functions> on that grid; this larger range should not be confused with polynomial precision or arbitrary-grid reproduction.
-
-= Chaikin subdivision
-{c}
-{parent=Subdivision curve}
-{title2=$Q_i=\tfrac34P_i+\tfrac14P_{i+1},\quad R_i=\tfrac14P_i+\tfrac34P_{i+1}$}
-
-= Chaikin's algorithm
-{c}
-{synonym}
-
-= Chaikin corner cutting
-{c}
-{synonym}
-
-<Chaikin subdivision> generates a rounded <subdivision curve> by repeatedly cutting the corners off a <control polygon>. Each edge contributes two new <control points>, one a quarter of the way along the edge and the other three quarters of the way along it. Connecting these new <control points> in edge order replaces the old corners by shorter <line segments>. This makes <Chaikin subdivision> a useful way to draw a smooth outline from a small, editable set of <control points>, without evaluating <B-spline> basis functions at each drawing step. Joy presents both the corner-cutting rule and its closed version.https://www.cs.unc.edu/~dm/UNC/COMP258/LECTURES/Chaikins-Algorithm.pdf[Kenneth I. Joy, Chaikin's Algorithms for Curves, §§Chaikin's Method and Example — A Closed Curve, UC Davis authored notes]{ref}
-
-For a closed <control polygon> with $n\geq3$ <control points> $P_0,\ldots,P_{n-1}$, set $P_n=P_0$ and interpret indices cyclically. One refinement $S$ gives
-$$
-Q_i=\frac34P_i+\frac14P_{i+1},\qquad R_i=\frac14P_i+\frac34P_{i+1},\qquad 0\leq i<n,
-$$
-and the new <control polygon> is the ordered sequence
-$$
-S(P)=(Q_0,R_0,Q_1,R_1,\ldots,Q_{n-1},R_{n-1}).
-$$
-Close it by joining $R_{n-1}$ back to $Q_0$. Use the old <control points> for every average in the same refinement; updating them in place would define a different <algorithm>. One refinement produces $2n$ stored <control points>, and $k$ refinements produce $2^kn$, counting entries even if some coordinates coincide. Open <control polygons> need an explicit endpoint convention: applying only the interior edge rule discards the original endpoints, whereas retaining endpoints changes the boundary rule. The closed analysis below uses cyclic indices throughout.
-
-For a worked example, start with the rectangular <control polygon>
-$$
-P_0=(0,0),\quad P_1=(4,0),\quad P_2=(4,2),\quad P_3=(0,2).
-$$
-The first edge gives $Q_0=\tfrac34(0,0)+\tfrac14(4,0)=(1,0)$ and $R_0=\tfrac14(0,0)+\tfrac34(4,0)=(3,0)$. Applying <Chaikin subdivision> to all four edges, including the closing edge, gives exactly eight <control points> in this order:
-$$
-(1,0),\ (3,0),\ (4,\tfrac12),\ (4,\tfrac32),\ (3,2),\ (1,2),\ (0,\tfrac32),\ (0,\tfrac12).
-$$
-Thus the rectangle becomes an octagonal <control polygon>. Two refinements have $16$ <control points>, and five have $128$. The illustration shows finite <control polygons> at stages $0,1,2,5$; the last is already visually rounded but still consists of <line segments>.
-
-\Image[chaikin-corner-cutting-iterations.png]
-{title=Chaikin corner cutting on a rectangle at iterations zero, one, two and five}
-{description=The dashed rectangle is the original <control polygon> and its <convex hull>. Blue <line segments> and dots show the current <control polygon> and <control points>; no panel claims to be the exact limiting <curve>.}
-
-The <convex hull> property follows directly from the weights. Each new <control point> is a <convex combination> of the endpoints of one old edge, because the weights are nonnegative and sum to one. Consequently, if $H_k$ is the <convex hull> of the stage-$k$ <control points>, then $H_{k+1}\subseteq H_k$. Every later <line segment>, and every limit point, stays in the original <convex hull>. This gives a useful geometric enclosure. It also explains why <Chaikin subdivision> is approximating rather than an <interpolation> rule: the rectangle's four original corners are outside the first octagon's <convex hull>, so the limiting <curve> cannot pass through them. A refinement <control polygon> generally lies off the limiting <curve> as well.
-
-For the cyclic uniform rule, the closed limit is the periodic quadratic uniform <B-spline> <curve> determined by the original <control points>. Uniform refers to equal spacing in the <spline knot sequence>, not equal physical lengths of edges of the <control polygon>. An infinite uniform control sequence has the corresponding local description; arbitrary open endpoint conventions need separate treatment. Joy derives the quarter-point refinement by splitting quadratic uniform <B-spline> spans.https://www.cs.unc.edu/~dm/UNC/COMP258/LECTURES/Quadratic-B-Spline-Curve-Refinement.pdf[Kenneth I. Joy, Quadratic Uniform B-Spline Curve Refinement, §§Splitting and Refinement and The General Refinement Procedure, UC Davis authored notes]{ref}
-
-Here is an explicit description of that closed limit, with cyclic indices and a unit parameter span for each original <control point>:
-$$
-C_i(u)=\frac{(1-u)^2}{2}P_{i-1}+\left(\frac12+u-u^2\right)P_i+\frac{u^2}{2}P_{i+1},\qquad 0\leq u\leq1.
-$$
-Each coordinate is a <quadratic polynomial>, and the three coefficients form a nonnegative <partition of unity>. The span runs from $(P_{i-1}+P_i)/2$ to $(P_i+P_{i+1})/2$. Differentiating gives $C_i'(0)=P_i-P_{i-1}$ and $C_i'(1)=P_{i+1}-P_i$, so adjacent spans have matching values and matching first <derivatives>. Their second <derivatives> generally differ. Thus the parameterized <curve> is $C^1$, generally not $C^2$; degenerate <control points> can still make its <tangent vector> vanish. For the rectangle, the span around $P_1=(4,0)$ is
-$$
-C_1(u)=(2+4u-2u^2,\ u^2),\qquad C_1(\tfrac12)=(\tfrac72,\tfrac14),
-$$
-which rounds the original corner between edge midpoints $(2,0)$ and $(4,1)$. For equally spaced abscissae, the centered <Chaikin basis function> gives the scalar graph version of this quadratic <B-spline> representation and has support of width three original grid intervals.
-
-Another useful property is <affine equivariance of a geometric basis>: refining and applying an <affine map> commute. For $T(x)=Ax+b$,
-$$
-T(Q_i)=A\left(\frac34P_i+\frac14P_{i+1}\right)+b=\frac34T(P_i)+\frac14T(P_{i+1}),
-$$
-and the same calculation holds for $R_i$. The sum-to-one weights account for the <translation>. Therefore $T(S(P))=S(T(P))$ at every refinement, and also for the limit. A designer can apply a <shear mapping>, <translation>, or other <affine map> to the original <control polygon> and obtain exactly the transformed outline.
-
-For example, compose the <shear mapping> $(x,y)\mapsto(x+y/2,y)$ with the <translation> $(1,-1)$ to obtain $T(x,y)=(x+y/2+1,y-1)$. The rectangle's <control points> become $(1,-1),(5,-1),(6,1),(2,1)$. On its right edge, cutting first gives $Q_1=(4,1/2)$ and then $T(Q_1)=(21/4,-1/2)$. Transforming first and cutting instead gives $\tfrac34(5,-1)+\tfrac14(6,1)=(21/4,-1/2)$, the same <control point>.
-
-\Image[chaikin-affine-equivariance.png]
-{title=Shearing and translating a control polygon commutes with one Chaikin refinement}
-{description=Left: the rectangle and its first refinement. Right: the transformed <control polygon>, with blue dots from cutting after the <affine map> and orange rings from applying the <affine map> after cutting. All eight pairs coincide.}
-
-Historically, George M. Chaikin published “An algorithm for high-speed curve generation” in Computer Graphics and Image Processing 3(4), December 1974, pages 346–349. Its emphasis was practical curve generation through a recursive <algorithm> using simple arithmetic, with applications including machine control and three-dimensional curves. The lasting appeal of <Chaikin subdivision> is how an elementary local average creates an entire smooth <B-spline> <curve>.https://doi.org/10.1016/0146-664X(74)90028-8[G. M. Chaikin, An algorithm for high-speed curve generation, Computer Graphics and Image Processing 3(4), 346–349, 1974; publisher metadata and abstract]{ref}
-
-= Chaikin basis function
-{c}
-{parent=Chaikin subdivision}
-{title2=$\beta(t)=\begin{cases}3/4-t^2,&|t|\leq1/2,\\(3/2-|t|)^2/2,&1/2<|t|\leq3/2,\\0,&|t|>3/2.\end{cases}$}
-
-This centered <quadratic cardinal B-spline> weights each original control ordinate at its uniformly spaced abscissa. Its translates sum to one. It and its first <derivative> match at half-integer knots, while the second <derivative> can jump. The limit graph is $\sum_i y_i\beta((x-x_i)/h)$; one ordinate influences exactly three original intervals. Refinement of a quadratic adds $ah^2/4$ in the limit, yielding this basis by extending each three-point neighborhood quadratically.
-
-= Polynomial degree preservation under Chaikin subdivision
-{parent=Chaikin subdivision}
-{title2=$n=0,1,2$}
-
-For uniformly spaced abscissae, quarter and three-quarter averages applied to constant or affine samples leave the same polynomial. For $P(x)=ax^2+bx+c$ on spacing $h$, both new subgrids lie on $P(x)+3ah^2/16$. For degree $n\geq3$, their candidate polynomial formulas differ with leading term $(h^3/32)P'''$, which has a nonzero highest-degree coefficient. Thus preservation of polynomial degree for arbitrary sufficiently long data sequences holds exactly for degrees zero, one and two, despite quadratic values changing.
-
-= Support of a stationary subdivision scheme
-{parent=Subdivision curve}
-{title2=$[j_{\min}/(a-1),j_{\max}/(a-1)]$}
-
-Under $P_i^{\ell+1}=\sum_jM_{i-aj}P_j^\ell$, the descendants of control index zero lie at $a^{\ell-1}j_1+\cdots+j_\ell$, where each $j_k$ is in the mask support. Dividing by the refined parameter scale $a^\ell$ gives a limiting influence enclosure with the displayed endpoints. For a mask supported on $[-w,w]$ its width is $2w/(a-1)$ when the endpoints are active and a nonzero compactly supported basic limit exists. To prove exactness, the largest active mask term is the only surviving term near the right endpoint of the refinement equation, forcing $\beta=(\beta+j_{\max})/a$; the analogous left-end argument completes the result. Mask padding should be removed, and a nonconvergent rule has no limit support.
-
-= Subdivision curve interrogation
-{parent=Subdivision curve}
-
-A useful <subdivision curve> interface provides parameter ranges, endpoint and limit evaluation, derivatives, subdivision into equivalent restricted pieces, a certified <bounding volume>, and a certified error relative to a chord. Positive <subdivision masks> often give a <convex hull> bound. Masks with negative coefficients need a separate enclosing bound; their control-point hull need not enclose the limit curve.
-
-= Closest-point search on a subdivision curve
-{parent=Subdivision curve interrogation}
-{title2=$(P(t)-Q)\cdot P'(t)=0$}
-
-At a regular differentiable interior nearest point of a <parametric curve>, the displacement from the query point is perpendicular to the <tangent vector>. A <branch and bound> search uses distances to certified enclosing <bounding volumes> as lower bounds, and evaluated limit points as upper bounds. Refine the most promising restricted pieces until the upper bound differs from the global lower bound by the chosen distance tolerance. Safeguarded <Newton root-finding iteration> accelerates local candidates, but endpoints, nonregular points, ties and other stationary branches must not be omitted.
-
-= Shadow tracing for a subdivision curve
-{parent=Subdivision curve interrogation}
-{title2=$S(u,v)=L+\lambda(C(t)-L),\quad\lambda>1$}
-
-For a point light at $L$, the shadow of a curve point is the first surface intersection on its ray beyond that point. Certified patch bounds and subdivision isolate intersections; regular hits are corrected with a three-variable <Newton method> solve. Differentiating the displayed equation gives $[S_u,S_v,-(C-L)](u',v',\lambda')^T=\lambda C'$, a predictor for continuation along the shadow. Surface boundaries and grazing rays require clipping and reseeding; every visible component must be isolated, rather than assumed detectable from a fixed sample of the casting curve.
-
-= Recursive half-space clipping of a subdivision curve
-{parent=Subdivision curve interrogation}
-
-For an oriented plane function $\ell$, certified extrema over a <bounding volume> allow a <subdivision curve> piece to be rejected when $\max\ell<0$, or wholly retained when $\min\ell\geq0$. Otherwise subdivide. At an explicitly chosen rendering tolerance, a sufficiently flat, sufficiently short piece can be replaced by its clipped chord. This is an approximation, not a proof of exact crossing topology. Exact treatment of tangent contacts and small excursions requires root isolation of $\ell(C(t))$ and splitting into sign-constant intervals, when the curve representation supports such isolation.
-
-= Subdivision surface
-{parent=Computer aided geometric design}
-{wiki}
-
-A <subdivision surface> is the limit of repeated mesh refinement and vertex averaging. Exact interrogation evaluates this limit and, where defined, its <tangent vectors> and <normal vectors>; a finite refined control mesh is generally only an approximation to the limit.
-
-// Target: analysis.bigb
-
-= Lateral artifacts of a subdivision surface
-{parent=Subdivision surface}
-
-<Lateral artifacts of a subdivision surface> are unwanted variations along an intended straight extrusion: input cross-sections identical along a lattice direction acquire ripples in that direction under refinement. For a stationary arity-$m$ lattice rule $a_{i,j}$, extrusion along the first lattice coordinate is preserved exactly when $\sum_{i\equiv r\ (\mathrm{mod}\ m)}a_{i,j}$ is independent of the residue $r$ for every transverse offset $j$. Then summing along each row gives a single associated univariate <subdivision mask>. This direction-specific criterion does not promise invariance under every possible oblique extrusion.
-
-= Extrusion invariance of a ternary triangular scheme
-{parent=Lateral artifacts of a subdivision surface}
-{title2=$b_j=\sum_{i\equiv0\ (\mathrm{mod}\ 3)}a_{i,j}=\sum_{i\equiv1}a_{i,j}=\sum_{i\equiv2}a_{i,j}$}
-
-If a triangular-lattice <subdivision mask> has the displayed residue-sum equality, refining data $p_{i,j}=q_j$ gives $p'_{I,J}=\sum_k b_{J-3k}q_k$, independent of $I$. If affine coordinates reproduce their parameter positions, a geometrically straight extrusion is preserved. Rotationally symmetric masks give the corresponding property in all three lattice-edge directions. A boundary curve compatible with this extrusion uses the collapsed mask $b$, not just the central row of the two-dimensional mask.
-
-= Mid-edge subdivision
-{parent=Subdivision surface}
-
-Mid-edge subdivision replaces each mesh edge by its midpoint, joins successive midpoints around every old face, and joins successive midpoints around every old vertex. For an interior <manifold> mesh, each new vertex has valence four. Each geometric update is a <convex combination>, so every refined control point remains in the <convex hull> of the original control mesh. The regular limit is associated with the <quadratic four-direction box spline>.
-
-= Mid-edge facet centroid invariance
-{parent=Mid-edge subdivision}
-{title2=$\overline p^{\,(r+1)}=\overline p^{\,(r)}$}
-
-The descendant of a face with cyclic vertices $p_0,\ldots,p_{n-1}$ has vertices $p_i'=(p_i+p_{i+1})/2$. Their arithmetic mean is unchanged. On the cyclic <Fourier basis>, a mode of frequency $j$ is multiplied by $(1+e^{2\pi ij/n})/2$. Every nonconstant mode has modulus less than one, so the descendant face shrinks to the original vertex <centroid>. This puts that <centroid> on the subdivision limit, without requiring the original face to be planar.
-
-= Subdivision surface interrogation
-{parent=Subdivision surface}
-
-Interrogation of a subdivision limit needs patch/topology navigation, refinement, limit evaluation and <derivatives> where they exist, with certified bounds and geometric error estimates. On regular patches one may use the corresponding spline representation. At <extraordinary subdivision vertices>, local <subdivision matrices> determine limit positions and tangents under the scheme's smoothness conditions. A <normal vector> may exist even when <second derivatives> and <Gaussian curvature> do not; finite refined polygons are approximations rather than exact limit queries.
-
-= Intersection of subdivision limit surfaces
-{parent=Subdivision surface interrogation}
-
-A robust intersection search applies <branch and bound> to pairs of <subdivision surface> patches. Certified <bounding volumes> reject disjoint pairs, and refinement reduces unresolved pairs. Limit evaluation, tangent data and controlled approximation bounds produce and correct local intersection arcs, then patch adjacency joins them. Bounds must enclose the limit, not merely the current mesh. Flat polygon intersections are approximations and can miss tiny components or tangencies unless the associated geometric and transversality conditions are verified.
-
-= Plane section of a subdivision surface
-{parent=Subdivision surface interrogation}
-{title2=$g(u,v)=n\cdot S(u,v)-d=0$}
-
-A <plane section of a subdivision surface> is a zero set of the plane functional evaluated on the limit <parametric surface>. Certified patch <bounding volumes> reject sign-definite patches. On a regular transverse section, $\nabla g\ne0$ and the parameter tangent is $(-g_v,g_u)$; predictor-corrector <continuation method> traces a branch after every component has been isolated. Closed loops, tangencies, coplanar patches and extraordinary-vertex neighborhoods require more than corner-sign tests. Degenerate sections can contain isolated points or two-dimensional portions rather than only regular curves.
-
-= Minimum distance between subdivision bodies
-{parent=Subdivision surface interrogation}
-{title2=$d(A,B)=\inf_{a\in A,b\in B}\|a-b\|$}
-
-For disjoint compact bodies, the minimum occurs on their boundaries. Patch <bounding volumes> give certified lower bounds and evaluated limit-point pairs give upper bounds. A <branch and bound> search refines promising patch pairs until the global bounds differ by the tolerance. Boundary distance alone cannot detect containment; touching, crossing or nested solid bodies have ordinary set distance zero. Negative overlap values require an additional convention such as <translational penetration depth>.
-
-= Extraordinary subdivision vertex
-{parent=Subdivision surface}
-
-An <extraordinary subdivision vertex> has a valence different from that of the regular refinement lattice. Regular <box spline> calculations do not alone establish smoothness at this vertex. The finite local <subdivision matrix>, its <eigenvalues>, and the associated <characteristic map of a subdivision surface> determine convergence and tangent behavior.
-
-= Characteristic map of a subdivision surface
-{parent=Extraordinary subdivision vertex}
-
-The <characteristic map of a subdivision surface> is the planar limit map obtained from the two independent tangent <eigenvectors> of its local <subdivision matrix>. In the usual stationary setting, a simple constant eigenvalue one, a semisimple double subdominant eigenvalue $0<\lambda<1$, strictly smaller other eigenvalues, and a regular injective characteristic map establish the standard $C^1$ tangent-plane behavior for nondegenerate data. The eigenvalue inequalities alone do not exclude a folded or singular characteristic map. For an alternating scheme these tests must use a full period of refinement.
-
-= Quincunx subdivision
-{parent=Subdivision surface}
-{title2=$D^2=2I$}
-
-A regular <quincunx subdivision> step replaces a square lattice by the union of its old vertices and face centres. In lattice indices one may use
-$$
-D=\begin{pmatrix}1&1\\1&-1\end{pmatrix},\qquad D^2=2I.
-$$
-Thus two steps give ordinary binary refinement. If $A(z,w)$ is the one-step <subdivision mask> symbol, the two-step symbol is $A(z,w)A(zw,z/w)$. The two lattice parity classes separately determine the old-vertex and face-vertex stencils; their coefficient sums must each be one to reproduce constants.
-
-= Loop subdivision surface
-{c}
-{parent=Subdivision surface}
-{wiki}
-
-= Loop subdivision
-{c}
-{synonym}
-
-On a regular triangular grid, <Loop subdivision> retains an old vertex with weight $10/16$ and adds its six neighbors with weight $1/16$ each. A new edge vertex has weights $3/8$ on the endpoints and $1/8$ on the two opposite vertices. Extraordinary vertices require valence-dependent rules.
-
-// Target: analysis.bigb
-
-= Polynomial generation by regular Loop subdivision
-{parent=Loop subdivision surface}
-
-For the three unit-grid edge vectors $v_1,v_2,v_3$ and a <multivariate polynomial> $f$ of total degree at most three, sampled regular-grid <Loop subdivision> generates the graph of $f+\frac1{12}\sum_{r=1}^3(v_r\cdot\nabla)^2f$. Thus affine polynomials are reproduced exactly and all polynomials through degree three retain their degree. Fourth-degree data constant along one edge direction reduce to a <cardinal cubic B-spline>, whose limit need not be a polynomial.
-
-= Extrusion invariance of Loop subdivision
-{parent=Loop subdivision surface}
-
-On an infinite regular triangular grid, height data constant along one edge direction remain constant along that direction under <Loop subdivision>. Across rows the induced rule is $g'_{2j}=(g_{j-1}+6g_j+g_{j+1})/8$, $g'_{2j+1}=(g_j+g_{j+1})/2$, the centered <cardinal cubic B-spline> rule.
-
-// Target: analysis.bigb
-
-= Subdivision mask
-{parent=Subdivision surface}
-{title2=$q_j=\sum_i a_{j-2i}p_i$}
-
-A stationary binary <subdivision mask> $a$ specifies a refinement operator $q_j=\sum_i a_{j-2i}p_i$. Indices may be vectors for a surface. Coefficients restricted to a parity class give the stencil for one type of refined vertex.
-
-// Target: analysis.bigb
-
-= Subdivision mask width
-{parent=Subdivision mask}
-{title2=$w=j_{\max}-j_{\min}+1$}
-
-For a stationary univariate refinement $S_{ij}=a_{i-mj}$, the <subdivision mask width> counts fine-grid positions from the first to the last active entry in a column, including any internal zeros. Consecutive columns are translates by $m$ rows, the <subdivision arity>. The number of old <control points> used by a particular new point is instead the size of its row stencil; it need not equal the mask width. A span convention counts $w-1$ fine intervals, so numerical width claims should specify the convention.
-
-= Subdivision arity
-{parent=Subdivision mask}
-{title2=$a$}
-
-The subdivision arity is the integer factor $a>1$ by which a stationary refinement shrinks parameter-grid intervals: control index $i$ has coordinate $i/a^\ell$ after $\ell$ levels. It is distinct from the mask width and from the number of neighbors in a stencil.
-
-= Subdivision difference scheme
-{parent=Subdivision mask}
-{title2=$\Delta S_M=S_B\Delta,\quad B(z)=M(z)/(1+z+\cdots+z^{a-1})$}
-
-For backward differences $\Delta P_i=P_i-P_{i-1}$, a <scalar> stationary arity-$a$ <subdivision mask> has symbol $M(z)=\sum_iM_i z^i$. The identity $(1-z)M(z)=B(z)(1-z^a)$ gives the displayed intertwining whenever the quotient is a finite <Laurent polynomial>. Iterating supplies higher-difference masks. The coefficients $a^{r\ell}\Delta^rP_i^\ell$ are candidate $r$th-derivative controls. A convergent <derivative> scheme, proved by contraction of its first differences, establishes corresponding smoothness of the original limit under the standard consistent parameterization.
-
-= Norm and spectral bounds for subdivision regularity
-{parent=Subdivision difference scheme}
-{title2=$\max\rho(A_{\epsilon_p}\cdots A_{\epsilon_1})^{1/p}\le\widehat\rho\le\max\|A_{\epsilon_p}\cdots A_{\epsilon_1}\|^{1/p}$}
-
-Finite local <subdivision matrices> for the scaled difference scheme track <derivative> variations in nested parameter intervals. A product-norm bound below one proves uniform contraction for every interval and therefore gives a <lower bound> on <derivative> <continuity>. A product <eigenvalue> of modulus at least one is an obstruction when its mode is reachable from the data and visible in the limit: generic data excite it, so the corresponding <derivative> differences fail to vanish. Harmless <polynomial> or unobservable modes must be removed before applying such an <upper bound>. Borderline smoothness needs direct analysis, not rounding a numerical exponent. Stability and convergence of the underlying scheme must be checked rather than inferred from mask width.
-
-= Subdivision matrix
-{parent=Subdivision mask}
-{title2=$S$}
-
-A local <subdivision matrix> maps the <control points> in a refinement-invariant neighborhood to the refined neighborhood. Row sums one express constant reproduction. Its constant <eigenvector> has <eigenvalue> one; remaining <eigenvalues> govern decay of shape modes. Near an <extraordinary subdivision vertex>, tangent modes and a <characteristic map of a subdivision surface> are needed to test geometric smoothness, beyond simple convergence.
-
-= Bézier curve
-{c}
-{parent=Computer aided geometric design}
-{wiki}
-{title2=$C(t)=\sum_{i=0}^n\binom ni(1-t)^{n-i}t^iP_i$}
-
-A <Bézier curve> is a <parametric curve> specified by <control points> $P_0,\ldots,P_n$ in a <Euclidean space> and the <Bernstein basis>:
-$$
-C(t)=\sum_{i=0}^n b_{i,n}(t)P_i,\qquad b_{i,n}(t)=\binom ni(1-t)^{n-i}t^i,\qquad 0\leq t\leq1.
-$$
-Here $\binom ni$ is a <binomial coefficient>. Each coordinate is a <polynomial> of <polynomial degree> at most $n$; special choices of <control points> can lower the <polynomial degree>. The ordered <control points> form the <control polygon>. A cubic <Bézier curve> uses four <control points> and has the explicit form
-$$
-C(t)=(1-t)^3P_0+3(1-t)^2tP_1+3(1-t)t^2P_2+t^3P_3.
-$$
-The curve passes through $P_0$ and $P_3$; the interior <control points> steer its shape and need not lie on it.https://ocw.mit.edu/courses/6-837-computer-graphics-fall-2012/aba8735cf2cf7c71ca5d29b46873309a_MIT6_837F12_Lec01.pdf[MIT 6.837, Bézier Curves and Splines, slides 23–31 and 45–47, 2012]{ref}
-
-For a worked example, choose
-$$
-P_0=(0,0),\qquad P_1=(1,2),\qquad P_2=(3,2),\qquad P_3=(4,0).
-$$
-Substituting these <control points> gives
-$$
-C(t)=\bigl(3t+3t^2-2t^3,\;6t(1-t)\bigr),\qquad C(1/2)=\tfrac18P_0+\tfrac38P_1+\tfrac38P_2+\tfrac18P_3=(2,1.5).
-$$
-Here $y(t)=1.5-6(t-1/2)^2\leq1.5$, so neither interior <control point>, both at height $2$, lies on the curve. <De Casteljau's algorithm> computes the same point using only successive <linear interpolations>.
-
-The endpoint <tangent vectors> follow from the <Bézier derivative control polygon>:
-$$
-C'(0)=3(P_1-P_0)=(3,6),\qquad C'(1)=3(P_3-P_2)=(3,-6).
-$$
-Thus the curve leaves $P_0$ toward $P_1$ and arrives at $P_3$ from $P_2$. These nonzero <derivatives> determine the endpoint <tangent lines>; if an endpoint <derivative> vanishes, that formula alone does not determine its tangent direction. Endpoint handles are useful when arranging a <parametric first-derivative join of Bézier curves>.
-
-The parameter $t$ is usually not <arc length>. For this example,
-$$
-C'(t)=\bigl(3+6t-6t^2,\;6-12t\bigr),\qquad \|C'(0)\|=\sqrt{45},\qquad \|C'(1/2)\|=4.5.
-$$
-Equal steps in $t$ therefore do not generally travel equal distances. Distance along the curve is instead the <arc length>, given by the <integral> $s(t)=\int_0^t\|C'(u)\|\,du$; its <derivative> is the <norm> of the <tangent vector> and measures the rate of travel.
-
-Two geometric facts make <Bézier curves> especially convenient for design. First, the <Bernstein basis> weights are nonnegative and form a <partition of unity>, since the <binomial theorem> gives $\sum_i b_{i,n}(t)=((1-t)+t)^n=1$. Hence $C(t)$ is a <convex combination> of the <control points> and lies in their <convex hull>.https://groups.csail.mit.edu/graphics/classes/6.838/S98/meetings/m15/[MIT 6.838, Bézier Curve and B-Spline Curve, §1.4.1, 1998]{ref} The <convex hull> is the smallest <convex set> containing the <control points>, not their <axis-aligned bounding box>. Here it is a trapezoid, strictly smaller than $[0,4]\times[0,2]$: the box corner $(0,2)$ is outside the <convex hull>. The curve need not fill or touch every edge of either enclosure. The <convex hull> guarantee concerns $0\leq t\leq1$; outside that interval weights can be negative.
-
-Second, applying an <affine map> to every <control point> gives exactly the same result as applying it to the entire curve. For $T(x)=Ax+b$,
-$$
-\sum_i b_{i,n}(t)T(P_i)=A\sum_i b_{i,n}(t)P_i+b\sum_i b_{i,n}(t)=T(C(t)).
-$$
-This is <affine equivariance of a geometric basis>: a <translation>, <rotation> or <shear mapping> can be performed on a handful of <control points>. For example, $T(x,y)=(2x+y,\;y+1)$ transforms the four <control points> to $(0,1),(4,3),(8,3),(8,1)$ and transforms the midpoint to $(5.5,2.5)$, also obtained from the same weights $(1,3,3,1)/8$.
-
-These editable handles explain the usefulness of <Bézier curves> in <computer aided geometric design>, <vector graphics> paths and <outline fonts>: a small collection of points controls an entire smooth stroke, and resizing the design preserves its mathematical shape. Cambridge's computer-graphics notes describe their use in graphic design, typography and PostScript outlines. The industrial context includes Pierre Bézier's work at Renault and Paul de Casteljau's work at Citroën.https://www.cl.cam.ac.uk/teaching/1415/CompGraph/cgip.pdf[Neil A. Dodgson and Peter Robinson, Cambridge Computer Graphics and Image Processing, slides 183 and 226–228, 2014]{ref}
-
-// Target: analysis.bigb
-
-= Bézier derivative control polygon
-{parent=Bézier curve}
-{c}
-{title2=$C^{(r)}=\frac{n!}{(n-r)!}\sum_{j=0}^{n-r}\Delta^rP_j B_j^{n-r}$}
-
-For a degree-$n$ <Bézier curve>, the $r$th <derivative> has degree at most $n-r$ and <control points> $n!\Delta^rP_j/(n-r)!$. The first <derivative> follows by differentiating the <Bernstein basis> and shifting one summation index; iteration proves the general formula. A parameter interval of length $h$ multiplies these <derivative> controls by $h^{-r}$.
-
-= Parametric first-derivative join of Bézier curves
-{parent=Bézier derivative control polygon}
-{title2=$P_n=Q_0,\quad n(P_n-P_{n-1})/h=m(Q_1-Q_0)/k$}
-
-Two adjacent <Bézier curves> of degrees $n,m$ and interval lengths $h,k$ have a $C^1$ join precisely when their endpoint positions and their <derivatives> in the common parameter agree. Parallel endpoint polygon edges alone give tangent-direction agreement; their scaled vectors must be equal for parametric first-derivative <continuity>.
-
-= De Casteljau's algorithm
-{c}
-{parent=Bézier curve}
-{wiki}
-{title2=$P_i^{(r)}(t)=(1-t)P_i^{(r-1)}(t)+tP_{i+1}^{(r-1)}(t)$}
-
-= De Casteljau algorithm
-{c}
-{synonym}
-
-<De Casteljau's algorithm> evaluates a <Bézier curve> by repeated <linear interpolation> between neighboring <control points>. Fix $t\in[0,1]$, start with $P_i^{(0)}(t)=P_i$, and compute
-$$
-P_i^{(r)}(t)=(1-t)P_i^{(r-1)}(t)+tP_{i+1}^{(r-1)}(t),\qquad r=1,\ldots,n,\quad i=0,\ldots,n-r.
-$$
-Each new row has one fewer point. The final point is $P_0^{(n)}(t)=C(t)$. Use the same $t$ at every stage: it describes the fraction of each <line segment> traversed from its first endpoint toward its second. A cubic <Bézier curve> needs three levels containing $3$, $2$, and $1$ <linear interpolations>, respectively.https://graphics.stanford.edu/courses/cs164-10-spring/Handouts/handout19.pdf[Stanford CS348a, Handout 19, §2.3, pp. 10–11]{ref}
-
-For the <Bézier curve> with <control points> $P_0=(0,0)$, $P_1=(1,2)$, $P_2=(3,2)$, $P_3=(4,0)$, evaluation at $t=1/2$ takes the <midpoint> of every neighboring pair. The first level gives
-$$
-Q_0=\tfrac12(P_0+P_1)=(0.5,1),\qquad Q_1=\tfrac12(P_1+P_2)=(2,2),\qquad Q_2=\tfrac12(P_2+P_3)=(3.5,1).
-$$
-The second level gives
-$$
-R_0=\tfrac12(Q_0+Q_1)=(1.25,1.5),\qquad R_1=\tfrac12(Q_1+Q_2)=(2.75,1.5),
-$$
-and the third level gives
-$$
-S=\tfrac12(R_0+R_1)=(2,1.5)=C(1/2).
-$$
-The intermediate <control polygons> shrink toward the evaluated point. Each step is a <convex combination>, giving a geometric explanation of the <convex hull> property; every step also commutes with an <affine map>.
-
-\Image[bezier-de-casteljau-construction.png]
-{title=Cubic Bézier curve, its convex hull and bounding box, and the three levels of De Casteljau's algorithm at t = 1/2}
-
-The same construction splits the <Bézier curve> exactly, with no approximation. The outer edges of the triangular array give the new <control points>: for a cubic, $(P_0,Q_0,R_0,S)$ specify the left piece and $(S,R_1,Q_2,P_3)$ specify the right piece.https://graphics.stanford.edu/courses/cs164-10-spring/Handouts/handout19.pdf[Stanford CS348a, Handout 19, §2.3, p. 11, subsegment control points]{ref} At $t=1/2$ these two lists are
-$$
-L=\bigl((0,0),(0.5,1),(1.25,1.5),(2,1.5)\bigr),\qquad H=\bigl((2,1.5),(2.75,1.5),(3.5,1),(4,0)\bigr).
-$$
-Write $C_L$ and $C_H$ for the <Bézier curves> defined by these lists, each with its own parameter $u\in[0,1]$. Then
-$$
-C_L(u)=C(u/2),\qquad C_H(u)=C((1+u)/2).
-$$
-Their images reproduce the original curve, while their <derivatives> account for the shorter parameter intervals. At the join,
-$$
-C_L(1)=C_H(0)=S,\qquad C_L'(1)=3(S-R_0)=(2.25,0)=3(R_1-S)=C_H'(0).
-$$
-The <chain rule> gives $C_L'(1)=C_H'(0)=C'(1/2)/2$; in the original parameter, both pieces have <derivative> $(4.5,0)$. This is the interval scaling in the <parametric first-derivative join of Bézier curves>.
-
-\Image[bezier-subdivision-and-tangents.png]
-{title=Exact midpoint subdivision with two smaller control polygons, endpoint tangent directions, and equally spaced parameter samples}
-
-Repeated <midpoint> splitting is useful for drawing <vector graphics> paths: each piece has a smaller <control polygon> and its own <convex hull> enclosure. A renderer can refine pieces until they are sufficiently close to <line segments> at the chosen display scale. Evaluating $C(t)$ and splitting it are thus two results of the same short <algorithm>.
-
-For a proof outline, expanding the recursion gives
-$$
-P_i^{(r)}(t)=\sum_{j=0}^r\binom rj(1-t)^{r-j}t^jP_{i+j}.
-$$
-<Pascal's identity> proves this by <induction>; at $r=n$, $i=0$ it is precisely the <Bernstein basis> formula for the <Bézier curve>. The geometric construction remains useful even when expanding the <polynomial> by hand would be cumbersome.
-
-// Target: analysis.bigb
-
-= Bounding volume
-{parent=Computer aided geometric design}
-{wiki}
-
-A <bounding volume> is a simple enclosing <set> $B$ for an object $S$: every <point> of $S$ belongs to $B$. Its purpose is to make a cheap rejection possible before examining the object itself. For example, an <axis-aligned bounding box> can enclose a <triangle> using just its smallest and largest <coordinates>.
-
-The guarantee is one-sided. If $S\subseteq B_S$ and $T\subseteq B_T$, then
-$$
-S\cap T\ne\varnothing\ \Longrightarrow\ B_S\cap B_T\ne\varnothing.
-$$
-Thus an empty <set intersection> of the <bounding volumes> certifies an empty <set intersection> of the objects. An overlap of the <bounding volumes> is necessary for actual intersection, but does not prove it. This is a <conservative enclosure test>: rejection is conclusive, acceptance means further examination is needed.
-
-Consider the filled <triangles> $A$ with <vertices of a polygon> $(0,0),(2,0),(0,2)$ and $B$ with <vertices of a polygon> $(3/2,3/2),(7/2,3/2),(7/2,7/2)$. Their <axis-aligned bounding boxes> overlap in $[3/2,2]\times[3/2,2]$. Nevertheless, every <point> of $A$ satisfies $x+y\leq2$, whereas every <point> of $B$ satisfies $x+y\geq3$. The two <triangles> are disjoint. The shaded square in the <bounding volume hierarchy> illustration makes this false candidate visible.
-
-For <collision detection>, a <broad phase> produces possible object pairs from <bounding volume> tests; a <narrow phase> examines the actual shapes, for example with a <triangle-triangle intersection algorithm>. Scott Le Grand's <GPU Gems 3/Chapter 32. Broad-Phase Collision Detection with CUDA> explains this separation in its opening paragraphs. Whether touching counts as a <collision> must be specified by the application.
-
-An enclosure must cover the entire object being queried. A box fitted to samples of a <parametric curve> only guarantees enclosure of the sampled <points>, unless a separate bound covers the whole <parametric curve>. For a <Bézier curve>, the <convex hull> of its <control points> provides such a bound on its defining parameter <interval>. In <floating-point arithmetic>, <outward rounding> can preserve certified <coordinate> bounds; an inward <roundoff error> can invalidate a rejection. Bounds must also be updated when objects move.
-
-= Conservative enclosure test
-{parent=Bounding volume}
-{title2=$S\subseteq B_S,\ T\subseteq B_T,\ B_S\cap B_T=\varnothing\Rightarrow S\cap T=\varnothing$}
-
-A <conservative enclosure test> may retain disjoint objects as candidates, but must never reject a true <set intersection>. Increasing an enclosure can add candidates while preserving this implication.
-
-= Collision detection
-{parent=Bounding volume}
-
-<Collision detection> determines whether geometric objects meet, under a specified convention for touching. A <bounding volume> test can reject a pair before a more detailed shape test.
-
-= Broad phase
-{parent=Collision detection}
-
-The <broad phase> generates candidate pairs with inexpensive <conservative enclosure tests>. An accepted pair still needs the <narrow phase>.
-
-= Narrow phase
-{parent=Collision detection}
-
-The <narrow phase> checks the actual objects for candidates retained by the <broad phase>. Its numerical guarantees depend on the chosen shape test.
-
-// Target: analysis.bigb
-
-= Bounding volume hierarchy
-{parent=Bounding volume}
-{wiki}
-
-= BVH
-{c}
-{synonym}
-
-A <bounding volume hierarchy> is a <data structure> arranged as a <rooted tree>: leaves store objects, and each internal node stores a <bounding volume> enclosing its <children in a rooted tree>. Consequently, every node encloses all objects in its <subtree>. A common choice is a <binary tree> of <axis-aligned bounding boxes>. The objects assigned to sibling <subtrees> can be different even when their <bounding volumes> overlap.<Physically Based Rendering: From Theory to Implementation (4th edition) by Matt Pharr and others/7.3 Bounding Volume Hierarchies>[§7.3, opening paragraphs and Figure 7.3: leaves, descendant bounds and rejection of a subtree]{ref}
-
-Here is an exact two-dimensional example. Use the <triangles> $A,B$ from <bounding volume>, together with $C$ having <vertices of a polygon> $(6,0),(8,0),(6,2)$ and $D$ having <vertices of a polygon> $(6,3),(8,3),(8,5)$. Group $A,B$ under $L$, and $C,D$ under $R$. Their parent <axis-aligned bounding boxes> and the box at the <root of a tree> are
-$$
-B_L=[0,7/2]\times[0,7/2],\qquad B_R=[6,8]\times[0,5],\qquad B_{\mathrm{root}}=[0,8]\times[0,5].
-$$
-The diagram shows all seven nodes. Taking the <coordinate>-wise <minimum> and <maximum> of the two child boxes constructs each parent box; the resulting box contains the <set union> of the children, and can also contain empty space between them.
-
-\Image[bounding-box-enclosures-and-hierarchy.png]
-{title=Four exact <triangles>, their enclosing boxes, and a seven-node <bounding volume hierarchy> arranged as a <binary tree>}
-{id=bounding-box-enclosures-and-hierarchy}
-
-A <bounding volume hierarchy traversal> starts at the <root of a tree> and discards a <subtree> when its <bounding volume> misses the query. Accepted internal nodes expose their children; accepted leaves supply candidates for actual shape tests. Box2D's official <Collision: Dynamic Tree> describes <axis-aligned bounding box> region queries that return overlapping leaf boxes. A query box that bounds a different query shape can produce additional false candidates.
-
-For the closed query <rectangle>
-$$
-Q=[8/5,9/5]\times[8/5,9/5],
-$$
-left-first <depth-first search> tests the node boxes in order: root, $L$, $A$, $B$, $R$. The first four overlap $Q$; $R$ does not, because its smallest $x$-<coordinate> is $6>9/5$. Pruning $R$ skips both $C$ and $D$. Five box tests leave two <broad phase> candidates. The <narrow phase> rejects $A$, since $x+y\geq16/5>2$ throughout $Q$, and accepts $B$: the <point> $(7/4,13/8)$ belongs to both $Q$ and $B$. There are two detailed shape tests and one true hit.
-
-\Image[bounding-volume-hierarchy-query-pruning.png]
-{title=An exact <rectangle> query prunes the right <subtree> and leaves two box candidates but only one <triangle> hit}
-{id=bounding-volume-hierarchy-query-pruning}
-
-For a query asking for all intersections, <time complexity> depends on the number $v$ of visited nodes and the cost $T_j$ of each candidate shape test. With fixed dimension and constant bookkeeping cost per node, the work is
-$$
-O\!\left(v+\sum_{j=1}^{c}T_j\right),
-$$
-where $c$ counts candidate objects and $O$ is <Big O notation>. A balanced <binary tree> has small <height of a binary tree>, but a query can enter both children at every level. In this example a query containing $[0,8]\times[0,5]$ visits all seven nodes and tests all four <triangles>. More generally, a <full binary tree> with $n$ single-object leaves has $2n-1$ nodes, so such a query takes $O(n)$ work for constant-cost shape tests even when its <height of a binary tree> is $O(\log n)$. Listing $n$ hits itself requires $n$ outputs. Small height alone gives no unconditional logarithmic query bound.
-
-For <collision detection> between two <bounding volume hierarchies>, traverse pairs of nodes: reject disjoint pairs of <bounding volumes>, expand a nonleaf member of an accepted pair, and apply the <narrow phase> at accepted leaf pairs. A single collection's self-query must exclude pairing an object with itself and avoid duplicate unordered pairs. If every object overlaps every other object, reporting all pairs already requires $n(n-1)/2$ results. Construction quality, empty space in boxes and the queries determine how much pruning is useful.<GPU Gems 3/Chapter 32. Broad-Phase Collision Detection with CUDA>[§32.1: the n(n−1)/2 pair baseline and worst-case quadratic broad-phase work]{ref}
-
-For a short correctness outline, an object is enclosed by its leaf box, and each child box is enclosed by its parent box. Repeated <subset> relations carry this property to every ancestor. A true query intersection therefore prevents rejection at every ancestor of the object's leaf. Updating leaf boxes after motion also requires restoring all affected ancestor bounds before querying.
-
-= Bounding volume hierarchy traversal
-{parent=Bounding volume hierarchy}
-
-A <bounding volume hierarchy traversal> visits only nodes whose ancestors passed a <conservative enclosure test>. It can use <depth-first search>; its <time complexity> depends on how many nodes pass, not just the <height of a binary tree>.
-
-// Target: optics.bigb
-
-= Axis-aligned bounding box
-{parent=Bounding volume}
-{title2=$B=\prod_{i=1}^{d}[m_i,M_i]$}
-
-= AABB
-{c}
-{synonym}
-
-An <axis-aligned bounding box> is a <Cartesian product> of <closed intervals> aligned with a chosen <Cartesian coordinate system>:
-$$
-B=\prod_{i=1}^{d}[m_i,M_i],\qquad m_i\leq M_i.
-$$
-Only the two opposite corners $(m_1,\ldots,m_d)$ and $(M_1,\ldots,M_d)$ need to be stored. In two dimensions it is a <rectangle>. Changing the <Cartesian coordinate system> can change how tightly the <axis-aligned bounding box> fits the same object.<Physically Based Rendering: From Theory to Implementation (4th edition) by Matt Pharr and others/3.7 Bounding Boxes>[§3.7, two-point representation and Figure 3.9]{ref}
-
-For a nonempty <finite set> of <points> $P$, the smallest such <axis-aligned bounding box> has
-$$
-m_i=\min_{p\in P}p_i,\qquad M_i=\max_{p\in P}p_i.
-$$
-These <minimum> and <maximum> values also enclose the <convex hull> of $P$: each <coordinate> of a <convex combination> lies between the smallest and largest input <coordinates>. In particular, three <vertices of a polygon> determine the <axis-aligned bounding box> of a filled <triangle>. For a general nonempty <compact set>, the same formulas use all its <points>; inspecting only an arbitrary finite sample is insufficient.
-
-Given nonempty boxes $B=\prod_i[m_i,M_i]$ and $C=\prod_i[n_i,N_i]$, the <closed interval> convention gives
-$$
-B\cap C\ne\varnothing\quad\Longleftrightarrow\quad
-\max(m_i,n_i)\leq\min(M_i,N_i)\quad\text{for every }i.
-$$
-Equivalently, reject as soon as $M_i<n_i$ or $N_i<m_i$ in any <coordinate>. The surviving <set intersection> has endpoints $\max(m_i,n_i)$ and $\min(M_i,N_i)$. This is an exact box test, while its conclusion about enclosed objects remains a <conservative enclosure test>.<Physically Based Rendering: From Theory to Implementation (4th edition) by Matt Pharr and others/3.7 Bounding Boxes>[§3.7, Intersect() and Overlaps(): coordinate-wise intersection and inclusive comparisons]{ref}
-
-Equality counts as touching: $[0,1]\times[0,1]$ and $[1,2]\times[0,1]$ share an edge, so their <set intersection> is nonempty. Replacing every $\leq$ in the overlap formula by $<$ tests intersection of the <interiors> of full-dimensional boxes and excludes this contact. A zero-width <closed interval> can represent a <point> or a lower-dimensional enclosure, and must not automatically be discarded when touching counts. A box with some $m_i>M_i$ is empty; test emptiness before applying rules intended for nonempty boxes. The <broad phase> must retain touching candidates whenever the <narrow phase> counts touching as a hit.
-
-For nonempty boxes, the smallest enclosing <axis-aligned bounding box> of their <set union> is
-$$
-\prod_{i=1}^{d}\bigl[\min(m_i,n_i),\max(M_i,N_i)\bigr].
-$$
-This operation supplies the parent boxes in a <bounding volume hierarchy>. It is an enclosure of the <set union>, rather than generally the <set union> itself. In <floating-point arithmetic>, comparisons are conclusive only for endpoints that still enclose the intended exact objects; use certified bounds such as <interval arithmetic> with <outward rounding> when that guarantee is required.
-
-// Target: analysis.bigb
-
-= Triangle-triangle intersection algorithm
-{parent=Computer aided geometric design}
-
-For two noncoplanar <triangles>, first reject vertices strictly on one side of the other triangle's plane. Otherwise intersect each triangle with the other plane and compare the resulting intervals along the common line. Coplanar triangles require a planar overlap test; zero-area triangles require separate <line segment> or point tests.
-
-// Target: analysis.bigb
+\Include[computer-aided-geometric-design]{parent=Numerical analysis}
 
 = Round-off error
 {parent=Numerical analysis}
@@ -1123,6 +648,8 @@ The same cancellation idea appears in <step-doubling error estimation>. For an o
 
 Error control selects discretization parameters and checks approximations against requested accuracy. <Local error estimators>, <absolute and relative error tolerances> and an <adaptive step-size controller> provide practical local control. Propagation of defects determines the <global error>, while stiffness, <roundoff error> and algebraic-solve accuracy impose additional limits.
 
+For an <ordinary differential equation>, the practical loop is to propose a step, form a <local error estimator>, scale it by <absolute and relative error tolerances>, and accept or retry before choosing the next step. An <embedded Runge-Kutta pair> supplies two endpoints from shared <Runge-Kutta stages>, making this extra accuracy check inexpensive. The <Euler-Heun embedded pair> below exposes the distinction between the accepted formula's <order of a numerical method> and the estimator's step exponent; its <adaptive Euler-Heun integration of exponential growth> shows accepted local tests alongside accumulated <global error>.
+
 = Adaptive step-size controller
 {parent=Error control for ODE solvers}
 {title2=$h_{\rm new}=h\,\eta E^{-1/r}$}
@@ -1162,6 +689,79 @@ A predictor and corrector give distinct approximations from the same local histo
 {parent=Local error estimator}
 
 Two <Runge-Kutta methods> share a stage matrix and nodes but use different output weights. An order-$p$ and order-$q$ pair with $q<p$ gives an output difference generally of order $h^{q+1}$, estimating the lower-order defect. Shared stage evaluations reduce the cost. The <adaptive step-size controller> exponent must reflect this estimator order, rather than blindly the higher reported solution order.
+
+Using the slope convention for <Runge-Kutta stages>, an <embedded Runge-Kutta pair> computes
+$$
+Y^{[p]}=y_n+h\sum_{i=1}^sb_i k_i,\qquad Y^{[q]}=y_n+h\sum_{i=1}^s\widehat b_i k_i,\qquad d=Y^{[p]}-Y^{[q]}=h\sum_{i=1}^s(b_i-\widehat b_i)k_i.
+$$
+Its <Butcher tableau> has two output rows, $b^T$ and $\widehat b^T$. Evaluating $f$ is often the expensive part of solving an <ordinary differential equation>; after the shared slopes have been computed, the extra row needs only another linear combination.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others/6.5 Adaptive Runge-Kutta>[§6.5.2, embedded formulas and equation 6.5.5: common stages and two output rows]{ref}
+
+Write $\Phi$ for the exact endpoint from the current numerical state, and define signed local defects $\ell_q=\Phi-Y^{[q]}$ and $\ell_p=\Phi-Y^{[p]}$. Then $d=\ell_q-\ell_p$. If $\ell_q=C_qh^{q+1}+O(h^{q+2})$ and $\ell_p=O(h^{p+1})$, with $C_q\ne0$, the difference reproduces the leading lower-order defect. It does not reproduce the leading higher-order defect. Here the powers use <big O notation> and a smooth <Taylor expansion>; a vanishing leading coefficient or accidental cancellation can make the estimate misleading.
+
+A common choice accepts $Y^{[p]}$ after testing $d$ with <absolute and relative error tolerances>. With the scale approximately unchanged on a retry, the <adaptive step-size controller> uses exponent $1/(q+1)$. Accepting a better endpoint does not change the power in the quantity being tested. The <Euler-Heun embedded pair> makes this visible without a large coefficient table.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others/6.5 Adaptive Runge-Kutta>[§6.5.1, equations 6.5.1–6.5.3 and Algorithm 6.5.1: lower-order local estimate and higher-order accepted output]{ref}
+
+= Euler-Heun embedded pair
+{c}
+{parent=Embedded Runge-Kutta pair}
+{title2=$d=h(k_2-k_1)/2$}
+
+The Euler-Heun 1(2) pair combines the <explicit Euler method> and <Heun's method>. Here 1(2) names their respective <order of a numerical method>; the accepted endpoint in this article is the second-order one. Its shared <Runge-Kutta stages> and endpoints are
+$$
+\begin{aligned}
+k_1&=f(t_n,y_n),&k_2&=f(t_n+h,y_n+hk_1),\\
+Y^{[1]}&=y_n+hk_1,&Y^{[2]}&=y_n+\frac h2(k_1+k_2),\\
+d&=Y^{[2]}-Y^{[1]}=\frac h2(k_2-k_1).
+\end{aligned}
+\qquad
+\begin{array}{c|cc}
+0&0&0\\
+1&1&0\\\hline
+&\tfrac12&\tfrac12\\
+&1&0
+\end{array}
+$$
+The first output row in this <Butcher tableau> is <Heun's method>; the second is the <explicit Euler method>. Both outputs cost two evaluations of $f$ together, rather than one for <Euler method> plus two for a separately computed <Heun's method>.
+
+For the <initial value problem> $y'=y$, $y(0)=1$, take $h=0.2$. The first slope is $k_1=1$; the stage state is $1+0.2k_1=1.2$, giving $k_2=1.2$. Therefore
+$$
+Y^{[1]}=1.2,\qquad Y^{[2]}=1.22,\qquad d=0.02,\qquad y(0.2)=e^{0.2}\approx1.22140275816.
+$$
+The exact <exponential function> gives signed local defects approximately $0.02140275816$ for the <explicit Euler method> and $0.00140275816$ for <Heun's method>. Their difference is exactly $0.02$. Thus the pair difference estimates the larger Euler defect; calling it the actual Heun defect would miss by a factor about fourteen here.
+
+More generally, a step from $y_n$ on $y'=y$ has
+$$
+\begin{aligned}
+\ell_1&=y_n(e^h-1-h)=y_n\left(\frac{h^2}{2}+\frac{h^3}{6}+O(h^4)\right),\\
+\ell_2&=y_n(e^h-1-h-h^2/2)=y_n\left(\frac{h^3}{6}+O(h^4)\right),\\
+d&=y_n\frac{h^2}{2}.
+\end{aligned}
+$$
+These original <Taylor expansions> separate three quantities: the accepted <Heun's method> has <local truncation error> $O(h^3)$ and <global error> $O(h^2)$ under suitable <numerical stability>, while the tested <local error estimator> is $O(h^2)$. For $E=|d|/s$ with $s$ held approximately fixed, use $h_{\rm new}=\eta h E^{-1/2}$. A cube-root update would model a different quantity, the actual higher-order local defect.
+
+= Adaptive Euler-Heun integration of exponential growth
+{c}
+{parent=Euler-Heun embedded pair}
+
+Continue the <initial value problem> $y'=y$, $y(0)=1$, to $t=4$ using the <Euler-Heun embedded pair>. Choose <absolute and relative error tolerances> ${\rm atol}=10^{-3}$ and ${\rm rtol}=0$, so the scalar scale is $s=10^{-3}$ throughout. This intentionally absolute-only test makes the local and accumulated errors directly comparable. Start with $h=0.2$, accept the <Heun's method> endpoint precisely when $E=|d|/s\leq1$, and after every trial use the capped <adaptive step-size controller>
+$$
+h_{\rm next}=h\min\left(2,\max\left(0.2,0.9E^{-1/2}\right)\right).
+$$
+For $E=0$ use the growth factor two. Cap every trial at $4-t_n$; on rejection retain the old time and state. These choices specify an original computation, rather than a claim about the defaults of a particular software solver.
+
+The initial trial has $E=20$ and is rejected. Retrying from $(0,1)$ with $h=0.9(0.2)/\sqrt{20}\approx0.0402492236$ gives $E=0.81$ and is accepted. The run takes 315 accepted steps and one rejected trial. Increasing <exponential growth> makes the <local error estimator> $|d|=|y_n|h^2/2$ grow at a fixed $h$, so subsequent steps shrink roughly like $|y_n|^{-1/2}$. The final step is additionally shortened to land at $t=4$.
+
+\Image[euler-heun-adaptive-steps-and-errors.png]
+{title=Computed Euler-Heun step sizes and errors: every accepted local estimate passes, but accumulated global error exceeds the absolute tolerance}
+
+The right panel plots errors against the accepted-step number, all divided by the same $s$. The actual Heun local defect uses the restarted exact endpoint $y_ne^{h_n}$, while actual <global error> uses $e^{t_{n+1}}$. All accepted $E$ are at most one, and the actual Heun local defects here are even smaller, at most about $0.01143s$. Nevertheless the endpoint is $y_N\approx54.5833912205$, versus $e^4\approx54.5981500331$, with <absolute error> about $0.0147588=14.7588s$. Passing local tests therefore does not certify the original trajectory's <global error>.
+
+This failure of a global guarantee has an exact explanation for this example. Put $R(h)=1+h+h^2/2$ and $g_n=e^{t_n}-y_n$. Then
+$$
+g_{n+1}=e^{h_n}g_n+y_n\left(e^{h_n}-R(h_n)\right).
+$$
+Each new local defect is added to the previous error amplified by $e^{h_n}$. Iterating this identity, rather than merely inspecting $E$, accounts for accumulation. The <variable-step global ODE error bound> describes the corresponding mechanism for more general <ordinary differential equations>.
+
+Repeating with ${\rm atol}=10^{-2}$ gives 98 accepted steps, one rejection and endpoint <absolute error> about $0.153252$; with ${\rm atol}=10^{-4}$ it gives 1001 accepted steps, two rejections and endpoint <absolute error> about $0.00145642$. Accuracy improves on this smooth problem, but the endpoint error remains about fifteen times the requested local scale. A different <initial value problem> can amplify or damp defects differently.
 
 = Step-doubling error estimation
 {parent=Local error estimator}
@@ -1608,6 +1208,12 @@ Doubling $n$ divides the <absolute error> by exactly four. For a general $C^2$ <
 
 For a numerical reference value $x$ and a computed value $x_{\mathrm{approx}}$, the signed <approximation error> is $x_{\mathrm{approx}}-x$. Stating the reference matters: comparison with a measured value assesses agreement with that value, rather than with an unknown exact value.
 
+= Error bound
+{parent=Approximation error}
+{title2=$|\widetilde f-f|\leq\varepsilon$}
+
+An <error bound> is an established <upper bound> on a specified <approximation error>, on a stated domain and under stated assumptions. A numerical comparison at selected points can test an approximation but does not by itself establish a bound throughout that domain. An <absolute error> bound controls $|\widetilde f-f|$; a <relative error> bound additionally specifies the reference scale.
+
 = Absolute error
 {parent=Approximation error}
 {title2=$|x_{\mathrm{approx}}-x|$}
@@ -1639,6 +1245,12 @@ $$
 \frac{f(1+h)-f(1)}h=2+h,\qquad f'(1)=2.
 $$
 Thus the <truncation error> is exactly $h$: $h=0.1$ gives $2.1$ and $h=0.01$ gives $2.01$. In finite precision, however, the numerator subtracts nearly equal values, and their <roundoff error> can be amplified by division by $h$. For smooth data with bounded evaluation errors of scale $u$, a typical bound has competing terms $C_1h+C_2u/h$. Smaller $h$ reduces the first term and increases the second; with fixed positive constants the balancing scale is $h\sim\sqrt u$. This is why blindly refining a <finite difference> eventually stops improving it.
+
+= Series truncation error
+{parent=Truncation error}
+{title2=$R_N=S-\sum_{n=1}^{N}a_n$}
+
+For a <convergent series> with <sum> $S$, the error from keeping only the first $N$ terms is the remaining <sum> $R_N=\sum_{n>N}a_n$. This <truncation error> exists even with exact arithmetic. The <zeta series truncation error> gives explicit bounds for positive reciprocal-power terms.
 
 = Spectral method
 {parent=Numerical analysis}
@@ -1778,329 +1390,7 @@ $$
 $$
 For short enough intervals the last term is absorbed. The <Gronwall inequality> forces $u=0$, and repetition proves uniqueness on the full interval. This antiderivative test is valid at the stated space-time $H^1$ regularity, unlike an unqualified direct energy test by $u_t$.
 
-= Finite element method
-{parent=Numerical analysis}
-{wiki}
-
-= FEM
-{c}
-{synonym}
-
-The <finite element method> replaces an infinite-dimensional <weak formulation> by finitely many unknowns attached to a <finite element mesh>. Simple local functions, often <piecewise polynomial functions>, join to form a global approximation. The attraction is that each <finite element> can be integrated separately, while the assembled equations enforce a global balance. A <piecewise-linear hat function> only meets its immediate neighbors, so a large problem can have a <sparse matrix> rather than a dense one. Gilbert Strang's MIT lecture develops this connection from the one-dimensional <weak formulation> through local hats to the <stiffness matrix> and load integrals.https://ocw.mit.edu/courses/18-085-computational-science-and-engineering-i-fall-2008/676ba0a00eef45a6cb3823c4da61ee11_18-085F08-L18.pdf[Gilbert Strang, MIT 18.085, Lecture 18: Finite Elements in 1D, transcript pp. 2–8, 2008; accessed 2026-10-11]{ref}
-
-For the conforming <Galerkin method>, let $V$ be a real <Hilbert space>, $a$ a bounded <coercive bilinear form>, and $\ell$ a bounded <linear functional>. Given a <conforming finite element space> $V_h\subset V$, the continuous and discrete problems are
-$$
-\begin{aligned}
-u\in V:&\quad a(u,v)=\ell(v)&&\text{for every }v\in V,\\
-u_h\in V_h:&\quad a(u_h,v_h)=\ell(v_h)&&\text{for every }v_h\in V_h.
-\end{aligned}
-$$
-Writing $u_h=\sum_j c_j\phi_j$ in a <basis> of $V_h$ gives the <linear system>
-$$
-Kc=F,\qquad K_{ij}=a(\phi_j,\phi_i),\qquad F_i=\ell(\phi_i).
-$$
-Here $K$ is the <stiffness matrix> and $F$ is the vector of loads tested against the <basis> functions. The <Galerkin method> uses the same trial and test space in this construction. Finite element methods also use the <Petrov-Galerkin method>, with different trial and test spaces; testing against the trial space is therefore a property of this construction, rather than a definition of every <finite element method>.
-
-The <finite element solution of the one-dimensional Poisson equation> below gives every entry explicitly. Refining the <finite element mesh> then improves the approximation by adding local degrees of freedom. For a symmetric <coercive bilinear form>, <Galerkin orthogonality> makes the discrete solution the best approximation in the <energy norm>; the geometry of <orthogonal projection> explains why this local construction yields a globally meaningful answer.
-
-= Finite element solution of the one-dimensional Poisson equation
-{parent=Finite element method}
-{title2=$-u''=1$, $u(0)=u(1)=0$}
-
-Consider the <Poisson equation> on an <interval> with homogeneous <Dirichlet boundary conditions>:
-$$
--u''(x)=1\quad(0<x<1),\qquad u(0)=u(1)=0.
-$$
-Two <integrations> and the endpoint conditions give the exact solution $u(x)=x(1-x)/2$. To approximate it, multiply by a <test function> $v$ that vanishes at both endpoints. <Integration by parts> gives
-$$
-\int_0^1(-u'')v\,dx
-=\bigl[-u'v\bigr]_0^1+\int_0^1u'v'\,dx
-=\int_0^1v\,dx.
-$$
-The boundary term is zero. Thus the <weak formulation> is to find $u\in V=H_0^1(0,1)$ such that
-$$
-a(u,v):=\int_0^1u'v'\,dx=\ell(v):=\int_0^1v\,dx\qquad(v\in V).
-$$
-The <zero-trace Sobolev space> $H_0^1(0,1)$ consists of square-integrable functions with square-integrable <weak derivatives> and zero endpoint values in their continuous representatives; it does not require a classical second derivative. This is why continuous <piecewise linear functions> are admissible despite corners. The <Poincaré inequality> makes $a$ a <coercive bilinear form> on $V$. Strang derives this one-dimensional <weak formulation>, the <piecewise-linear hat functions>, and their load and derivative-product integrals in the cited lecture; its endpoint example uses a free left endpoint, while both endpoints here are fixed.https://ocw.mit.edu/courses/18-085-computational-science-and-engineering-i-fall-2008/676ba0a00eef45a6cb3823c4da61ee11_18-085F08-L18.pdf[Strang, MIT 18.085, Lecture 18, transcript pp. 2–8: weak form, hat basis, and assembly]{ref}
-
-Take the uniform <finite element mesh> $x_j=jh$, $j=0,\ldots,n$, with $h=1/n$. The continuous $P_1$ trial space is
-$$
-V_h=\{v_h\in C([0,1]):v_h(0)=v_h(1)=0,\quad v_h|_{[x_j,x_{j+1}]}\text{ is affine for every }j\}.
-$$
-Here $P_1$ means <polynomials> of degree at most one on each <interval>. This is a <conforming finite element space> in $V$, with $n-1$ interior <piecewise-linear hat functions> $\phi_i$ as a <basis>. Their endpoint values enforce the <Dirichlet boundary conditions> automatically. Set $u_h=\sum_{i=1}^{n-1}c_i\phi_i$ and test the <weak formulation> against each $\phi_i$:
-$$
-K_{ij}=\int_0^1\phi_j'\phi_i'\,dx,\qquad
-F_i=\int_0^1\phi_i\,dx=h,\qquad Kc=F.
-$$
-Each interior hat has two slopes $1/h$ and $-1/h$, each over a length $h$. Its squared derivative therefore integrates to $2/h$. Adjacent hats have opposite slopes on their one shared <interval>, giving $-1/h$. All other derivative products vanish. The <stiffness matrix> is the <tridiagonal matrix>
-$$
-K_{ii}=\frac2h,\qquad K_{i,i+1}=K_{i+1,i}=-\frac1h,\qquad K_{ij}=0\quad(|i-j|>1).
-$$
-The load $F_i=h$ is the area of a triangle of base $2h$ and height one, including hats next to the boundary. Boundary hats are omitted because the boundary values are prescribed. The <piecewise-linear hat function> article explains how the same entries arise by adding local two-node contributions.
-
-With four <mesh> intervals, $h=1/4$, there are three unknowns:
-$$
-K=\begin{pmatrix}8&-4&0\\-4&8&-4\\0&-4&8\end{pmatrix},\qquad
-F=\begin{pmatrix}1/4\\1/4\\1/4\end{pmatrix},\qquad
-c=\begin{pmatrix}3/32\\1/8\\3/32\end{pmatrix}.
-$$
-For example, the first row gives $8(3/32)-4(1/8)=1/4$ and the middle gives $-4(3/32)+8(1/8)-4(3/32)=1/4$. The <coefficients> are the nodal values $u_h(x_i)=c_i$. At $x=3/8$, <linear interpolation> gives $u_h(3/8)=7/64=0.109375$, whereas $u(3/8)=15/128=0.1171875$: exactness at the nodes still leaves a visible error between them.
-
-In this model the <Galerkin method> solution equals the nodal approximation $I_hu$ obtained by <linear interpolation> on any <finite element mesh>. Indeed, on each <interval> $[a,b]$, $(I_hu)'$ is the average of $u'$ and $v_h'$ is constant. Therefore $\int_a^b(u'-(I_hu)')v_h'\,dx=0$. Summing proves <Galerkin orthogonality> for $I_hu$, and uniqueness gives $u_h=I_hu$. This argument relies on the constant diffusion coefficient, conformity and exact integration; nodal exactness is not a general promise for <finite element methods> with other operators or integration rules.
-
-On a uniform <mesh>, direct subtraction of the chord from the <parabola> gives, on every element $[a,b]$ of length $h$,
-$$
-e(x):=u(x)-u_h(x)=\frac{(x-a)(b-x)}2,\qquad
-e'(x)=\frac{a+b}2-x.
-$$
-The largest value error is at an element midpoint. Its size and the <energy norm> error are exactly
-$$
-\|e\|_{\infty}=\frac{h^2}{8},\qquad
-\|e\|_a^2=\int_0^1|e'|^2\,dx
-=n\int_{-h/2}^{h/2}t^2\,dt=\frac{h^2}{12},\qquad
-\|e\|_a=\frac{h}{\sqrt{12}}.
-$$
-Thus $h=1/4$ gives $\|e\|_\infty=1/128=0.0078125$ and $\|e\|_a=1/(4\sqrt{12})\approx0.0721688$. With eight elements, $h=1/8$, these become $1/512=0.001953125$ and $1/(8\sqrt{12})\approx0.0360844$. Halving the <mesh> spacing quarters the maximum value error but only halves the <energy norm> error: values and slopes converge at different rates. The figure shows the small value error at its own scale, where the four-to-one reduction becomes clear.
-
-\Image[finite-element-poisson-refinement.png]
-{title=Exact Poisson parabola and continuous piecewise-linear finite element solutions on four and eight intervals, with midpoint errors shown separately}
-
-= Semidiscrete finite element heat equation
-{parent=Finite element method}
-{title2=$M\dot c+Sc=F$}
-
-The spatial <Galerkin method> for the <heat equation> gives a <mass matrix> $M$ and a diffusion <stiffness matrix> $S$. With zero forcing, $\frac{d}{dt}(c^TMc)=-2c^TSc\leq0$. The <quadratic form> $c^TMc$ is the squared <L2 norm> of the represented finite-element function, proving an energy contraction. For nonzero forcing, the corresponding identity has the additional term $2c^TF$, which can be estimated using the <Cauchy-Schwarz inequality>.
-
-= Forward Euler limit for a consistent hat mass matrix
-{parent=Semidiscrete finite element heat equation}
-{title2=$0\leq\mu\leq\frac16\quad\text{uniformly over refinements}$}
-
-For a uniform piecewise-linear Galerkin heat discretization, the consistent <mass matrix> is $M=(h/6)\operatorname{tridiag}(1,4,1)$ and the <stiffness matrix> is $K=h^{-1}\operatorname{tridiag}(-1,2,-1)$. The generalized <eigenvalues> are $6(1-\cos\theta)/[h^2(2+\cos\theta)]$. Applying <forward Euler method> requires $k\lambda\leq2$, giving the displayed uniform bound for $\mu=k/h^2$. For $J$ intervals with Dirichlet endpoints the exact finite-grid upper bound is $(2-\cos(\pi/J))/[3(1+\cos(\pi/J))]$, which approaches $1/6$. Replacing the consistent <mass matrix> by a lumped one changes the <stability> restriction.
-
-= Finite element
-{parent=Finite element method}
-
-A finite element specifies a reference region, a finite-dimensional space of local trial functions, and degrees of freedom that uniquely determine each such function. Assembling compatible copies over a <finite element mesh> gives a global trial space. For a one-dimensional linear element, the region is an interval, the functions are <affine functions>, and the degrees of freedom are the endpoint values.
-
-= Conforming finite element space
-{parent=Finite element method}
-{title2=$V_h\subseteq V$}
-
-A conforming finite element space is a finite-dimensional <vector subspace> of the solution's variational space $V$. For a second-order problem with homogeneous <Dirichlet boundary conditions>, continuous piecewise-polynomial functions vanishing on the boundary form such a subspace of the <zero-boundary Sobolev space> $H_0^1(\Omega)$. Conformity allows exact <Galerkin orthogonality> and the <Céa lemma>.
-
-= Finite element mesh
-{parent=Finite element method}
-{title2=$\mathcal T_h$, $h=\max_j(x_{j+1}-x_j)$}
-
-= Mesh
-{synonym}
-
-A <finite element mesh> partitions a domain into simple regions called elements, such as <intervals>, <triangles> or <tetrahedra>. In a conforming partition, distinct element interiors are disjoint, their closures cover the domain closure, and any nonempty intersection is a common face, edge or vertex of both elements. Chen's author notes give this compatibility condition for simplicial <meshes>.https://webapps.math.uci.edu/~chenlong/226/Ch2FEM.pdf[Long Chen, Introduction to Finite Element Methods, §2.1, pp. 3–4; updated January 17, 2024]{ref} Local <piecewise polynomial functions> and local <integrals> are defined on these regions; compatible degrees of freedom join them into a global <conforming finite element space>. The assembled <stiffness matrix> and <mass matrix> then inherit the local overlap pattern.
-
-For the <finite element solution of the one-dimensional Poisson equation>, a <mesh> is simply an ordered list
-$$
-0=x_0<x_1<\cdots<x_n=1,\qquad
-\mathcal T_h=\{[x_j,x_{j+1}]:0\leq j<n\},\qquad
-h=\max_{0\leq j<n}(x_{j+1}-x_j).
-$$
-Nodes are the endpoints; elements are the intervening <intervals>. Four equal elements have five nodes but only three unknown nodal values after imposing the zero <Dirichlet boundary conditions>. A nonuniform partition such as $0,1/8,1/4,1/2,1$ has element lengths $1/8,1/8,1/4,1/2$ and $h=1/2$, so counting elements alone does not measure the largest unresolved scale.
-
-Refining a <finite element mesh> replaces some or all elements by smaller ones. For continuous <piecewise linear functions> in one dimension, retaining all old nodes gives nested <conforming finite element spaces> $V_h\subset V_{h/2}$ when every <interval> is bisected. The old approximation remains available, and the new interior nodes allow additional changes of slope. With a symmetric <coercive bilinear form> and exact integration, best approximation from <Galerkin orthogonality> means that the <energy norm> error cannot increase under such nested refinement.
-
-For the <finite element solution of the one-dimensional Poisson equation>, uniform refinement from four to eight elements increases the unknown count from three to seven. The exact formulas give maximum errors $0.0078125$ and $0.001953125$, and <energy norm> errors approximately $0.0721688$ and $0.0360844$. Refinement near a region of strong curvature can spend unknowns where the <linear interpolation> error matters most; convergence in a general problem still needs approximation and regularity assumptions such as those in the <finite element interpolation estimate>.
-
-= Shape-regular mesh
-{parent=Finite element mesh}
-
-= Shape regularity
-{synonym}
-
-A family of simplicial meshes is shape-regular when the ratio of each element's diameter to its inscribed-ball radius stays uniformly bounded. This excludes degenerating shapes and makes <finite element interpolation estimates> uniform in the mesh size. The element sizes may still vary substantially across the domain.
-
-= Finite element interpolation estimate
-{parent=Finite element method}
-
-On a <shape-regular mesh> in dimensions at most three, nodal piecewise-linear interpolation of $u\in H^2(\Omega)$ satisfies
-$$
-\|u-I_hu\|_{L^2(\Omega)}+h\|u-I_hu\|_{H^1(\Omega)}
-\leq Ch^2\|u\|_{H^2(\Omega)},
-$$
-where $h$ is the largest element diameter and $C$ is independent of $h$. For homogeneous <Dirichlet boundary conditions>, $I_hu$ belongs to the <conforming finite element space>. Scaling each element to a reference element gives the estimate; <shape regularity> bounds the scaling constants, while subtraction of an <affine function> leaves an error controlled by the second derivatives.
-
-= Mass matrix
-{parent=Finite element method}
-{title2=$M_{ij}=\int_\Omega\phi_i\phi_j$}
-
-The mass matrix is the <Gram matrix> of a <finite element> basis in the <L2 inner product>. Its coefficient <quadratic form> is the squared <L2 norm> of the represented trial function, so it is a <positive-definite matrix> for a linearly independent basis.
-
-= Mass eigenstate
-{parent=Mass matrix}
-{title2=$M|n\rangle=m_n|n\rangle$}
-
-A <mass eigenstate> diagonalizes the Hermitian <mass> operator or <mass matrix> and has a definite <mass>. In a flavor basis with off-diagonal <mass> terms, it is a linear combination of flavor states. For unstable particles, decay propagation instead involves an effective complex matrix; its <eigenvectors> need not inherit the orthogonality of a Hermitian <mass> problem.
-
-= Affine-weighted hat mass matrix
-{parent=Mass matrix}
-{title2=$W_{ij}=\int w(x)\phi_i(x)\phi_j(x)\,dx$}
-
-On a one-dimensional uniform <finite element mesh> of spacing $h$, let $w$ be an <affine function> and $\phi_i$ the interior <piecewise-linear hat functions>. The weighted <mass matrix> has entries
-$$
-W_{ii}=\frac{2h}{3}w(x_i),\qquad
-W_{i,i+1}=W_{i+1,i}=\frac h{12}\bigl(w(x_i)+w(x_{i+1})\bigr),
-$$
-and zero entries for nonadjacent indices. The diagonal product $\phi_i^2$ is symmetric about $x_i$ and integrates to $2h/3$; the neighbouring product is symmetric about $(x_i+x_{i+1})/2$ and integrates to $h/6$. The odd part of an <affine function> integrates to zero around each centre, giving the formulas. This evaluates a variable reaction term exactly without substituting a constant coefficient or a quadrature approximation.
-
-= Stiffness matrix
-{parent=Finite element method}
-{title2=$K_{ij}=a(\phi_j,\phi_i)$}
-
-The stiffness matrix represents a variational <bilinear form> $a$ in a <finite element> basis. A symmetric <coercive bilinear form> gives a <positive-definite matrix>. Local support of the <piecewise-linear hat functions> produces a sparse <matrix>, allowing efficient numerical solution.
-
-= Reaction-diffusion finite element matrix
-{parent=Stiffness matrix}
-{title2=$K=S+M$}
-
-For $-u''+u=f$ with homogeneous <Dirichlet boundary conditions>, the conforming <piecewise-linear hat functions> on a uniform grid give a diffusion <stiffness matrix> $S$ and a <mass matrix> $M$. Their nonzero entries are $S_{ii}=2/h$, $S_{i,i+1}=-1/h$, $M_{ii}=2h/3$, and $M_{i,i+1}=h/6$, with symmetric counterparts. The sum is a <positive-definite matrix> because its coefficient <quadratic form> is $\int((u_h')^2+u_h^2)$. For forcing $f(x)=x$, the load at $x_i$ is $hx_i$.
-
-= Energy conservation for semidiscrete Galerkin advection
-{parent=Finite element method}
-
-For periodic $u_t=u_x$, the conforming <Galerkin method> has $M\dot U=CU$, with <mass matrix> $M_{ij}=\int\phi_i\phi_j$ and $C_{ij}=\int\phi_i\phi_j'$. <Integration by parts> and periodicity give $C^T=-C$. Therefore
-$$
-\frac{d}{dt}(U^TMU)=2U^TCU=0.
-$$
-The conserved quantity is the squared <L2 norm> of the <finite element> function. On a uniform one-dimensional mesh of spacing $h$, the <piecewise-linear hat functions> give $M_{ii}=2h/3$, $M_{i,i\pm1}=h/6$, $C_{i,i+1}=1/2$ and $C_{i,i-1}=-1/2$.
-
-= Cubic Hermite finite element
-{c}
-{parent=Finite element method}
-
-A cubic Hermite finite element is piecewise cubic and joins with continuous first derivative. It is therefore conforming for fourth-order variational problems whose energy space lies in $H^2$.
-
-= Rayleigh-Ritz method
-{c}
-{parent=Finite element method}
-{wiki=Rayleigh–Ritz_method}
-
-= Ritz method
-{c}
-{synonym}
-
-The Ritz method minimizes a quadratic energy over a finite-dimensional trial space. For basis functions $\phi_j$ and bilinear form $a$, its linear system is $Ka=F$ with $K_{jk}=a(\phi_k,\phi_j)$ and $F_j=\langle f,\phi_j\rangle$.
-
-= Ritz-Galerkin equivalence for a symmetric coercive form
-{c}
-{parent=Rayleigh-Ritz method}
-{title2=$J(v)-J(u)=\tfrac12a(v-u,v-u)$}
-
-For a bounded symmetric <coercive bilinear form> on a Hilbert space, a solution of $a(u,w)=\ell(w)$ minimizes $J(v)=a(v,v)/2-\ell(v)$. The displayed identity proves strict minimality and uniqueness. Restricting to a <conforming finite element space> makes the discrete <Ritz method> equivalent to the <Galerkin method>. <Galerkin orthogonality> gives exact best approximation in the <energy norm>; the <Céa lemma> translates it into a reference-norm estimate.
-
-= Symmetry and coercivity in quadratic energy minimization
-{parent=Ritz-Galerkin equivalence for a symmetric coercive form}
-{title2=$I(v)=a(v,v)-2\ell(v)$}
-
-A continuous symmetric <coercive bilinear form> $a$ on a real <Hilbert space> and a continuous <linear functional> $\ell$ give a unique minimum of $I$. The parallelogram identity makes any minimizing sequence Cauchy in the energy norm; coercivity and completeness give its limit. Differentiation gives $a(u,w)=\ell(w)$, and $I(v)-I(u)=a(v-u,v-u)$ proves uniqueness. A nonsymmetric operator instead differentiates to its symmetric part. Mere pointwise positivity without a lower bound in the chosen norm need not yield a minimizing vector.
-
-= Energy norm
-{parent=Rayleigh-Ritz method}
-
-A symmetric coercive bilinear form $a$ defines the energy norm $\|v\|_a=\sqrt{a(v,v)}$. In this norm the <Ritz method> is an orthogonal projection onto its finite-dimensional trial space.
-
-= Galerkin orthogonality
-{c}
-{parent=Finite element method}
-{title2=$a(u-u_h,v_h)=0$}
-
-Let $V_h\subset V$ be a <conforming finite element space>. Suppose the exact solution satisfies $a(u,v)=\ell(v)$ for every $v\in V$ and its <Galerkin method> approximation satisfies $a(u_h,v_h)=\ell(v_h)$ for every $v_h\in V_h$, using the same <bilinear form> and <linear functional>. Subtracting the two identities gives <Galerkin orthogonality>:
-$$
-a(u-u_h,v_h)=0\qquad(v_h\in V_h).
-$$
-This identity itself does not require symmetry. Its interpretation as an <orthogonal projection> in an <energy norm> does require a bounded symmetric <coercive bilinear form>: then $a$ is an <inner product>, $e=u-u_h$ is perpendicular to every available discrete correction, and
-$$
-\|u-v_h\|_a^2=\|u-u_h\|_a^2+\|u_h-v_h\|_a^2\qquad(v_h\in V_h).
-$$
-Consequently $u_h$ is the unique closest point in $V_h$ in the <energy norm>. This <Pythagorean theorem> in a function space explains the beauty of the <Galerkin method>: integrated local equations compute a global best approximation. The <Céa lemma> supplies the corresponding estimate in a chosen reference norm.
-
-For the <finite element solution of the one-dimensional Poisson equation>, $a(w,v)=\int_0^1w'v'\,dx$ and $\|w\|_a=\|w'\|_{L^2(0,1)}$. Testing the error against the $i$th <piecewise-linear hat function> on a uniform <mesh> gives
-$$
-\frac1h\int_{x_{i-1}}^{x_i}e'\,dx
--\frac1h\int_{x_i}^{x_{i+1}}e'\,dx=0.
-$$
-In this model $e$ vanishes at every node, so each of these <integrals> is individually zero, although $e$ is positive inside every element. <Galerkin orthogonality> controls the derivative-weighted balance; it does not say that the pointwise error vanishes.
-
-The exact identity assumes conformity and exact evaluation of the continuous forms, including any <numerical integration> that is used. If assembly instead uses $a_h$ and $\ell_h$, subtraction gives the consistency defect
-$$
-a(u-u_h,v_h)=(\ell-\ell_h)(v_h)+(a_h-a)(u_h,v_h).
-$$
-Thus inexact <numerical integration> need not preserve the projection. In the <Petrov-Galerkin method> the error is tested against a different test space, and for a nonsymmetric <bilinear form> the displayed identity need not describe perpendicularity in any <energy norm>.
-
-= Céa's lemma
-{c}
-{parent=Galerkin orthogonality}
-{wiki}
-
-= Céa lemma
-{c}
-{synonym}
-
-For a continuous coercive bilinear form with continuity constant $M$ and coercivity constant $\alpha$, a conforming finite-element solution satisfies
-$$
-\|u-u_h\|_V\leq\frac M\alpha
-\inf_{v_h\in V_h}\|u-v_h\|_V.
-$$
-For a symmetric problem measured in its <energy norm>, the constant is one.
-
-For any $v_h\in V_h$, <Galerkin orthogonality> gives $a(e,e)=a(e,u-v_h)$, where $e=u-u_h$. Coercivity and continuity yield $\alpha\|e\|_V^2\leq M\|e\|_V\|u-v_h\|_V$. Divide by $\|e\|_V$ when it is nonzero and take the infimum. In the symmetric case, the <Cauchy-Schwarz inequality> in the <energy norm> gives the constant one.
-
-= Aubin–Nitsche duality argument
-{parent=Céa's lemma}
-{c}
-
-For a symmetric elliptic variational problem with <Galerkin orthogonality>, let $e=u-u_h$ and solve the dual problem $a(v,z)=(e,v)_{L^2}$ for every $v\in H_0^1(\Omega)$. If <elliptic regularity> gives $\|z\|_{H^2}\leq C\|e\|_{L^2}$, then a <finite element interpolation estimate> gives
-$$
-\|e\|_{L^2}^2=a(e,z-I_hz)
-\leq Ch\|e\|_{H^1}\|z\|_{H^2}
-\leq Ch\|e\|_{H^1}\|e\|_{L^2}.
-$$
-Thus $\|e\|_{L^2}\leq Ch\|e\|_{H^1}$. Combining this with the <Céa lemma> and an $O(h)$ <energy norm> error gives an $O(h^2)$ <L2 norm> error. The additional order depends on the dual regularity assumption, which can fail on unsuitable domains.
-
-= Piecewise-linear hat function
-{parent=Finite element method}
-{title2=$\phi_i(x_j)=\delta_{ij}$}
-
-= Hat function
-{synonym}
-
-= Chapeau function
-{synonym}
-
-A <piecewise-linear hat function> is a continuous <piecewise linear function> that selects one node of a <finite element mesh>: it is one there and zero at every other node. For an interior node $x_i$, its exact formula on a possibly nonuniform <mesh> is
-$$
-\phi_i(x)=\begin{cases}
-(x-x_{i-1})/(x_i-x_{i-1}),&x_{i-1}\leq x\leq x_i,\\
-(x_{i+1}-x)/(x_{i+1}-x_i),&x_i\leq x\leq x_{i+1},\\
-0,&\text{otherwise}.
-\end{cases}
-$$
-Its <support of a function> is $[x_{i-1},x_{i+1}]$. It rises on the left <interval> and falls on the right, producing its hat-shaped graph. The interior <hat functions> form a <basis> of the continuous $P_1$ <conforming finite element space> with homogeneous <Dirichlet boundary conditions>. Chen's author notes define this nodal <basis> and illustrate it in one and two dimensions.https://webapps.math.uci.edu/~chenlong/226/Ch2FEM.pdf[Chen, Introduction to Finite Element Methods, §3.1, pp. 5–6 and Figure 5: nodal hat basis]{ref} The nodal property $\phi_i(x_j)=\delta_{ij}$ makes the <coefficients> directly readable: if $v_h=\sum_i c_i\phi_i$, then $v_h(x_i)=c_i$. Unlike the global <Lagrange cardinal polynomials>, each of these functions is confined to two neighboring elements.
-
-For example, with $x_j=j/4$, the middle <hat function> is $\phi_2(x)=4x-1$ on $[1/4,1/2]$, $3-4x$ on $[1/2,3/4]$, and zero elsewhere. Hence $\phi_2(3/8)=1/2$, while $\phi_1(3/8)=1/2$ and $\phi_3(3/8)=0$. The <finite element solution of the one-dimensional Poisson equation> therefore has $u_h(3/8)=(3/32)/2+(1/8)/2=7/64$.
-
-Local assembly makes this locality computational. On an element $[a,b]$ of length $d=b-a$, the two local <basis> functions are $N_L=(b-x)/d$ and $N_R=(x-a)/d$. For the <Poisson equation> with unit forcing, their local <stiffness matrix> and load vector are
-$$
-K^{(e)}=\frac1d\begin{pmatrix}1&-1\\-1&1\end{pmatrix},\qquad
-F^{(e)}=\frac d2\begin{pmatrix}1\\1\end{pmatrix}.
-$$
-Add these four matrix entries and two loads to the rows and columns belonging to the element's endpoints, then impose the prescribed boundary values. An interior node receives contributions from its two neighboring elements. Writing $d_L=x_i-x_{i-1}$ and $d_R=x_{i+1}-x_i$ gives
-$$
-K_{ii}=\frac1{d_L}+\frac1{d_R},\qquad
-K_{i,i-1}=-\frac1{d_L},\qquad K_{i,i+1}=-\frac1{d_R},\qquad
-F_i=\frac{d_L+d_R}{2},
-$$
-with off-diagonal entries included only for interior neighbors. On a uniform <mesh> these reduce to $2/h$, $-1/h$ and $h$. Nonadjacent <hat functions> have no derivative overlap of positive length, so all distant entries vanish. This produces a <sparse matrix> with only three diagonals: the global coupling is built entirely from local two-node interactions.
-
-\Image[finite-element-hat-assembly.png]
-{title=Three interior hat functions on a four-interval mesh, with local stiffness and load contributions assembled into the three-unknown Poisson system}
+\Include[finite-element-method]{parent=Numerical analysis}
 
 = Arithmetic operation
 {parent=Numerical analysis}
@@ -2235,6 +1525,11 @@ The transformed integrand is smooth, so an ordinary second-order midpoint rule r
 {title2=$g(x_i)=y_i$}
 
 Interpolation constructs a <function> agreeing exactly with prescribed values at sample points. The resulting function is an <interpolant>. Choosing a family determines how missing values are filled: <polynomial interpolation> selects a <polynomial>, while <linear interpolation> joins adjacent samples by straight segments. The <McShane extension theorem> instead permits any <Lipschitz function> with a specified bound and provides envelopes controlling all allowed choices.
+
+= Extrapolation
+{parent=Interpolation}
+
+Estimating values beyond the range of the supplied sample points. For two distinct points $P,Q$, the <affine combination> $(1-t)P+tQ$ lies beyond an endpoint of their <line segment> when $t<0$ or $t>1$. The construction specifies an extension of the chosen model; it does not show that an unknown underlying <function> follows that extension.
 
 = Interpolant
 {parent=Interpolation}
@@ -3622,349 +2917,7 @@ If $C$ is Hermitian positive definite and $D$ is Hermitian, every eigenvalue of 
 
 For $y'=i\omega y$ with real nonzero $\omega$, explicit Euler has amplification factor $1+i\omega h$, whose modulus $\sqrt{1+\omega^2h^2}$ exceeds one for every $h>0$.
 
-= Runge-Kutta method
-{parent=Numerical analysis}
-{c}
-{wiki}
-
-= RK method
-{c}
-{synonym}
-
-= Maximal-order Runge-Kutta methods are A-stable
-{parent=Runge-Kutta method}
-{title2=$p=2s\Longrightarrow A\text{-stability}$}
-
-An $s$-stage <Runge-Kutta method> has <stability function> $R(z)=1+zb^T(I-zA)^{-1}\mathbf1$, a <rational function> with numerator and denominator degrees at most $s$. Order $2s$ forces $R(z)-e^z=O(z^{2s+1})$, so uniqueness of the diagonal <Padé approximant> identifies $R$ with $[s/s]_{e^z}$. That approximant has no poles in the closed left half-plane and modulus at most one there. Hence every such maximal-order method is <A-stable>. Since the <Padé approximant> numerator and denominator are coprime and both have degree $s$, the original stage <determinant> cannot have hidden canceled poles in that half-plane.
-
-= Theta method
-{parent=Runge-Kutta method}
-{title2=$y_{n+1}-y_n=h[(1-a)f(y_n)+af(y_{n+1})]$}
-
-This one-step family interpolates between the <Forward Euler method> at $a=0$, the <trapezoidal rule> at $a=1/2$, and the <Backward Euler method> at $a=1$. Its <stability function> is $R(z)=[1+(1-a)z]/[1-az]$. It is first order except at one half, where it is second order. Applying it to spatial diffusion gives the <theta diffusion stability criterion>.
-
-= Theta diffusion stability criterion
-{parent=Theta method}
-{title2=$G(s)=[1-(1-a)s]/[1+as],\quad s\geq0$}
-
-On an orthogonal diffusion eigenmode, the <theta method> has the displayed amplification with $s=-\Delta t\lambda$. The identity $(1+as)^2-[1-(1-a)s]^2=2s+(2a-1)s^2$ proves contraction at all nonnegative $s$ exactly when $a\geq1/2$. For $a<1/2$, contraction holds up to $s\leq2/(1-2a)$, with a positive denominator in that range. Orthogonality is what transfers these modal bounds to a full <L2 norm> estimate.
-
-= Rough-data damping distinction for the theta method
-{parent=Theta diffusion stability criterion}
-{title2=$G(s)\to-(1-a)/a\quad(s\to\infty,\ a>0)$}
-
-At $a=1/2$, arbitrarily stiff heat modes approach amplification $-1$: the <Crank--Nicolson method> is contractive but does not rapidly damp unresolved rough components. The <Backward Euler method> instead has limit zero. Thus unconditional linear stability and strong stiff decay are different requirements. High smooth-data consistency order alone does not imply a uniform high-order estimate down to the initial instant for arbitrary <L2 initial conditions>.
-
-= Strong stability preserving Runge-Kutta method
-{parent=Runge-Kutta method}
-
-= SSP Runge-Kutta method
-{c}
-{synonym}
-
-A strong stability preserving Runge-Kutta method writes its stages as convex combinations of previously computed states and suitable <Forward Euler method> steps. It transfers any convex-functional nonincrease property of the forward step, such as a <norm> bound, under a proportionally scaled time-step restriction.
-
-For example, if $E_k(U)=U+kF(U)$ is nonexpansive in a <norm>, then $Y=E_k(U)$ and $U_{\mathrm{new}}=(U+E_k(Y))/2$ is also nonexpansive: the <triangle inequality> bounds the new difference by one half of the initial difference plus one half of the twice-advanced difference. Both are at most the initial difference. A <Taylor expansion> yields $U_{\mathrm{new}}=U+kF(U)+k^2F'(U)F(U)/2+O(k^3)$, so this is a second-order <Runge-Kutta method>. The forward-step hypothesis must hold on the stage states; preservation of one chosen convex bound is not the same as unconditional <B-stability>.
-
-= Classical fourth-order Runge-Kutta method
-{parent=Runge-Kutta method}
-{title2=$R(z)=1+z+z^2/2+z^3/6+z^4/24$}
-
-= RK4
-{c}
-{synonym}
-
-The classical four-stage explicit <Runge-Kutta method> uses
-$$
-A=\begin{pmatrix}0&0&0&0\\1/2&0&0&0\\0&1/2&0&0\\0&0&1&0\end{pmatrix},\qquad
-b=(1/6,1/3,1/3,1/6)^T,\qquad c=(0,1/2,1/2,1)^T.
-$$
-It satisfies the <fourth-order conditions for a Runge-Kutta method>. Its polynomial <stability function> excludes <A-stability>, while $|R(iq)|^2=1-q^6/72+q^8/576$ gives the imaginary-axis stability interval $|q|\leq2\sqrt2$.
-
-= Butcher tableau
-{parent=Runge-Kutta method}
-{c}
-
-A Butcher tableau records a Runge-Kutta method's stage matrix $A$, nodes $c$, and output weights $b$ in the block array
-$$
-\begin{array}{c|c}c&A\\\hline&b^T\end{array}.
-$$
-
-= Butcher order condition
-{c}
-{parent=Runge-Kutta method}
-
-= Runge-Kutta order conditions
-{c}
-{synonym}
-
-A Butcher order condition equates the coefficient assigned by a <Runge-Kutta method> to a rooted tree with the corresponding exact Taylor coefficient. Satisfying every condition through tree order $p$ is equivalent to Runge–Kutta order at least $p$.
-
-= Second-order conditions with independent Runge-Kutta abscissae
-{parent=Butcher order condition}
-{title2=$b^Te=1,\quad b^Tc=b^TAe=1/2$}
-
-For a general nonautonomous <Runge-Kutta method>, <Taylor expansion> of stage $i$ gives $k_i=f+h[c_if_t+(Ae)_if_yf]+O(h^2)$. Matching the exact increment $hf+h^2(f_t+f_yf)/2$ gives the three displayed conditions. When internal consistency $c=Ae$ is imposed, the last two coincide. Internal consistency is a usual tableau convention, but is not logically necessary for order two of a generalized tableau.
-
-= Fourth-order conditions for a Runge-Kutta method
-{parent=Butcher order condition}
-
-With $c=Ae$ and $C=\operatorname{diag}(c)$, a <Runge-Kutta method> has order at least four exactly when the eight <Butcher order conditions>
-$$
-b^Te=1,\quad b^Tc=\frac12,\quad b^Tc^2=\frac13,\quad b^TAc=\frac16,\quad b^Tc^3=\frac14,\quad b^TCAc=\frac18,\quad b^TAc^2=\frac1{12},\quad b^TA^2c=\frac1{24}
-$$
-hold; powers of $c$ are componentwise. These conditions match the numerical and exact coefficients indexed by <rooted trees> through order four. Matching the scalar <Dahlquist test equation> alone is insufficient to check the nonlinear <Butcher order conditions>.
-
-= Implicit Runge-Kutta method
-{parent=Runge-Kutta method}
-{wiki}
-
-An implicit Runge-Kutta method defines one or more stages through equations involving those same stages.
-
-= Two-stage Runge-Kutta family with an implicit second stage
-{parent=Implicit Runge-Kutta method}
-{title2=$R(z)=\frac{1+(1-a)z+(1/2-a)z^2}{1-az}$}
-
-For stages $k_1=f(y)$ and $k_2=f(y+(1-a)hk_1+ahk_2)$ with update $y+h(k_1+k_2)/2$, the method has order two for every fixed real $a$. The third-order coefficient of $f''f^2$ is always $1/4$, not $1/6$, so no parameter gives third order on general nonlinear equations. The displayed <stability function> is bounded throughout the left half-plane only when $a=1/2$, when it is the A-stable trapezoidal function $(1+z/2)/(1-z/2)$. It is not L-stable.
-
-= Stage solvability of an implicit Runge-Kutta method
-{parent=Implicit Runge-Kutta method}
-
-For a vector field uniformly <Lipschitz continuous> in the state with constant $L$, the stage fixed-point map of an <implicit Runge-Kutta method> is a contraction in the maximum stage norm if $hL\max_i\sum_j|a_{ij}|<1$. The <contraction mapping theorem> then gives unique stages. This is a sufficient small-step condition; a <dissipative vector field> may permit solvability for larger steps. An <algebraic stability> or <B-stability> estimate compares existing stage solutions and should not be mistaken for an unqualified stage-existence theorem.
-
-= Implicit midpoint rule
-{parent=Implicit Runge-Kutta method}
-
-= Implicit midpoint method
-{synonym}
-
-The implicit midpoint rule advances an autonomous ordinary differential equation by
-$$
-y_{n+1}=y_n+h f\left(\frac{y_n+y_{n+1}}2\right).
-$$
-It is a second-order, <A-stable>, <time-symmetric numerical method>.
-
-The <implicit midpoint rule> is the <midpoint method> with $y_{n+1}=y_n+h f(t_n+h/2,(y_n+y_{n+1})/2)$. It is a one-stage <implicit Runge-Kutta method>.
-
-= Crank-Nicolson method
-{parent=Implicit Runge-Kutta method}
-{c}
-{wiki=Crank–Nicolson_method}
-
-The Crank--Nicolson method applies the <trapezoidal rule> to a semidiscrete evolution equation. For a linear system $u'=Lu$ its update is
-$$
-\left(I-\frac h2L\right)u^{n+1}=\left(I+\frac h2L\right)u^n.
-$$
-
-= Contractivity of split Crank-Nicolson diffusion
-{parent=Crank-Nicolson method}
-{title2=$\|C_A(h)C_B(h)\|_2\le1$}
-
-For symmetric negative semidefinite matrices $A,B$, each factor $C_A(h)=(I-hA/2)^{-1}(I+hA/2)$ has norm at most one, since its eigenvalues are $(1+h\lambda/2)/(1-h\lambda/2)$ with $\lambda\le0$. The same holds for $B$, so their ordered product is a contraction for every $h\ge0$, whether or not $A,B$ commute. This proves unconditional discrete <L2 norm> stability of the split <Crank--Nicolson method> for directional diffusion. Its splitting error remains first order in general, because the product's quadratic defect is $h^2[A,B]/2$.
-
-= Collocation Runge-Kutta method
-{parent=Implicit Runge-Kutta method}
-
-Given distinct nodes $c_i$, a collocation Runge-Kutta method uses the Lagrange basis $\ell_j$ with $a_{ij}=\int_0^{c_i}\ell_j(\tau)d\tau$ and $b_j=\int_0^1\ell_j(\tau)d\tau$. Its stages enforce the differential equation at the collocation nodes.
-
-This applies the <collocation method> to the time-step polynomial of an <ordinary differential equation>.
-
-= Two-node collocation A-stability criterion
-{parent=Collocation Runge-Kutta method}
-{title2=$c_1+c_2\geq1$}
-
-For distinct nodes $c_1,c_2\in[0,1]$, the two-stage <collocation Runge-Kutta method> has <stability function>
-$$
-R(z)=\frac{1+(1-a)z+rz^2}{1-az+dz^2},\qquad a=(c_1+c_2)/2,\quad d=c_1c_2/2,\quad r=(1-c_1)(1-c_2)/2.
-$$
-The denominator has no zeros in the closed left half-plane. On the imaginary axis the denominator's squared modulus minus the numerator's is $(d^2-r^2)y^4$. Thus $d\geq r$, equivalently $c_1+c_2\geq1$, is necessary and sufficient for <A-stability>, using the <maximum modulus principle> and the bound at infinity.
-
-= Collocation order theorem
-{parent=Collocation Runge-Kutta method}
-{title2=$p=s+k$}
-
-For $s$ distinct collocation nodes, let $\pi_s(t)=\prod_{i=1}^s(t-c_i)$. If $\int_0^1t^j\pi_s(t)dt=0$ for $0\le j<k$, and the next moment is nonzero, the associated interpolatory quadrature has order $s+k$, and the <collocation Runge-Kutta method> has the same classical order for sufficiently smooth differential equations. Here $0\le k\le s$. Equivalently, if the quadrature is exact through degree $p-1$ but not degree $p$, the method has order $p$. The generic order is at least $s$, <Gauss collocation methods> reach $2s$, and <Radau IIA methods> reach $2s-1$.
-
-= Collocation endpoint superconvergence by quadrature orthogonality
-{parent=Collocation order theorem}
-{title2=$p=q$}
-
-For $s$ collocation nodes, the residual of the collocation polynomial vanishes at each node and contains the factor $\omega(\tau)=\prod_i(\tau-c_i)$. Quadrature exactness through degree $q-1$ implies $\int_0^1\omega(\tau)p(\tau)d\tau=0$ for every polynomial of degree at most $q-s-1$. Expand the smooth vector-field interpolation error and the derivative of the exact flow in powers of the step. Every endpoint-error term of degree below $q$ has this vanishing weighted moment, so the endpoint local error is $O(h^{q+1})$, although the interior stage accuracy is generally only $s$. A step Lipschitz estimate and <discrete Gronwall inequality> then give global order $q$. Gaussian nodes attain $q=2s$, while the first nonexact quadrature moment bounds the order from above.
-
-= Collocation tableau row-sum identity
-{parent=Collocation Runge-Kutta method}
-{title2=$A\mathbf1=c$}
-
-For a <collocation Runge-Kutta method>, $a_{ij}=\int_0^{c_i}\ell_j(t)dt$, where the <Lagrange interpolation> basis obeys $\sum_j\ell_j=1$. Hence each row sum is its collocation node. Failure of this identity disproves a claimed collocation tableau with those nodes. The identity alone is necessary rather than sufficient: the individual integrated basis coefficients must also agree.
-
-= Lobatto IIIA method
-{parent=Collocation Runge-Kutta method}
-{c}
-
-A Lobatto IIIA method collocates at the <Lobatto quadrature> nodes, including both endpoints of the time interval. Its three-stage version has
-$$
-A=\begin{pmatrix}0&0&0\\5/24&1/3&-1/24\\1/6&2/3&1/6\end{pmatrix},
-\qquad b=(1/6,2/3,1/6)^T,
-\qquad c=(0,1/2,1)^T.
-$$
-The <Butcher order conditions> give order four. Its <stability function> is
-$$
-R(z)=\frac{1+z/2+z^2/12}{1-z/2+z^2/12},
-$$
-which is <A-stable> but not <L-stable>. It is not <algebraically stable>: the first diagonal entry of the defining <matrix> is $2b_1a_{11}-b_1^2=-1/36$. This distinguishes linear <A-stability> from nonlinear <algebraic stability>.
-
-= Gauss-Legendre method
-{parent=Collocation Runge-Kutta method}
-{c}
-{wiki=Gauss–Legendre_method}
-
-= Gauss--Legendre Runge-Kutta method
-{c}
-{synonym}
-
-= Gauss collocation method
-{c}
-{synonym}
-
-The $s$-stage Gauss--Legendre Runge--Kutta method collocates at the Gauss--Legendre quadrature nodes on $[0,1]$. It is symmetric, A-stable, and has order $2s$.
-
-= Gauss collocation coefficient construction
-{parent=Gauss-Legendre method}
-{c}
-{title2=$a_{ij}=\int_0^{c_i}\ell_j(t)dt$}
-
-Choose $c_1,\ldots,c_s$ as the <polynomial roots> of $P_s(2c-1)$ in $(0,1)$, and form the <Lagrange interpolation polynomials> $\ell_j(t)=\prod_{m\ne j}(t-c_m)/(c_j-c_m)$. The <Gauss collocation method> has $a_{ij}=\int_0^{c_i}\ell_j(t)dt$ and $b_j=\int_0^1\ell_j(t)dt$. This gives explicit coefficient formulas after finding <polynomial roots>: if $\ell_j(t)=\sum_rd_{jr}t^r$, these <integrals> are $\sum_rd_{jr}c_i^{r+1}/(r+1)$ and $\sum_rd_{jr}/(r+1)$. <Gaussian quadrature> gives order $2s$.
-
-= Fourth-order two-stage Gauss collocation method
-{parent=Gauss-Legendre method}
-{title2=$R(z)=(1+z/2+z^2/12)/(1-z/2+z^2/12)$}
-
-The two-stage <Gauss--Legendre Runge-Kutta method> uses nodes $c_{1,2}=1/2\mp\sqrt3/6$, weights $b_1=b_2=1/2$ and coefficients $a_{11}=a_{22}=1/4$, $a_{12}=1/4-\sqrt3/6$, $a_{21}=1/4+\sqrt3/6$. The <Butcher order conditions> give order four. Its <stability function> is the displayed rational function, which is <A-stable>. The <algebraic stability> matrix is zero, so positive weights also give nonlinear contractivity for dissipative vector fields.
-
-= Radau IIA method
-{parent=Collocation Runge-Kutta method}
-{c}
-
-An $s$-stage Radau IIA method collocates at the right-endpoint Radau nodes. It has order $2s-1$ and is both <algebraically stable> and <L-stable>.
-
-= Padé identification of a Radau stability function
-{c}
-{parent=Radau IIA method}
-{title2=$R(z)=[s-1/s]_{e^z}$}
-
-Suppose an $s$-stage <Runge-Kutta method> has order $2s-1$, an <invertible matrix> $A$, and $b^TA^{-1}\mathbf1=1$. Its <stability function> is $R(z)=1+zb^T(I-zA)^{-1}\mathbf1$. The <adjugate matrix> formula gives a <rational function> with denominator degree $s$ and numerator degree at most $s$; its zero <limit> at infinity lowers the latter degree to at most $s-1$. The <order of a numerical method> gives $R(z)-e^z=O(z^{2s})$, identifying the $[s-1/s]$ <Padé approximant>. Uniqueness follows because the cross-multiplied difference of two candidates has degree at most $2s-1$ but a zero of order at least $2s$, so is identically zero. The <A-stability of near-diagonal exponential Padé approximants> then proves <A-stability>, and the zero limit proves <L-stability>. These conditions identify the stability function; they do not alone claim uniqueness of all entries of the <Runge-Kutta method> tableau.
-
-= Algebraic stability of a Runge-Kutta method
-{parent=Collocation Runge-Kutta method}
-
-= Algebraic stability
-{synonym}
-
-= Algebraically stable
-{synonym}
-
-A Runge-Kutta method is algebraically stable when $b_i\geq0$ and the matrix $M$ with $M_{ij}=b_i a_{ij}+b_j a_{ji}-b_i b_j$ is positive semidefinite. Algebraic stability implies contractivity for dissipative differential equations.
-
-= Runge-Kutta conservation of quadratic invariants
-{parent=Algebraic stability of a Runge-Kutta method}
-{c}
-{title2=$b_i a_{ij}+b_j a_{ji}=b_i b_j$}
-
-For stage states $Y_i=y_n+h\sum_ja_{ij}k_j$ and a vector field with $Y_i^Tk_i=0$, expansion of the new squared norm gives $\|y_{n+1}\|^2-\|y_n\|^2=-h^2\sum_{i,j}M_{ij}k_i^Tk_j$, where $M_{ij}=b_i a_{ij}+b_j a_{ji}-b_i b_j$. Hence $M=0$ preserves the <quadratic form> exactly for every well-defined step. The same argument with a fixed symmetric matrix in the inner product preserves any quadratic invariant of the vector field. In particular it preserves the Euclidean norm for a <skew-symmetric matrix> differential equation.
-
-= Butcher contractivity theorem
-{c}
-{parent=Algebraic stability of a Runge-Kutta method}
-
-An <algebraically stable> <Runge-Kutta method> is <B-stable>: for a <dissipative vector field>, a well-defined step cannot increase the distance between two starting values. This assumes that the compared stage equations have solutions, as required by <stage solvability of an implicit Runge-Kutta method>. The <Runge-Kutta contractivity identity> expresses the distance change as a nonpositive weighted term coming from the <dissipative vector field> minus a nonnegative <quadratic form> involving the matrix defining <algebraic stability>. Positive weights also rule out stage poles in the open left half-plane on the scalar test equation, giving <A-stability> there; zero-weight redundant stages need separate solvability attention.
-
-= Runge-Kutta contractivity identity
-{parent=Algebraic stability of a Runge-Kutta method}
-{c}
-
-For differences $D_i$ between corresponding stages and differences $F_i$ between their vector fields, a Runge--Kutta step satisfies
-$$
-\|d_{n+1}\|^2=\|d_n\|^2+2h\sum_i b_i\operatorname{Re}\langle D_i,F_i\rangle-h^2\sum_{i,j}m_{ij}\operatorname{Re}\langle F_i,F_j\rangle.
-$$
-To derive the identity, expand the squared <norm> of $d_{n+1}=d_n+h\sum_i b_iF_i$ and substitute $d_n=D_i-h\sum_j a_{ij}F_j$ in the linear term. Symmetrizing the double sum gives the displayed coefficients $m_{ij}$. For a <dissipative vector field>, the first sum is nonpositive when $b_i\geq0$, and the second sum is nonnegative when the <matrix> $(m_{ij})$ is a <positive semidefinite matrix>. Thus <algebraic stability> implies <B-stability>.
-
-= Trapezoidal rule
-{parent=Implicit Runge-Kutta method}
-{wiki}
-{title2=$T(f)=(b-a)(f(a)+f(b))/2$}
-
-As a <quadrature rule>, the <trapezoidal rule> replaces an <integrand> by the <linear interpolation> joining its two endpoint values:
-$$
-I(f)=\int_a^bf(x)\,dx\approx T(f)=\frac{b-a}{2}\bigl(f(a)+f(b)\bigr),\qquad a<b.
-$$
-For nonnegative endpoint values, this is the area of a <trapezoid>; in general it is a signed area. The <quadrature nodes> are $a,b$, each with <quadrature weight> $(b-a)/2$. Unlike the <midpoint quadrature rule>, it uses endpoint samples, which can be reused between adjacent panels.
-
-Every <affine function> $f(x)=\alpha x+\beta$ agrees with its <linear interpolation>, so the <trapezoidal rule> integrates it exactly. On $[0,2]$, $f(x)=2x+1$ gives $T(f)=(2/2)(1+5)=6=I(f)$. On $[0,1]$, the <polynomial> $f(x)=x^2$ instead gives $T(f)=1/2$, exceeding $I(f)=1/3$ by $1/6$. Its <degree of precision of a quadrature rule> is exactly one.
-
-If $f\in C^2[a,b]$, its signed <approximation error> satisfies
-$$
-T(f)-I(f)=\frac{(b-a)^3}{12}f''(\xi_T),\qquad a<\xi_T<b.
-$$
-A <convex function> lies below its endpoint chord, so the <trapezoidal rule> overestimates its <integral>; a <concave function> gives the reverse inequality. The error formula assumes that the second <derivative> exists and is a <continuous function> throughout the closed interval.<NIST Digital Library of Mathematical Functions/3.5 Quadrature, subsection (i) Trapezoidal Rules>[§3.5(i), equation 3.5.1 and its C² hypothesis; the source writes integral minus rule]{ref} A short derivation is the identity
-$$
-T(f)-I(f)=\frac12\int_a^b(t-a)(b-t)f''(t)\,dt,
-$$
-obtained by two <integrations by parts>. The nonnegative <Peano kernel> has <integral> $(b-a)^3/12$, and the <weighted mean value theorem for integrals> gives the formula.
-
-The <trapezoidal rule> for an <ordinary differential equation> averages <vector fields> at the old and new states and is <A-stable>.
-
-This time-stepping use applies the same <trapezoidal rule> to the <integral> of the <derivative> in an <ordinary differential equation>. That connection explains its place under <implicit Runge-Kutta methods>; its quadrature behavior and the nonlinear issue in <trapezoidal rule fails B-stability> concern different uses of the same endpoint averaging.
-
-= Composite trapezoidal rule
-{parent=Trapezoidal rule}
-{title2=$T_n(f)=h(f(a)/2+\sum_{j=1}^{n-1}f(a+jh)+f(b)/2)$}
-
-On an equal-panel <partition of an interval>, with $h=(b-a)/n$, sum the <trapezoidal rule> over adjacent panels:
-$$
-T_n(f)=h\left[\frac{f(a)}2+\sum_{j=1}^{n-1}f(a+jh)+\frac{f(b)}2\right].
-$$
-There are $n+1$ distinct <quadrature nodes>. Each interior sample belongs to two panels and therefore has <quadrature weight> $h$, while each endpoint has <quadrature weight> $h/2$. Equivalently, the <composite trapezoidal rule> integrates the <piecewise linear function> obtained by <linear interpolation> exactly.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others/5.6 Numerical integration>[§5.6.1, equations 5.6.3–5.6.5: integrating the piecewise linear interpolant]{ref}
-
-For $f\in C^2[a,b]$ and $K=\max_{x\in[a,b]}|f''(x)|$, summing panel <quadrature errors> gives
-$$
-T_n(f)-I(f)=\frac{b-a}{12}h^2f''(\xi),\qquad |T_n(f)-I(f)|\leq\frac{b-a}{12}h^2K
-$$
-for some $\xi\in(a,b)$. Thus panel <quadrature errors> of order $O(h^3)$ accumulate to order $O(h^2)$, using <big O notation>.<NIST Digital Library of Mathematical Functions/3.5 Quadrature, subsection (i) Trapezoidal Rules>[§3.5(i), equations 3.5.2–3.5.3: composite formula and signed error]{ref} On a nonuniform <partition of an interval> with widths $h_j$ and largest width $H$, the bound is $K\sum_jh_j^3/12\leq K(b-a)H^2/12$.
-
-For the <polynomial> $f(x)=x^2$ on $[0,1]$, direct summation yields
-$$
-T_n(f)=\frac13+\frac{1}{6n^2},\qquad T_n(f)-I(f)=-2\bigl(M_n(f)-I(f)\bigr).
-$$
-Both <quadrature errors> shrink by exactly four when $n$ doubles, with opposite signs. This exact relation belongs to this <polynomial> example; the <trapezoidal rule> is not always twice as inaccurate as the <midpoint quadrature rule>.
-
-\Image[midpoint-trapezoidal-error-refinement.png]
-{title=Quadratic quadrature errors fall by four on refinement while a common sample bias persists}
-
-The left plot uses exact <polynomial> sums; the right adds a common sample bias $\delta=0.002$ to the <composite trapezoidal rule>. That mathematical model converges to $1/3+\delta$, showing why smaller panels alone do not ensure accuracy for noisy samples. It illustrates <noise sensitivity of a quadrature rule>, rather than measured data.
-
-= Trapezoidal rule fails B-stability
-{parent=Trapezoidal rule}
-
-The <trapezoidal rule> is <A-stable> but is not <B-stable>. For the <dissipative vector field> $f(y)=-y^3$ at step size one, its uniquely defined step map $T$ obeys $T+T^3/2=y-y^3/2$. At $y=\sqrt2$, $T=0$ and implicit differentiation gives $T'=-2$, so nearby states expand rather than contract. This is a concrete nonlinear obstruction, rather than merely failure of the sufficient <algebraic stability> criterion.
-
-= Time-symmetric numerical method
-{parent=Runge-Kutta method}
-
-= Symmetric numerical method
-{synonym}
-
-A one-step numerical method with step map $\Phi_h$ is time symmetric when $\Phi_{-h}=\Phi_h^{-1}$. Its leading local-error power is odd, so every nontrivial consistent time-symmetric method has even order.
-
-= Order of a Runge-Kutta method
-{parent=Runge-Kutta method}
-{wiki}
-
-The order is the highest power through which the one-step expansion matches the exact Taylor expansion.
-
-= Third-order conditions for an explicit Runge-Kutta method
-{parent=Order of a Runge-Kutta method}
-
-For an explicit <Runge-Kutta method> with coefficients $A,b$, put $c=A\mathbf1$ and let $c^2$ mean componentwise squaring. The conditions $b^T\mathbf1=1$, $b^Tc=1/2$, $b^Tc^2=1/3$ and $b^TAc=1/6$ match the exact flow expansion through degree three: the two cubic differentials are $f^{\prime\prime}[f,f]$ and $(f^\prime)^2f$. For sufficiently smooth vector fields these give local error $O(h^4)$ and, under the usual finite-interval <Lipschitz continuity> assumptions, global error $O(h^3)$.
+\Include[runge-kutta-method]{parent=Numerical analysis}
 
 = Simplex algorithm
 {parent=Numerical analysis}
@@ -4373,653 +3326,7 @@ An irreducible A-stable linear multistep method has order at most two.
 
 This is an order restriction for an <A-stable> <linear multistep method>.
 
-= Numerical linear algebra
-{parent=Numerical analysis}
-{wiki}
-
-Numerical linear algebra develops stable finite algorithms for matrix computations.
-
-= Matrix preconditioning
-{parent=Numerical linear algebra}
-{title2=$M^{-1/2}AM^{-1/2}$}
-
-Matrix preconditioning transforms a system using an inexpensive auxiliary solve to improve its spectrum. For symmetric positive definite matrices, a positive definite $M$ produces $M^{-1/2}AM^{-1/2}$, preserving the symmetric structure needed by <conjugate gradient method>.
-
-= Matrix preconditioner
-{parent=Matrix preconditioning}
-{title2=$M$}
-
-A matrix preconditioner is an auxiliary invertible matrix whose inverse is cheap to apply and whose use improves the spectrum of a linear system. In symmetric positive definite problems, a positive definite $M$ preserves that structure under the symmetric transformation $M^{-1/2}AM^{-1/2}$.
-
-= Power iteration
-{parent=Numerical linear algebra}
-{wiki}
-{title2=$x_{k+1}=Ax_k/\|Ax_k\|_2$}
-
-<Power iteration> finds a <dominant eigenvalue> and its <eigenvector> by repeatedly applying a <matrix> and rescaling the resulting <vector>. The essential idea is selective amplification: components along different <eigenvectors> grow at different rates, so one direction can eventually dominate. It is the computational form of the <power method> and is useful when applying a large <sparse matrix> to a <vector> is cheap but computing its whole <spectral decomposition> is expensive.
-
-For a square <matrix> over the <real numbers> or <complex numbers> $A$, choose a <unit vector> $x_0$ and repeat
-$$
-y_{k+1}=Ax_k,\qquad x_{k+1}=\frac{y_{k+1}}{\|y_{k+1}\|_2}.
-$$
-Here $\|\cdot\|_2$ is the <Euclidean norm>. If $y_{k+1}=0$, stop before division: the current <vector> is an <eigenvector> for the <zero eigenvalue>, and this iteration cannot continue. Otherwise, in exact arithmetic,
-$$
-x_k=\frac{A^kx_0}{\|A^kx_0\|_2}.
-$$
-Repeated normalization keeps the stored <vectors> at manageable size without changing their directions; it does not guarantee that an individual multiplication cannot exceed the range of <floating-point arithmetic>. The <dominant eigenvalue> means largest <modulus>, which need not mean largest signed real value.<Templates for the Solution of Algebraic Eigenvalue Problems: A Practical Guide/Power Method>{ref}
-
-= Exact two-dimensional power iteration
-{parent=Power iteration}
-{title2=$\tan\theta_k=3^{-k}$}
-
-Consider the <symmetric matrix> and initial <unit vector>
-$$
-A=\begin{pmatrix}2&1\\1&2\end{pmatrix},\qquad x_0=\begin{pmatrix}1\\0\end{pmatrix}.
-$$
-Its <orthonormal eigenbasis> consists of $u_1=(1,1)^T/\sqrt2$ and $u_2=(1,-1)^T/\sqrt2$, with <eigenvalues> $3$ and $1$. Since $x_0=(u_1+u_2)/\sqrt2$, direct multiplication gives
-$$
-A^kx_0=\frac12\begin{pmatrix}3^k+1\\3^k-1\end{pmatrix},\qquad x_k=\frac{u_1+3^{-k}u_2}{\sqrt{1+3^{-2k}}}.
-$$
-The first unnormalized <vectors> are $(1,0)^T$, $(2,1)^T$, $(5,4)^T$, and $(14,13)^T$. If $\theta_k$ is the acute <angle> from the line spanned by the dominant <eigenvector>, then $\tan\theta_k=3^{-k}$. Every application divides the unwanted-to-wanted component ratio by three: normalization changes lengths, while the <spectral gap> selects the direction.
-
-\Image[power-iteration-symmetric-direction-error.png]
-{title=Exact <power iteration> directions and errors for a <symmetric matrix> with <eigenvalues> 3 and 1}
-
-The right panel compares the <power iteration direction error>, <Rayleigh quotient> error, and <eigenpair residual>. With $t_k=3^{-k}$, their exact values are
-$$
-\varepsilon_k=\frac{t_k}{\sqrt{1+t_k^2}},\qquad 3-\rho_k=\frac{2t_k^2}{1+t_k^2},\qquad \|r_k\|_2=\frac{2t_k}{1+t_k^2}.
-$$
-Thus a very accurate <Rayleigh quotient> can appear well before the <eigenvector> is comparably accurate. This is an example of <quadratic Rayleigh-quotient improvement for the power method>.
-
-= Power iteration convergence for a diagonalizable matrix
-{parent=Power iteration}
-{title2=$|\lambda_1|>|\lambda_2|,\quad (V^{-1}x_0)_1\ne0$}
-
-Suppose $A\in\mathbb C^{n\times n}$ is a <diagonalizable matrix>, $n\ge2$, with an <eigenbasis> $v_1,\ldots,v_n$ and <spectral decomposition>
-$$
-A=V\Lambda V^{-1},\qquad V=(v_1\ \cdots\ v_n),\qquad \Lambda=\operatorname{diag}(\lambda_1,\ldots,\lambda_n).
-$$
-Assume the <dominant eigenvalue> $\lambda_1$ is a <simple eigenvalue> and
-$$
-|\lambda_1|>|\lambda_2|\ge\cdots\ge|\lambda_n|,\qquad x_0=\sum_{j=1}^n c_jv_j,\qquad c_1\ne0.
-$$
-Then the normalized <power iteration> approaches the one-dimensional <eigenspace> of $\lambda_1$. Its asymptotic direction-error bound has factor $\gamma=|\lambda_2/\lambda_1|<1$. This <spectral gap> is a gap in <modulus>: if $g=|\lambda_1|-|\lambda_2|$, then $\gamma=1-g/|\lambda_1|$. A small relative gap gives slow convergence.<Templates for the Solution of Algebraic Eigenvalue Problems: A Practical Guide/Power Method>{ref}
-
-The short proof is the exact <eigenbasis> identity
-$$
-\frac{A^kx_0}{c_1\lambda_1^k}=v_1+\sum_{j=2}^n\frac{c_j}{c_1}\left(\frac{\lambda_j}{\lambda_1}\right)^kv_j.
-$$
-The remaining sum has <norm> bounded by a constant times $\gamma^k$. This proves convergence of direction, allowing a changing sign or complex factor. A tiny $c_1$ or a poorly conditioned, <nonorthogonal> <eigenbasis> can delay visible convergence: the <condition number> of $V$ affects constants, while $\gamma$ controls the eventual rate. The bound need not be an equality; if the initial coefficient of the second-largest <eigenvalue> vanishes, the <active spectrum of the power method> gives a faster rate. When $\gamma=0$, all unwanted components disappear after one multiplication.<Numerical Analysis, Spring 2022/Power iteration (2022-03-07 lecture notes)>[§1, PDF pp. 1–2: diagonalizable expansion and nonzero first coordinate of the starting vector]{ref}
-
-The hypothesis is $c_1=(V^{-1}x_0)_1\ne0$, not an ordinary nonzero <inner product> with the right <eigenvector>. Let $w_1^*$ be the first row of $V^{-1}$, a <left eigenvector> normalized so $w_1^*v_j$ is $1$ for $j=1$ and $0$ otherwise; $*$ denotes <conjugate transpose>. Then $c_1=w_1^*x_0$. For a <Hermitian matrix>, choose an <orthonormal eigenbasis> and the criterion becomes $v_1^*x_0\ne0$: the starting <vector> must be <nonorthogonal> to the dominant <eigenvector>. For a general <diagonalizable matrix>, the <nonorthogonal> <eigenbasis> makes these two tests different, as illustrated under <power iteration failure cases>.
-
-= Power iteration direction error
-{parent=Power iteration convergence for a diagonalizable matrix}
-{title2=$\varepsilon_k=\|(I-uu^*)x_k\|_2$}
-
-For a <unit vector> $u$ spanning the target <eigenspace> and a normalized iterate $x_k$, define
-$$
-\varepsilon_k=\|(I-uu^*)x_k\|_2=\sqrt{1-|u^*x_k|^2}.
-$$
-This is the <norm> of the component in the <orthogonal complement> of $u$, equivalently the sine of the acute <angle> to its line. It ignores the arbitrary sign or complex unit factor of an <eigenvector>. Under <power iteration convergence for a diagonalizable matrix>, $\varepsilon_k=O(\gamma^k)$ in <Big O notation>. The <orthogonal projection> defines how we measure direction; it does not assume that the <eigenbasis> of $A$ is <orthogonal>. In computation, the projection form avoids subtracting nearly equal numbers inside the square root.
-
-= Sign and phase in power iteration
-{parent=Power iteration}
-{title2=$x_k=\frac{c_1\lambda_1^k}{|c_1\lambda_1^k|}u_1+O(\gamma^k)$}
-
-Under <power iteration convergence for a diagonalizable matrix>, take $v_1=u_1$ to be a <unit vector>. The displayed formula describes both the dominant <eigenvector> direction and its rotating complex unit factor. With real data and a positive <dominant eigenvalue>, $x_k$ converges to $u_1$ or $-u_1$ according to the sign of $c_1$. With a negative <dominant eigenvalue>, consecutive <vectors> approach opposite signs even though their <power iteration direction error> tends to zero.
-
-For complex data write $\lambda_1=|\lambda_1|e^{i\phi}$, where $\phi$ is its <complex argument>. The leading factor turns by $e^{i\phi}$ per step, so the <vectors> generally do not converge. For example, $A=\operatorname{diag}(2i,1)$ and $x_0=(1,1)^T/\sqrt2$ give $A^kx_0=((2i)^k,1)^T/\sqrt2$: the first component cycles through four phases while the ratio of component <moduli> tends to zero. Its <power iteration direction error> is $2^{-k}/\sqrt{1+2^{-2k}}$. Multiplying $x_k$ by $e^{-i(\arg c_1+k\phi)}$ gives a sequence converging to $u_1$.
-
-A stopping rule based only on $\|x_{k+1}-x_k\|_2$ therefore rejects successful sign-alternating iterations. A comparison invariant under complex unit factors is
-$$
-\min_{|\omega|=1}\|x_{k+1}-\omega x_k\|_2=\sqrt{2-2|x_k^*x_{k+1}|}.
-$$
-Even this comparison can be small for a slowly changing wrong mixture; the <eigenpair residual> supplies a separate diagnostic.
-
-= Power iteration eigenpair diagnostics
-{parent=Power iteration}
-{title2=$\rho_k=x_k^*Ax_k,\quad r_k=Ax_k-\rho_kx_k$}
-
-For each <unit vector> iterate compute the <Rayleigh quotient> $\rho_k=x_k^*Ax_k$ and the <eigenpair residual> $r_k=Ax_k-\rho_kx_k$. Use the same multiplication $Ax_k$ for both diagnostics and the next normalized iterate. For any complex <matrix>, this <Rayleigh quotient> minimizes $\|Ax_k-\mu x_k\|_2$ over complex <scalars> $\mu$, because $x_k^*r_k=0$. Under <power iteration convergence for a diagonalizable matrix>, $\rho_k\to\lambda_1$ and $\|r_k\|_2\to0$, even when the <vectors> alternate signs or phases.<Numerical Analysis, Spring 2022/Power iteration (2022-03-07 lecture notes)>[§3, PDF p. 3: approximate eigenvector equation and Rayleigh quotient]{ref}
-
-A dimensionless stopping quantity is
-$$
-\eta_k=\frac{\|r_k\|_2}{\|A\|_2+|\rho_k|},
-$$
-when the denominator is positive; $\|A\|_2$ is the <operator norm>, and a known upper bound may replace it if computing it is costly. A small <eigenpair residual> certifies a small <backward error of an approximate eigenpair>, but does not establish that the <eigenvalue> found is dominant.
-
-For a <Hermitian matrix> with <orthonormal eigenbasis> $u_j$, write $x_k=\sum_j a_ju_j$. Then the independently useful identity
-$$
-\|r_k\|_2^2=\sum_j|a_j|^2|\lambda_j-\rho_k|^2
-$$
-shows that some <eigenvalue> lies within $\|r_k\|_2$ of $\rho_k$. If a specific target <eigenvalue> $\lambda_1$ is separated from all the others by $\delta_k=\min_{j>1}|\lambda_j-\rho_k|>0$, it also gives $\varepsilon_k\le\|r_k\|_2/\delta_k$. This separation is measured from the computed <Rayleigh quotient>; it differs from the dominant-<modulus> <spectral gap>. For a <nonnormal matrix>, the same <orthogonal> expansion is unavailable and a small <eigenpair residual> alone need not imply a comparably small distance to the <spectrum>.
-
-= Power iteration failure cases
-{parent=Power iteration}
-
-A tied largest <modulus> can prevent even direction convergence. With $D=\operatorname{diag}(2,-2)$ and $x_0=(1,1)^T/\sqrt2$,
-$$
-x_k=\frac1{\sqrt2}\begin{pmatrix}1\\(-1)^k\end{pmatrix},\qquad \rho_k=0,\qquad \|r_k\|_2=2.
-$$
-The two directions form a cycle; neither is an <eigenvector>. There is no dominant-<modulus> <spectral gap>. A tied <modulus> is not a universal failure: an initial <eigenvector> remains on its line, and $A=2I$ preserves every direction. <Subspace iteration> addresses a separated cluster by targeting a <dominant invariant subspace> instead of one <eigenvector>.
-
-An <orthogonal> start can fail despite a strict <spectral gap>. For $A=\begin{pmatrix}2&1\\1&2\end{pmatrix}$ and $x_0=(1,-1)^T/\sqrt2$, the dominant component is zero, so $Ax_0=x_0$ and every iterate equals $x_0$. The <Rayleigh quotient> is exactly $1$ and the <eigenpair residual> is zero, although the <dominant eigenvalue> is $3$. Exact arithmetic never creates a missing component.<Templates for the Solution of Algebraic Eigenvalue Problems: A Practical Guide/Power Method>{ref}
-
-\Image[power-iteration-tied-modulus-orthogonal-start.png]
-{title=Tied <eigenvalue> <moduli>, an <orthogonal> start, and sign alternation in <power iteration>}
-
-The third panel contrasts these failures with $N=\operatorname{diag}(-3,1)$, $x_0=(1,1)^T/\sqrt2$, for which
-$$
-x_k=\frac1{\sqrt{1+3^{-2k}}}\begin{pmatrix}(-1)^k\\3^{-k}\end{pmatrix}.
-$$
-Here the horizontal <eigenvector> direction converges with a strict <spectral gap>, while the normalized <vectors> alternate signs. This is the successful direction convergence described under <sign and phase in power iteration>.
-
-For a <nonorthogonal> <eigenbasis>, even the word “orthogonal” must be used carefully. The <diagonalizable matrix> $C=\begin{pmatrix}3&2\\0&1\end{pmatrix}$ has right <eigenvectors> $v_1=(1,0)^T$, $v_2=(-1,1)^T$, and dominant <left eigenvector> $w_1=(1,1)^T$. For $x_0=(a,b)^T$, the dominant coefficient is $c_1=w_1^Tx_0=a+b$. The starting <vector> $v_2$ is <nonorthogonal> to $v_1$ but stays at the smaller <eigenvalue> $1$; $(0,1)^T$ is <orthogonal> to $v_1$ but has $c_1=1$ and converges to the dominant direction. The <left eigenvector> test, not the right-<eigenvector> <inner product>, controls the outcome.
-
-A <random vector> drawn from a <continuous probability distribution> with a <probability density function> on the full real or complex <vector space> has $c_1\ne0$ with probability one. This avoids the exact missing-component <hyperplane>, but does not guarantee a large component or fast convergence. <Floating-point arithmetic> may seed a missing component, yet a structurally preserved zero can remain zero, so accidental perturbations are not a convergence guarantee.
-
-= Gaussian elimination
-{parent=Numerical linear algebra}
-{c}
-{wiki}
-
-Gaussian elimination applies elementary row operations to reduce a linear system to triangular form. Dense elimination uses $O(n^3)$ arithmetic operations.
-
-= Pivot element
-{parent=Gaussian elimination}
-{title2=$a_{kk}^{(k-1)}$}
-
-A <pivot element> is the current diagonal entry used to eliminate entries below it in <Gaussian elimination>, after any row interchange. At step $k$ it is $a_{kk}^{(k-1)}$, where $A^{(k-1)}$ is the current reduced <matrix>. Computing <elimination multipliers> requires this entry to be nonzero. A zero <pivot element> can reflect an unsuitable row order even for an <invertible matrix>, as <pivoted LU decomposition> illustrates.
-
-= Elimination multiplier
-{parent=Gaussian elimination}
-{title2=$l_{ik}=a_{ik}^{(k-1)}/a_{kk}^{(k-1)}$}
-
-For $i>k$, an <elimination multiplier> is the <scalar> $l_{ik}=a_{ik}^{(k-1)}/a_{kk}^{(k-1)}$ used in the <elementary row operation> $R_i\leftarrow R_i-l_{ik}R_k$. This creates a zero below the <pivot element>. The remaining entries change by $a_{ij}\leftarrow a_{ij}-l_{ik}a_{kj}$ for $j>k$. Storing these <elimination multipliers> gives the subdiagonal entries of $L$ in <LU decomposition>; later row interchanges must also reorder the already stored coefficients.
-
-= Sparse Gaussian elimination
-{parent=Gaussian elimination}
-
-A sparse direct solver performs <Gaussian elimination> while storing and updating only the predicted nonzero entries. A symbolic phase predicts the factor pattern from an elimination ordering, and a numerical phase evaluates the factors. The ordering can greatly alter <fill-in> and arithmetic work. For symmetric positive-definite systems, <Cholesky decomposition> avoids numerical pivoting; general systems require a balance between sparsity and stable pivot selection.
-
-= Leaf elimination of a tree-pattern positive-definite matrix
-{parent=Sparse Gaussian elimination}
-
-Associate an undirected graph with a symmetric matrix's off-diagonal nonzero pattern. Eliminating vertex $i$ updates the remaining matrix by $a_{jk}\mapsto a_{jk}-a_{ji}a_{ik}/a_{ii}$. Only pairs of neighbors of $i$ can acquire <fill-in>. If the graph is a tree, remove leaves successively: each eliminated vertex has at most one remaining neighbor, so only a diagonal entry can change. Every <Schur complement> of a <positive-definite matrix> is positive definite, so no zero pivot forces a different ordering. Leaf removal therefore constructs a <perfect elimination ordering> and a fill-free factorization.
-
-= Symbolic factorization
-{parent=Sparse Gaussian elimination}
-
-<Symbolic factorization> computes possible nonzero positions and update dependencies from a <sparse matrix> pattern and ordering before calculating numerical factor values. The <elimination graph> predicts fill and the <elimination tree> organizes dependencies. Numerical pivoting or exceptional cancellation can make the computed factor pattern differ from this structural prediction.
-
-= Elimination tree
-{parent=Sparse Gaussian elimination}
-{title2=$\operatorname{parent}(j)=\min\{i>j:L_{ij}\ne0\}$}
-
-For a symmetric factorization in a fixed ordering, the <elimination tree> assigns the displayed parent to a column of the lower-triangular factor when that set is nonempty. A column with no later entry is a root. The tree records dependencies of descendant updates on later pivots, supports symbolic factor allocation, and exposes parallel subtrees. It describes the factorization ordering, not merely a spanning tree of the original <matrix graph>.
-
-= Nested dissection
-{parent=Sparse Gaussian elimination}
-
-A <vertex separator> divides the remaining unknowns into disconnected subdomains. Nested dissection recursively eliminates each subdomain before its separator, keeping interaction localized until late in the factorization. For a regular two-dimensional mesh with $N$ unknowns, separators have size $O(\sqrt N)$; the resulting direct factorization uses $O(N^{3/2})$ work and $O(N\log N)$ storage under the usual geometric separator assumptions.
-
-= Minimum degree algorithm
-{parent=Sparse Gaussian elimination}
-
-At each step choose a remaining vertex of minimum degree in the current <elimination graph>. This heuristic reduces the size of the immediate <Schur complement> update and often reduces <fill-in>, but does not guarantee a globally optimal ordering. Its degrees must reflect earlier fill, rather than just the original <graph>.
-
-= Fill-in
-{parent=Sparse Gaussian elimination}
-
-<Fill-in> consists of factor entries that become nonzero despite being zero in the original <sparse matrix>. In symmetric elimination these are the added edges of the <elimination graph>. Removing a high-degree vertex can create many fill entries, whereas a <perfect elimination ordering> creates none. Symbolic fill predicts possible nonzeros before floating-point arithmetic; special cancellation can reduce the numerical pattern.
-
-= Matrix graph
-{parent=Sparse Gaussian elimination}
-
-For a symmetric <sparse matrix>, its <matrix graph> has one vertex per unknown and an edge $i-j$ whenever the off-diagonal entry $a_{ij}$ is structurally nonzero. Simultaneous row and column permutation relabels this <graph>. Nonsymmetric patterns are instead represented by directed or bipartite <graphs> when row and column roles must be distinguished.
-
-= Elimination graph
-{parent=Matrix graph}
-
-One step of symmetric <Gaussian elimination> removes the pivot vertex and connects its remaining neighbors into a <clique>. The rule follows from the <Schur complement> update $a_{ij}\leftarrow a_{ij}-a_{ik}a_{kj}/a_{kk}$. Repeating it predicts the generic factor sparsity; exceptional numerical cancellations can remove structurally predicted entries.
-
-= Fill-path criterion for symmetric elimination
-{parent=Elimination graph}
-
-After eliminating a vertex set $E$, a generic edge between remaining vertices $i,j$ exists exactly when the original <matrix graph> contains a path from $i$ to $j$ whose internal vertices all belong to $E$. Inductively, the new edges at pivot $k$ concatenate two such paths through $k$; conversely split any allowed path at $k$, or retain it when it avoids $k$. This characterizes fill by <graph> reachability.
-
-= Columnwise partial pivoting
-{parent=Gaussian elimination}
-{title2=$PA=LU$}
-
-= Partial pivoting
-{synonym}
-
-At each step of <Gaussian elimination>, select the largest absolute entry in the uneliminated part of the current column and interchange rows to put it on the diagonal. A nonsingular trailing <Schur complement> has a nonzero entry in its first column, so this procedure always finds a nonzero pivot in exact arithmetic. The <permutation matrix> $P$ records row interchanges; earlier multipliers must be interchanged too when assembling the lower-triangular factor. This yields the <LU decomposition> $PA=LU$ with unit diagonal in $L$. Searching within columns and interchanging rows is distinct from interchanging columns.
-
-= Row echelon form
-{parent=Gaussian elimination}
-
-A <matrix> is in row echelon form if zero rows follow all nonzero rows, each nonzero row has a first nonzero entry (pivot) to the right of the pivot in the preceding row, and entries below each pivot vanish. <Elementary row operations> bring every <matrix> to this form: choose a nonzero entry in the earliest nonzero column, swap its row to the top, eliminate entries below it, and continue on the remaining submatrix. The nonzero rows are independent by their successively positioned pivots; the pivot columns are independent and span the <column space>. Thus the number of pivots equals both <row rank> and <column rank>.
-
-= Reduced row echelon form
-{parent=Row echelon form}
-
-A <row echelon form> whose pivots are one and whose pivot columns have zeros in every other row. Over a <field>, each <row space> has a unique such <matrix> after zero rows are removed. It describes a <vector subspace> independently of which initial <basis> was used; <Gaussian binomial coefficients> exploit this uniqueness to count <vector subspaces> over a <finite field>.
-
-= Elementary row operation
-{parent=Gaussian elimination}
-
-= Row operation
-{synonym}
-
-An <elementary row operation> interchanges two rows of a <matrix>, multiplies one row by a nonzero scalar, or adds a scalar multiple of another row to it. These invertible operations are used in <Gaussian elimination>. For a square <matrix>, interchange changes the sign of its <determinant>, multiplication scales its <determinant> by the same scalar, and adding another row leaves its <determinant> unchanged, by multilinearity and alternation.
-
-= Elementary matrix
-{parent=Elementary row operation}
-
-An elementary matrix is obtained by applying one <elementary row operation> to the <identity matrix>. Multiplying $A$ by it on the left performs the same row operation on $A$. Such a <matrix> is invertible: reverse a row swap, reverse a nonzero row scaling by its reciprocal, or reverse adding a multiple of another row by adding its negative. Right multiplication gives an <elementary column operation>. In particular these operations preserve <matrix rank>.
-
-= LU decomposition
-{title2=$A=LU$}
-{c}
-{parent=Numerical linear algebra}
-{wiki}
-
-= LU factorization
-{c}
-{synonym}
-
-An <LU decomposition> writes a <square matrix> as $A=LU$, with $L$ a <lower triangular matrix> and $U$ an <upper triangular matrix>. We use a <unit triangular matrix> $L$, meaning $l_{ii}=1$. The factors record <Gaussian elimination>: $U$ contains the reduced equations, while $L$ stores the <elimination multipliers> needed to reconstruct the original equations. This makes <reusing LU factors for multiple right-hand sides> inexpensive.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§2.4.3, Definition 2.4.2 and equation (2.4.7): unit lower triangular L and upper triangular U]{ref}
-
-For an <invertible matrix>, unpivoted <LU decomposition> requires nonzero <pivot elements> at every elimination step; invertibility alone does not guarantee this. In general use <pivoted LU decomposition>, with the explicit convention $PA=LU$ and a <permutation matrix> $P$. Once the factors exist, solving a <linear system> $Ax=b$ needs <forward substitution> followed by <back substitution>, rather than forming a <matrix inverse>.
-
-= Computed three-by-three LU decomposition
-{c}
-{parent=LU decomposition}
-{title2=$A=LU$}
-
-Here is an original example of <Gaussian elimination> that can be checked entirely with <integers>. Start with
-$$
-A=\begin{pmatrix}2&1&1\\4&5&3\\-2&8&4\end{pmatrix}.
-$$
-The first <pivot element> is $2$. The <elimination multipliers> are $l_{21}=4/2=2$ and $l_{31}=-2/2=-1$. Apply the <elementary row operations> $R_2\leftarrow R_2-2R_1$ and $R_3\leftarrow R_3+R_1$ to obtain
-$$
-A^{(1)}=\begin{pmatrix}2&1&1\\0&3&1\\0&9&5\end{pmatrix}.
-$$
-Now the second <pivot element> is $3$, and $l_{32}=9/3=3$. The <elementary row operation> $R_3\leftarrow R_3-3R_2$ gives
-$$
-U=\begin{pmatrix}2&1&1\\0&3&1\\0&0&2\end{pmatrix},\qquad L=\begin{pmatrix}1&0&0\\2&1&0\\-1&3&1\end{pmatrix},\qquad LU=A.
-$$
-Importantly, $l_{32}$ comes from the current reduced <matrix>, not the original entry $a_{32}=8$. To reconstruct $A$ from $U$, its second row is twice the first row of $U$ plus the second; its third row is minus the first row of $U$ plus three times the second plus the third. These are exactly the coefficients in the <lower triangular matrix> $L$.
-
-\Image[lu-elimination-structure.png]
-{title=<Gaussian elimination> turns a three-by-three <matrix> into an <upper triangular matrix>, while <elimination multipliers> are stored in a <lower triangular matrix>}
-
-The unpivoted calculation here illustrates the structure of <LU decomposition>; applying <partial pivoting> to this particular $A$ would choose a different first row and different factors. Both procedures can represent the same <linear system> when their <permutation matrices> are handled consistently.
-
-= Unit triangular matrix
-{parent=LU decomposition}
-{title2=$t_{ii}=1$}
-
-A <unit triangular matrix> is a <triangular matrix> whose diagonal entries are all one. It is an <invertible matrix> with <determinant> one. In the convention used for <LU decomposition>, $L$ is a unit <lower triangular matrix>, so <forward substitution> needs no division by its diagonal entries.
-
-= Triangular solves for LU decomposition
-{c}
-{parent=LU decomposition}
-{title2=$Ly=Pb,\quad Ux=y$}
-
-Given <pivoted LU decomposition> $PA=LU$, the <linear system> $Ax=b$ is equivalent to $LUx=Pb$. Introduce the intermediate <vector> $y=Ux$: first use <forward substitution> to solve $Ly=Pb$, then <back substitution> to solve $Ux=y$. With unpivoted <LU decomposition>, $P=I$ is the <identity matrix>, so the first right-hand side is simply $b$.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§2.4.4, equation (2.4.8) and Algorithm 2.4.2, and §2.6.3: two triangular solves and permutation of b]{ref}
-
-For the factors in <computed three-by-three LU decomposition> and $b=(7,23,26)^T$, <forward substitution> gives
-$$
-y_1=7,\qquad y_2=23-2(7)=9,\qquad y_3=26+7-3(9)=6.
-$$
-Then <back substitution> gives
-$$
-x_3=6/2=3,\qquad x_2=(9-3)/3=2,\qquad x_1=(7-2-3)/2=1.
-$$
-Direct <matrix multiplication> verifies $A(1,2,3)^T=(7,23,26)^T$. More generally, the <back substitution> recurrence is
-$$
-x_i=\frac{y_i-\sum_{j=i+1}^{n}u_{ij}x_j}{u_{ii}},\qquad i=n,n-1,\ldots,1.
-$$
-The direction matters: the last row contains only $x_n$, whereas the first row generally involves every unknown. No dense <matrix inverse> is needed for either triangular solve.
-
-= Forward substitution
-{parent=Triangular solves for LU decomposition}
-{title2=$y_i=(c_i-\sum_{j<i}l_{ij}y_j)/l_{ii}$}
-
-<Forward substitution> solves a <linear system> $Ly=c$ with a <lower triangular matrix> $L$ and nonzero diagonal, from the first row downward:
-$$
-y_i=\frac{c_i-\sum_{j=1}^{i-1}l_{ij}y_j}{l_{ii}},\qquad i=1,\ldots,n.
-$$
-The first <sum> is empty, so $y_1=c_1/l_{11}$. Each subsequent row uses only components already found. For a <unit triangular matrix> $L$, omit the division because $l_{ii}=1$. The complementary procedure, <back substitution>, solves an <upper triangular matrix> system from the last row upward.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§2.3.2, equations (2.3.7)–(2.3.9), and §2.3.3, Algorithms 2.3.1–2.3.2: forward and backward substitution]{ref}
-
-= Pivoted LU decomposition
-{c}
-{parent=LU decomposition}
-{title2=$PA=LU$}
-
-We fix the convention $PA=LU$: the <permutation matrix> $P$ acts on the rows of $A$, and the same row ordering must be applied to $b$ before the <triangular solves for LU decomposition>. Equivalently, $A=P^TLU$, since $P^{-1}=P^T$. LAPACK documents its factors as $A=PLU$ instead, so check the defining equation rather than just the letter $P$.<DGETRS (LAPACK 3.3.1) by LAPACK project>[LAPACK DGETRS, A argument: factors from DGETRF satisfy $A=PLU$]{ref} <Partial pivoting> selects the largest absolute candidate in the current column, among rows $k,\ldots,n$, before forming <elimination multipliers>.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§2.6.1, Definition 2.6.1; §2.6.2, Definition 2.6.2 and equation (2.6.1): pivot selection and reordered-row factorization]{ref}
-
-A zero first <pivot element> does not imply a <singular matrix>. For example,
-$$
-A_0=\begin{pmatrix}0&1\\2&3\end{pmatrix},\qquad \det A_0=-2,\qquad P=\begin{pmatrix}0&1\\1&0\end{pmatrix},\qquad PA_0=\underbrace{\begin{pmatrix}1&0\\0&1\end{pmatrix}}_{L}\underbrace{\begin{pmatrix}2&3\\0&1\end{pmatrix}}_{U}.
-$$
-Unpivoted <Gaussian elimination> would divide $2$ by zero. Indeed, no $A_0=LU$ with a unit <lower triangular matrix> $L$ exists: $u_{11}=0$ would force $(LU)_{21}=l_{21}u_{11}=0$, contradicting $(A_0)_{21}=2$. One row interchange resolves the obstruction. For $b_0=(1,5)^T$, use $Pb_0=(5,1)^T$; <back substitution> then gives $x=(1,1)^T$. Using the original $b_0$ with these factors would solve a different <linear system>.
-
-<Partial pivoting> bounds each <elimination multiplier> by one in absolute value in exact arithmetic. This helps control <roundoff error>, but intermediate entries can still grow; it is not an unconditional guarantee of <numerical stability> for every <matrix>.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§2.6.4, Example 2.6.6 and the concluding discussion: stability of unpivoted and pivoted factorization]{ref} It also does not remove the original problem's <condition number>. For the <diagonal matrix> $D=\operatorname{diag}(1,\varepsilon)$ with $0<\varepsilon<1$, the <condition number> in the <Euclidean norm> is $\kappa_2(D)=1/\varepsilon$. Row permutations preserve this <condition number>, because they preserve <Euclidean norms>. Even an exact solve changes from $(1,1)^T$ to $(1,1+\eta/\varepsilon)^T$ when the right-hand side changes from $(1,\varepsilon)^T$ to $(1,\varepsilon+\eta)^T$. This sensitivity is a property of the <linear system>, not a zero-<pivot element> failure.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§2.8, Definition 2.8.1, and §2.8.1, Theorem 2.8.1, equations (2.8.5)–(2.8.6): condition number and right-hand-side sensitivity]{ref}
-
-= Reusing LU factors for multiple right-hand sides
-{c}
-{parent=LU decomposition}
-{title2=$AX=B,\quad LY=PB,\quad UX=Y$}
-
-When a fixed <matrix> $A$ is used with several forcing or measurement <vectors>, compute its <pivoted LU decomposition> once. Collect $r$ right-hand sides into the columns of $B=(b^{(1)}\ \cdots\ b^{(r)})$, and the corresponding solutions into $X$. Then
-$$
-AX=B,\qquad LY=PB,\qquad UX=Y.
-$$
-Each column undergoes the same row permutation, <forward substitution> and <back substitution>. Neither $L$, $U$ nor $P$ depends on $B$. This is the useful separation between preparing a <linear system> and applying its solution procedure repeatedly. LAPACK implements it by taking previously computed factors, permuting all right-hand sides, and performing the two triangular solves.<DGETRS (LAPACK 3.3.1) by LAPACK project>[LAPACK DGETRS, version 3.3.1, April 2011, Purpose, NRHS and B arguments, and nontransposed branch: DLASWP followed by lower-unit and upper-nonunit DTRSM calls]{ref}
-
-For the unpivoted factors in <computed three-by-three LU decomposition>, take
-$$
-B=\begin{pmatrix}7&0&4\\23&2&6\\26&4&-8\end{pmatrix},\qquad Y=\begin{pmatrix}7&0&4\\9&2&-2\\6&-2&2\end{pmatrix},\qquad X=\begin{pmatrix}1&0&2\\2&1&-1\\3&-1&1\end{pmatrix}.
-$$
-Direct <matrix multiplication> checks all three identities $LY=B$, $UX=Y$ and $AX=B$. The first column reproduces the previous solve; the other two use exactly the same factors. New right-hand sides can also arrive one at a time. If $A$ changes, these stored factors generally need to be recomputed.
-
-\Image[lu-pivot-repeated-solves.png]
-{title=One row permutation fixes a zero <pivot element>; each new right-hand side reuses the same <LU decomposition> and two triangular solves}
-
-= LU factorization and solve costs
-{c}
-{parent=LU decomposition}
-{title2=$\tfrac23n^3+2rn^2$}
-
-For classical dense <Gaussian elimination> over the <real numbers>, count each scalar <addition>, <subtraction>, <multiplication> or <division> as one <arithmetic operation>. At step $k$, there are $n-k$ <elimination multipliers> to divide out and $(n-k)^2$ remaining entries, each requiring one <multiplication> and one <subtraction>. Thus this implementation's unpivoted factorization count is
-$$
-F(n)=\sum_{k=1}^{n-1}\bigl((n-k)+2(n-k)^2\bigr)=\frac{n(n-1)(4n+1)}6=\frac23n^3+O(n^2).
-$$
-Here $O$ uses <Big O notation>. <Partial pivoting> adds $O(n^2)$ comparisons and row movement, leaving the leading arithmetic count unchanged. The leading $\tfrac23n^3$ count agrees with the standard dense <LU decomposition> analysis.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§2.5.2, Definition 2.5.2; §2.5, equations (2.5.7)–(2.5.8) and Theorem 2.5.1; lower-order counts depend on implementation]{ref}
-
-With unit $L$, <forward substitution> uses $n(n-1)$ <arithmetic operations>. <Back substitution> uses another $n(n-1)$ plus $n$ diagonal divisions. Together these cost $2n^2-n$ per right-hand side; applying a stored row permutation moves $n$ entries and requires no scalar arithmetic. In <Big O notation>, <reusing LU factors for multiple right-hand sides> therefore costs
-$$
-\frac23n^3+2rn^2+O(n^2+rn),
-$$
-whereas refactorizing for each of the $r$ right-hand sides costs $\tfrac23rn^3+O(rn^2)$. For $n=1000$ and $r=10$, the leading counts are about $6.87\times10^8$ versus $6.69\times10^9$ <arithmetic operations>, nearly a tenfold saving. These are operation counts, not measured runtimes: memory access and optimized <matrix multiplication> also affect speed.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§2.5.2, Important note after Definition 2.5.2: flop counts are a rough runtime model; the numerical comparison here is an original calculation]{ref}
-
-= LDL decomposition
-{title2=$A=LDL^T$}
-{parent=Numerical linear algebra}
-{c}
-
-An LDL decomposition of a real symmetric matrix is
-$$
-A=LDL^T,
-$$
-where $L$ is unit lower triangular and $D$ is diagonal. Symmetric elimination computes it one <Schur complement> at a time. The matrix is positive definite exactly when every diagonal pivot in $D$ is positive.
-
-= Eigenpair residual
-{title2=$r=Av-\lambda v$}
-{parent=Numerical linear algebra}
-
-For an approximate eigenpair $(\widetilde\lambda,\widetilde v)$, the residual is
-$$
-r=A\widetilde v-\widetilde\lambda\widetilde v.
-$$
-
-= Backward error of an approximate eigenpair
-{parent=Eigenpair residual}
-
-If $\|\widetilde v\|_2=1$, the smallest operator-norm perturbation that makes $(\widetilde\lambda,\widetilde v)$ an exact eigenpair has norm $\|r\|_2$. One such rank-one perturbation is
-$$
-E=-r\widetilde v^T.
-$$
-
-= Householder QR decomposition
-{parent=Numerical linear algebra}
-{c}
-{wiki}
-
-Successive Householder reflections zero subdiagonal column entries and factor a matrix into an orthogonal factor and an upper-triangular factor.
-
-= Householder reduction of an overdetermined consistent system
-{parent=Householder QR decomposition}
-{title2=$Q^Tb=(c,0)^T$}
-
-For full column rank $A\in\mathbb R^{m\times n}$, a full <QR factorization> gives $Q^TA=(R_1,0)^T$ with invertible upper triangular $R_1$. The equation $Ax=b$ is consistent exactly when the final $m-n$ entries of $Q^Tb$ vanish. If consistent, <back substitution> gives its unique solution. This separates consistency from uniqueness in overdetermined systems.
-
-= Householder tridiagonalization
-{parent=Numerical linear algebra}
-{c}
-{wiki}
-
-Orthogonal Householder similarities reduce a real symmetric matrix to symmetric tridiagonal form.
-
-= Skew-symmetric Householder tridiagonalization
-{parent=Householder tridiagonalization}
-{title2=$A'=A+vw^T-wv^T,\quad w=2Av/(v^Tv)$}
-
-An <orthogonal> similarity preserves skew symmetry, so upper-Hessenberg reduction of a real <skew-symmetric matrix> is automatically tridiagonal with zero diagonal. For a <Householder reflection>, the scalar $v^TAv$ vanishes, eliminating the fourth term of the general similarity update. Storing only one triangle and using the displayed skew rank-two update costs $2n^3/3+O(n^2)$ scalar products, the same leading product count as optimized symmetric tridiagonalization; the simplification saves lower-order work.
-
-= Unshifted QR algorithm
-{parent=Numerical linear algebra}
-
-The unshifted QR algorithm factors $A_k=Q_kR_k$ and forms $A_{k+1}=R_kQ_k=Q_k^TA_kQ_k$, preserving eigenvalues while driving the matrix toward block diagonal form.
-
-This is the zero-shift case of the <QR algorithm>.
-
-= Accumulated QR factorization identity
-{parent=Unshifted QR algorithm}
-{c}
-
-Let
-$$
-\overline Q_k=Q_0Q_1\cdots Q_k,
-\qquad
-\overline R_k=R_kR_{k-1}\cdots R_0.
-$$
-Then
-$$
-A_{k+1}=\overline Q_k^TA\overline Q_k,
-\qquad
-A^{k+1}=\overline Q_k\overline R_k.
-$$
-Thus $\overline Q_k\overline R_k$ is a <QR decomposition> of the matrix power $A^{k+1}$. In particular, the first $r$ columns of $\overline Q_k$ span the same subspace as the first $r$ columns of $A^{k+1}$ whenever those columns are independent.
-
-= Symmetric bandwidth preservation under QR iteration
-{parent=Unshifted QR algorithm}
-
-An unshifted QR step preserves the bandwidth of a real symmetric banded matrix. A Givens-rotation implementation exposes this as bulges created during triangularization and removed when the factors are multiplied in reverse order.
-
-= Simultaneous iteration interpretation of the QR algorithm
-{parent=Unshifted QR algorithm}
-
-The accumulated orthogonal factor in QR iteration is the $Q$ factor of a matrix power, so its leading columns span the same spaces as simultaneous power iteration.
-
-= Two-column dominant-subspace condition
-{parent=Simultaneous iteration interpretation of the QR algorithm}
-
-Let a real <symmetric matrix> have an <orthonormal eigenbasis> $w_1,\ldots,w_n$, with
-$$
-|\lambda_1|\leq\cdots\leq|\lambda_{n-2}|<
-|\lambda_{n-1}|=|\lambda_n|.
-$$
-Write two starting vectors as
-$$
-u=\sum_i b_iw_i,
-\qquad
-v=\sum_i c_iw_i.
-$$
-For two-column <subspace iteration> to recover
-$\operatorname{span}(w_{n-1},w_n)$, the two projections onto that dominant subspace must be independent. The exact condition is
-$$
-\det\begin{pmatrix}
-b_{n-1}&c_{n-1}\\
-b_n&c_n
-\end{pmatrix}
-=b_{n-1}c_n-b_nc_{n-1}\ne0.
-$$
-Requiring each of the four coefficients to be nonzero does not imply this determinant condition.
-
-= Block deflation in the QR algorithm
-{parent=Unshifted QR algorithm}
-
-When an off-block subdiagonal entry tends to zero, QR iteration asymptotically separates the corresponding invariant spectral blocks even if eigenvalues within one block have equal modulus.
-
-= Stationary iterative method for a linear system
-{parent=Numerical linear algebra}
-
-A stationary iteration has the form
-$$
-x^{(k+1)}=Hx^{(k)}+v,
-$$
-with a fixed iteration matrix $H$. It converges for every initial vector exactly when the <spectral radius> satisfies $\rho(H)<1$.
-
-This is an <iterative method> whose update matrix remains fixed.
-
-= Semiconvergence of cyclic Poisson iterations
-{parent=Stationary iterative method for a linear system}
-{title2=$A=C+C^{-1}-2I$}
-
-The periodic second-difference <circulant matrix> has constant <null space>, so solvability requires $\sum b_j=0$. Its <Jacobi method> has eigenvalues $\cos(2\pi j/n)$: for odd $n$ it converges to some solution, while for even $n$ an alternating mode oscillates unless absent from the error. Lexicographic <Gauss-Seidel iteration> converges to some solution for every compatible right-hand side and every initial vector. For $K=-A=D+L+U$, a coordinate sweep decreases the energy $e^TKe/2$ by the sum of squared coordinate changes. This excludes all nonconstant unit-modulus eigenmodes. The constant unit eigenvalue is simple, since the invariant left vector $w=(0,1,\ldots,1,2)^T$ has $w^T\mathbf1=n\ne0$. Neither method is a strict contraction to a unique solution without fixing the constant nullspace.
-
-= Richardson iteration
-{c}
-{parent=Stationary iterative method for a linear system}
-{title2=$x_{n+1}=x_n-\tau(Ax_n-b)$}
-
-For a real symmetric positive definite <matrix> $A$, the error in each <eigenvector> direction is multiplied by $1-\tau\lambda$. Convergence from every initial vector is therefore equivalent to $0<\tau<2/\lambda_{\max}$. At either endpoint there is a nondecaying error direction. The optimal constant parameter is $2/(\lambda_{\min}+\lambda_{\max})$, giving contraction factor $(\lambda_{\max}-\lambda_{\min})/(\lambda_{\max}+\lambda_{\min})$.
-
-= Gauss-Seidel method
-{parent=Stationary iterative method for a linear system}
-{c}
-{wiki=Gauss–Seidel_method}
-
-= Gauss-Seidel iteration
-{c}
-{synonym}
-
-With $A=D+L+U$, the <Gauss-Seidel method> solves $(D+L)x^{(k+1)}=b-Ux^{(k)}$. It uses each newly computed coordinate immediately in the remaining triangular solve. It is <successive over-relaxation> with parameter one, and converges from every start when $A$ is symmetric positive definite.
-
-= Successive over-relaxation
-{parent=Stationary iterative method for a linear system}
-{title2=$\omega$}
-{wiki}
-
-= SOR
-{synonym}
-{c}
-
-For a splitting $A=D+L+U$, <successive over-relaxation> updates
-$$
-(D+\omega L)x^{(k+1)}=[(1-\omega)D-\omega U]x^{(k)}+\omega b.
-$$
-It reduces to the <Gauss-Seidel method> at $\omega=1$. If $A$ is symmetric positive definite, the <Householder-John theorem> applies to $M=D/\omega+L$, $N=(1/\omega-1)D-U$, since $M^T+N=(2/\omega-1)D$ is positive definite for $0<\omega<2$.
-
-= Iteration matrix
-{title2=$H$}
-{parent=Stationary iterative method for a linear system}
-
-For a stationary iteration $x^{(k+1)}=Hx^{(k)}+v$, the matrix $H$ propagates the error by $e^{(k+1)}=He^{(k)}$. Convergence from every initial error is equivalent to $\rho(H)<1$.
-
-= Matrix splitting
-{parent=Stationary iterative method for a linear system}
-{wiki}
-
-A splitting $A=M-N$ with invertible $M$ produces
-$$
-x^{(k+1)}=M^{-1}Nx^{(k)}+M^{-1}b.
-$$
-
-= Householder-John theorem
-{parent=Matrix splitting}
-{c}
-
-Let $A=M-N$ be Hermitian positive definite. If $M^*+N$ is also Hermitian positive definite, then $M$ is invertible and
-$$
-\rho(M^{-1}N)<1.
-$$
-Thus the stationary iteration associated with the splitting converges from every initial vector.
-
-= Jacobi method
-{parent=Stationary iterative method for a linear system}
-{c}
-{wiki}
-
-Writing $A=D+L+U$, where $D$ is diagonal and $L,U$ are strictly triangular, the Jacobi iteration is
-$$
-x^{(k+1)}=D^{-1}\left(b-(L+U)x^{(k)}\right).
-$$
-
-= Skew-tridiagonal Jacobi and Gauss-Seidel iterations
-{parent=Jacobi method}
-
-For $A=\mu^{-1}I+U-U^T$, with $U$ the four-dimensional unit superdiagonal, the <Jacobi method> has eigenvalues $2i\mu\cos(j\pi/5)$, $j=1,\ldots,4$. The <Gauss-Seidel method> has two zero eigenvalues and $-\mu^2(3\pm\sqrt5)/2$. Therefore both methods converge for every starting vector exactly when $0<|\mu|<(\sqrt5-1)/2$. This equality of convergence ranges follows from their spectra, not from positive-definiteness of the nonsymmetric coefficient matrix.
-
-= Weighted Jacobi method
-{parent=Jacobi method}
-
-= Relaxed Jacobi method
-{synonym}
-{c}
-
-= Weighted Jacobi
-{synonym}
-
-With relaxation parameter $\omega$, weighted Jacobi updates by
-$$
-x^{(\nu+1)}
-=x^{(\nu)}+\omega D^{-1}(b-Ax^{(\nu)}).
-$$
-Its <iteration matrix> is $H_\omega=I-\omega D^{-1}A$.
-
-= Weighted Jacobi eigenvalues for a square Dirichlet grid
-{parent=Weighted Jacobi method}
-{title2=$\lambda_{k,l}(H_\omega)$}
-
-For the five-point discretization of $-\Delta+c$ on the unit square, the weighted iteration <eigenvalues> are $1-\omega[4\sin^2(\pi kh/2)+4\sin^2(\pi lh/2)+ch^2]/(4+ch^2)$. A fixed parameter converges for every mesh when $0<\omega\leq1$, but $\omega=1$ poorly damps the highest frequencies.
-
-= Weighted Jacobi method for the one-dimensional Poisson equation
-{parent=Weighted Jacobi method}
-
-For the centered second-difference matrix with diagonal $-2$ and off-diagonals $1$, the weighted-Jacobi eigenvalues are
-$$
-\lambda_k(\omega)
-=1-\omega+\omega\cos\frac{k\pi}{n+1},
-\qquad 1\leq k\leq n.
-$$
-The method converges for every grid size exactly when $0<\omega\leq1$.
-
-= High-frequency smoothing factor of weighted Jacobi
-{title2=$\mu_\omega$}
-{parent=Weighted Jacobi method for the one-dimensional Poisson equation}
-
-For modes with $k/(n+1)\in[1/2,1]$ and large $n$, the worst attenuation factor is
-$$
-\mu_\omega=\max\{|1-\omega|,|1-2\omega|\}.
-$$
-It is minimized by $\omega=2/3$, for which $\mu_\omega=1/3$.
-
-= Exact finite-grid high-frequency Jacobi smoothing optimum
-{parent=High-frequency smoothing factor of weighted Jacobi}
-{title2=$\omega_*=2/(a+b),\quad\mu_*=(b-a)/(a+b)$}
-
-For the one-dimensional Dirichlet second-difference grid, high sine modes have eigenvalues $1-\omega t_k$, with $t_k=1-\cos(k\pi/(n+1))$ and $k\geq\lceil(n+1)/2\rceil$. Let $a$ and $b$ be the smallest and largest of these $t_k$. Convexity gives attenuation $\max(|1-\omega a|,|1-\omega b|)$. Balancing its endpoint values with opposite signs gives the displayed exact minimax choice. For odd $n$, $a=1$; for even $n$, $a=1+\sin(\pi/[2(n+1)])$, and always $b=1+\cos(\pi/(n+1))$. Only in the large-grid or uniform-in-grid limit do these become $\omega_*=2/3$, $\mu_*=1/3$.
-
-= Jacobi convergence for a three-by-three equicorrelation matrix
-{parent=Jacobi method}
-
-For a three-by-three matrix with diagonal entries one and every off-diagonal entry $\alpha$, the <Jacobi method> iteration matrix has eigenvalue $-2\alpha$ on the all-ones vector and eigenvalue $\alpha$ with multiplicity two on its orthogonal complement. Its <spectral radius> is $2|\alpha|$, so Jacobi iteration converges exactly when $|\alpha|<1/2$.
-
-= Jacobi convergence for a symmetric positive-definite tridiagonal matrix
-{parent=Jacobi method}
-
-If $A=D+L+L^T$ is symmetric positive definite and tridiagonal, set $S=\operatorname{diag}(1,-1,1,-1,\ldots)$. Then
-$$
-SAS=D-L-L^T
-$$
-is positive definite. Applying the <Householder-John theorem> to $M=D$ and $N=-(L+L^T)$ proves that the Jacobi iteration converges.
+\Include[numerical-linear-algebra]{parent=Numerical analysis}
 
 = Linear stability domain
 {parent=Numerical analysis}
@@ -5316,8 +3623,47 @@ A Jacobi matrix is a symmetric tridiagonal matrix whose characteristic polynomia
 = Numerical integration
 {parent=Numerical analysis}
 {wiki}
+{title2=$I(f)=\int_a^bf(x)\,dx$}
 
-Numerical integration approximates definite integrals using finitely many arithmetic operations and function evaluations.
+<Numerical integration> approximates a <definite integral> using finitely many sampled <function> values. For an <integrand> $f$ on a finite <interval> $[a,b]$, $a<b$, a <quadrature rule> has the form
+$$
+I(f)=\int_a^bf(x)\,dx,\qquad Q(f)=\sum_{j=1}^m w_jf(x_j)\approx I(f).
+$$
+The <quadrature nodes> $x_j$ tell us where to evaluate $f$; the <quadrature weights> $w_j$ turn those values into an approximation to the accumulated signed area. The exact <definite integral> depends on the <integrand> throughout the <interval>, whereas the <quadrature rule> sees only these samples. Integrating a chosen <interpolant> exactly still generally approximates the original <integrand>'s <integral>.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others/5.6 Numerical integration>[Definition 5.6.1 and §5.6.1, equations 5.6.2–5.6.5: weighted samples and integration of an interpolant]{ref}
+
+The <fundamental theorem of calculus> evaluates $I(f)$ as $F(b)-F(a)$ when an <antiderivative> $F$ is available. <Numerical integration> is useful when no convenient <antiderivative> is known, or each evaluation of the <integrand> requires an expensive computation. The task then becomes choosing informative <quadrature nodes> and controlling the <quadrature error> with as few evaluations as possible. Fixed data also permit a <quadrature rule>, but refinement cannot supply new information between observations.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others/5.6 Numerical integration>[Opening discussion, Example 5.6.1 and the paragraph following Definition 5.6.1: antiderivatives, numerical evaluation and fixed data]{ref}
+
+For an exact comparison, take the <polynomial> $f(x)=x^2$ on $[0,1]$. Its <antiderivative> $x^3/3$ gives $I(f)=1/3$. On a <partition of an interval> into $n\geq1$ equal panels, the <composite midpoint quadrature rule> uses $n$ midpoint samples, each with <quadrature weight> $1/n$; the <composite trapezoidal rule> uses $n+1$ endpoint samples, with outer <quadrature weights> $1/(2n)$ and interior <quadrature weights> $1/n$. The existing derivations under these two <quadrature rules> give
+$$
+M_n(f)=\frac13-\frac{1}{12n^2},\qquad T_n(f)=\frac13+\frac{1}{6n^2}.
+$$
+In particular, $M_1=1/4$ and $T_1=1/2$ already bracket $1/3$; two panels give $M_2=5/16$ and $T_2=3/8$. The <convex function> $x^2$ explains the opposite signs. A midpoint <rectangle> can cross the curve within its panel, so its total signed area, rather than pointwise ordering, determines the underestimate.
+
+\Image[quadrature-sample-weights-and-panels.png]
+{title=One and two panels for <numerical integration> of $x^2$: midpoint and endpoint samples with their <quadrature weights>}
+
+Define the signed <approximation error> as $E_n=Q_n(f)-I(f)$. In this example the <absolute errors> are $1/(12n^2)$ and $1/(6n^2)$: doubling $n$ reduces each by exactly four. A plot with both axes on a <logarithmic scale> therefore has slope $-2$, expressing order two with respect to panel refinement. This is an exact calculation for this <polynomial>, including $n=1$, rather than an observed rate extrapolated from a few computed answers.
+
+\Image[quadrature-quadratic-errors-and-slope.png]
+{title=Exact <absolute errors> for midpoint and trapezoidal <numerical integration> of $x^2$: slope $-2$ and a factor-four reduction}
+
+For a general <integrand>, the <composite midpoint quadrature rule> and <composite trapezoidal rule> give second-order <quadrature error> bounds when $f$ has two continuous <derivatives> on $[a,b]$ and a known bound on $|f''|$. These hypotheses describe behavior between samples. A formal error formula containing an unknown <derivative> is not a numerical accuracy certificate or a justified sample count. <Finite samples do not certify quadrature accuracy> makes the missing information explicit. Errors in the evaluations and <roundoff error> must also be considered; <noise sensitivity of a quadrature rule> treats the former.
+
+More elaborate choices exploit other information: <Gaussian quadrature> obtains high <polynomial> exactness from carefully chosen <quadrature nodes>, and <Simpson's rule> uses a quadratic <interpolant>. Adaptive <numerical integration> compares approximations and concentrates samples where they disagree, often saving evaluations. Such a difference is an error estimate, not a certified bound without further assumptions: both approximations can miss the same feature.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others/5.7 Adaptive integration>[Fundamentals of Numerical Computation by Tobin A. Driscoll and others; §5.7.1, equation 5.7.4: a difference-based error estimate; §5.7.2: interval bisection; Example 5.7.2 and concluding discussion: requested accuracy is not guaranteed]{ref}
+
+= Finite samples do not certify quadrature accuracy
+{parent=Numerical integration}
+{title2=$p(x)=\prod_{j=1}^m(x-x_j)^2$}
+
+For any finite set of <quadrature nodes> $x_1,\ldots,x_m$ in $[a,b]$, $a<b$, consider the <polynomial>
+$$
+p(x)=\prod_{j=1}^m(x-x_j)^2,\qquad A=\int_a^bp(x)\,dx>0.
+$$
+Every sample is zero, so every <quadrature rule> at these <quadrature nodes> gives $Q(p)=0$. Yet $p$ is nonnegative and strictly positive away from its finitely many <polynomial roots>; its <continuity> makes the <integral> positive. Consequently the <smooth functions> $0$ and $g(x)=p(x)/A$ have identical samples but <definite integrals> $0$ and $1$. Multiplying $g$ by any positive constant makes the difference arbitrarily large. This is an information limit, even with exact arithmetic; merely assuming smoothness without quantitative bounds does not remove it. The related <degree ceiling for quadrature exactness> uses the same squared nodal <polynomial> to limit <polynomial> exactness.
+
+For example, the endpoint <quadrature nodes> $0,1$ give $p(x)=x^2(1-x)^2$, $A=1/30$, and $g(x)=30x^2(1-x)^2$. Both the zero <function> and $g$ produce zero under the one-panel <trapezoidal rule>, although $I(g)=1$. More generally, any estimate based only on their shared samples has <absolute error> at least $1/2$ for one of these two <integrands>, by the <triangle inequality>.
+
+The obstruction also applies to a deterministic adaptive procedure that terminates after finitely many evaluations on the zero <function>: form $p$ using every <quadrature node> it visited. On $g$, the same zero responses lead to the same choices and answer. Certified <quadrature error> control therefore needs additional information, such as a known bound on relevant <derivatives>, rather than agreement among sampled approximations alone.
 
 = Boole's rule
 {c}
