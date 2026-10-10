@@ -30,7 +30,7 @@ Do not add model-attribution lines to solutions.
 
 If we determine that an exam already has solutions available to the students, either public or behind paywall, let's just not it down and skip those to start with. Yes there is a case for producing hyperlinked solutions even more amazing than the original ones, but fine, no one is ever going to Google into use for that.
 
-## OurBigBook primer
+## OurBigBook tips and guidelines
 
 Newlines render as `<br>`, so don't indent code, keep long lines. You almost never want a newline, unless it is followed by a block construct. This is fine though:
 
@@ -45,6 +45,8 @@ is nice
 as it contains a block construct. It places the block construct inside the paragraph, which is fine because OurBigBook allows for strong nesting of many constructs in general (except headers which are mroe restricted).
 
 When in doubt, double check that the HTML output is awesome!
+
+Keep .bigb files to a reasonable size. In general, 200 KB seems like a good soft maximum. Attempt to logically split anything that goes much above that into subtopics. Exceptions are possible if there are specific reasons for it.
 
 ### OurBigBook links and references
 
