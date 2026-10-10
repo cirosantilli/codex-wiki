@@ -483,7 +483,81 @@ A <dynamic array> is an <array> whose backing storage can grow as entries are ap
 = Ring buffer
 {synonym}
 
-A <circular buffer> uses a fixed-capacity <array> with indices that wrap through <modular arithmetic>. A front index and an occupied count can represent a <FIFO queue> without shifting entries after removal. The <representation independence> example specifies a rejecting full-buffer policy; overwriting the oldest entry would define different behavior.
+A <circular buffer> stores a changing <sequence> in a fixed-capacity <array>, reusing slots by wrapping <array indices> through <modular arithmetic>. A front <array index> and an occupied count can represent a <FIFO queue> without shifting entries after removal. The physical <array> stays in place; the position at which its logical <sequence> begins moves. This makes a <circular buffer> useful when storage must remain bounded while successive items arrive and leave.
+
+Capacity and overflow behavior are separate choices. A rejecting <FIFO queue> preserves all accepted items until removal and reports failure on a full insertion. An overwriting <circular buffer> deliberately discards its oldest item to retain the newest arrivals. These are different <application programming interfaces>. The existing <representation independence> example specifies the rejecting policy and gives its <abstraction function> and correctness argument against a shifting <array> implementation.
+
+= Circular buffer indices
+{parent=Circular buffer}
+{title2=$h,n,w$}
+
+Let the capacity be a positive <integer> $C$, and allocate exactly $C$ <array> slots $B_0,\ldots,B_{C-1}$. Store the front <array index> $h$ and count $n$. The <representation invariant> is
+$$
+|B|=C,\qquad h,n\in\mathbb Z,\qquad 0\leq h<C,\qquad 0\leq n\leq C.
+$$
+The logical <sequence> and next-write <array index> are
+$$
+q_i=B_{(h+i)\bmod C}\quad(0\leq i<n),\qquad w=(h+n)\bmod C.
+$$
+Here $\bmod$ denotes the nonnegative remainder from <modular arithmetic>. The count determines which slots are live: leftover bits in other slots are not members of the <FIFO queue>. If $n=0$, $h$ has no current front item; it identifies the position where the next successful insertion begins. If $n=C$, $w=h$ points at a live item, so writing there requires an explicit overwrite policy.
+
+For $n<C$, `enqueue(x)` writes $B_w\leftarrow x$, then increments $n$, leaving $h$ fixed. For $n>0$, `dequeue()` saves and returns $B_h$, then sets $h\leftarrow(h+1)\bmod C$ and $n\leftarrow n-1$. These are sequential updates, completed before the next call. A rejecting interface tests $n=C$ or $n=0$ first and returns `full` or `empty`, respectively, without changing state. `peek` returns $B_h$ only when $n>0$; `size` returns $n$.
+
+One can instead store $w$ and $n$, recovering $h=(w-n)\bmod C$. On insertion, advance $w$ and increment $n$; on removal, keep $w$ fixed and decrement $n$. Thus the next-write <array index> is not necessarily the front <array index>.
+
+Names such as `head` and `tail` require checking the actual <API>: the kernel documentation calls the insertion position `head` and the removal position `tail`.<Circular Buffers by David Howells and Paul E. McKenney>[David Howells and Paul E. McKenney, Circular Buffers, What is a circular buffer?: head is insertion, tail is removal]{ref}
+
+\Image[circular-buffer-physical-logical-order.png]
+{title=A wrapped <circular buffer> has one logical <sequence> across the end of its physical <array>}
+{description=Capacity five, front $h=2$, count $n=4$, and next-write index $w=1$. Follow physical slots $2,3,4,0$ to read $C,D,E,F$. Slot 1 still shows the removed label $B$, but it is outside the live <sequence>.}
+
+The diagram is the state after step 8 of <circular buffer operation trace>. Reading the physical <array> from slot zero would give $F,B,C,D,E$, which includes a removed label and puts $F$ first. Reading from $h$ for exactly $n$ items gives $(C,D,E,F)$. The next insertion uses slot $1$, not slot $0$. This distinction also explains why the live <sequence> may need two contiguous pieces of the <array>: here slots $2$ through $4$, followed by slot $0$. No items need to move to make this wrap work.
+
+= Circular buffer full and empty states
+{parent=Circular buffer}
+
+With front-plus-count storage, empty means $n=0$ and full means $n=C$; every allocated slot is usable. With only the two wrapped <array indices> $h,w$, the equality $h=w$ describes both possibilities. Indeed $w-h\equiv n\pmod C$, and the two allowed counts $0,C$ have the same remainder. Recovering the count as $(w-h)\bmod C$ therefore loses the full state. A count, a separate full flag, or a different index representation must resolve that ambiguity.
+
+Another convention reserves one slot: for a physical <array> of length $C\geq2$, empty means $w=h$ and full means $(w+1)\bmod C=h$. Its usable capacity is $C-1$, and $(w-h)\bmod C$ now recovers its count because $0\leq n<C$. A five-slot <array> then stores at most four items.
+
+This is the convention of the kernel's documented `CIRC_*` helpers, which additionally require power-of-two <array> lengths. It is not a universal property of <circular buffers>; our capacity-five count-based example uses all five slots and does not use those helpers.<Circular Buffers by David Howells and Paul E. McKenney>[David Howells and Paul E. McKenney, Circular Buffers, What is a circular buffer?; Measuring power-of-2 buffers: full/empty convention and helper result range]{ref}
+
+The smallest count-based case, $C=1$, makes the issue vivid: both $h$ and $w$ are always zero, but $n$ still distinguishes one live item from none. Capacity zero is excluded from our formulas because remainder modulo zero is undefined.
+
+= Circular buffer operation trace
+{parent=Circular buffer}
+
+Start with $C=5$, $h=0$, $n=0$ and immutable labels. Perform `enqueue(A)`, `enqueue(B)`, `dequeue()`, `enqueue(C)`, `enqueue(D)`, `dequeue()`, `enqueue(E)`, `enqueue(F)`, `enqueue(G)`. The removals return $A$ and $B$. The interleaved insertions and removals make the front advance before the <array> fills; slot reuse does not require waiting for the <FIFO queue> to become empty.
+
+\Image[circular-buffer-queue-trace-and-lifetimes.png]
+{title=An interleaved capacity-five <FIFO queue> trace branches at a full insertion}
+{description=The table follows completed sequential calls. At step 10, rejecting $H$ retains $C$; overwriting accepts $H$ and discards $C$. Step 11 therefore returns different labels. The lower bars show membership lifetimes for $C$ and $H$ at operation boundaries, not elapsed times or programming-language object lifetimes.}
+
+At step 7, $E$ occupies physical slot $4$ and the next-write <array index> wraps to $0$. At step 8, $F$ reuses slot $0$, giving the physical layout in the preceding diagram. At step 9, $G$ replaces the stale contents of slot $1$: the physical <array> is $(F,G,C,D,E)$ but the logical <sequence> is $(C,D,E,F,G)$. Now $h=w=2$, yet $n=5$ makes the state full rather than empty.
+
+The displayed $h,n,w$ values are related by $w=(h+n)\bmod5$ after every call. They are shown together to explain the invariant; an implementation need store only two. For the rejecting <FIFO queue>, every successful removal returns the earliest accepted label not already removed. The <representation independence> example supplies the general proof through its <abstraction function>; this trace makes the wrapped physical storage visible.
+
+= Circular buffer overflow policy
+{parent=Circular buffer}
+
+Continue from step 9 with a proposed insertion of $H$. A rejecting operation `try_enqueue(H)` returns `full`, writes nothing and leaves $(C,D,E,F,G)$ with $h=2,n=5,w=2$. The next `dequeue()` returns $C$, leaving $(D,E,F,G)$ with $h=3,n=4,w=2$. Rejection requires the caller to decide whether to retry or abandon $H$.
+
+An overwriting operation `append_latest(H)` instead writes $B_h\leftarrow H$, advances $h\leftarrow(h+1)\bmod C$, and keeps $n=C$. It can report the discarded label $C$ as part of its specified result. At step 10 this gives $(D,E,F,G,H)$ with $h=3,n=5,w=3$. The next `dequeue()` returns $D$, leaving $(E,F,G,H)$ with $h=4,n=4,w=3$. Below full capacity, `append_latest` follows the ordinary insertion rule without discarding anything.
+
+The lower bars in the trace diagram expose the consequence: $C$ entered at step 4 and remains a member until step 11 under rejection, but only until step 10 under overwrite. $H$ never becomes a member in the rejecting branch; it does in the overwriting branch. The same physical slot can therefore hold different logical items over time. These interfaces are observably different, so <representation independence> cannot justify exchanging them while retaining the same promised results.
+
+Boost's documented `push_back` behavior chooses overwrite when full, implemented by assignment to the old element. Its discussion of iterator invalidation illustrates why a reused address need not still identify the original item. Assignment, object destruction, and release of an owned resource are separate language-level concerns; the membership bars make no claim about those lifetimes.<Boost.Circular Buffer by Jan Gaspar/Implementation>[Jan Gaspar, Boost.Circular Buffer, Implementation: Overwrite Operation; Writing to a Full Buffer; Iterator Invalidation; Caveats]{ref}
+
+A rejecting <FIFO queue> suits work that must remain pending until explicitly removed. An overwriting <circular buffer> suits a bounded recent history where losing the oldest retained item is the stated policy. Neither storage wrap nor bounded capacity chooses between those requirements.
+
+= Circular buffer operation costs
+{parent=Circular buffer}
+
+With storage allocated in advance, each successful insertion, removal, `peek`, `size`, and full/empty check uses $O(1)$ worst-case <time complexity> in <Big O notation>. This assumes constant-cost indexed <array> access, bounded <machine word> index arithmetic and fixed-cost scalar item reads and writes. Each operation touches a bounded number of slots and fields regardless of $n$ and $C$; no shifting, scanning or resizing occurs. Rejected operations also take constant work. Producing a copy of all $n$ live items takes $O(n)$ work under the same scalar-cost assumptions.
+
+The preallocated <array> occupies $O(C)$ scalar slots plus constant bookkeeping. Allocation and any initial slot construction are separate setup costs. Copying a large item, running an expensive destructor or callback, allocating an item, or growing a <dynamic array> changes the operation cost and must be charged separately. The bound is worst-case structural work, with no need for <amortized analysis>, and says nothing about a measured wall-clock deadline.
+
+These formulas describe sequential calls. Wrapping <array indices> implies neither <atomic operations> nor safe access from multiple <software threads>. Publication of an item's contents and reuse of its slot require a protocol justified under the relevant <memory model>, including any necessary <acquire-release synchronization>. The kernel documentation discusses barriers under explicit producer/consumer restrictions; Boost's documentation separately requires <mutual exclusion> for shared access involving writes. Neither property follows merely from choosing a <circular buffer>.<Circular Buffers by David Howells and Paul E. McKenney>[David Howells and Paul E. McKenney, Circular Buffers, Using memory barriers with circular buffers; The producer; The Consumer: explicit synchronization and ordering requirements]{ref}<Boost.Circular Buffer by Jan Gaspar/Implementation>[Jan Gaspar, Boost.Circular Buffer, Implementation, Thread-Safety: shared access involving a writer requires mutual exclusion]{ref}
 
 = FIFO queue
 {parent=Data structure}

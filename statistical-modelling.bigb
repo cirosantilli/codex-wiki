@@ -266,22 +266,125 @@ A fixed effect represents an unknown nonrandom coefficient in the specified mean
 {parent=Geostatistics}
 {wiki}
 
-<Kriging> predicts a spatial random field by a linear combination of observations chosen to minimize prediction <variance> subject to the appropriate mean constraints. Its different forms depend on whether the mean is known, an unknown constant, or an unknown regression drift.
+<Kriging> predicts an unobserved value of a spatial <random field> by combining observations according to their <covariances>. <Nearest-neighbor interpolation> uses the closest sample; <kriging> also asks how strongly each sample is related to the target and how much information the samples share with one another. Two nearby, highly correlated samples need not provide twice the information of one. The different forms of <kriging> depend on whether the <mean> is known, an unknown constant, or an unknown <regression> drift.
+
+Write $Z=(Z(s_1),\ldots,Z(s_n))^T$ for the observation <random vector>, $z$ for its realized values, and $Z_0=Z(s_0)$ for the prediction target. Assume finite <second moments>, and define
+$$
+\Sigma_{ij}=\operatorname{Cov}(Z(s_i),Z(s_j)),\qquad
+c_i=\operatorname{Cov}(Z(s_i),Z_0),\qquad
+v_0=\operatorname{Var}(Z_0).
+$$
+Here $\Sigma$ is the observation <covariance matrix>, assumed to be a <positive definite matrix> in the formulas below. A <covariance function> supplies its entries and the target <covariance> vector $c$. For a second-order stationary <random field>, the <covariogram> $C(h)$ depends on displacement, and the <semivariogram> satisfies $\gamma(h)=C(0)-C(h)$. The <intrinsically stationary random field> formulation permits <kriging> using a <semivariogram> even when a stationary <covariogram> is unavailable; the finite <covariance> formulation below is a convenient important case.
+
+For a <linear combination> $w^TZ$ predicting $Z_0$ with zero <bias>, the error <variance> equals its <mean squared error>:
+$$
+Q(w)=\mathbb E[(w^TZ-Z_0)^2]
+=v_0-2w^Tc+w^T\Sigma w.
+$$
+<Ordinary kriging> and <universal kriging> minimize this <quadratic form> subject to their <mean> constraints. Their optimality is among the specified linear predictors with zero <bias> under the chosen <statistical model>; <covariance> information alone does not establish optimality among arbitrary nonlinear predictors. The <Gaussian random field> interpretation supplies additional conclusions in <simple kriging>.
+
+The reported error <variance> assumes a chosen <covariance function>, its <statistical parameters>, observation locations, and a <mean> structure. It omits uncertainty in fitted <covariance> parameters and does not validate the trend. A repeated-sampling <mean squared error> need not equal the error <variance> conditional on each realized data vector.<Gaussian Processes for Machine Learning by Carl Edward Rasmussen and Christopher K. I. Williams>[chapter 2, equations (2.23)–(2.24), and §2.3 on covariance parameters]{ref}
+
+In 1963, <Georges Matheron> presented <kriging> for estimating average ore grades in mining panels from weighted samples taken inside and outside a panel. This setting in <geostatistics> explains why prediction targets can be averages over regions as well as values at points.<Principles of geostatistics by Georges Matheron>[Matheron, Principles of geostatistics, 1963, p. 1246 introduction and pp. 1259–1261, Kriging]{ref}
 
 = Universal kriging
 {parent=Kriging}
 
-For unknown drift $X\beta$, a full-column-rank <design matrix> $X$, a known <positive definite matrix> observation <covariance matrix> $\Sigma$, and target drift row $x_0^T$, universal kriging minimizes prediction <variance> subject to $X^Tw=x_0$. Equivalently, with $\widehat\beta=(X^T\Sigma^{-1}X)^{-1}X^T\Sigma^{-1}z$, predict $x_0^T\widehat\beta+c^T\Sigma^{-1}(z-X\widehat\beta)$. The first term is the estimated trend alone; the second is a correlated residual prediction.
+<Universal kriging> allows an unknown <regression> drift:
+$$
+\mathbb E[Z]=X\beta,\qquad \mathbb E[Z_0]=x_0^T\beta.
+$$
+The <design matrix> $X$ has full column rank, its entries and $x_0$ are known, and the <regression coefficients> $\beta$ are unknown. For example, rows $(1,s_i)$ and target row $(1,s_0)$ allow a linear spatial trend. Requiring $w^TZ$ to have zero <bias> for every $\beta$ gives $X^Tw=x_0$. With known <positive definite matrix> observation <covariance matrix> $\Sigma$, the minimizing weights solve
+$$
+\begin{pmatrix}\Sigma&X\\X^T&0\end{pmatrix}
+\begin{pmatrix}w\\\eta\end{pmatrix}
+=\begin{pmatrix}c\\x_0\end{pmatrix},
+$$
+where $\eta$ is a vector of <Lagrange multipliers>. Equivalently, the <generalized least squares> estimate and prediction are
+$$
+\widehat\beta=(X^T\Sigma^{-1}X)^{-1}X^T\Sigma^{-1}z,
+\qquad
+\widehat Z_0=x_0^T\widehat\beta+c^T\Sigma^{-1}(z-X\widehat\beta).
+$$
+The first term is the estimated trend alone; the second predicts the correlated <regression residuals>. With $q=x_0-X^T\Sigma^{-1}c$, the error <variance> is
+$$
+s_{\mathrm{UK}}^2=v_0-c^T\Sigma^{-1}c
++q^T(X^T\Sigma^{-1}X)^{-1}q.
+$$
+The last, nonnegative term accounts for estimating the specified drift coefficients. Merely inserting a fitted drift into <simple kriging> and keeping its known-<mean> error <variance> would omit this term. For a <Gaussian random field>, the same expressions arise by integrating over drift coefficients in a diffuse <prior distribution> limit; this is an additional inferential interpretation, not an assumption required by the linear optimization.<Gaussian Processes for Machine Learning by Carl Edward Rasmussen and Christopher K. I. Williams>[§2.7, pp. 27–28, equations (2.38)–(2.42)]{ref}
 
 = Ordinary kriging
 {parent=Kriging}
 
-For an unknown constant mean, ordinary kriging minimizes error <variance> subject to weights summing to one. This unbiasedness constraint distinguishes it from <simple kriging>.
+<Ordinary kriging> assumes $\mathbb E[Z(s)]=\mu$ for an unknown constant $\mu$. A predictor $w^TZ$ has zero <bias> for every $\mu$ precisely when $\mathbf1^Tw=1$, where $\mathbf1$ is the all-ones vector. <Ordinary kriging> minimizes the error <variance> $Q(w)$ subject to this constraint, giving the <best linear unbiased predictor>. Its explicit system is
+$$
+\begin{pmatrix}
+\Sigma&\mathbf1\\
+\mathbf1^T&0
+\end{pmatrix}
+\begin{pmatrix}w\\\eta\end{pmatrix}
+=\begin{pmatrix}c\\1\end{pmatrix},
+\qquad
+\widehat Z_0=w^Tz,
+\qquad
+s_{\mathrm{OK}}^2=v_0-w^Tc-\eta.
+$$
+The sign of the last term follows from the displayed convention $\Sigma w+\eta\mathbf1=c$. To derive the system, differentiate $Q(w)+2\eta(\mathbf1^Tw-1)$. To prove the minimum, let $w_*$ solve it and let $w=w_*+d$ be another feasible choice. Then $\mathbf1^Td=0$, so
+$$
+Q(w)-Q(w_*)=d^T\Sigma d\geq0.
+$$
+A <positive definite matrix> $\Sigma$ makes equality possible only for $d=0$. This argument uses <second moments>, not a <normal distribution> assumption. <Ordinary kriging> is the special case of <universal kriging> with $X=\mathbf1$ and $x_0=1$.
+
+For an original one-dimensional teaching example, observe $z=(1,3,2)^T$ at $s=(0,1,3)$, and predict at $s_0=2$. Choose unit marginal <variance>, exact observations without measurement noise, an unknown constant <mean>, and the <exponential covariance function>
+$$
+C(h)=2^{-|h|}=e^{-(\log2)|h|}.
+$$
+The <exponential covariance function> corresponds to a stationary <Ornstein-Uhlenbeck process>, so it gives a valid <covariance> model. Its <semivariogram> is $1-2^{-|h|}$. The resulting <matrix> and vector are
+$$
+\Sigma=\begin{pmatrix}1&1/2&1/8\\1/2&1&1/4\\1/8&1/4&1\end{pmatrix},
+\qquad c=\begin{pmatrix}1/4\\1/2\\1/2\end{pmatrix},\qquad v_0=1.
+$$
+Solving the displayed system gives
+$$
+w=\frac1{29}\begin{pmatrix}2\\13\\14\end{pmatrix},\quad
+\eta=-\frac3{29},\quad
+\widehat Z_0=\frac{69}{29}\approx2.3793,\quad
+s_{\mathrm{OK}}^2=\frac{18}{29}\approx0.6207.
+$$
+These values can be checked directly: the weights sum to one and $\Sigma w=(41/116,35/58,35/58)^T=c+(3/29)\mathbf1$. Substitution into $Q(w)$ gives $18/29$. <Nearest-neighbor interpolation> must choose between the two equally close samples at one and three, returning either three or two; their error <variances> under this model are both $1+1-2(1/2)=1$. Thus the benefit is quantified under the chosen model, without knowing the unobserved target value.
+
+\Image[kriging-spatial-prediction-uncertainty.png]
+{title=Ordinary kriging combines three samples and reports uncertainty under a fixed exponential covariance model}
+
+The upper panel applies the same <ordinary kriging> calculation at each target location. The lower panel shows the square root of its error <variance>, in the units of the observations. It is zero at the exact observation locations and rises between and beyond them. No <confidence interval> is inferred from a <variance> alone; a <probability distribution> assumption is needed to attach a coverage level.
+
+The weights are not required to be positive. Keep the same observations and target, but replace the <covariogram> by the smoother <Gaussian kernel> $C(h)=2^{-h^2}$. Then
+$$
+w=\frac1{4199}\begin{pmatrix}-736\\2663\\2272\end{pmatrix},\qquad
+\widehat Z_0=\frac{11797}{4199}\approx2.8095,\qquad
+s_{\mathrm{OK}}^2=\frac{2115}{4199}\approx0.5037.
+$$
+The negative coefficient compensates for dependence between samples; the constraint eliminating <bias> still holds. <Kriging> is not generally a <convex combination>, and its prediction need not stay between the observed values. A smaller model-based error <variance> does not establish that one <covariance function> is better supported by these three observations.
+
+\Image[kriging-covariance-model-weights.png]
+{title=Changing the covariance model changes the ordinary kriging weights and can make a weight negative}
 
 = Simple kriging
 {parent=Kriging}
 
-For known zero mean, invertible observation <covariance> $\Sigma$, target <covariance> vector $c$ and target <variance> $v_0$, simple kriging predicts $c^T\Sigma^{-1}z$ with error <variance> $v_0-c^T\Sigma^{-1}c$. Completing the <covariance> quadratic form proves optimality. A <multivariate normal distribution> makes this the exact conditional mean and <variance>.
+<Simple kriging> assumes a known <mean> function. If $m=(m(s_1),\ldots,m(s_n))^T$ and $m_0=m(s_0)$ are known, center the observations, predict the residual, and add back the target <mean>:
+$$
+\widehat Z_0=m_0+c^T\Sigma^{-1}(z-m),\qquad
+s_{\mathrm{SK}}^2=v_0-c^T\Sigma^{-1}c.
+$$
+For known zero <mean>, these reduce to $c^T\Sigma^{-1}z$ and $v_0-c^T\Sigma^{-1}c$. Completing the <covariance> <quadratic form> gives
+$$
+v_0-2w^Tc+w^T\Sigma w
+=s_{\mathrm{SK}}^2+(w-\Sigma^{-1}c)^T\Sigma(w-\Sigma^{-1}c),
+$$
+which proves minimum error <variance> among predictors of the form $m_0+w^T(Z-m)$. No sum-to-one constraint is needed: the known <mean> already supplies the offset. In the exponential example from <ordinary kriging>, imposing known zero <mean> gives weights $(0,2/5,2/5)^T$, prediction $2$, and error <variance> $3/5$. The smaller error <variance> uses additional knowledge of the <mean>; it is not a free improvement when the <mean> is unknown.
+
+If $(Z_0,Z)$ has a joint <multivariate normal distribution>, the displayed prediction is exactly $\mathbb E[Z_0\mid Z=z]$, and $s_{\mathrm{SK}}^2$ is its conditional <variance>. A <conditional expectation> minimizes <mean squared error> among all square-integrable functions of the observations. Without a joint <multivariate normal distribution>, <simple kriging> remains the best predictor in the specified affine class, but the <conditional expectation> may be nonlinear and its conditional <variance> may depend on $z$. Thus <Gaussian process regression> and the second-moment <kriging> construction agree under these assumptions, while having different starting points.<Gaussian Processes for Machine Learning by Carl Edward Rasmussen and Christopher K. I. Williams>[chapter 2, equations (2.23)–(2.24) and (2.38)]{ref}
 
 = Covariogram
 {parent=Geostatistics}
