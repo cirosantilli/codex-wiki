@@ -1,6 +1,12 @@
 = Survival analysis
 {wiki}
 
+<Survival analysis> studies the <probability distribution> of a <survival time>: how long from a specified starting point until a specified occurrence. The occurrence need not be death. It might be a machine's first breakdown, a customer's first renewal, or a person's recovery. The meaning of "survival" is simply that the chosen occurrence has not happened yet. Both the starting point and the outcome must be defined before interpreting a <survival function>.
+
+The distinctive difficulty is incomplete observation. A machine still working when observation stops supplies a lower bound on its <survival time>, rather than an observed breakdown time. <Right censoring> lets us retain that information. The <Kaplan–Meier estimator> estimates a <survival function> using the changing <risk sets>, without choosing an <exponential distribution> or another particular <survival distribution>. A <hazard function> instead describes the current event rate among those still event-free; its <cumulative hazard> connects those local rates to the whole <survival function>.
+
+This framework turns different follow-up lengths into usable evidence about waiting times. It supports questions such as the chance of remaining event-free for another year, or the <restricted mean survival time> within an observed horizon. Lu Tian's Stanford teaching materials introduce these interpretations in \a[https://web.stanford.edu/~lutian/coursepdf/unit1.pdf][Survival Distributions, Hazard Functions, Cumulative Hazards, Section 1.1]{ref}.
+
 = Cure model
 {parent=Survival analysis}
 {title2=$S(t)=\pi+(1-\pi)S_*(t)$}
@@ -161,7 +167,20 @@ Its mean is $\beta^{-1}e^{q/\beta}E_1(q/\beta)$, where $E_1$ is the <exponential
 = Survivor function
 {synonym}
 
-For an event time $T$, the survival function is $S(t)=\mathbb P(T>t)=1-F(t)$, up to the endpoint convention used for atoms.
+For a nonnegative <survival time> $T$, the <survival function> is
+$$
+S(t)=\mathbb P(T>t)=1-F(t),\qquad F(t)=\mathbb P(T\leq t),
+$$
+where $F$ is the <cumulative distribution function>. Thus $S(t)$ is the <probability> that the chosen occurrence is still in the future at time $t$. We consistently use the strict inequality $T>t$: a <probability mass> at $t$ has already left the <survival function> at $t$ itself. With this convention $S$ is a <right-continuous function> and a <nonincreasing function> taking values in $[0,1]$. If $\mathbb P(T=0)=0$, then $S(0)=1$; if $T$ is finite with <probability> one, then $S(t)\to0$ as $t\to\infty$.
+
+For $S(a)>0$ and $b>a$, <conditional probability> gives
+$$
+\mathbb P(T>b\mid T>a)=\frac{S(b)}{S(a)},\qquad
+\mathbb P(a<T\leq b\mid T>a)=1-\frac{S(b)}{S(a)}.
+$$
+For example, $S(2)=0.8$ and $S(5)=0.6$ mean that $0.6/0.8=0.75$ of those still event-free at year two remain event-free through year five. Their intervening event <probability> is $0.25$, whereas the original population's <probability> of an occurrence in $(2,5]$ is $0.8-0.6=0.2$. Conditioning changes the denominator.
+
+The area under the <survival function> up to a horizon gives the <restricted mean survival time>. A positive terminal plateau in a plotted <Kaplan–Meier estimator> does not establish that the occurrence will never happen: <terminal censoring and survival-mean identifiability> explains why the unobserved tail remains undetermined.
 
 = Mean residual life
 {parent=Survival function}
@@ -183,7 +202,17 @@ The restricted mean survival time to a fixed cutoff $\tau$ is $\mathbb E[\min(T,
 = Hazard
 {synonym}
 
-The hazard function is the instantaneous event rate conditional on survival to time $t$. For an absolutely continuous distribution, $h(t)=f(t)/S(t)$.
+For a <survival time> with an <absolutely continuous probability distribution>, <probability density function> $f$, and <survival function> $S$, the <hazard function> is
+$$
+h(t)=\frac{f(t)}{S(t)}=-\frac{S'(t)}{S(t)}
+$$
+where $S(t)>0$, with the <derivative> identity holding <almost everywhere>. At points where the local limit exists, equivalently
+$$
+h(t)=\lim_{\Delta\downarrow0}\frac{\mathbb P(t<T\leq t+\Delta\mid T>t)}{\Delta}.
+$$
+The <hazard function> measures an instantaneous conditional rate. If time is in years, its units are inverse years, and its value can exceed one. A <probability> for a short <interval> is approximately $h(t)\Delta$, not $h(t)$; for an <absolutely continuous probability distribution>, the <probability> of an occurrence at the single exact time $t$ is zero. The <discrete hazard>, by contrast, is a conditional <probability> at a possible event time.
+
+The factorization $f(t)=h(t)S(t)$ distinguishes a <probability density function> for the original population from a <hazard function> for those still event-free. With an <exponential distribution> of rate $0.2$ per year, $h(5)=0.2$ per year but $f(5)=0.2e^{-1}\approx0.073576$ per year: the latter also accounts for the <probability> of reaching year five. The <exponential survival risk over an interval> example computes finite-horizon <probabilities> from this rate.
 
 = Poisson record counts in cumulative hazard coordinates
 {c}
@@ -245,7 +274,25 @@ For a finite mixture with positive weights $p_i$ and rates $\lambda_i>0$, the <s
 = Cumulative hazard
 {synonym}
 
-The cumulative hazard is $H(t)=\int_0^t h(u)\,du=-\log S(t)$ for an absolutely continuous event-time distribution.
+Suppose $T\geq0$ has an <absolutely continuous probability distribution>, with <survival function> $S(0)=1$. On an <interval> where $S(t)>0$, its <cumulative hazard> is
+$$
+H(t)=\int_0^t h(u)\,du=-\log S(t),\qquad
+S(t)=e^{-H(t)}.
+$$
+Here $h$ is the <hazard function>; its <integral> is dimensionless because the units of rate and time cancel. The identity follows by integrating the <derivative> of $\log S$, so mere <continuity> of the <survival function> is not enough: the <absolute continuity> assumption supplies a <probability density function>. If $S$ reaches zero, interpret $-\log S$ as $+\infty$. The normalization $S(0)=1$ also matters; an initial <probability mass> at zero would require an initial term $-\log S(0)$.
+
+Accumulating <hazard functions> adds on the $H$ scale and multiplies survival factors on the $S$ scale. For $S(a)>0$ and $b>a$,
+$$
+\mathbb P(a<T\leq b\mid T>a)=1-e^{-[H(b)-H(a)]}.
+$$
+For instance, a <cumulative hazard> increment of $2$ gives event <probability> $1-e^{-2}\approx0.864665$, rather than a <probability> of $2$. With $h(t)=0.2$ per year, $H(5)=1$ and $S(5)=e^{-1}\approx0.367879$. With the increasing <hazard function> $h(t)=0.04t$ per year when $t$ is expressed in years, $H(t)=0.02t^2$, so $H(5)=0.5$ gives $S(5)=e^{-0.5}\approx0.606531$. Its coefficient has units of inverse years squared.
+
+\Image[survival-hazard-relationship.png]
+{title=Constant and increasing hazard functions, their cumulative hazards, and their survival functions}
+
+The constant <hazard function> produces an <exponential distribution>; the increasing example is a <Weibull distribution>. Their <survival functions> both decrease, although one <hazard function> stays constant and the other increases. At year ten both have $H(10)=2$ and $S(10)=e^{-2}$ despite different earlier histories. The accumulation identity is described in \a[https://web.stanford.edu/~lutian/coursepdf/unit1.pdf][Lu Tian's Stanford notes, Section 1.1]{ref}.
+
+For a <discrete hazard> $q_j$ at each possible event time $t_j$, the exact counterpart is $S(t)=\prod_{t_j\leq t}(1-q_j)$. Taking its negative <logarithm> sums $-\log(1-q_j)$, rather than $q_j$. Therefore exponentiating a <Nelson–Aalen estimator> does not give exactly the <Kaplan–Meier estimator>; <small-jump comparison of cumulative hazard estimators> quantifies the difference.
 
 = Mean accumulated hazard under independent censoring
 {parent=Cumulative hazard function}
@@ -284,7 +331,7 @@ A hazard ratio compares two hazard functions at the same time. Under proportiona
 = Risk set
 {parent=Survival analysis}
 
-The risk set immediately before an event time contains the individuals who remain observed, event-free, and eligible to experience the event.
+The <risk set> immediately before an event time contains the individuals who remain observed, event-free, and eligible to experience the event. For a cohort observed from time zero, with exit times $Y_i=\min(T_i,C_i)$ under <right censoring>, write $R_j=\{i:Y_i\geq t_j\}$ and $n_j=|R_j|$. Individuals with an event or <right censoring> exactly at $t_j$ are included in this denominator; process events before removing subjects <right-censored> at that same recorded time. Earlier <right censoring> removes subjects from later <risk sets>. With <delayed entry>, use the entry times too, as in the <Kaplan–Meier estimator with delayed entry>.
 
 = At-risk process
 {title2=$Y(t)$}
@@ -457,7 +504,13 @@ If a cohort is periodically confirmed event-free but exact event reports update 
 = Right-censored
 {synonym}
 
-An event time is right-censored when it is known only to exceed the last observed follow-up time. Under independent censoring, its likelihood contribution is the survival probability at that time.
+An unobserved <survival time> is <right-censored> when it is known to exceed the last event-free follow-up time. For a potential <survival time> $T$ and potential observation-ending time $C$, record
+$$
+Y=\min(T,C),\qquad \delta=\mathbf1_{\{T\leq C\}}.
+$$
+When $\delta=1$, the occurrence was observed at $Y$; when $\delta=0$, only $T>Y=C$ is known. An intact machine at the study's closing date and an event-free subject who stops attending follow-up can both yield <right censoring>, but the reasons for stopping matter for <independent censoring>. A subject <right-censored> at year two has contributed two years to <person-time at risk> and belongs to earlier <risk sets>. Neither recording a failure at year two nor discarding that subject preserves this information.
+
+Under <independent censoring> and separate parameters for the observation mechanism, the part of the <survival likelihood> involving an <absolutely continuous probability distribution> for $T$ is $f(Y)^\delta S(Y)^{1-\delta}$. Thus a <right-censored> observation contributes the <survival function> $S(Y)$, rather than the event <probability density function> $f(Y)$. See \a[https://web.stanford.edu/~lutian/coursepdf/unit2.pdf][Lu Tian's Stanford notes, Section 2.1, equations (2.1)–(2.2)]{ref}. The <Kaplan–Meier six-subject cohort> shows exactly how this distinction changes the calculation.
 
 = Independent censoring
 {parent=Censoring (statistics)}
@@ -465,7 +518,11 @@ An event time is right-censored when it is known only to exceed the last observe
 = Uninformative censoring
 {synonym}
 
-Independent censoring means that, conditional on the variables used in the analysis, the censoring time carries no further information about the event time. It lets the observed <risk set> represent those who would remain at risk without censoring.
+A simple sufficient <independent censoring> assumption is that the potential observation-ending time $C$ and <survival time> $T$ are <independent random variables>. More generally, appropriate <conditional independence> given the <covariates> used in the analysis can suffice for analysis within those conditions. The requirement concerns the potential times, rather than <independence> of the observed duration $Y=\min(T,C)$ and event indicator $\delta$: those recorded quantities ordinarily depend on each other.
+
+For an ordinary pooled <Kaplan–Meier estimator>, the observed <risk set> must represent the future event experience of everyone still event-free at each time. <Conditional independence> given a <covariate> does not alone justify ignoring that <covariate> in a pooled calculation. Also, there must be a positive <probability> of remaining observed through the horizons being estimated. If follow-up ends at a common closing time, it supplies no observations to identify the later <survival function>. Independent subjects with a common <survival distribution> and <independent censoring> form the basic model in \a[https://web.stanford.edu/~lutian/coursepdf/STAT331unit3.pdf][Lu Tian's STAT331 notes, Unit 3, pages 1–4]{ref}.
+
+For example, subjects who stop attending because their condition is deteriorating can produce <informative censoring>. A predetermined common closing date can instead give <administrative censoring>, provided calendar entry and other relevant conditions do not select future <survival times>. The reason for stopping observation must be justified from study design and context; the recorded event indicators alone cannot verify <independent censoring>.
 
 = Random relabelling is not independent right censoring
 {parent=Independent censoring}
@@ -908,8 +965,82 @@ Left truncation includes an individual only after survival to a delayed entry ti
 {c}
 {parent=Survival analysis}
 {wiki}
+{title2=$\widehat S(t)=\prod_{t_j\leq t}(1-d_j/n_j)$}
 
-The Kaplan–Meier product-limit estimator multiplies factors $1-d_j/n_j$ over event times.
+At distinct observed event times $t_1<t_2<\cdots$, let $n_j$ be the <risk set> size immediately before $t_j$, and let $d_j$ count events at $t_j$. The <Kaplan–Meier estimator> of the <survival function> is
+$$
+\widehat S(t)=\prod_{t_j\leq t}\left(1-\frac{d_j}{n_j}\right).
+$$
+The empty product is one. Each factor estimates a conditional survival <probability> among those still observed and event-free; their product joins the successive steps. This is <nonparametric statistics>: no specified shape for the <survival distribution> is imposed. Use <independent censoring> and the appropriate <risk sets> to interpret the result as an estimate for the intended population.
+
+The <Kaplan–Meier estimator> is a <right-continuous function> with downward jumps at event times. <Right censoring> changes later denominators without causing a jump. A tick on the curve marks <right censoring>, rather than a failure. For a tied group of $d_j$ events, use the one factor $(n_j-d_j)/n_j$; subjects <right-censored> at that recorded time remain in $n_j$ for this factor. The fraction $d_j/n_j$ estimates a <discrete hazard>, not a continuous <hazard function> in inverse-time units. With no <censoring>, the factors telescope to the fraction of the original cohort whose observed <survival times> exceed $t$, the complement of its <empirical distribution function>.
+
+Edward L. Kaplan and Paul Meier published \a[https://doi.org/10.1080/01621459.1958.10501452][Nonparametric Estimation from Incomplete Observations, Journal of the American Statistical Association 53(282), 457–481 (1958)]{ref}. Their paper addresses lifetime estimation when observation ends before failure and explicitly calls attention to the assumption of <independence> between lifetime and potential observation loss. The date 1958 is the original publication year; the publisher's later online-posting date is not the discovery date.
+
+In his \a[https://garfield.library.upenn.edu/classics1983/A1983QS51100001.pdf][1983 Citation Classic recollection]{ref}, Kaplan traces Meier's interest to cancer-duration data in 1952 and his own to the lifetimes of vacuum tubes in undersea telephone-cable equipment a year later. The journal encouraged them to combine their manuscripts. The shared mathematical question was how to estimate a <survival function> when some lifetimes are still running or disappear from observation.
+
+= Kaplan–Meier six-subject cohort
+{c}
+{parent=Kaplan–Meier estimator}
+
+Consider six subjects observed from time zero. Recorded <survival data> are $A:(1,1)$, $B:(2,0)$, $C:(3,1)$, $D:(3,1)$, $E:(3,0)$, and $F:(5,0)$, with each pair giving $(Y,\delta)$ in years. Thus $A,C,D$ have observed events, while $B,E,F$ are <right-censored>. The letters label subjects, not treatment groups. Here are all exit times, including rows without events:
+
+\Table
+{title=Risk sets and exact Kaplan–Meier steps for the six-subject cohort}
+[
+|| Time $t$ (years)
+|| <Risk set> just before $t$
+|| At risk $n$
+|| Events $d$
+|| <Right censoring> count $c$
+|| Survival factor $1-d/n$
+|| <Kaplan–Meier estimator> $\widehat S(t)$
+
+| $1$
+| $A,B,C,D,E,F$
+| $6$
+| $1$
+| $0$
+| $5/6$
+| $5/6$
+
+| $2$
+| $B,C,D,E,F$
+| $5$
+| $0$
+| $1$
+| $1$
+| $5/6$
+
+| $3$
+| $C,D,E,F$
+| $4$
+| $2$
+| $1$
+| $1/2$
+| $5/12$
+
+| $5$
+| $F$
+| $1$
+| $0$
+| $1$
+| $1$
+| $5/12$
+]
+
+At year one, $\widehat S(1)=1(1-1/6)=5/6$. Removing $B$ at year two leaves the <Kaplan–Meier estimator> unchanged. Immediately before year three, $C,D,E,F$ are still in the <risk set>: the two events give $\widehat S(3)=(5/6)(1-2/4)=5/12\approx0.416667$. Only afterwards do $C,D,E$ leave, leaving $F$ alone. Removing $E$ before counting the tied events would incorrectly use $n=3$ and give $(5/6)(1-2/3)=5/18$. The event-first convention is part of the recorded-time interpretation; coarsely rounded timestamps do not reveal a hidden ordering within that time bin.
+
+The exact <Kaplan–Meier estimator> is $1$ on $[0,1)$, $5/6$ on $[1,3)$, and $5/12$ on $[3,5]$. The three <right censoring> ticks are $(2,5/6)$, $(3,5/12)$, and $(5,5/12)$; at a shared event time the tick is on the post-event step. Beyond year five the <risk set> is empty, so the horizontal endpoint does not determine later survival. The <Kaplan–Meier median survival time> is three years, since this is the first step at or below $1/2$.
+
+Now separate the tied events by changing only $D$'s recorded event time from year three to year four. At year three the <risk set> still has four subjects, but $d=1$, so $\widehat S(3)=(5/6)(3/4)=5/8$. After the event and $E$'s <right censoring>, only $D,F$ remain. At year four $n=2,d=1$, giving $\widehat S(4)=(5/8)(1/2)=5/16=0.3125$. The intervening <right censoring> prevents the factors from telescoping to the original tied-event factor. If $E$ instead remained observed past year four, the factors would be $(3/4)(2/3)=1/2$, giving the original $5/12$ after both events. This is <Kaplan–Meier telescoping across a censor-free interval> in numbers.
+
+Incorrectly counting every <right-censored> exit as an event estimates the distribution of observation-ending times $Y$, rather than <survival times> $T$. For the original tied cohort, the spurious curve is $5/6$ at year one, $(5/6)(4/5)=2/3$ at year two, $(2/3)(1-3/4)=1/6$ at year three, and zero at year five. That zero asserts a failure for $F$, whose only known information is $T_F>5$.
+
+\Image[kaplan-meier-censored-cohort.png]
+{title=Six observed histories and the effect of ties and right censoring on Kaplan–Meier steps}
+
+The computation uses the <risk set> and event-before-<censoring> convention in \a[https://web.stanford.edu/~lutian/coursepdf/STAT331unit3.pdf][Lu Tian's STAT331 notes, Unit 3, pages 2–6]{ref}; this six-subject example supplies its own exact counts.
 
 = Kaplan–Meier median survival time
 {parent=Kaplan–Meier estimator}
@@ -1061,6 +1192,22 @@ Period survival analysis estimates survival under the event hazards operating du
 {parent=Survival analysis}
 
 A constant hazard survival model takes $h(t)=\lambda$, giving survivor function $S(t)=e^{-\lambda t}$ and an exponential event-time distribution.
+
+= Exponential survival risk over an interval
+{parent=Constant hazard survival model}
+{title2=$\mathbb P(a<T\leq b\mid T>a)=1-e^{-\lambda(b-a)}$}
+
+Let the <survival time> $T$ have an <exponential distribution> with rate $\lambda=0.2$ per year. Its <hazard function> is $h(t)=0.2$ per year, its <cumulative hazard> is $H(t)=0.2t$ for $t$ in years, and its <survival function> is $S(t)=e^{-0.2t}$. For a subject still event-free after five years, the <conditional probability> of an occurrence within the next two years is
+$$
+\begin{aligned}
+\mathbb P(5<T\leq7\mid T>5)
+&=1-\frac{S(7)}{S(5)}=1-e^{-0.4}\\
+&\approx0.329680.
+\end{aligned}
+$$
+The original population's <probability> of an occurrence between those same endpoints is instead $S(5)-S(7)=e^{-1}-e^{-1.4}\approx0.121282$. Dividing by $S(5)\approx0.367879$ recovers the conditional answer. The <memoryless property> makes the two-year conditional answer independent of the preceding five years.
+
+For just $\Delta=0.01$ year, the exact conditional event <probability> is $1-e^{-0.002}\approx0.001998$, close to the instantaneous approximation $h(5)\Delta=0.002$. For two years that approximation gives $0.4$, whereas the exact answer is about $0.329680$. At the single exact time five, the event <probability> is zero. These are three different quantities: an instantaneous <hazard function> with inverse-time units, a short-<interval> approximation, and an exact finite-<interval> <probability>.
 
 = Events divided by exposure estimator
 {parent=Constant hazard survival model}

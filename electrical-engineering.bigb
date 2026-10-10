@@ -1,0 +1,156 @@
+= Electrical engineering
+{wiki}
+
+Electrical engineering designs systems that generate, transmit, measure and control electrical <energy> and information. An <electrical circuit> makes this concrete: <resistors>, <capacitors> and <inductors> turn <electric potential differences> into predictable <electric currents> and time-dependent responses. <Signal processing> then asks which information those responses preserve, suppress or reveal.
+
+The connection is useful in both directions. A <series RLC circuit> selects a band of <frequencies> through its physical dynamics; a <moving average> selects frequencies by arithmetic on recorded samples. Both can be studied through a <frequency response>. The models differ, but the question is shared: what happens to each component of the <input>, and what does that do to the <output> we care about?
+
+= Signal processing
+{parent=Electrical engineering}
+{wiki}
+
+Signal processing transforms or analyzes <signals> to extract information, change a representation, or improve a measurement. Examples include smoothing a sensor record, selecting a band of <frequencies>, and decomposing a recording through <Fourier analysis>. A <signal> is a mathematical representation of a physical record; deciding which variation is meaningful and which is <noise> is part of the problem.
+
+A <linear filter> offers a simple entry point. Its <output> is assembled from weighted copies of its <input>. A <moving average> can reduce rapid variation, but it also changes timing and can erase useful detail. The worked example below makes that tradeoff explicit rather than treating a smoother plot as automatic improvement.
+
+Two complementary views make the subject appealing. An <impulse response> describes the effect of a localized input; a <frequency response> describes the effect of a sustained oscillation. For a <linear time-invariant system>, both describe the same operation, connected by <convolution> and <Fourier analysis>. \a[https://ocw.mit.edu/courses/res-6-007-signals-and-systems-spring-2011/0400ba59406d52d94c079d99928156ee_MITRES_6_007S11_lec04.pdf][Alan Oppenheim, MIT Signals and Systems, lecture 4: impulses, complex exponentials and convolution]{ref}.
+
+= Signal
+{parent=Signal processing}
+{wiki}
+{title2=$x(t),\quad x[n]$}
+
+A signal is a <function> or <sequence> representing a quantity that carries information. An <electric potential difference> measured over time can be written $x(t)$; regularly recorded values give a <discrete-time signal> $x[n]$. The meaning includes the measured quantity, units, time reference and sampling interval. The same list of numbers sampled once per second or once per millisecond describes different physical <frequencies>.
+
+= Discrete-time signal
+{parent=Signal}
+{title2=$x[n],\quad n\in\mathbb Z$}
+
+A discrete-time signal assigns a value to each of a discrete collection of times, often indexed by the <integers>. Regular sampling at rate $f_s$ gives $x[n]=x(n/f_s)$, so a sinusoid with normalized frequency $f$ cycles per sample has physical <frequency> $ff_s$. Discreteness of time does not itself require the amplitudes to be quantized; rounding the values is an additional operation. The <Nyquist–Shannon sampling theorem> gives conditions for recovering a band-limited continuous <signal> from its samples.
+
+= Noise
+{disambiguate=signal processing}
+{parent=Signal}
+{wiki}
+
+= Noise
+{synonym}
+
+Noise is unwanted variation in a <signal>. Whether a component is unwanted depends on the measurement task: suppressing fast variation helps only when that variation is expendable. <White noise> provides one mathematical model; it does not describe every source of disturbance. A <linear filter> may reduce some <noise> while also altering the desired <signal>.
+
+= Linear filter
+{parent=Signal processing}
+{wiki}
+
+A linear filter obeys the <superposition principle>: filtering $\alpha x+\beta z$ gives $\alpha T[x]+\beta T[z]$. Many familiar examples are also <linear time-invariant systems>, represented by an <impulse response> and <convolution>. Linearity alone does not imply time invariance: multiplying $x[n]$ by the index $n$ is linear but changes its behavior when the same input is shifted.
+
+The <moving average> is a <finite impulse response> example implemented by arithmetic; a <band-pass filter> can instead be built from a <series RLC circuit>. Their <frequency responses> explain which oscillations pass through. Choosing a filter means choosing how much amplitude, timing and detail may change, not simply removing every visible fluctuation.
+
+= Causal filter
+{parent=Linear filter}
+
+A causal filter uses only present and past <input> values to produce its current <output>. The trailing <moving average> is causal; a centered average that uses future samples is not. Future samples can be available when processing a finished recording, but they are unavailable to a live measurement at the current time.
+
+= Finite impulse response
+{parent=Linear filter}
+{title2=$y[n]=\sum_{j=0}^{M-1}h[j]x[n-j]$}
+{wiki}
+
+= FIR filter
+{c}
+{synonym}
+
+A <linear time-invariant system> has finite impulse response when its <impulse response> is nonzero at only finitely many indices. For a <causal filter> supported at indices $0,\ldots,M-1$,
+$$
+y[n]=\sum_{j=0}^{M-1}h[j]x[n-j].
+$$
+This is a finite <discrete convolution>. The coefficients $h[j]$ specify the complete operation; they need not be positive or equal. Such a filter has a simple bounded-input estimate, $|y[n]|\leq\|x\|_\infty\sum_j|h[j]|$, so bounded inputs remain bounded. The <moving average> chooses $h[j]=1/M$.
+
+= Moving average
+{parent=Finite impulse response}
+{title2=$y[n]=M^{-1}\sum_{j=0}^{M-1}x[n-j]$}
+{wiki}
+
+= Moving-average filter
+{synonym}
+
+A moving average replaces each value by an average over a moving window of neighboring values. The simple trailing version with positive integer window length $M$ is the <causal filter>
+$$
+y[n]=\frac1M\sum_{j=0}^{M-1}x[n-j].
+$$
+It is a <finite impulse response> <linear time-invariant system>. A constant <input> remains unchanged because the weights sum to one. Weighted and centered averages are other choices; the definition of the window determines both the weights and whether future values are needed.
+
+For an exact five-sample example, let
+$$
+x[n]=\sin(2\pi(0.025)n)+0.45\sin(2\pi(0.2)n),
+$$
+defined at every integer index. The first component completes one cycle in forty samples and the second in five. Averaging five consecutive samples cancels the second component exactly. The first becomes
+$$
+y[n]=A\sin(2\pi(0.025)(n-2)),\qquad
+A=\frac{\sin(5\pi(0.025))}{5\sin(\pi(0.025))}\approx0.975498.
+$$
+The remaining component is slightly smaller and delayed by two samples; the filter does not recover the original component unchanged.
+
+\Image[moving-average-signal-delay.png]
+{title=A five-sample moving average cancels one sinusoid while attenuating and delaying another}
+
+The example is in steady operation: its early <output> values use the specified negative-index samples. Starting a device at $n=0$ with an unknown past requires an initialization rule. Treating earlier samples as zero, shortening the initial window, and postponing output until a full window is available produce different initial values.
+
+For zero-mean <uncorrelated random variables> $\varepsilon[n]$ with common <variance> $\sigma^2$, the averaged disturbance has
+$$
+\operatorname{Var}\left(\frac1M\sum_{j=0}^{M-1}\varepsilon[n-j]\right)=\frac{\sigma^2}{M}.
+$$
+The <standard deviation> decreases by $\sqrt M$, but successive filtered errors share samples and are generally correlated. This variance calculation also assumes the wanted component is not damaged by averaging. A rapidly changing feature can be suppressed along with the disturbance.
+
+The <frequency response> explains the cancellation and limits of this method. A <moving average> preserves low <frequencies> comparatively well, yet its side lobes make it a poor substitute for a sharply selective frequency cutoff. Smith develops this time-domain versus frequency-domain distinction in \a[https://www.dspguide.com/CH15.PDF][The Scientist and Engineer's Guide to Digital Signal Processing, chapter 15: moving-average filters]{ref}.
+
+= Band-pass filter
+{parent=Linear filter}
+{wiki}
+
+A band-pass filter preferentially transmits signals within a range of <frequencies> and attenuates sufficiently lower and higher <frequencies>. Taking the output voltage across the <resistor> in a <series RLC circuit> gives one example: the <resonant series RLC response> selects a band around $1/\sqrt{LC}$. \a[https://www.feynmanlectures.caltech.edu/II_22.html#Ch22-S7][Feynman lectures, II.22.7: resonant frequency filters]{ref}.
+
+= Linear time-invariant system
+{parent=Signal processing}
+{wiki}
+
+= LTI system
+{c}
+{synonym}
+
+A linear time-invariant system combines two properties. <Linearity> means that the <output> from a <linear combination> of inputs is the same <linear combination> of their outputs. Time invariance means that shifting an <input> by an integer delay shifts its <output> by exactly that delay. The operation has no preference for a particular time origin.
+
+For discrete time, write the unit impulse as $\delta[n]=1$ at $n=0$ and zero otherwise, a <Kronecker delta>. Its response $h[n]=T[\delta][n]$ is the <impulse response>. A finite <input> can be decomposed into shifted impulses, giving
+$$
+x[n]=\sum_kx[k]\delta[n-k]
+\quad\Longrightarrow\quad
+y[n]=\sum_kx[k]h[n-k]=(x*h)[n].
+$$
+The <superposition principle> supplies the sum and time invariance supplies the shifted copies of $h$. Infinite sums need convergence assumptions; for a bounded input and an impulse response $h$ with <absolute summability>, the <discrete convolution> converges absolutely. For a physical system with stored initial <energy>, this construction describes the response with zero initial state; a separate free response accounts for nonzero initial conditions.
+
+The gain is reuse. Measure or calculate one <impulse response>, and the <convolution> predicts the response to every allowed <signal> without solving a new dynamical problem each time. Alternatively, the <frequency response> predicts how each oscillatory component changes. \a[https://ocw.mit.edu/courses/res-6-007-signals-and-systems-spring-2011/0400ba59406d52d94c079d99928156ee_MITRES_6_007S11_lec04.pdf][Oppenheim, lecture 4: convolution from shifted impulses]{ref}.
+
+= Frequency response
+{parent=Linear time-invariant system}
+{title2=$H(\omega)=\sum_jh[j]e^{-\mathrm i\omega j}$}
+{wiki}
+
+The frequency response gives the change in <complex amplitude> of a sustained oscillation under a <linear time-invariant system>. If the <impulse response> is finite or has <absolute summability>, substituting $x[n]=e^{\mathrm i\omega n}$ into its <discrete convolution> yields
+$$
+y[n]=\sum_jh[j]e^{\mathrm i\omega(n-j)}
+=H(\omega)e^{\mathrm i\omega n},\qquad
+H(\omega)=\sum_jh[j]e^{-\mathrm i\omega j}.
+$$
+Thus $|H(\omega)|$ is the amplitude gain and its <complex argument> is the phase change. Real sinusoids follow by taking real or imaginary parts. Here $\omega$ is radians per sample; $\omega=2\pi f$ for $f$ cycles per sample. A physical sampling rate converts that normalized frequency into cycles per second.
+
+For a trailing <moving average>,
+$$
+H(\omega)=\frac1M\sum_{j=0}^{M-1}e^{-\mathrm i\omega j}
+=e^{-\mathrm i\omega(M-1)/2}\frac{\sin(M\omega/2)}{M\sin(\omega/2)},
+$$
+with removable singularities evaluated from the finite sum. In particular $H(0)=1$. For $M=5$ and $\omega=2\pi/5$, the five <roots of unity> sum to zero, so the oscillation is canceled. At small positive frequencies in the first pass region, the real sine ratio is positive and the phase factor gives a delay of $(M-1)/2$ samples.
+
+\Image[moving-average-frequency-response.png]
+{title=Moving-average gain curves and five phase contributions that cancel at one frequency}
+
+Increasing $M$ moves the first zero to $\omega=2\pi/M$, narrowing the main region of large gain. It does not create an ideal low-frequency cutoff: later side lobes transmit some higher-frequency components, and suppressing a component is only helpful when that component is unwanted. The frequency plot is the same operation as the delayed-sample average; the five-vector diagram explains one exact zero geometrically.

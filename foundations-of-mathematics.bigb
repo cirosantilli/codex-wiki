@@ -1252,6 +1252,22 @@ A <formal language> is decidable if a <Turing machine> halts on every input and 
 
 A word over an alphabet $\Sigma$ is a finite sequence of symbols from $\Sigma$. The empty word has length zero, and $\Sigma^*$ denotes the set of all finite words.
 
+= Concatenation
+{parent=String}
+{wiki}
+{title2=$uv$}
+
+= Concatenation of strings
+{synonym}
+
+<Concatenation> joins two <strings> end to end, retaining the order of their symbols. For example, joining $ab$ and $ba$ gives $abba$. It has the <associative property>: joining $(uv)w$ or $u(vw)$ gives the same <word over an alphabet>. The <empty word> is its <identity element>. All finite <words over an alphabet> with this <binary operation> form a <free monoid>.
+
+= Length of a word over an alphabet
+{parent=String}
+{title2=$\ell(w)$}
+
+The <length of a word over an alphabet> is the number of symbol positions in that finite <string>, counting repetitions. Thus $\ell(abba)=4$ and $\ell(\varepsilon)=0$ for the <empty word>. <Concatenation> satisfies $\ell(uv)=\ell(u)+\ell(v)$. This differs from the <word length> of a <group> element, which minimizes over representing <words> using a chosen <generating set of a group>.
+
 = Run of a word
 {parent=String}
 
@@ -1555,9 +1571,23 @@ The language $\{a^{m^2}b^{m^2}:m\geq0\}$ is not context-free. Pump a word with b
 = Finite-state automaton
 {synonym}
 
-A <finite-state machine> has finitely many states and input-dependent transitions; it may also emit outputs. With designated accepting states it recognizes a <formal language>.
+A <finite-state machine> processes inputs using a <finite set> of <automaton states> and input-dependent <automaton transitions>. An <automaton state> records everything the machine remembers; an <automaton transition> says how that memory changes on the next symbol. A <finite-state machine> may also emit outputs. Here the emphasis is on recognizing a <formal language>: start in a designated <automaton state>, read a <word> from an <alphabet>, and accept exactly when the final <automaton state> is designated accepting.
 
-A finite-state automaton recognizes a <formal language> by updating one of finitely many states as it reads each input symbol.
+Finite memory does not impose a maximum input length. A <finite-state machine> can read arbitrarily long <words>, revisiting its <automaton states> indefinitely. The restriction is that the part already read must be compressed into one of finitely many summaries. For <divisibility> by three, a <word> of <binary digits> can describe an enormous <integer>, yet its <congruence class> modulo three is all that the machine needs to retain. Two already-read <words> giving the same <automaton state> behave identically under every subsequent continuation in a <DFA>.
+
+This makes <finite-state machines> useful whenever past details can be forgotten safely: checking whether a sequence of commands follows an allowed order, or recognizing a pattern with a <regular expression>. The beautiful design question is which distinctions about the past matter to the future. <DFA minimization> makes that question precise by merging <indistinguishable states of a deterministic finite automaton>. Both <DFAs> and <NFAs> recognize exactly the <regular languages>.
+
+= Automaton state
+{parent=Finite-state machine}
+{title2=$q\in Q$}
+
+An <automaton state> is one possible memory configuration of a <finite-state machine>. The initial <automaton state> is the starting configuration; accepting <automaton states> indicate successful recognition when the whole <word> has been read.
+
+= Automaton transition
+{parent=Finite-state machine}
+{title2=$q\xrightarrow{a}q'$}
+
+An <automaton transition> changes an <automaton state> on reading a symbol. A <DFA> specifies one destination; an <NFA> may specify several or none.
 
 = Dead state of a finite automaton
 {parent=Finite-state machine}
@@ -1596,7 +1626,72 @@ For numbered states of a <finite-state automaton>, $R_{ij}^{(k)}$ is a <regular 
 {synonym}
 {c}
 
-A deterministic finite automaton has finitely many states and one transition for each state-symbol pair.
+A <deterministic finite automaton> has exactly one <automaton transition> for every <automaton state> and input symbol. Formally, a <DFA> is a <tuple> $(Q,\Sigma,\delta,q_0,F)$: $Q$ is a nonempty <finite set> of <automaton states>, $\Sigma$ a finite <alphabet>, $\delta:Q\times\Sigma\to Q$ a <function>, $q_0$ the initial <automaton state>, and $F\subseteq Q$ the accepting <automaton states>. Its unique path on a <word> accepts if it ends in $F$ after consuming the entire input. Visiting $F$ earlier does not suffice.
+
+For a concrete <binary divisibility automaton>, recognize the <words> whose values in the <binary numeral system> are divisible by three. Choose $Q=\{0,1,2\}$, $\Sigma=\{0,1\}$, $q_0=0$, and $F=\{0\}$. Each <automaton state> names the <congruence class> of the <integer> read so far. Appending a <binary digit> $b$ changes its value $n$ to $2n+b$, so the <automaton transition> is
+$$
+\delta(r,b)=(2r+b)\bmod 3.
+$$
+The <modular arithmetic> therefore needs only three <automaton states>, whatever the input length. The full <function> is $\delta(0,0)=0$, $\delta(0,1)=1$, $\delta(1,0)=2$, $\delta(1,1)=0$, $\delta(2,0)=1$, and $\delta(2,1)=2$.
+
+\Image[binary-remainder-automaton.png]
+{title=A three-state <DFA> for <binary digits> representing <integers> divisible by three, with accepted and rejected traces}
+
+For $110_2=6$, the successive <automaton states> are $0\to1\to0\to0$, so the <word> is accepted. For $101_2=5$, they are $0\to1\to2\to2$, so it is rejected. Leading zeros are allowed: they leave the initial <automaton state> unchanged. We explicitly assign value zero to the <empty word>, which is accepted because the initial <automaton state> is accepting. This is a convention for a <formal language>, rather than a claim that ordinary written numerals include a blank numeral.
+
+The generator checks every <word> of up to eight <binary digits>, comparing the final <automaton state> with the <integer> value modulo three. Each length $n$ includes all $2^n$ <words>, preserving leading zeros as distinct inputs:
+
+|| Length $n$
+|| <Words> checked
+|| Accepted by the <DFA>
+|| Values divisible by three
+
+| 0
+| 1
+| 1
+| 1
+
+| 1
+| 2
+| 1
+| 1
+
+| 2
+| 4
+| 2
+| 2
+
+| 3
+| 8
+| 3
+| 3
+
+| 4
+| 16
+| 6
+| 6
+
+| 5
+| 32
+| 11
+| 11
+
+| 6
+| 64
+| 22
+| 22
+
+| 7
+| 128
+| 43
+| 43
+
+| 8
+| 256
+| 86
+| 86
+
+All 511 checks agree. They are useful for catching a reversed arrow or mistaken label, but the reason the <DFA> works at every length is its invariant: after reading any <word> of value $n$, its <automaton state> is $n\bmod3$. The update $n\mapsto2n+b$ preserves that statement by <mathematical induction>. Through the <extended transition function of a deterministic finite automaton>, this becomes $\widehat\delta(0,w)=\operatorname{value}(w)\bmod3$.
 
 = Extended transition function of a deterministic finite automaton
 {title2=$\widehat\delta$}
@@ -1688,7 +1783,20 @@ An accessible automaton over one letter consists of a directed tail entering one
 {c}
 {synonym}
 
-A nondeterministic finite automaton assigns a set of possible successor states to each state-symbol pair and accepts when at least one run ends in a final state.
+A <nondeterministic finite automaton> allows a <set> of possible destinations for each <automaton state> and input symbol. Without the extra moves permitted in an <epsilon-NFA>, replace the <DFA> <function> by $\Delta:Q\times\Sigma\to\mathcal P(Q)$, where $\mathcal P(Q)$ is the <power set>. A <word> is accepted when at least one path consumes all its symbols and ends in an accepting <automaton state>. These choices express <existential quantification>, not <probability>: no chance of choosing a particular path is assigned. One successful path suffices even if other paths fail.
+
+Consider a three-state <NFA> accepting exactly the <words> of <binary digits> ending in $01$. Its initial <automaton state> $q_0$ loops on both $0$ and $1$; it also has an <automaton transition> $q_0\xrightarrow{0}q_1$, followed by $q_1\xrightarrow{1}q_2$. Only $q_2$ is accepting, and all unlisted <automaton transitions> are absent. Staying at $q_0$ skips an arbitrary beginning; leaving it guesses that the current zero starts the final two symbols.
+
+\Image[nondeterministic-suffix-traces.png]
+{title=An <NFA> recognizing <words> ending in $01$, and the possible <automaton states> after each symbol}
+
+The <word> $01$ accepts along $q_0\to q_1\to q_2$. The <word> $1101$ accepts along $q_0\to q_0\to q_0\to q_1\to q_2$. The <word> $010$ rejects: a path reaching $q_2$ after $01$ cannot consume the remaining zero, while the other paths end outside $q_2$. Thus finding $01$ somewhere is insufficient; it must occur at the end.
+
+To simulate the <NFA> deterministically, retain the <set> $S$ of all currently possible <automaton states>. The <powerset construction> updates $S$ by taking the <union> of the destinations of its members. Here only $\{q_0\}$, $\{q_0,q_1\}$, and $\{q_0,q_2\}$ are reachable, although the full <power set> has eight members. Reading $010$ gives $\{q_0\}\to\{q_0,q_1\}\to\{q_0,q_2\}\to\{q_0,q_1\}$, which rejects. In general, an $N$-state <NFA> yields a <DFA> with at most $2^N$ <automaton states>. Nondeterminism can simplify a description, while the <powerset construction> keeps the memory finite.
+
+The second generator checks all 511 <words> of up to eight <binary digits> against the direct test of whether their final two symbols are $01$. Exactly 127 accept, and only the three listed <sets> of <automaton states> occur. In particular, the <empty word> rejects for this <NFA>.
+
+Michael O. Rabin and Dana Scott's 1959 paper studied <finite-state machines> as recognizers with finite internal memory. Its section 5 defines <NFAs> through successful paths, and theorem 11 proves their equivalence to <DFAs> by the <powerset construction>. This gives a historical source for the distinction between many possible paths and greater recognition power: \a[https://www.cs.cmu.edu/~lblum/flac/Handouts_pdf/rs.pdf][Rabin and Scott, Finite Automata and Their Decision Problems, pp. 120–121]{ref}.
 
 = Epsilon-NFA
 {c}
@@ -1935,6 +2043,15 @@ $$
 {parent=Empirical risk minimization}
 
 A loss function assigns a numerical penalty to a prediction and its observed outcome. Its <expected value> is the population risk optimized by a statistical learning procedure.
+
+= Logarithmic loss
+{parent=Loss function}
+{title2=$\ell(q,y)=-\log q(y)$}
+
+= Log-loss
+{synonym}
+
+The <loss function> assigning $-\log q(y)$ to a predicted <probability distribution> $q$ and observed outcome $y$. It is the negative <logarithmic scoring rule>; its <expected value> under the true <probability distribution> is <cross-entropy>. Predicting zero <probability> for an observed outcome gives infinite loss.
 
 = Population risk
 {title2=$R$}

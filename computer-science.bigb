@@ -7,6 +7,183 @@ The beauty is that choosing a representation can change what is feasible. Findin
 
 <Algorithm correctness> covers every permitted <input>, including absent names and empty collections. <Time complexity> predicts scaling; <statistical program profiling> investigates a particular implementation.
 
+= Computer graphics
+{parent=Computer science}
+{wiki}
+
+= Raster graphics
+{parent=Computer graphics}
+{wiki}
+
+= Raster image
+{synonym}
+
+<Raster graphics> represent an image as a rectangular <array> of <pixels>. The number of rows and columns determines how many samples are stored; enlarging the displayed image does not create new recorded detail. This representation makes <image processing> and <image compression> operations on explicit numerical data.
+
+= Pixel
+{parent=Raster graphics}
+{wiki}
+
+A <pixel> is one picture element in a <raster image>, with a stored value describing its shade or colour. In the binary example under <run-length encoding>, one <bit> per <pixel> selects black or white. In the <grayscale> example under <lossy block averaging>, eight <bits> per <pixel> select one of 256 shades.
+
+= Grayscale
+{parent=Raster graphics}
+{wiki}
+
+= Greyscale
+{synonym}
+
+A <grayscale> image uses shades from black to white. Our examples assign black the <integer> value 0 and white 255. These are stored sample values; averaging them defines our numerical experiment without claiming to average physical light intensity.
+
+= Vector graphics
+{parent=Computer graphics}
+{wiki}
+
+= File format
+{parent=Computer science}
+{wiki}
+
+A <file format> specifies how a <binary string> is interpreted: field order, field widths, permitted values and where decoding stops. A <data compression> comparison must include all fields required to recover the data.
+
+= File header
+{parent=File format}
+
+A <file header> is leading information describing how to interpret the following data. Dimensions and a choice of compression method are examples. The two toy <image compression> examples explicitly count these fields.
+
+= Data compression
+{parent=Computer science}
+{wiki}
+
+<Data compression> represents data using fewer <bits> than a specified original representation. The saving can reduce storage in a <file system> and reduce the number of <bits> sent through a <communication channel>. At a fixed transmission rate, fewer <bits> arrive sooner; this makes better use of a fixed transmission budget. Both the encoded data and the instructions needed to interpret them contribute to the size of a stored file.
+
+There are two different promises. <Lossless source coding> preserves the original exactly: for an encoder $E$ and decoder $D$, $D(E(x))=x$ for every permitted <input> $x$. Thus $E$ must be an <injective function>. <Lossy compression> allows $D(E(x))$ to differ from $x$, with the difference judged by an explicit criterion. A program or numerical record may require exact recovery; a preview image may tolerate altered <pixels> in return for fewer <bits>.
+
+The appeal of <lossless source coding> is that repetition can be described rather than copied. <Run-length encoding> says "repeat this value twelve times"; a <prefix code> can give more frequent symbols shorter descriptions. These are distinct ways to exploit structure, and neither promises savings for every <input>. <Image compression> supplies especially visible examples of both <lossless source coding> and <lossy compression>.
+
+Claude E. Shannon's 1948 paper made the role of <probability distributions> precise. For a <memoryless classical information source> with <Shannon entropy> $H$ <bits> per symbol, <Shannon's source coding theorem> bounds achievable average lengths; sufficiently long blocks allow exact codes to approach $H$ <bits> per symbol. This is a statement about a specified source and average lengths, not a promise to shorten every message.\a[https://www.cs.yale.edu/homes/yry/readings/general/shannon1948.pdf][Shannon, A Mathematical Theory of Communication (1948), Part I, section 9, Theorem 9 and its coding constructions]{ref}
+
+= Universal lossless shortening is impossible
+{parent=Data compression}
+
+Fix $n\geq1$. There is no <injective function> from all length-$n$ <binary strings> to <binary strings> of length strictly less than $n$. There are $2^n$ possible <inputs>, but even allowing the empty string gives only
+$$
+\sum_{k=0}^{n-1}2^k=2^n-1
+$$
+possible shorter <outputs>. The <finite geometric series> and <pigeonhole principle> leave at least two <inputs> sharing an <output>, which prevents exact decoding. For $n=3$, eight <inputs> compete for the empty string and the six strings `0`, `1`, `00`, `01`, `10`, `11`.
+
+This counting argument includes any <file header> or other information sent to the decoder. An <algorithm> chosen separately for each <input> must also be identified to the receiver; its description is not free. A useful compressor saves space on some <inputs> while leaving others unchanged or making them longer. <Lossy compression> avoids the exact-recovery requirement by deliberately allowing several <inputs> to share an <output>.
+
+= Lossy compression
+{parent=Data compression}
+{wiki}
+
+<Lossy compression> reduces a representation while permitting irreversible changes to the original. The encoder can map distinct <inputs> to the same <output>, so its decoder cannot recover both originals exactly. The useful question becomes how much storage is saved for an acceptable amount of distortion: <mean squared error> is one numerical criterion, but it does not by itself measure how noticeable a visual change is.
+
+For example, storing the <arithmetic mean> of four <grayscale> <pixels> retains their average shade while discarding their arrangement. Blocks $\left(\begin{smallmatrix}0&100\\100&0\end{smallmatrix}\right)$ and $\left(\begin{smallmatrix}50&50\\50&50\end{smallmatrix}\right)$ both produce 50. The former has detail and the latter is uniform, yet the decoder receives the same value. <Lossy block averaging> makes this ambiguity, its <bit> saving and its <mean squared error> exact.
+
+= Lossy block averaging
+{parent=Lossy compression}
+{title2=$q_{ij}=\lfloor m_{ij}+1/2\rfloor$}
+
+This toy <image compression> method stores one rounded <arithmetic mean> for each disjoint $2\times2$ block of <grayscale> <pixels>. The <quantization (signal processing)> rule is round to the nearest <integer>, with exact halves rounded upward. Each stored value is an unsigned eight-<bit> <integer>. Reconstruction fills the original block with that value, a form of <nearest-neighbor interpolation>. Averaging already discards information; rounding can discard more.
+
+Here is an exact $16\times16$ source <array>. Index rows and columns by $r,c\in\{0,\ldots,15\}$ and define
+$$
+\begin{aligned}
+b_{rc}&=40+10\lfloor r/2\rfloor+12\lfloor c/2\rfloor,\\
+x_{rc}&=b_{rc}+20(-1)^{r+c}+\mathbf{1}_{\{r\text{ even},\ c\text{ even}\}}.
+\end{aligned}
+$$
+The <floor function> makes $b$ constant within each block; the <indicator function> adds 1 only to its upper-left <pixel>. All values are <integers> from 20 to 215. Each block therefore has the exact form
+$$
+\begin{pmatrix}b+21&b-20\\b-20&b+20\end{pmatrix},\qquad m=b+\tfrac14,\qquad q=\lfloor m+\tfrac12\rfloor=b.
+$$
+For example, the upper-left block $\left(\begin{smallmatrix}61&20\\20&60\end{smallmatrix}\right)$ has <arithmetic mean> $161/4=40.25$ and is stored as 40. The block immediately to its right $\left(\begin{smallmatrix}73&32\\32&72\end{smallmatrix}\right)$ is stored as 52. The complete stored $8\times8$ <array> is specified by $q_{ij}=40+10i+12j$ for $0\leq i,j\leq7$. Its first row is $40,52,64,76,88,100,112,124$; its last is $110,122,134,146,158,170,182,194$.
+
+This toy <file format> again has eight-<bit> width and height fields followed by a one-<bit> mode: 0 means raw eight-<bit> <grayscale> <pixels>, 1 means the rounded block <arithmetic means>. This profile accepts only width and height 16. The decoder knows the block size and reconstruction rule from the format, reads the 64 stored values in row order, and repeats each across its corresponding $2\times2$ block. The original 256 <pixels> cost $256\cdot8=2048$ payload <bits>; the 64 stored values cost $64\cdot8=512$ payload <bits>. The reduction is $75\%$. These payload counts exclude the common 17-<bit> <file header>; complete sizes are 2065 and 529 <bits>, or 2072 and 536 <bits> after final zero padding to eight-<bit> units. There is no stored codebook or additional prediction rule.
+
+The empirical <mean squared error> averages squared differences over the 256 original <pixel> positions:
+$$
+\operatorname{MSE}=\frac1{256}\sum_{r=0}^{15}\sum_{c=0}^{15}(x_{rc}-\widehat x_{rc})^2
+=\frac{21^2+20^2+20^2+20^2}{4}=410.25.
+$$
+Every block has the same four errors, so this value is exact in squared stored shade units. If the unrounded <arithmetic mean> $b+1/4$ could be reconstructed, the error would instead be $410.1875$; eight-<bit> <quantization (signal processing)> adds $0.0625$. That hypothetical comparison does not count fractional means as free eight-<bit> values.
+
+The broad shade pattern survives, while the alternating bright and dark <pixels> vanish. Indeed, a second source with every block constant at $b$ produces the identical stored <array> $q$: exact decoding of both sources is impossible. This makes the storage benefit and the lost detail visible at once. Block averaging is useful for a coarse preview when the individual <pixels> are dispensable; choosing an acceptable <mean squared error> or visual result is part of the application, not a guarantee supplied by the encoder.
+
+\Image[lossy-block-image-comparison.png]
+{title=Rounded 2 by 2 block means reduce the payload by 75 percent while destroying fine detail}
+
+= Run-length encoding
+{parent=Data compression}
+{wiki}
+
+= RLE
+{c}
+{synonym}
+
+<Run-length encoding> replaces each maximal consecutive group of equal values, called a run, by its value and length. Decoding repeats each value the specified number of times. It is <lossless source coding>: no values are discarded. For a <binary string>, successive maximal runs alternate between 0 and 1, so storing the first <bit> and all run lengths is enough.
+
+Take this $8\times8$ <raster image>, with 0 black and 1 white, read left to right across each row and then top to bottom:
+```
+00000000
+00001111
+11110000
+00001111
+11110000
+00001111
+11110000
+00000000
+```
+Reading the whole image as one 64-<bit> <binary string> gives exactly seven runs:
+$$
+(\text{value},\text{length})=(0,12),(1,8),(0,8),(1,8),(0,8),(1,8),(0,12).
+$$
+The lengths sum to $12+8+8+8+8+8+12=64$. Repeating the alternating values for these lengths and splitting after every eighth <pixel> reconstructs every displayed row exactly.
+
+Here is a complete toy <file format>. Its <file header> is an eight-<bit> unsigned width, an eight-<bit> unsigned height, then a one-<bit> mode: 0 means raw <pixels>, 1 means <run-length encoding>. Fields are written most significant <bit> first; this profile accepts only width and height 8, so both decoders know to stop at 64 <pixels>. Raw mode contains 64 <bits>. <RLE> mode contains the initial <bit>, followed by seven-<bit> unsigned run lengths in the range 1 to 64. Zero and lengths above 64 are invalid; a decoder rejects a run that would exceed the remaining <pixel> count. It stops when the decoded lengths sum to 64, so no run-count field or end marker is needed.
+
+For this image, the complete <RLE> serialization is:
+```
+00001000 00001000 1 | 0 | 0001100 0001000 0001000 0001000 0001000 0001000 0001100
+```
+Spaces and vertical bars are explanatory separators, not stored characters. The seven-<bit> fields directly store the lengths; 64 would be `1000000`. The payload costs $1+7\cdot7=50$ <bits>, versus 64 raw <bits>. The 17-<bit> <file header> has the same size in either mode, giving complete sizes of 67 versus 81 <bits>. If packed into eight-<bit> units, append zero padding only at the end: the sizes become 72 versus 88 <bits>. These are sizes of this toy representation, not sizes of <PNG> files.
+
+The field design matters. Restarting <RLE> on every row costs eight initial <bits> plus four <bits> per run when lengths are stored directly: three <bits> represent only 0 through 7, whereas a row can have length 8. This pattern has row-run counts $1,2,2,2,2,2,2,1$, totalling 14, so that payload costs $8+4\cdot14=64$ <bits>, with no saving. Storing length minus one would instead fit lengths 1 through 8 into three <bits>, but is a different declared <file format>. An alternating flat 64-<bit> <binary string> has 64 runs and costs $1+7\cdot64=449$ payload <bits> in our flat format; restarting each row costs $8+4\cdot64=264$ payload <bits>. A one-run image costs only eight payload <bits>. These extremes explain when <RLE> is useful: long uninterrupted regions make short instructions, while frequent changes make instructions expensive.
+
+<Prefix codes> of unequal lengths can replace fixed-width run lengths, provided the decoder knows the code and any necessary code description is counted. <Run-length encoding> names a technique, not one universal serialization. For a real implementation, Microsoft's bitmap documentation specifies `BI_RLE8` with count and value fields plus special commands, rather than our initial-<bit> convention.\a[https://learn.microsoft.com/en-us/windows/win32/gdi/bitmap-compression][Microsoft, Bitmap Compression, BI_RLE8 encoded and absolute modes]{ref}
+
+\Image[run-length-image-compression.png]
+{title=Seven runs serialize an 8 by 8 binary image and reconstruct every pixel exactly}
+
+= Deflate
+{c}
+{parent=Data compression}
+{wiki}
+
+<Deflate> is the <lossless source coding> method specified for <PNG> compression. It can describe repeated stretches of earlier data, going beyond the single-value repetitions of <run-length encoding>.\a[https://www.w3.org/TR/2025/REC-png-3-20250624/#10Compression][W3C, PNG Specification, Third Edition, section 10.1, compression method 0]{ref}
+
+= Image compression
+{parent=Data compression}
+{wiki}
+
+<Image compression> applies <data compression> to pictures, usually represented by <raster images>. Nearby <pixels> often have related shades; an encoder can exploit that structure. A flat region invites <run-length encoding>, while <lossy block averaging> trades fine detail for fewer stored samples. The choice depends on whether exact <pixel> values matter and on the patterns in the image.
+
+<Lossless source coding> recovers the encoded <pixel> values exactly, including sharp text or numerical image data. <Lossy compression> preserves an approximation and can remove features that later <image processing> might need. A visually smooth result is therefore a different promise from exact recovery. Neither method has a universal compression ratio: the chosen <file format>, its <file header> and the particular image all matter.
+
+<PNG> is a real format with <lossless source coding> of its encoded image data. Its specified compression uses <Deflate> on reversibly filtered rows, rather than our toy <RLE> format. The <lossy block averaging> example is also a teaching format, not a description of <PNG>. A lossy preprocessing step followed by saving as <PNG> preserves the already changed <pixels>, not the earlier original.\a[https://www.w3.org/TR/2025/REC-png-3-20250624/#10Compression][W3C, PNG Specification, Third Edition (2025), section 10, Compression]{ref}
+
+= PNG
+{c}
+{parent=Image compression}
+{wiki}
+
+= Portable Network Graphics
+{c}
+{synonym}
+
+<PNG> is a <file format> for <raster images> with <lossless source coding> of the encoded image data. Its first W3C Recommendation, dated 1 October 1996, described a portable replacement for earlier image formats; this situates the design in exchanging images reliably between systems.\a[https://www.w3.org/TR/REC-png-961001][W3C, PNG (Portable Network Graphics) Specification, 1 October 1996, status and abstract]{ref}
+
 = Encapsulation
 {disambiguate=computer programming}
 {parent=Computer science}
@@ -16,8 +193,24 @@ The beauty is that choosing a representation can change what is feasible. Findin
 
 = Hash function
 {parent=Computer science}
+{wiki}
+{title2=$h:U\to B$}
 
-A function mapping a large input set to a smaller set of hash values. It is used to index data or summarize an input; its required properties depend on the task. A <cryptographic hash function> is designed for computational security properties, whereas a <universal hash family> controls collision probabilities under random choice of the function.
+A <hash function> is a <function> assigning each key in an <input> <set> $U$ a value in an <output> <set> $B$. Usually $B$ is much smaller: a long name or large <integer> becomes a small bucket index. Equal keys must receive equal values from the same <hash function>; different keys may also receive equal values. Such a <hash collision> means "look in the same place", and does not establish key equality. If $|U|>|B|$, the <pigeonhole principle> makes some collisions unavoidable.
+
+For example, <modular arithmetic> gives the <hash function> $h(k)=k\bmod7$, with seven bucket indices $0,\ldots,6$. Store the seven keys $0,2,3,10,11,17,24$: their values are respectively $0,2,3,3,4,3,3$. In particular, $h(3)=h(10)=3$ although $3\ne10$. A <hash table> is a <data structure> that uses these indices to locate records. With <separate chaining>, each bucket holds a <linked list> of records, so bucket $3$ retains all four keys $3,10,17,24$. Inserting $10$ must not overwrite $3$ merely because their <hash function> values agree.
+
+\Image[hash-bucket-collisions.png]
+{title=Seven keys stored in seven buckets using the hash function h(k) = k mod 7}
+{description=Orange arrows identify four colliding keys. Bucket 3 keeps all four records in a linked list; equality is checked on the stored keys.}
+
+Searching for $10$ computes bucket $3$, then compares the actual keys until it reaches $10$. Searching for absent key $31$ reaches that same bucket and must reject every stored key. This <data structure> trades a search through all records for a search through one short chain, provided the <hash function> distributes keys adequately. A fixed <hash function> can perform poorly on patterned keys: $3,10,17,24$ already demonstrate the problem. A <universal hash family> introduces controlled randomness to limit the <expected value> of this extra work. Neither indexing nor a small collision <probability> inherently supplies <encryption> or <message authentication>; a <cryptographic hash function> has additional requirements such as <collision resistance>.
+
+= Hash collision
+{parent=Hash function}
+{title2=$x\ne y,\ h(x)=h(y)$}
+
+A hash collision occurs when distinct <inputs> receive the same value under a <hash function>. A <hash table> must still distinguish their keys; <collision resistance> is a separate computational requirement for a <cryptographic hash function>.
 
 = Almost strongly universal hash family
 {parent=Hash function}
@@ -26,7 +219,13 @@ A function mapping a large input set to a smaller set of hash values. It is used
 = Almost strongly universal2 hashing
 {synonym}
 
-In the convention used here, an $\varepsilon$-almost-strongly-universal family has uniform individual outputs and satisfies the displayed bound for every pair of distinct inputs and specified outputs. Equivalently $\Pr[h(y)=v\mid h(x)=u]\leq\varepsilon$. Necessarily $\varepsilon\geq1/q$, and equality gives a <strongly universal hash family>. Bounds greater than $1/q$ need not imply exact universality; the hierarchy therefore does not put this class under <universal hash family>.
+An <almost strongly universal hash family> relaxes the exact <ordered pair> balance of a <strongly universal hash family>. In the convention used here, choose $h$ with the <uniform distribution on a finite set> from a family with $q$ possible <outputs>. Every individual <output> remains uniform, and for every distinct pair of <inputs> $x,y$ and every specified <ordered pair> of <outputs> $u,v$,
+$$
+\Pr_h[h(x)=u,h(y)=v]\leq\frac{\varepsilon}{q}.
+$$
+Equivalently, the <conditional probability> $\Pr_h[h(y)=v\mid h(x)=u]$ is at most $\varepsilon$. This asks how predictable a second <output> can become after the first is known.
+
+For $q=5$, <strongly universal hash families> give $\varepsilon=1/5$: learning one <output> leaves each specified second <output> with <conditional probability> $1/5$. A looser guarantee $\varepsilon=2/5$ permits a specified <ordered pair> to have <probability> as large as $2/25$, while each individual <output> still has <probability> $1/5$. Summing over the five equal <ordered pairs> bounds the collision <probability> by $2/5$, rather than the $1/5$ required of a <universal hash family>. Thus an <almost strongly universal hash family> need not be a <universal hash family>. Necessarily $\varepsilon\geq1/q$, because the $q$ conditional <probabilities> sum to one; equality recovers a <strongly universal hash family>. This relaxation is useful in <Wegman–Carter authentication>, where efficiency can be traded against a quantified forgery bound within a complete <message authentication> protocol.
 
 = Polynomial almost strongly universal hashing
 {parent=Almost strongly universal hash family}
@@ -41,7 +240,17 @@ For fixed-length messages in $\mathbb F_q^L$, choose independent uniform field e
 = Universal2 hashing
 {synonym}
 
-For finite output set of size $q$, choose $h$ uniformly from the family. Universality of order two means the displayed collision bound for every distinct pair of inputs. It does not require uniform individual hash values or independence of two output values. <Strongly universal hash families> impose both of those stronger requirements.
+A <universal hash family> is a finite collection $\mathcal H$ of <hash functions> into an <output> <set> of size $q$ such that, for any fixed distinct <inputs> $x,y$,
+$$
+\Pr_{h\in\mathcal H}[h(x)=h(y)]\leq\frac1q.
+$$
+The choice of $h$ uses the <uniform distribution on a finite set>. The keys are fixed before that choice: the randomness belongs to the <hash function>, so the guarantee does not assume naturally random keys. Choose one member and keep it while using the table; changing it requires redistributing the stored records. The bound holds separately for every distinct pair, without requiring uniform individual <outputs> or <independent random variables>. A <strongly universal hash family> supplies those stronger properties.
+
+The practical payoff follows from <linearity of expectation>. If $n$ stored keys are distinct from a fixed query, let $C$ count how many share its bucket. Then $\mathbb E[C]\leq n/q$: each key contributes at most $1/q$ to the <expected value>. With $100$ stored keys and $100$ buckets, an unsuccessful search encounters at most one record on average over the random choice of <hash function>. This is an <expected value>, not a limit on every search; one unlucky choice can still create a long chain.
+
+This calculation needs no <independence> between the collision events: <linearity of expectation> adds their individual <probabilities>. The fixed-query condition matters, since deliberately choosing keys after inspecting the selected <hash function> can target a crowded bucket.
+
+Carter and Wegman introduced this way of analyzing storage and retrieval in their 1977 paper: average over a chosen class of <hash functions> while allowing any fixed sequence of <inputs>. Their 1979 journal version develops the same universal-pair collision condition and constructions. The insight is useful because a <randomized algorithm> can obtain a performance guarantee through its own choices, even when its <inputs> have inconvenient patterns.\a[https://dl.acm.org/doi/10.1145/800105.803400][Carter and Wegman, Universal classes of hash functions, STOC 1977]{ref}\a[https://www.cs.princeton.edu/courses/archive/fall09/cos521/Handouts/universalclasses.pdf][Carter and Wegman, Universal Classes of Hash Functions, 1979]{ref}
 
 = Strongly universal hash family
 {parent=Universal hash family}
@@ -50,7 +259,23 @@ For finite output set of size $q$, choose $h$ uniformly from the family. Univers
 = Strongly universal2 hashing
 {synonym}
 
-For every distinct pair of inputs and every specified pair of output values, the displayed joint probability holds. Thus outputs at distinct inputs are independent and uniform. Summing over equal output values gives the <universal hash family> collision bound with equality.
+A <strongly universal hash family> makes every <ordered pair> of <outputs> equally likely: for distinct <inputs> $x,y$ and arbitrary specified <outputs> $u,v$,
+$$
+\Pr_h[h(x)=u,h(y)=v]=\frac1{q^2}.
+$$
+Thus the two <outputs> are <independent random variables>, each with the <uniform distribution on a finite set>. Adding the $q$ equal <ordered pairs> gives collision <probability> $q/q^2=1/q$, so the family is also a <universal hash family>.
+
+Here is a completely enumerable example. In the <finite field> $\mathbb F_5$, take the <affine functions> $h_{a,b}(x)=ax+b$, using <modular arithmetic> modulo $5$. Choose $a$ and $b$ as <independent random variables>, each with the <uniform distribution on a finite set> of all five <finite field> elements $0,1,2,3,4$, including $a=0$. There are $25$ equally likely <hash functions>. For $x=0,y=1$, the <ordered pair> is $(b,a+b)$. For instance $(a,b)=(2,3)$ gives $(h(0),h(1))=(3,0)$; $(0,3)$ gives $(3,3)$. Every prescribed $(u,v)$ occurs exactly once, at $b=u,a=v-u$.
+
+\Image[affine-hash-pair-grid.png]
+{title=Enumerating all affine hash functions over the finite field with five elements}
+{description=Each cell shows the unique coefficient pair (a,b) producing the displayed outputs at 0 and 1. Removing a = 0 deletes the diagonal and leaves dependent outputs despite uniform individual values.}
+
+Each row contains five choices, so each individual <output> has <probability> $5/25=1/5$. Each cell has <probability> $1/25$, and the five diagonal cells give collision <probability> $5/25=1/5$. For any distinct $x,y$, the same conclusion follows from $a=(v-u)/(y-x)$ and $b=u-ax$: a nonzero <finite field> element has a unique inverse. This is the beauty of the construction: two small random coefficients provide exact pair balance without choosing five unrelated values.
+
+The example uses equal-sized <input> and <output> <sets> to make every choice visible; it illustrates the family definitions rather than compression. In a larger <input> <set>, a <hash function> cannot avoid all collisions into five buckets. What a <universal hash family> controls is the fraction of its members that collide on each fixed pair, rather than the existence of any collision anywhere.
+
+Restricting to $a\ne0$ leaves $20$ <permutations> with zero collision <probability> for distinct <inputs>. Individual <outputs> remain uniform, but given $h(0)=u$, the four values other than $u$ each have <conditional probability> $1/4$ and $u$ has zero. Hence these <outputs> are not <independent random variables>: this is a <universal hash family> but not a <strongly universal hash family>. Finally, the full $25$-member example contains five constant <functions>, with immediately visible collisions. Its pair guarantee concerns a random choice of <hash function>, and makes no claim of cryptographic <collision resistance>.
 
 = Conway Game of Life
 {parent=Computer science}
@@ -245,6 +470,43 @@ Disabling selected asynchronous interrupt delivery, normally under privileged co
 {parent=Operating system}
 {wiki}
 
+<Virtual memory> gives an <operating-system process> an <address space> whose <virtual addresses> are translated to <physical addresses> under <operating system> control. In a system using <paging>, each resident <memory page> maps to a <page frame>; <page tables> describe the mappings and access permissions, while the <memory management unit> enforces them. The same <virtual address> in two <operating-system processes> can refer to different <page frames>. A deliberate shared mapping can instead make different <virtual addresses> refer to the same <page frame>. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/vm-intro.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 13: Address Spaces]{ref}
+
+For example, with 256-<byte> <memory pages>, let process A map virtual page `0x12` to <page frame> `0x07`, and process B map virtual page `0x12` to <page frame> `0x09`. Their identical <virtual address> `0x1234` then denotes <physical address> `0x0734` in A and `0x0934` in B. The address acquires meaning from the current <address space>, not just its numerical value. See <paging> for the calculation.
+
+This separation makes programs easier to place in <computer memory>: consecutive <virtual addresses> need not occupy consecutive <page frames>. It also provides isolation and controlled sharing. <Virtual memory> does not require secondary storage: a system can translate and protect <virtual addresses> while keeping every allocated <memory page> resident in <computer memory>. <Demand paging> adds allocation or loading on first use, and can support an <address space> larger than available <computer memory>; the amount that can be used at once is still limited. Keeping a <working set> resident avoids <memory thrashing>.
+
+An early concrete implementation was Manchester's Atlas. Kilburn, Edwards, Lanigan and Sumner's April 1962 paper describes automatically combining fast core storage with drum storage, transferring 512-word blocks and translating their addresses through page address registers. Its attraction was to spare programmers explicit transfers between these storage levels. This historical use of secondary storage is one application of <virtual memory>, rather than a requirement of every <virtual memory> system. The accessible text below is a reprint of the paper. \a[https://www.dcs.gla.ac.uk/~wpc/grcs/kilburn.pdf][Kilburn et al., One-Level Storage System, 1962, sections 1 and 3]{ref}
+
+= Address space
+{parent=Virtual memory}
+{wiki}
+
+The collection of addresses interpreted in a particular context. An <operating-system process>'s <address space> includes addresses that may be unmapped or inaccessible; belonging to its numerical range does not imply permission to access them.
+
+= Virtual address
+{parent=Address space}
+
+An address interpreted within an <address space>, before <address translation> determines the corresponding <physical address>.
+
+= Address translation
+{parent=Virtual memory}
+
+Converting a <virtual address> to a <physical address> using the current <address space>'s mapping, with access checks. In <paging>, the <memory page> number changes while the offset within it stays fixed.
+
+= Memory management unit
+{parent=Virtual memory}
+{wiki}
+{title2=MMU}
+
+The hardware that performs <address translation> and access checks. Whether a <TLB miss> is resolved entirely by hardware or with <operating system> assistance depends on the architecture.
+
+= Copy-on-write
+{parent=Virtual memory}
+{wiki}
+
+Deferring a copy until modification is needed. With <paging>, <operating-system processes> can initially share a read-only <page frame>; a write causes a <page fault> that can create a private writable copy.
+
 // Target: computer-science.bigb
 
 = Thrashing
@@ -282,6 +544,44 @@ Pages recently used by a process within a declared time or reference window. Kee
 = Paging
 {parent=Virtual memory}
 {wiki}
+
+<Paging> divides an <address space> into fixed-size <memory pages> and main <computer memory> into equally sized <page frames>. Here assume <byte> addressing, one <memory page> size $P=2^b$ <bytes>, and an unsigned <virtual address> $v$. Its virtual page number $q$ and offset $d$ are
+$$
+q=\left\lfloor\frac{v}{P}\right\rfloor,\qquad d=v\bmod P,\qquad 0\leq d<P.
+$$
+The brackets denote the <floor function>, and $\bmod$ gives the <remainder> in <Euclidean division>. If the <page table> maps $q$ to physical frame number $f$ and permits the access, the <physical address> is
+$$
+a=fP+d.
+$$
+The low $b$ <bits> are unchanged; the other <bits> select the <memory page> or <page frame>. A <bit shift> and <bit mask> can extract these fields. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/vm-paging.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 18: Paging, Introduction, sections 18.1–18.2]{ref}
+
+For a 16-<bit> <virtual address> and $P=256=2^8$ <bytes>, take $v=\mathtt{0x1234}=4660$ in <hexadecimal>. Then $q=18=\mathtt{0x12}$ and $d=52=\mathtt{0x34}$. A mapping to $f=7=\mathtt{0x07}$ gives
+$$
+a=7\cdot256+52=1844=\mathtt{0x0734}.
+$$
+Thus the eight high <bits> choose a mapping; the eight low <bits> choose the same position in the resulting <page frame>. The 256-<byte> size is for illustration, not a claim about an actual architecture's supported <memory page> sizes.
+
+\Image[virtual-memory-address-translation.png]
+{title=Translating 0x1234 through an illustrative page table, with a separate offset and access check}
+
+The useful freedom is that adjacent <memory pages> can occupy unrelated <page frames>. In the diagram, virtual pages `0x12` and `0x13` occupy <page frames> `0x07` and `0x02`; <virtual addresses> `0x12ff` and `0x1300` are consecutive, but translate to <physical addresses> `0x07ff` and `0x0200`. Uniform units simplify placement and <page replacement>, at the cost of <page table> storage and unused <bytes> within partly filled <memory pages>. For example, placing 300 <bytes> in exclusive 256-<byte> <page frames> requires two <page frames>, leaving $512-300=212$ <bytes> unused.
+
+= Memory page
+{parent=Paging}
+{wiki=Page_(computer_memory)}
+
+A contiguous unit of an <address space> used for <paging>. In the example, virtual page `0x12` consists of <virtual addresses> `0x1200` through `0x12ff`.
+
+= Page frame
+{parent=Paging}
+
+A slot in main <computer memory> that can hold one <memory page> of the selected size. Physical frame number `0x07` with 256-<byte> <page frames> starts at <physical address> `0x0700`.
+
+= Demand paging
+{parent=Paging}
+{wiki}
+
+Making a <memory page> resident when it is first accessed, using a <page fault> to request the work. It can involve loading stored contents or allocating newly initialized contents.
 
 // Target: computer-science.bigb
 
@@ -323,6 +623,17 @@ Evict the page loaded earliest among currently resident pages, without refreshin
 {parent=Paging}
 {wiki}
 
+A <page fault> transfers control to the <operating system> when an access cannot proceed under the current <paging> translation or protection rules. The term includes both unavailable translations and forbidden accesses on <x86>. Intel's manual distinguishes these causes; AMD's error code likewise distinguishes ordinary not-present faults from protection violations. Other architectural causes, including malformed <page table entries>, also exist. \a[https://cdrdv2-public.intel.com/671200/325462-sdm-vol-1-2abcd-3abcd.pdf][Intel SDM, volume 3A, section 4.7: Page-Fault Exceptions]{ref}\a[https://docs.amd.com/api/khub/documents/sD1_QL~h4Afq2_tvzxqqSQ/content][AMD64 Architecture Programmer's Manual, volume 2, revision 3.44, section 8.4.2: Page-Fault Error Code]{ref}
+
+The illustrative <page table> in <paging> separates three situations:
+* A read at <virtual address> `0x1434` targets a permitted but nonresident <memory page>. The <operating system> may supply it and retry the access.
+* A write at <virtual address> `0x1234` targets a resident, read-only <memory page>. The <page fault> is caused by missing write permission, not by missing contents.
+* A read at <virtual address> `0x1534` targets an unmapped part of the <address space>. The <operating system> must reject it unless its policy authorizes creating a mapping.
+
+A <page fault> is not necessarily a program error or a storage-device read. <Demand paging> can allocate a zero-filled <page frame> without reading secondary storage. A <copy-on-write> write deliberately encounters read-only permissions; the <operating system> supplies a private copy and enables the write. A truly forbidden access may instead terminate the <operating-system process>. The handler interprets the fault using both architectural fault information and its own mapping policy. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/vm-complete.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 23: demand zeroing and copy-on-write]{ref}
+
+For a nonresident <memory page> whose contents must be loaded, the handler obtains a <page frame>, possibly invokes <page replacement>, supplies the contents, updates the <page table>, arranges any necessary <translation lookaside buffer> invalidation, and resumes the operation. If no mapping or permission can legally be supplied, it reports failure. This mechanism lets ordinary accesses request work only when it becomes necessary. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/vm-beyondphys.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 21: Beyond Physical Memory, Mechanisms, sections 21.3–21.5]{ref}
+
 // Target: computer-science.bigb
 
 = Translation lookaside buffer
@@ -330,11 +641,63 @@ Evict the page loaded earliest among currently resident pages, without refreshin
 {wiki}
 {title2=TLB}
 
+A <translation lookaside buffer> is a small hardware <memory cache> of <virtual address> to <physical address> mappings and their access attributes. A <TLB hit> finds a usable cached mapping for the current <address space>; access permissions still apply. A <TLB miss> means that mapping is absent from the <translation lookaside buffer>. It says nothing by itself about whether the <memory page> is resident. Evicting a <translation lookaside buffer> entry removes a cached translation, not the <memory page>'s contents. \a[https://docs.amd.com/api/khub/documents/sD1_QL~h4Afq2_tvzxqqSQ/content][AMD64 Architecture Programmer's Manual, volume 2, revision 3.44, section 5.5: Translation-Lookaside Buffer]{ref}
+
+For the 256-<byte> example, a cached virtual page `0x12` to physical frame `0x07` mapping covers every offset from `0x00` to `0xff`. Reads at <virtual addresses> `0x1234` and `0x1235` can reuse it to reach <physical addresses> `0x0734` and `0x0735`. If the <translation lookaside buffer> is initially empty, the first read instead requires a <page table walk>; with a resident, readable mapping, it completes without a <page fault>. A write can fault even on a <TLB hit> because cached permissions deny it.
+
+\Image[tlb-miss-versus-page-fault.png]
+{title=A TLB miss can refill a resident translation without a page fault; permission failures can fault on a TLB hit}
+
+The diagrams show an ordinary <x86> model with hardware <page table walks>. Some architectures use an <operating system> handler to refill the <translation lookaside buffer> after a <TLB miss>; that refill event alone is not a nonresident <page fault>. <Temporal locality> helps a small <translation lookaside buffer> serve repeated accesses, and one entry can cover many <bytes>. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/vm-tlbs.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 19: Paging, Faster Translations, sections 19.1 and 19.3]{ref}
+
+A <context switch> does not universally flush the whole <translation lookaside buffer>. An <address space identifier> can distinguish translations with the same virtual page number in different <address spaces>; Intel's PCIDs support retaining translations across appropriate switches. The <operating system> must still invalidate stale translations when mappings or permissions change, following the architecture's rules, including coordination with other processors that could use them. \a[https://cdrdv2-public.intel.com/825743/325462-sdm-vol-1-2abcd-3abcd-4.pdf][Intel SDM, volume 3A, sections 4.10.1 and 4.10.4–4.10.5: PCIDs and translation invalidation]{ref}
+
+= TLB hit
+{parent=Translation lookaside buffer}
+{c}
+
+A lookup that finds a valid cached <address translation> for the relevant <address space>. The access can still cause a <page fault> if the cached permissions forbid it.
+
+= TLB miss
+{parent=Translation lookaside buffer}
+{c}
+
+A lookup that fails to find the required cached <address translation>. A successful refill can leave the <memory page> resident throughout and cause no <page fault>.
+
+= Address space identifier
+{parent=Translation lookaside buffer}
+{wiki}
+{title2=ASID}
+
+A tag distinguishing cached <address translations> belonging to different <address spaces>. Tags can be reused, but reusing a tag for a different mapping context requires appropriate invalidation.
+
 // Target: computer-science.bigb
 
 = Page table
 {parent=Paging}
 {wiki}
+
+A <page table> is the <data structure> describing an <address space>'s mappings from virtual page numbers to <page frames>, together with access and status information. A <page table entry> can describe a resident <memory page> and its permissions. Nonresident or unmapped <memory pages> require a representation that lets the <operating system> distinguish them; a hardware not-present flag alone need not make that distinction. On <x86>, additional <operating system> information determines whether a not-present mapping is legitimate. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/vm-paging.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 18, section 18.3: page-table contents and the x86 present bit]{ref}
+
+The four rows drawn under <paging> are an illustrative model, combining <page table> and <operating system> information: virtual page `0x12` is resident in physical frame `0x07` with read-only permission; `0x13` is resident in `0x02` with read/write permission; `0x14` is mapped read/write but nonresident; `0x15` is unmapped. The labels deliberately separate mapping policy, residency and permission. They are not a literal <x86> entry layout. A <translation lookaside buffer> valid flag is a fourth, independent notion: it says that a cached translation can be considered, not that every resident <memory page> has a cached translation.
+
+A flat <array> with one <page table entry> per virtual page would have $2^{16}/256=256$ entries in this example. At an assumed four <bytes> per entry, it occupies $256\cdot4=1024$ <bytes>, whether one <memory page> or all 256 <memory pages> are mapped. A <multi-level page table> saves space in sparse <address spaces> by allocating lower-level tables only for the regions that need them. The tradeoff is extra dependent lookups during a <page table walk>; a <translation lookaside buffer> avoids repeating those lookups on a hit. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/vm-smalltables.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 20: Paging, Smaller Tables, section 20.3]{ref}
+
+= Page table entry
+{parent=Page table}
+{title2=PTE}
+
+One record in a <page table>, holding a <page frame> number or a next-level table reference together with architecture-dependent flags. Effective permissions in a <multi-level page table> can depend on several entries, not just the final one.
+
+= Multi-level page table
+{parent=Page table}
+
+A hierarchy of <page tables> indexed by successive groups of virtual page number <bits>. Unused regions can omit lower-level tables.
+
+= Page table walk
+{parent=Page table}
+
+Looking up <page table entries> to obtain a <page frame> number and effective access attributes. On ordinary <x86> hardware <paging>, a <TLB miss> can initiate this lookup without entering the <operating system>.
 
 // Target: computer-science.bigb
 
@@ -415,6 +778,133 @@ An execution stream with its own registers and stack, usually sharing its proces
 {parent=Computer science}
 {wiki}
 
+A <data structure> organizes stored information together with operations for accessing and changing it. Choosing a <data structure> means choosing which questions should be cheap to answer: an <array> supports access by numbered position, a <hash table> supports lookup by key, and a <priority queue> supports selecting an item by priority. The operations and their <time complexity> matter as much as the stored values.
+
+Suppose three requests arrive as $(5,\mathrm{Ada}),(2,\mathrm{Bo}),(4,\mathrm{Cy})$, where the number is a priority and smaller numbers are more urgent. A <FIFO queue> removes Ada first because she arrived first. A minimum-oriented <priority queue> removes Bo first because $2$ is the least priority. An <array> can store the same three records in arrival order, but finding the least priority by scanning this representation takes three key inspections. A <binary heap> organizes these records so the least priority is immediately available. The information is the same; the representation changes the work needed to use it.
+
+This is a useful design principle: preserve just enough organization for the operations the application needs. Maintaining a <sorted array> gives the whole order, but moving entries to insert a new key can be expensive. A <binary heap> keeps a weaker <heap order> that supports fast repeated selection without maintaining a <sorted array>. A good <data structure> makes an <algorithm>'s next step easy.
+
+= Adjacency list
+{parent=Data structure}
+{wiki}
+
+For each <vertex> of a <graph>, an adjacency list stores its outgoing <edges> and any associated weights.
+
+= Priority queue
+{parent=Data structure}
+{wiki}
+
+A <priority queue> stores items with comparable priority keys and supports insertion, inspection of a best-priority item, and removal of a best-priority item. Here we use the minimum convention: keys have a <total order>, and smaller means earlier. The operation `peek` returns a stored item of <minimum> priority without removing it; `extract-min` removes and returns such an item. Both require a nonempty <priority queue>, or an explicitly specified empty-case result. A maximum-oriented <priority queue> reverses the choice.
+
+For the requests $(5,\mathrm{Ada}),(2,\mathrm{Bo}),(4,\mathrm{Cy})$, `peek` returns Bo and leaves all three requests stored. `extract-min` returns Bo and leaves Ada and Cy; another `peek` returns Cy. Inserting $(1,\mathrm{Dee})$ now makes Dee the next request selected. This changing collection need not be a <sorted array>: only the next choice must be available.
+
+Distinct items may share a priority. Inserting $(2,\mathrm{Eli})$ alongside $(2,\mathrm{Bo})$ permits either item to be removed first. A <priority queue> does not inherently promise arrival order on ties. If that policy matters, compare priority first and a unique increasing arrival number second; the resulting <total order> makes earlier arrivals win equal-priority ties. This is analogous to the motivation for <stable sorting>, but it is an extra policy for the <priority queue>.
+
+The interface specifies behavior; the <data structure> determines costs. A <binary heap> implements a <priority queue> with constant-time `peek` and logarithmic-time insertion and `extract-min`, under the cost assumptions below. Scheduling by urgency or by the time of the next event needs exactly this repeated next-item selection. MIT's notes use these applications to motivate the <priority queue> interface.\a[https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/40d4851e550507ca14dc778b9b2266cc_MIT6_006S20_lec8.pdf][MIT 6.006, lecture 8: priority queues and binary heaps, pp. 1–2]{ref}
+
+= Binary heap
+{parent=Priority queue}
+{wiki}
+
+A <binary heap> represents a <priority queue> as a <complete binary tree> obeying a <heap order>. We use the minimum convention: the priority of every <parent in a rooted tree> is no greater than the priorities of its <children in a rooted tree>. Equal priorities are allowed. Each stored entry may be a record carrying a priority key; the numerical example below displays only keys. Reversing the inequalities gives the maximum convention.
+
+The <complete binary tree> can be stored directly in a zero-indexed <array> $A=(A_0,\ldots,A_{n-1})$: read its levels from top to bottom, left to right. The <root of a tree> is at index $0$. The possible <children in a rooted tree> of index $i$ are at $2i+1$ and $2i+2$, and an index denotes a present entry only when it is less than $n$. For $i>0$, its <parent in a rooted tree> is at $\lfloor(i-1)/2\rfloor$, using the <floor function>. Thus the links of the <complete binary tree> are determined by arithmetic rather than separately stored pointers.
+
+Consider
+$$
+A=(2,5,3,9,7,8,4).
+$$
+The <children in a rooted tree> of index $0$ have keys $5,3$; those of index $1$ have keys $9,7$; those of index $2$ have keys $8,4$. The six comparisons $2\le5$, $2\le3$, $5\le9$, $5\le7$, $3\le8$, $3\le4$ establish the <heap order>. At index $4$, the <parent in a rooted tree> is index $\lfloor(4-1)/2\rfloor=1$, carrying key $5$.
+
+\Image[binary-heap-array-and-tree.png]
+{title=One <binary heap> viewed as an <array> and a <complete binary tree>}
+{description=Matching indices identify the same entries in both representations. The <heap order> compares each <parent in a rooted tree> with its <children in a rooted tree>; it does not make a <sorted array>.}
+
+The <array> is visibly not a <sorted array>: $5$ precedes $3$, and $8$ precedes $4$. Nor is the last entry a <maximum>: it is $4$, whereas the <maximum> is $9$ at index $3$. The <heap order> compares ancestors and descendants, without imposing an order between separate branches. Nevertheless, following the <graph path> from the <root of a tree> to any entry gives a chain of nondecreasing priorities. This short argument proves that `peek` can return $A_0$, a <minimum>, without inspecting the other entries.
+
+Insertion appends an entry to the <array>, preserving the shape of the <complete binary tree>, then uses <sift up> to repair the <heap order>. Insert key $1$ into the displayed <binary heap>. It is appended at index $7$, and exchanges with indices $3$, $1$, then $0$:
+$$
+\begin{aligned}
+(2,5,3,9,7,8,4,1)&\longrightarrow(2,5,3,1,7,8,4,9)\\
+&\longrightarrow(2,1,3,5,7,8,4,9)\\
+&\longrightarrow(1,2,3,5,7,8,4,9).
+\end{aligned}
+$$
+The moving key follows $7\to3\to1\to0$; the keys $9,5,2$ each move down one level. Only this chain needs repair.
+
+Now apply `extract-min`. Save key $1$, move the last key $9$ to the <root of a tree>, and shorten the <array> to length $7$. Use <sift down>, always choosing the smaller of the present <children in a rooted tree>:
+$$
+\begin{aligned}
+(9,2,3,5,7,8,4)&\longrightarrow(2,9,3,5,7,8,4)\\
+&\longrightarrow(2,5,3,9,7,8,4).
+\end{aligned}
+$$
+First $9$ exchanges with key $2$ at index $1$, since $2<3$; then with key $5$ at index $3$, since $5<7$. At index $3$, the possible <children in a rooted tree> would be indices $7,8$, both outside the shortened <array>, so the process stops. The returned key is $1$, and the remaining <binary heap> is exactly the original one.
+
+\Image[binary-heap-sift-operations.png]
+{title=<Sift up> inserts 1, then <sift down> restores the original <binary heap> after removing 1}
+{description=The four panels show the start and end of each repair. Colored arrows mark the moving key's <graph path>. The extraction panels contain seven entries: index 3 has no <children in a rooted tree>.}
+
+For a nonempty <binary heap> with $n$ entries, the deepest level is $\lfloor\log_2 n\rfloor$, using the <floor function> and <logarithm>. Each exchange moves one level and uses only a bounded number of comparisons. The resulting <time complexity> bounds, expressed in <Big O notation>, are:
+
+|| Operation
+|| <Time complexity>
+|| Reason
+
+| `peek`
+| $O(1)$
+| Read the <root of a tree>.
+
+| Insert
+| $O(\log n)$ for $n\ge2$
+| Append, then <sift up> through at most the levels of the <complete binary tree>.
+
+| `extract-min`
+| $O(\log n)$ for $n\ge2$
+| Move the last entry, then <sift down> through at most those levels.
+
+| Build from an arbitrary <array>
+| $O(n)$
+| Apply <sift down> from the last index with <children in a rooted tree> back to index $0$.
+
+These bounds assume constant-cost indexed access, key comparisons and exchanges, and available <array> capacity for insertion. Allocating and copying a larger <array> is a separate cost. Empty and one-entry cases take constant work.
+
+To build a <binary heap>, begin at index $\lfloor n/2\rfloor-1$ and work backwards. Entries without <children in a rooted tree> already obey the <heap order>. Each <sift down>, also called <heapify down>, starts with every present smaller <rooted tree> below it already repaired. Most entries are close to the bottom and can move very little; successively longer repair distances occur for geometrically fewer entries. Summing these distances gives $O(n)$ work, rather than charging $O(\log n)$ to every entry. MIT's notes give this bottom-up construction and contrast it with repeated insertion.\a[https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/40d4851e550507ca14dc778b9b2266cc_MIT6_006S20_lec8.pdf][MIT 6.006, lecture 8: implicit indices, heap repair and linear build, pp. 3–6]{ref}
+
+The <Dijkstra algorithm> additionally needs to decrease the priority of an existing <vertex> when its <tentative distance> improves. Given its current index, lowering the key followed by <sift up> takes $O(\log n)$ time for $n\ge2$. An indexed <binary heap> maintains a separate map from item identity to its current index and updates that map after every exchange. For <vertices> numbered in a fixed range, the map can be another <array>, giving constant-time index lookup. An ordinary unindexed <binary heap> supplies no such guarantee: locating an arbitrary item can require scanning $n$ entries. Item identity and priority must remain distinct, especially when several <vertices> have equal <tentative distances>.
+
+The attractive compromise is local organization with global usefulness. A <binary heap> maintains only the <heap order>, yet every `extract-min` gives the next smallest key. Repeated extraction of the original example gives $2,3,4,5,7,8,9$, so a <priority queue> also supplies a <sorting algorithm> without storing a <sorted array> between extractions.
+
+= Heap order
+{parent=Binary heap}
+{title2=$A_{\lfloor(i-1)/2\rfloor}\le A_i\quad(1\le i<n)$}
+
+The minimum convention for <heap order> requires every <parent in a rooted tree> to have priority no greater than each of its <children in a rooted tree>. The displayed formula uses the <array> representation of a <binary heap>. It permits equal priorities and does not require a <sorted array>; the maximum convention reverses the inequality.
+
+= Sift up
+{parent=Binary heap}
+
+After inserting or lowering a key in a minimum-oriented <binary heap>, compare it with its <parent in a rooted tree>. Exchange them while the moving key is smaller, then continue at its new index. Stop at the <root of a tree> or when the <heap order> is satisfied. This repair assumes the rest of the <binary heap> was valid before the insertion or key decrease.
+
+= Sift down
+{parent=Binary heap}
+
+= Heapify down
+{synonym}
+
+To repair a key in a minimum-oriented <binary heap>, choose the smaller-priority present entry among its <children in a rooted tree>. Exchange if that entry is smaller than the moving key, and continue at the new index. Stop when there are no <children in a rooted tree> or the <heap order> holds. The smaller <rooted trees> below the starting entry must already obey the <heap order>; choosing the larger child could leave a violation with the smaller one.
+
+= Hash table
+{parent=Data structure}
+{wiki}
+
+A hash table uses a <hash function> to organize keys and their associated records into buckets. A <hash collision> requires a method for keeping distinct keys separate, such as <separate chaining>.
+
+= Separate chaining
+{parent=Hash table}
+
+With separate chaining, each bucket in a <hash table> contains a collection of records, often a <linked list>. Lookup compares the actual stored keys after locating the bucket, so a <hash collision> does not imply key equality.
+
 // Target: computer-science.bigb
 
 = Array
@@ -439,7 +929,9 @@ An <array> whose entries appear in nondecreasing order under a specified <total 
 = Queue data structure
 {synonym}
 
-A <data structure> in which insertion occurs at the rear and removal at the front. The earliest unremoved item is removed first. This is a queue as an abstract data structure, rather than a stochastic <queueing theory> model.
+A <FIFO queue> is a <data structure> with first-in, first-out behavior: `enqueue` inserts at the rear, `dequeue` removes and returns the front, and `peek` inspects the front without removing it. Removal and inspection require a nonempty <FIFO queue>, or an explicitly defined empty-case result. Enqueue $A,B,C$ in that order, dequeue $A$, then enqueue $D$: the remaining <sequence> is $B,C,D$, with $B$ next. A <LIFO stack> would remove the most recently inserted item instead. A <FIFO queue> models arrival-order service and supplies the next <vertex> for <breadth-first search>; a stochastic service model belongs to <queueing theory>. \a[https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/Queue.java][Sedgewick and Wayne, Algorithms: Queue interface and implementation]{ref}
+
+The <FIFO queue> interface specifies removal order, not <time complexity>. A <linked list> with both front and rear pointers supports `enqueue`, `dequeue` and `peek` in $O(1)$ worst-case time under constant-cost pointer operations and allocation, as in Sedgewick and Wayne's implementation. A plain <array> that deletes its first entry by shifting the remaining $n-1$ entries takes $O(n)$ time per such removal. An <array> with advancing front and rear indices can avoid these shifts; storage and resizing policies still need analysis. The <two-list functional queue> gives a different implementation with constant <amortized analysis> cost along a single sequence of uses. These representation choices matter when deriving the linear <time complexity> of <breadth-first search> in <Big O notation>.
 
 // Destination: computer-science.bigb
 
@@ -449,6 +941,28 @@ A <data structure> in which insertion occurs at the rear and removal at the fron
 Represent the abstract sequence by `front @ rev rear`. Keep the front nonempty unless both lists are empty. Prepending to the rear enqueues; when the front is exhausted, reverse the rear once. Along a single sequence of uses, each element crosses between lists at most once, giving constant <amortized analysis> cost per operation. Reusing an old persistent version can repeat a reversal and needs a separate analysis.
 
 // Destination: computer-science.bigb
+
+= Stack
+{disambiguate=data structure}
+{parent=Data structure}
+{wiki=Stack_(abstract_data_type)}
+
+= Stack
+{synonym}
+
+= LIFO stack
+{c}
+{synonym}
+
+A <stack> is a <data structure> with last-in, first-out behavior: `push` adds an item at the top, `pop` removes and returns the top item, and `peek` inspects it without removal. Push $A,B,C$: successive removals return $C,B,A$. Inspection and removal require a nonempty <stack>, or a specified empty-case result. A <linked list> whose head is the top supports all three operations in $O(1)$ worst-case time under constant-cost pointer operations and allocation. The <stack> interface itself does not fix these costs. \a[https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/Stack.java][Sedgewick and Wayne, Algorithms: Stack interface and implementation]{ref}
+
+A <stack> records work that must be resumed in reverse order: the most recent unfinished task is handled first. <Depth-first search> uses this discipline to finish a newly entered branch before resuming the older branch that led to it. <Breadth-first search> uses a <FIFO queue> to resume the oldest pending <vertex> instead. Both are small interfaces whose removal rule changes the shape of a <graph search>.
+
+= Call stack
+{parent=Stack (data structure)}
+{wiki}
+
+A <call stack> stores active procedure calls and the information needed to resume each caller, such as its return location and local variables. A call adds a frame; returning removes that frame and resumes the previous call. When <depth-first search> uses <recursion>, a frame also records where its <adjacency list> scan paused. The active frames describe a <graph path> from the starting <vertex> to the current <vertex>; finished calls have left the <call stack>, although their <vertices> remain marked as discovered.
 
 = Binary tree
 {parent=Data structure}
@@ -470,6 +984,11 @@ A <binary tree> storing key-value entries with smaller keys in the left subtree 
 For partial maps $D_1,D_2$, retain exactly entries $(k,v)$ for which both maps define the same value $v$ at $k$. Merely sharing a key is insufficient. Traverse one <binary search tree>, look up each key in the other, and insert only equal-value matches into the result.
 
 // Destination: computer-science.bigb
+
+= Complete binary tree
+{parent=Binary tree}
+
+A complete binary tree is a <binary tree> whose levels are full except possibly the deepest, which is filled from left to right. A <binary heap> uses this shape to maintain logarithmic height. Completeness differs from the two-children condition of a <full binary tree>.
 
 = Full binary tree
 {parent=Binary tree}
@@ -739,6 +1258,20 @@ The Linial-Mansour-Nisan theorem bounds the high-degree Fourier weight of a Bool
 {parent=Computer science}
 
 <Image processing> transforms recorded <image signal> data to remove noise, recover detail or extract structure. <Variational image processing> describes desired reconstructions through energies, while <diffusion image processing> describes filtering through evolution equations.
+
+= Quantization
+{disambiguate=signal processing}
+{parent=Image processing}
+{wiki}
+{title2=$Q(x)$}
+
+<Quantization (signal processing)> maps numerical values to a specified discrete collection of representable values. In <lossy block averaging>, $Q(m)=\lfloor m+1/2\rfloor$ maps block <arithmetic means> in $[0,255]$ to eight-<bit> <integers>. Thus $Q(40.25)=40$ and $Q(40.5)=41$. Different means can share a stored value, making this step irreversible.
+
+= Nearest-neighbor interpolation
+{parent=Image processing}
+{wiki}
+
+<Nearest-neighbor interpolation> assigns each requested location the value of its nearest available sample, with a specified convention for ties. In <lossy block averaging>, samples are placed at block centres and each is copied into its four original <pixel> positions. This enlarges the <raster image> without recovering discarded detail.
 
 = Image segmentation
 {parent=Image processing}
@@ -1094,6 +1627,12 @@ An <algorithm> is an idea that can have implementations in different <programmin
 
 A particularly useful design question is: what knowledge survives each step? In <binary search>, it is the location of every possible match inside the remaining candidate range. Writing that fact as a <loop invariant> turns an intuitive shortcut into a procedure whose discarded candidates can be justified. This often helps discover the <algorithm>, rather than merely check it afterward.
 
+= Greedy algorithm
+{parent=Algorithm}
+{wiki}
+
+A <greedy algorithm> commits to a locally preferred next choice without revisiting earlier choices. Its rule needs a justification to guarantee a globally optimal result: the largest-individual-value rule in the <0-1 knapsack problem> example fails, whereas <Dijkstra's algorithm> correctly settles the smallest tentative distance under its nonnegative-edge assumptions.
+
 = Algorithm correctness
 {parent=Algorithm}
 
@@ -1132,6 +1671,34 @@ Periodically sample an executing program's <instruction pointer> and accumulate 
 {parent=Algorithm}
 {wiki}
 
+= DFS
+{c}
+{synonym}
+
+<Depth-first search> is a <graph search> that follows a branch as far as it can before returning to try the next unexplored branch. Starting at a <vertex> $s$ of an <undirected graph> on a <finite set> of <vertices>, mark $s$ as discovered. Scan its <graph neighbours> in a fixed order: for each undiscovered <vertex>, record the current <vertex> as its <parent in a rooted tree> in the discovery <tree>, mark the new <vertex>, and explore it immediately using <recursion>. Return when its <adjacency list> is exhausted. Discovery marks persist after return, preventing a <graph cycle> from causing repeated exploration. This branch-and-return rule is the maze exploration described in MIT's notes. \a[https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/e59f8a55929028498953691891229a17_MIT6_006F11_lec14.pdf][MIT 6.006, lecture 14: depth-first search, pp. 2–3]{ref}
+
+Use the same unweighted <undirected graph> as <breadth-first search>, with <vertex set> $V=\{A,B,C,D,E,F,G\}$ and <edges>
+$$
+E=\{AB,AC,BD,BE,CE,CF,EG,FG\},
+$$
+where $XY$ denotes the unordered pair $\{X,Y\}$. Visit <graph neighbours> in <lexicographic order> of their one-letter labels, starting at $A$. The discovery order, computed by the diagram's generator, is
+$$
+A,B,D,E,C,F,G.
+$$
+The discovery <edges> in order are $AB,BD,BE,EC,CF,FG$. They form a <rooted tree> spanning the reached <vertices>, with <root of a tree> $A$. The other <edges>, $AC$ and $EG$, remain in the original <graph> but never discover a new <vertex>. In particular, the <graph cycle> $A,B,E,C,A$ causes no repeated discovery.
+
+\Image[depth-first-search-stack.png]
+{title=<Depth-first search>: discovery <edges> and the active <call stack> on seven <vertices>}
+{description=Numbers show first-discovery order. Solid <edges> form the discovery <tree>; dashed <edges> belong only to the original <graph>. The right panel shows the <call stack> from oldest call to current call, including the return from $D$ before entering $E$.}
+
+At $D$ there is no undiscovered <graph neighbour>, so its call returns to $B$. The next call enters $E$, then $C$, then $F$, then $G$. Immediately after discovering $G$, the <call stack> is $A,B,E,C,F,G$, with $G$ on top; $D$ is still discovered but its call has finished. The maximum <call stack> depth is six, although seven <vertices> are discovered. Following the recorded <parent in a rooted tree> backwards at each step reconstructs a <graph path>; here the route from $A$ to $G$ is $A,B,E,C,F,G$, using five <edges>. <Breadth-first search> instead finds $A,B,E,G$, using three <edges>. <Depth-first search> establishes <reachability> but does not guarantee the fewest <edges>.
+
+An explicit <LIFO stack> can replace <recursion>, but its entries and discovery rule must be specified. To reproduce this exact traversal, store one frame per active <vertex>, retaining the next position in its <adjacency list>. Advance the top frame by one <graph neighbour>; if that <vertex> is undiscovered, mark it and push its frame immediately; pop an exhausted frame. Pushing all undiscovered <graph neighbours> at once and marking them on push is a different iterative variant. Even pushing them in reverse <lexicographic order> does not generally reproduce the <parent in a rooted tree> relationships above: $C$ would already be marked while processing $A$, so $E$ could not discover $C$.
+
+With an <adjacency list> representation, constant-cost discovery checks and frame operations, and the <graph neighbours> already ordered, <depth-first search> has <time complexity> $O(|V|+|E|)$ in <Big O notation>. Each reached <vertex> is entered once and each incident <edge> is examined at most twice in an <undirected graph>; initializing all discovery marks costs $O(|V|)$. The <call stack> has depth at most $|V|$, since no active <vertex> repeats. Discovery marks and the recorded <parent in a rooted tree> for each nonroot <vertex> also need $O(|V|)$ auxiliary <space complexity>, excluding storage for the <graph>. Sorting <adjacency lists> to obtain a chosen order is additional work. \a[https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/DepthFirstPaths.java][Sedgewick and Wayne, Algorithms: DepthFirstPaths discovery marks and resource bounds]{ref}
+
+One start explores only its <connected component of a graph>. To cover a disconnected <graph>, start again at every still-undiscovered <vertex> while keeping all discovery marks; the discovery <trees> form a <forest>. <Depth-first search> is useful for <reachability>, constructing a <spanning tree> of a <connected graph>, and organizing the return steps needed by a <depth-first traversal of a tree>. For detecting a <graph cycle> in a <simple graph> that is an <undirected graph>, an <edge> to an already discovered <vertex> other than the current <parent in a rooted tree> closes a <graph cycle>; the immediate return <edge> to that <parent in a rooted tree> is not itself a <graph cycle>.
+
 // Target: computer-science.bigb
 
 = Memoization
@@ -1140,16 +1707,103 @@ Periodically sample an executing program's <instruction pointer> and accumulate 
 
 // Target: computer-science.bigb
 
-= Merge sort
+= Recursion
+{disambiguate=computer science}
 {parent=Algorithm}
 {wiki}
 
-// Target: computer-science.bigb
+= Recursion
+{synonym}
+
+<Recursion> solves a problem by invoking the same procedure on smaller instances, with base cases answered directly. For <merge sort>, an empty or one-entry <array> is already sorted, and every larger <array> is split into two shorter parts. The decreasing lengths justify termination; a self-call without a progress rule would not suffice.
+
+= Divide-and-conquer algorithm
+{parent=Algorithm}
+{wiki}
+
+A <divide-and-conquer algorithm> divides a problem into smaller instances, solves them using <recursion>, and combines their answers. In <merge sort>, the division makes two contiguous halves, and the <merge algorithm> combines the resulting <sorted arrays>. The important design step is finding a combination rule cheaper than solving the whole problem afresh.
+
+= Sorting algorithm
+{parent=Algorithm}
+{wiki}
+{title2=$B_0\leq B_1\leq\cdots\leq B_{n-1}$}
+
+A <sorting algorithm> rearranges a finite <sequence> into nondecreasing order under a chosen <total order> on its keys. Its <output> must contain every <input> entry exactly once, including repetitions: producing ordered values is insufficient if entries are lost. <Merge sort> is one such <algorithm>; <stable sorting> adds a requirement about equal keys.
+
+= Stable sorting
+{parent=Sorting algorithm}
+
+<Stable sorting> preserves the original relative order of entries with equal keys. The entries may carry different names or other information even when their keys coincide. For example, sorting records $(2,\mathrm{Ada}),(1,\mathrm{Bo}),(2,\mathrm{Cy})$ by the numerical key gives $(1,\mathrm{Bo}),(2,\mathrm{Ada}),(2,\mathrm{Cy})$: Ada remains before Cy. This is useful when a previous ordering contains information worth retaining, such as arrival order among equally ranked requests.
+
+= Merge sort
+{parent=Sorting algorithm}
+{wiki}
+{title2=$T(n)=O(n\log n)$}
+
+<Merge sort> is a <divide-and-conquer algorithm> that sorts a finite <array> by splitting it into contiguous halves, sorting each half using <recursion>, and combining the two <sorted arrays> with the <merge algorithm>. An empty or one-entry <array> is returned immediately. For length $n\geq2$, put the first $\lfloor n/2\rfloor$ entries on the left and the remaining $\lceil n/2\rceil$ on the right; the brackets are the <floor function> and <ceiling function>. Always choose the left head on equal keys to obtain <stable sorting>. This is the split, sort, combine structure taught in the MIT lecture notes.\a[https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/90a37c49b07b105ea7a027abc67eddc6_MIT6_006F11_lec03.pdf][MIT 6.006 (2011), lecture 3: merge sort]{ref}
+
+Take the concrete <input> <array>
+$$
+A=(7,2_a,5,2_b,9,1,4,3).
+$$
+The tags identify the entries originally at indices $1$ and $3$, counting from zero. Both keys are $2$; the tags are never compared. Reading downward in the figure follows the splits, then the returned <sorted arrays>. Arrows show dependencies; the level layout groups independent calls rather than giving their chronological execution order.
+
+\Image[merge-sort-split-and-merge.png]
+{title=<Merge sort> splits into base cases and returns <sorted arrays>}
+{description=The tagged keys 2a and 2b retain their original order through <stable sorting>. The <merge algorithm> makes 4, 6 and 7 head comparisons on the three returning levels, for 17 in total.}
+
+The first two halves are $(7,2_a,5,2_b)$ and $(9,1,4,3)$. Their pairs split into one-entry base cases. Applying the <merge algorithm> gives the following fully worked return levels; each number in the last column counts only comparisons between two available heads.
+
+|| Returning level
+|| Resulting <sorted arrays>
+|| Head comparisons
+
+| Pairs
+| $(2_a,7)$, $(2_b,5)$, $(1,9)$, $(3,4)$
+| $1+1+1+1=4$
+
+| Halves
+| $(2_a,2_b,5,7)$, $(1,3,4,9)$
+| $3+3=6$
+
+| Whole <array>
+| $(1,2_a,2_b,3,4,5,7,9)$
+| $7$
+
+In the left-half <merge algorithm>, the head pairs are $(2_a,2_b)$, $(7,2_b)$ and $(7,5)$; it takes $2_a,2_b,5$, then appends $7$. In the final <merge algorithm>, the head pairs are $(2_a,1)$, $(2_a,3)$, $(2_b,3)$, $(5,3)$, $(5,4)$, $(5,9)$ and $(7,9)$. It takes $1,2_a,2_b,3,4,5,7$, then appends $9$. Thus this precise version makes $4+6+7=17$ head comparisons and, ignoring identity tags, returns $(1,2,2,3,4,5,7,9)$.
+
+The elegance of <merge sort> is that it creates exactly the structure its next step needs: two smaller <sorted arrays> make the larger ordering inexpensive. Once the whole <array> is sorted, equal keys are adjacent and <binary search> can serve repeated queries. <Stable sorting> also retains information that the keys alone do not express. If the left-half <merge algorithm> instead takes the right head on the $2_a=2_b$ tie, it returns $(2_b,2_a,5,7)$; the keys are sorted but <stable sorting> has failed.
+
+For <time complexity>, assume each key comparison, entry access and entry copy has constant cost. The <merge algorithm> processes $n$ entries in $O(n)$ time. In <Big O notation>, the resulting <recurrence relation> is
+$$
+T(0),T(1)=O(1),\qquad T(n)=T(\lfloor n/2\rfloor)+T(\lceil n/2\rceil)+O(n)\quad(n\geq2).
+$$
+For $n=2^k$, the balanced levels contain $n$ entries each and there are $k=\log_2 n$ returning levels. Each costs $O(n)$, so the worst-case <time complexity> is $O(n\log n)$. For arbitrary $n$, there are at most $\lceil\log_2 n\rceil$ returning levels, each processing at most $n$ entries, giving the same bound. The worst-case number of head comparisons is also $O(n\log n)$. Here $\log_2$ is the base-two <logarithm>. The MIT notes give this level-by-level analysis for <merge sort>.\a[https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/6d1ae5278d02bbecb5c4428928b24194_MIT6_006S20_lec3.pdf][MIT 6.006 (2020), lecture 3, page 5: merge sort analysis]{ref}
+
+The conventional <array> implementation uses a reusable buffer of $n$ entries for the <merge algorithm>, together with $O(\log n)$ pending calls for <recursion>. Its auxiliary <space complexity> is therefore $O(n)$, beyond the original <array>. This bound describes that implementation. A <linked list> permits a <merge algorithm> that reconnects existing nodes; its storage accounting differs from copying <array> entries into a buffer.
+
+For a short <algorithm correctness> outline, the empty and one-entry base cases are sorted. Assuming <recursion> correctly sorts both shorter halves, the <merge algorithm> returns all their entries in order. Equal keys within a half keep their relative order by the same argument applied to the smaller call; across halves, every left entry originally preceded every right entry, so taking left first preserves <stable sorting>. Both half-lengths decrease for $n\geq2$, establishing termination.
 
 = Merge algorithm
 {parent=Algorithm}
+{wiki}
+{title2=$C(m,n)\leq m+n-1\quad(m,n\geq1)$}
 
-Merges two sorted sequences by repeatedly choosing their smaller remaining head. With constant-time comparisons it uses at most $m+n-1$ comparisons for nonempty inputs.
+The <merge algorithm> combines two finite sorted <sequences> under the same <total order>, retaining every entry exactly once. Keep a position at the first unconsumed entry, or "head", of each <input>. While both heads exist, compare their keys, append the smaller head to the <output>, and advance only that head's position. On equality take the left head. Once either <sequence> is exhausted, append the other remainder without further key comparisons. Empty <inputs> therefore require no head comparisons. The MIT notes illustrate this two-head combination step.\a[https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/90a37c49b07b105ea7a027abc67eddc6_MIT6_006F11_lec03.pdf][MIT 6.006 (2011), lecture 3: merging sorted arrays]{ref}
+
+For example, the <merge algorithm> applied to $(1,4,7)$ and $(2,3,8,9)$ returns $(1,2,3,4,7,8,9)$:
+
+\Image[merge-two-sorted-sequences.png]
+{title=Five head comparisons in the <merge algorithm>}
+{description=Orange heads are chosen and arrows lead to the next <output> entry. The compared head pairs are (1,2), (4,2), (4,3), (4,8) and (7,8). The left <sequence> then runs out; append (8,9) without further key comparisons.}
+
+The head pairs $(1,2)$, $(4,2)$, $(4,3)$, $(4,8)$ and $(7,8)$ select $1,2,3,4,7$ respectively. After the fifth comparison the left <sequence> is empty, so $(8,9)$ is appended. Seven entries are written, but only five head comparisons occur: tests for exhaustion and appending the remainder are separate operations. This distinction makes the example's count smaller than the bound $3+4-1=6$.
+
+For nonempty <inputs> of lengths $m,n$, each head comparison consumes exactly one entry. After $m+n-1$ such removals at most one entry remains, so both heads cannot still exist. Hence the <merge algorithm> uses at most $m+n-1$ head comparisons. The bound can be attained: $(1,3,5)$ and $(2,4,6,7)$ require six head comparisons before the left <sequence> is exhausted. With constant-cost comparisons, access and copying, writing all $m+n$ entries gives <time complexity> $O(m+n)$ in <Big O notation>. Writing a separate <output> <array> needs $m+n$ entry slots; the two positions require only constant additional storage.
+
+The <merge algorithm> is useful whenever two already ordered collections must become one: it reads each <input> only forwards. This works with <arrays> and <linked lists>, without needing access to arbitrary middle positions. Choosing left on ties preserves each <input>'s internal order and places equal left entries before equal right entries, which is the combination rule needed for <stable sorting> in <merge sort>.
+
+The <loop invariant> behind <algorithm correctness> is that the emitted prefix is sorted, contains exactly the consumed entries, and every emitted key is at most every unconsumed key. Each sorted <sequence> has its smallest remaining key at its head, so the smaller of the two heads is safe to append. The invariant survives each removal; when one <sequence> ends, the other sorted remainder is safe to append in full. Each comparison removes an entry, so termination follows from the finite <input> lengths.
 
 // Target: computer-science.bigb
 
@@ -1694,6 +2348,12 @@ Worst-case <time complexity> maximizes the count over permitted <inputs> of size
 In <Big O notation>, the worst-case bounds are $O(n)$ and $O(\log n)$ respectively. Here $T(n)=O(g(n))$ means that fixed constants $C,n_0$ exist with $T(n)\leq Cg(n)$ for all $n\geq n_0$. It is an upper bound, so a logarithmic count is also $O(n)$; the sharper bound communicates its scaling better. The base of the <logarithm> changes only a constant factor.
 
 For $n=1{,}000{,}000$, <linear search> can require $1{,}000{,}000$ comparisons, whereas <binary search> needs at most $20$, since $2^{19}\leq n<2^{20}$. Doubling $n$ adds just one to the worst-case <binary search> count. These are operation counts, not measured machine runtimes. Translating them into logarithmic execution time assumes constant-cost indexed access, comparison and index arithmetic. Long entries can make comparison expensive; a <linked list> does not provide constant-cost access to an arbitrary middle index. Building or sorting the <array> is additional work: <merge sort> can provide order for many subsequent searches, but its cost belongs in the analysis too.
+
+= Pseudo-polynomial time
+{parent=Time complexity}
+{wiki}
+
+An <algorithm> has <pseudo-polynomial time> when its running time is bounded by a <polynomial> in the numerical magnitudes of input quantities, rather than necessarily in their encoded length. The <dynamic programming> table for the <0-1 knapsack problem> uses $O(nW)$ arithmetic operations for $n$ items and capacity $W$. A <binary numeral system> encoding needs only $O(\log(W+1))$ bits for that capacity, so the table bound can be exponential in the number of capacity bits. This distinction does not claim that every input requires exponential work.
 
 = Amortized analysis
 {parent=Time complexity}
@@ -2506,3 +3166,36 @@ A base $b$ coprime to the tested odd composite $N$ for which a specified probabl
 {c}
 
 The Agrawal–Biswas primality test checks the identity $(X+1)^n=X^n+1$ modulo $n$ and a random low-degree monic polynomial. Prime inputs always pass, while a composite input that is not a prime power fails with inverse-polynomial probability per trial.
+
+= Computer memory
+{parent=Computer science}
+{wiki}
+
+Storage holding information used by a computer. Here, resident <memory pages> occupy main <computer memory>; a <physical address> identifies a location in the physical address system rather than an <operating-system process>'s private numbering.
+
+= Physical address
+{parent=Computer memory}
+{wiki}
+
+An address in the physical address system, obtained from a <virtual address> by <address translation> in the examples here. Physical address ranges can also identify devices, so not every <physical address> denotes ordinary <computer memory>.
+
+= Byte
+{parent=Computer memory}
+{wiki}
+
+A unit of information; throughout these examples, one <byte> contains eight <bits> and is the smallest independently addressed unit of <computer memory>.
+
+= Cache
+{parent=Computer memory}
+{disambiguate=computing}
+{wiki}
+
+= Memory cache
+{synonym}
+
+A store of selected information kept for faster reuse. A <translation lookaside buffer> is a <memory cache> of <address translations>; a <buffer cache> instead holds device-block contents.
+
+= x86
+{parent=Computer science}
+{c}
+{wiki}

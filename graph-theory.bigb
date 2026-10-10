@@ -1,6 +1,17 @@
 = Graph theory
 {wiki}
 
+<Graph theory> studies <vertices> and the <edges> connecting them: which <graph paths> exist, how efficiently we can travel, and which connections are indispensable. A road map becomes a <graph> when junctions are <vertices> and road segments are <edges>; a communications network uses routers and links instead. The drawing helps us see connections, but its apparent lengths need not be the costs being optimized. Record travel times or transmission costs separately in a <weighted graph>.
+
+The appeal of <graph theory> is that one model serves many practical questions. <Graph paths> describe routes, <connected components of a graph> identify isolated regions, and <minimum spanning trees> connect all locations cheaply. The <shortest path problem> asks a different question: find the cheapest journey between specified locations. Our four-<vertex> example below makes that distinction concrete and shows how the <Dijkstra algorithm> discovers a route without trying every <graph path>.
+
+= Geometric spanner
+{parent=Graph theory}
+{title2=$d_G(u,v)\leq t\|u-v\|$}
+{wiki}
+
+A geometric spanner is a <weighted graph> on points in <Euclidean space>, with edge weights equal to their <Euclidean distances>, in which every pair has a <graph path> of <length> at most $t$ times its direct distance. Its <stretch factor> is the largest ratio $d_G(u,v)/\|u-v\|$, where $d_G$ is shortest-path distance. A square's four perimeter edges, without diagonals, give stretch factor $\sqrt2$: adjacent points have ratio one, and diagonal pairs have route <length> $2$ instead of $\sqrt2$. The aim is to retain short routes with fewer edges than a <complete graph>. \a[https://people.scs.carleton.ca/~michiel/encyc_geometric_spanners.pdf][Gudmundsson, Narasimhan and Smid, Geometric Spanners, §1]{ref}.
+
 = Graph excess
 {parent=Graph theory}
 {title2=$\operatorname{exc}(G)=|E(G)|-|V(G)|$}
@@ -97,7 +108,18 @@ For a simple <graph>, let $r_{ij}$ count the common neighbours of vertices $i,j$
 {parent=Graph theory}
 {title2=$\min_{p:s\leadsto t}\sum_{e\in p}w_e$}
 
-A shortest path minimizes the sum of edge lengths between two vertices. With nonnegative lengths, a shortest walk can be reduced to a simple path by removing cycles, so exponentially many candidate paths can be searched implicitly. The <Dijkstra algorithm> solves this problem in <polynomial time>.
+The <shortest path problem> asks for a <graph path> from a source <vertex> $s$ to a destination <vertex> $t$ minimizing its total <edge> weight. Here $w_e$ is the cost of traversing <edge> $e$, and costs add along the <graph path>. If no route exists, its shortest-path distance is $\infty$. With nonnegative <edge> weights, deleting <cycles in a graph> from a <walk> never increases its cost, so repetitions cannot improve the optimum.
+
+Consider the <undirected graph> with <vertex set> $V=\{A,B,C,D\}$ and the six <edge> weights
+$$
+w_{AB}=4,\quad w_{AC}=1,\quad w_{CB}=2,\quad w_{BD}=1,\quad w_{CD}=5,\quad w_{AD}=10.
+$$
+Each <edge> can be traversed in either direction at the same cost. The direct <graph path> $A,D$ costs $10$; $A,B,D$ costs $4+1=5$; $A,C,D$ costs $1+5=6$. The cheapest <graph path> is $A,C,B,D$, costing $1+2+1=4$. The remaining <graph path> $A,B,C,D$ costs $11$, exhausting the possibilities without repeated <vertices>.
+
+\Image[shortest-path-weights.png]
+{title=The <shortest path problem>: three highlighted <edges> cost less than the direct connection}
+
+Thus fewest <edges> and least total cost are different objectives. <Breadth-first search> minimizes the number of <edges>, which suffices when every <edge> has the same positive cost. Unequal nonnegative costs call for the <Dijkstra algorithm>. On a map, weights might be minutes rather than kilometres: a longer-looking route can arrive sooner. This is why a <weighted graph> separates the network's connections from what a particular journey costs.
 
 = Label-setting shortest-path algorithm
 {parent=Shortest path problem}
@@ -125,8 +147,74 @@ For an all-to-one <shortest path problem> with root $r$, initialize $d_r^{(0)}=0
 = Dijkstra algorithm
 {c}
 {parent=Shortest path problem}
+{wiki=Dijkstra's_algorithm}
+{title2=$d(v)=\operatorname{dist}(s,v)$}
 
-Starting with distance zero at the source and infinity elsewhere, repeatedly finalize the unfinalized vertex with least tentative distance and relax its outgoing edges. Nonnegative lengths ensure that no later path can improve a finalized distance: any alternative path first reaches an unfinalized vertex whose tentative distance is at least the finalized one. A binary heap gives $O((|V|+|E|)\log |V|)$ arithmetic operations, and storing predecessors recovers a minimizing path.
+= Dijkstra's algorithm
+{c}
+{synonym}
+
+The <Dijkstra algorithm> solves the single-source <shortest path problem> in a finite <graph> with nonnegative <edge> weights, finding distances to all reachable <vertices>. Start with <tentative distance> $d(A)=0$ and $d(v)=\infty$ elsewhere. Repeatedly choose the unfinalized <vertex> with least <tentative distance>, declare that label permanent, and perform <edge relaxation> on its outgoing <edges>. For an <undirected graph>, inspect both directions. A finite <tentative distance> always records the cost of a discovered <graph path>, but can improve before finalization.
+
+In our example, finalizing $A$ discovers $C$ at $1$, $B$ at $4$, and $D$ at $10$. Choose $C$ next: <edge relaxation> through $C$ lowers $B$ to $1+2=3$ and $D$ to $1+5=6$. Choose $B$: <edge relaxation> through $B$ lowers $D$ to $3+1=4$. Finally choose $D$. The permanent distances are therefore $A:0$, $C:1$, $B:3$, $D:4$; the evolving <tentative distances> were $B:4\to3$ and $D:10\to6\to4$.
+
+\Image[dijkstra-distance-frontier.png]
+{title=<Tentative distances> fall until the <Dijkstra algorithm> makes each label permanent}
+
+Store a <shortest-path predecessor> whenever <edge relaxation> improves a label. The final table contains enough information to reconstruct routes, rather than merely their costs:
+
+|| <Vertex>
+|| Distance from $A$
+|| <Shortest-path predecessor>
+|| Finalization order
+
+| $A$
+| $0$
+| None: source
+| $1$
+
+| $C$
+| $1$
+| $A$
+| $2$
+
+| $B$
+| $3$
+| $C$
+| $3$
+
+| $D$
+| $4$
+| $B$
+| $4$
+
+Following <shortest-path predecessors> backwards gives $D,B,C,A$; reversing the order gives $A,C,B,D$. If only this destination matters, stop when $D$ is finalized. Stopping when $D$ is first discovered would incorrectly return $10$. If the smallest remaining <tentative distance> is $\infty$, all remaining <vertices> are unreachable.
+
+Why is the permanent choice safe? Suppose the selected <vertex> $u$ had a cheaper <graph path>. Let $y$ be the first unfinalized <vertex> on that <graph path>. Its preceding <vertex> was finalized, so <edge relaxation> has already offered $y$ a label no larger than that prefix's cost. Nonnegative remaining <edge> weights make the whole cost at least this prefix's cost; selection gives $d(u)\le d(y)$. A cheaper <graph path> would contradict these comparisons. Zero weights are allowed; ties can be resolved arbitrarily. This is the reason the <label-setting shortest-path algorithm> works, rather than a lucky feature of the drawing.
+
+Negative weights break that reasoning. In a <directed graph> with $s\to u$ costing $2$, $s\to v$ costing $5$, and $v\to u$ costing $-4$, the <Dijkstra algorithm> would finalize $u$ at $2$ before discovering the cheaper cost $1$. The <Bellman-Ford algorithm> handles negative <edge> weights when no relevant negative <directed cycle> exists.
+
+With an <adjacency list> and an indexed <binary heap> implementing a <priority queue>, the <time complexity> is $O((|V|+|E|)\log |V|)$ for $|V|\ge2$, using <Big O notation>. Each <vertex> is extracted at most once, each <edge> is inspected once per direction, and each successful <edge relaxation> decreases a heap key in $O(\log |V|)$ time. This assumes constant-cost arithmetic and comparisons; exact computation with very large weights adds their representation cost. The queue uses $O(|V|)$ space beyond the <graph>. Simply scanning all remaining <vertices> gives $O(|V|^2+|E|)$ instead.\a[https://algs4.cs.princeton.edu/44sp/DijkstraSP.java.html][Princeton, DijkstraSP implementation]{ref}\a[https://algs4.cs.princeton.edu/code/javadoc/edu/princeton/cs/algs4/IndexMinPQ.html][Princeton, indexed binary heap operations]{ref}
+
+The 1959 paper presents the <shortest path problem> as its second problem, after the <minimum spanning tree> problem, and grows known shortest routes in increasing distance order.\a[https://www.cs.yale.edu/homes/lans/readings/routing/dijkstra-routing-1959.pdf][Dijkstra, A note on two problems in connexion with graphs, pp. 269–271]{ref} In his later recollection, Dijkstra dated the shortest-route discovery to 1956: a demonstration for the ARMAC computer used a simplified Dutch railway map and printed the route between towns. A practical request became an enduring <algorithm> because the same distance rule applies to any suitable <graph>.\a[https://garfield.library.upenn.edu/classics1983/A1983QA19900001.pdf][Dijkstra's recollection, published in 1983]{ref}
+
+= Tentative distance
+{parent=Dijkstra algorithm}
+{title2=$d(v)$}
+
+A provisional cost of a discovered <graph path>; $\infty$ means no route has yet been discovered.
+
+= Edge relaxation
+{parent=Dijkstra algorithm}
+{title2=$d(v)\gets\min\{d(v),d(u)+w_{uv}\}$}
+
+Improve a <tentative distance> by trying one more <edge> from a reached <vertex>.
+
+= Shortest-path predecessor
+{parent=Dijkstra algorithm}
+{title2=$\pi(v)$}
+
+The previous <vertex> on the currently recorded <graph path>, updated on a strict improvement by <edge relaxation>.
 
 = Graph property
 {parent=Graph theory}
@@ -247,11 +335,125 @@ For integers $n\geq2k\geq2$, the <chromatic number> of the <Kneser graph> is $n-
 
 = Cut vertex
 {parent=Graph theory}
+{title2=$k(G-v)>k(G)$}
 
 = Articulation point
 {synonym}
 
-A vertex whose deletion increases the number of connected components of a <graph>. A <Hamiltonian> graph has no cut vertex: deleting a vertex from a <Hamilton cycle> leaves a spanning path.
+A <cut vertex>, also called an <articulation point>, is a <vertex> $v$ of an <undirected graph> whose deletion increases the number of <connected components of a graph>. Write $k(G)$ for that count, including isolated <vertices>, and $G-v$ for the <graph> obtained by removing $v$ and every incident <edge>. Then the test is $k(G-v)>k(G)$, even when the original <graph> is disconnected. By contrast, deleting a <bridge in a graph> removes just one <edge> and keeps both endpoint <vertices>. These are different failure models. \a[https://algs4.cs.princeton.edu/41graph/][Sedgewick and Wayne, Algorithms, §4.1: bridges and articulation points]{ref}
+
+First take two <triangles in a graph>, $ABC$ and $ADE$, sharing only the <vertex> $A$. This <simple graph> has
+$$
+V=\{A,B,C,D,E\},\qquad E=\{AB,AC,BC,AD,AE,DE\}.
+$$
+Here $XY$ abbreviates the <unordered pair> $\{X,Y\}$. Removing $A$ leaves the two <connected components of a graph> $\{B,C\}$ and $\{D,E\}$, so $k(G-A)=2>1=k(G)$. Removing any other <vertex> leaves a <connected graph>. Thus $A$ is the only <cut vertex>. Every <edge> lies on a <triangle in a graph>, so deleting any single <edge> still leaves a <graph path> between its endpoints along the other two <edges>. There are no <bridges in a graph>.
+
+\Image[articulation-without-bridges.png]
+{title=Two <triangles in a graph> share a <cut vertex> $A$, although no <edge> is a <bridge in a graph>}
+
+The generator computes the <adjacency lists> and checks every <vertex> deletion, giving the following complete table:
+
+|| Deleted <vertex> $v$
+|| Original <graph neighbours> of $v$
+|| $k(G-v)$
+
+| $A$
+| $B,C,D,E$
+| $2$
+
+| $B$
+| $A,C$
+| $1$
+
+| $C$
+| $A,B$
+| $1$
+
+| $D$
+| $A,E$
+| $1$
+
+| $E$
+| $A,D$
+| $1$
+
+Now take two disjoint <triangles in a graph>, $ABC$ and $DEF$, joined by the <edge> $CD$:
+$$
+V=\{A,B,C,D,E,F\},\qquad E=\{AB,AC,BC,CD,DE,DF,EF\}.
+$$
+Deleting only $CD$ preserves all six <vertices> and leaves <connected components of a graph> $\{A,B,C\}$ and $\{D,E,F\}$: $CD$ is the only <bridge in a graph>. Deleting $C$ also removes $AC$ and $BC$, leaving <connected components of a graph> $\{A,B\}$ and $\{D,E,F\}$. Deleting $D$ instead leaves $\{A,B,C\}$ and $\{E,F\}$. Thus $C,D$ are exactly the <cut vertices>.
+
+\Image[graph-articulation-versus-bridge.png]
+{title=<Edge> deletion keeps its endpoints; <cut vertex> deletion removes all incident <edges>}
+
+Again the <adjacency lists> and all <vertex> deletion counts are computed directly:
+
+|| Deleted <vertex> $v$
+|| Original <graph neighbours> of $v$
+|| $k(G-v)$
+
+| $A$
+| $B,C$
+| $1$
+
+| $B$
+| $A,C$
+| $1$
+
+| $C$
+| $A,B,D$
+| $2$
+
+| $D$
+| $C,E,F$
+| $2$
+
+| $E$
+| $D,F$
+| $1$
+
+| $F$
+| $D,E$
+| $1$
+
+For a disconnected example, adjoin an isolated <vertex> $Z$ to the first <graph>. Now $k(G)=2$, deleting $A$ gives $k(G-A)=3$, and deleting $Z$ gives $k(G-Z)=1$. The original <graph> was already disconnected, but $A$ is still a <cut vertex>; $Z$ is not. The empty <graph> has count zero, so deleting the only <vertex> of a one-<vertex> <graph> does not create a <cut vertex>. Nor is either endpoint of a single isolated <edge> a <cut vertex>, although that <edge> is a <bridge in a graph>.
+
+In a communications network, a <cut vertex> models a router whose failure separates surviving routers. The shared-$A$ example shows why having an alternative <graph path> around each individual <edge> does not protect against failure of the common router. An additional <edge> from $B$ to $D$ removes this particular vulnerability: after deleting $A$, $B,D$ still join the two sides. A <bridge in a graph> instead models a vulnerable link. This distinction tells us whether to add another cable between existing devices or a route avoiding an indispensable device; it describes <connectivity (graph theory)>, rather than traffic capacity or failure probabilities.
+
+The beautiful structural consequence is that a <graph> splits into <biconnected components> joined at <cut vertices>. Within each nontrivial robust piece, a single <vertex> failure cannot separate the other <vertices>; between pieces, the shared <cut vertices> reveal the bottlenecks. Also, a <Hamiltonian> <graph> has no <cut vertex>: deleting any <vertex> from its <Hamilton cycle> leaves a <Hamiltonian path> through all remaining <vertices>.
+
+Historically, Tarjan's June 1972 paper developed <depth-first search> as a tool for finding <biconnected components> in time linear in the numbers of <vertices> and <edges>. \a[https://epubs.siam.org/doi/10.1137/0201010][Robert Tarjan, Depth-First Search and Linear Graph Algorithms, SIAM Journal on Computing 1(2), 146–160 (1972)]{ref} In his 1983 recollection, Tarjan credited Hopcroft with the original linear-time <biconnected component> <algorithm> during their collaboration beginning in summer 1970, and described the published version as a refinement. The historical lesson is how a carefully organized traversal turns many separate deletion experiments into one computation. \a[https://garfield.library.upenn.edu/classics1983/A1983QY47200001.pdf][Robert E. Tarjan, Citation Classic recollection (1983)]{ref}
+
+= Biconnected component
+{parent=Cut vertex}
+{wiki}
+
+A <biconnected component> is a maximal connected <subgraph> with no <cut vertex> of its own. We use the block convention that also includes each <bridge in a graph> with its two endpoint <vertices>, and each isolated <vertex>, as a <biconnected component>. A <biconnected component> with at least three <vertices> stays connected after any single <vertex> deletion. Distinct <biconnected components> share at most one <vertex>; the <vertices> belonging to more than one <biconnected component> are exactly the <cut vertices>. The shared-$A$ example has two <biconnected components>, its two <triangles in a graph>. The joined-$CD$ example has three: $ABC$, the <bridge in a graph> $CD$ with its endpoints, and $DEF$. The <edges> partition into these pieces, while the shared <cut vertices> occur in several pieces. \a[https://algs4.cs.princeton.edu/41graph/][Sedgewick and Wayne, Algorithms, §4.1, biconnected components exercises]{ref}
+
+= DFS discovery time
+{c}
+{parent=Cut vertex}
+{title2=$\operatorname{disc}(v)$}
+
+The <DFS discovery time> of a <vertex> is its first-visit number in <depth-first search>, assigned by an increasing counter. Discovery <edges> form a <rooted tree> in each <connected component of a graph>. For the joined-$CD$ example, starting at $A$ and visiting <graph neighbours> in <lexicographic order> gives first visits $A,B,C,D,E,F$, numbered $1,2,3,4,5,6$; its discovery <edges> are $AB,BC,CD,DE,EF$. These numbers encode the chosen traversal, not an invariant of the <graph>.
+
+= DFS lowpoint
+{c}
+{parent=Cut vertex}
+{title2=$\operatorname{low}(v)$}
+
+For a finite <simple graph> that is an <undirected graph>, the <DFS lowpoint> of $v$ is the smallest <DFS discovery time> reachable by following zero or more discovery <edges> down its <rooted tree>, then at most one non-discovery <edge> to an ancestor. Staying at $v$ is allowed. Ignore the reverse traversal of the discovery <edge> to the <parent in a rooted tree>: it is the same <edge>, not an escape route. Start with $\operatorname{low}(v)=\operatorname{disc}(v)$. On returning from a <child in a rooted tree> $w$, replace $\operatorname{low}(v)$ by $\min\{\operatorname{low}(v),\operatorname{low}(w)\}$. For a non-discovery <edge> from $v$ to an earlier ancestor $a$, replace it by $\min\{\operatorname{low}(v),\operatorname{disc}(a)\}$. This summarizes how far upward the explored branch can reconnect. \a[https://sites.cs.ucsb.edu/~gilbert/cs240a/notes/TarjanDFS.pdf][Tarjan (1972), §3, LOWPT recurrence, pp. 151–153]{ref}
+
+The <cut vertex> criterion has a separate case for each <root of a tree> in the discovery <forest>:
+* A nonroot <vertex> $u$ is a <cut vertex> exactly when some <child in a rooted tree> $w$ satisfies $\operatorname{low}(w)\geq\operatorname{disc}(u)$.
+* A <root of a tree> is a <cut vertex> exactly when it has at least two <children in a rooted tree>, counting discovery <edges>, rather than all <graph neighbours>.
+* A discovery <edge> $uw$ is a <bridge in a graph> exactly when $\operatorname{low}(w)>\operatorname{disc}(u)$. A non-discovery <edge> is never a <bridge in a graph>.
+
+Why does equality matter? If $\operatorname{low}(w)=\operatorname{disc}(u)$, the branch below $w$ can reconnect to $u$, so the discovery <edge> $uw$ lies on a <graph cycle> and is not a <bridge in a graph>. Deleting the <vertex> $u$ destroys that reconnection too. If $u$ has a <parent in a rooted tree>, the branch is then separated from that <parent in a rooted tree>, explaining the non-strict <cut vertex> test. For a <root of a tree>, there is no earlier side to separate from; distinct discovery branches cannot have an <edge> between them, since <depth-first search> would have explored them as one branch. This gives the two-<children in a rooted tree> rule. These are proof outlines of the criteria. \a[https://algs4.cs.princeton.edu/41graph/Biconnected.java.html][Sedgewick and Wayne, Biconnected.java: discovery, lowpoint and root tests]{ref}\a[https://algs4.cs.princeton.edu/41graph/][Sedgewick and Wayne, Algorithms, §4.1: bridge detection]{ref}
+
+In the joined-$CD$ example with <DFS discovery times> $1,2,3,4,5,6$, the <DFS lowpoints> in label order are $1,1,1,4,4,4$. For $C$ and its <child in a rooted tree> $D$, $4>3$: $CD$ is a <bridge in a graph>, and $C$ is a <cut vertex>. For $D$ and its <child in a rooted tree> $E$, $4=4$: $D$ is a <cut vertex>, although $DE$ is not a <bridge in a graph>. The <root of a tree> $A$ has only one <child in a rooted tree>, $B$, so it is not a <cut vertex>. In the shared-$A$ example, the <root of a tree> $A$ has two <children in a rooted tree>, $B$ and $D$, and is a <cut vertex>, while every <DFS lowpoint> is $1$ and no <edge> passes the strict <bridge in a graph> test.
+
+Restart <depth-first search> at every undiscovered <vertex> to cover a disconnected <graph>, applying the <root of a tree> rule separately in each <connected component of a graph>. With <adjacency lists> and constant-cost label operations, computing all <DFS lowpoints>, <cut vertices> and <bridges in a graph> has <time complexity> $O(|V|+|E|)$ in <Big O notation>, because each <vertex> is discovered once and each <edge> is inspected twice. The simple parent-skipping rule assumes a <simple graph>. In a <multigraph>, skip only the actual parent <edge>, identified individually: a parallel <edge> to the same <parent in a rooted tree> is a valid reconnection and can prevent the first <edge> from being a <bridge in a graph>. The criteria here concern <undirected graphs>; a <directed graph> requires a different connectivity analysis.
 
 \Include[hypergraph]{parent=Graph theory}
 
@@ -529,7 +731,26 @@ Hence $G(n,p)$ contains a triangle with an attached leaf with probability tendin
 = Graph colouring
 {synonym}
 
-A graph colouring assigns labels called colours to graph elements subject to specified constraints. A proper vertex colouring gives adjacent vertices different colours.
+A <graph coloring> assigns labels called colours to elements of a <graph>, subject to specified constraints. Here we focus on <proper vertex colouring> of a <simple graph> $G=(V,E)$: it is an <undirected graph> with a <finite set> of <vertices>, and a colouring with at most $k$ colours is a <function>
+$$
+c:V\to\{1,\ldots,k\},\qquad \{u,v\}\in E\Longrightarrow c(u)\ne c(v).
+$$
+The colour labels need not be visual colours: they can represent time slots or resources. Unused labels are allowed. Properness concerns <graph adjacency>, so moving <vertices> in a drawing does not change whether the <graph coloring> is valid.\a[https://ocw.mit.edu/courses/6-1200j-mathematics-for-computer-science-spring-2024/mit6_1200j_s24_lec11.pdf][MIT, Graphs and Coloring, Section 2.1]{ref}
+
+Each <colour class> $c^{-1}(i)$ is an <independent set>: no <edge> has both endpoints in it. Conversely, a <set partition> of $V$ into <independent sets> gives a proper <graph coloring> by assigning one colour to each part. Thus <graph coloring> groups mutually compatible objects, and its <chromatic number> asks for the fewest such groups.
+
+For an illustrative scheduling model, let each <vertex> represent an activity of equal duration and each <edge> represent a pair that cannot occur in the same time slot. A proper <graph coloring> is then a schedule respecting those pairwise conflicts. If the conflicts form a <cycle graph> $C_4$ with <edges> $12,23,34,41$, activities $1,3$ can share one slot and $2,4$ another. This model assumes interchangeable slots and includes only the pairwise conflicts encoded by the <graph>.\a[https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-fall-2010/1ccaf180bcd244fddd32e60789fa922f_h9wxtqoa1jY.pdf][Leighton, MIT Graph Theory and Coloring, transcript pages 8–10]{ref}
+
+The word "colouring" also occurs in <edge coloring>, which requires different colours on <edges> sharing an endpoint. The <chromatic number> discussed here always refers to <proper vertex colouring>.
+
+= Proper vertex coloring
+{parent=Graph coloring}
+{title2=$\{u,v\}\in E\Longrightarrow c(u)\ne c(v)$}
+
+= Proper vertex colouring
+{synonym}
+
+A proper vertex coloring assigns labels to the <vertices> of a <graph> so that <vertices> joined by an <edge> have different labels. Each <colour class> is an <independent set>. The <chromatic number> is the least number of labels needed for this form of <graph coloring>.
 
 = Semi-random palette refinement for triangle-free colouring
 {parent=Graph coloring}
@@ -563,7 +784,21 @@ If graphs $G_i$ cover the edges of an $n$-vertex graph with <independence number
 = Greedy colouring
 {synonym}
 
-Order the <vertices> of a <graph> and assign each vertex the smallest color not already used by its colored neighbours. This produces a proper <graph coloring> with at most $\Delta+1$ colors when the maximum degree is $\Delta$. The result can depend strongly on vertex order and need not achieve the <chromatic number>.
+For a finite <simple graph>, choose an order of its <vertices> and process them one at a time. Give each <vertex> the smallest positive colour label not already used by its coloured neighbours, and keep all earlier assignments. This is <greedy coloring>: each step makes a locally available choice. The resulting <graph coloring> is proper because, for each <edge>, its later endpoint avoids the colour of its earlier endpoint.\a[https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-fall-2010/1ccaf180bcd244fddd32e60789fa922f_h9wxtqoa1jY.pdf][Leighton, MIT Graph Theory and Coloring, transcript pages 12–13]{ref}
+
+If the <maximum degree of a graph> is $\Delta(G)$, a <vertex> has at most $\Delta(G)$ previously coloured neighbours, forbidding at most that many distinct colours. At least one label among $1,\ldots,\Delta(G)+1$ remains available. Consequently every order gives
+$$
+\chi(G)\leq\text{number of colours used by greedy colouring}\leq\Delta(G)+1.
+$$
+This is an upper bound, not a promise that <greedy coloring> attains the <chromatic number>.\a[https://ocw.mit.edu/courses/6-1200j-mathematics-for-computer-science-spring-2024/mit6_1200j_s24_lec11.pdf][MIT, Graphs and Coloring, Theorem 2]{ref}
+
+\Image[greedy-coloring-order.png]
+{title=Two orders for <greedy coloring> of the same <path graph> $P_4$}
+{description=The <edges> are $12,23,34$ in both drawings. Each dot shows its assigned colour number, with the <vertex> label above and its processing step below. The order $1,2,3,4$ uses two colours; the order $1,4,2,3$ uses three.}
+
+Consider the <path graph> $P_4$ with <edges> $12,23,34$. In the order $1,2,3,4$, <greedy coloring> assigns the colours $1,2,1,2$ respectively. In the order $1,4,2,3$, it assigns colours $1,1,2,3$ in processing order: <vertices> $1,4$ both get colour $1$, then <vertex> $2$ gets colour $2$, and finally <vertex> $3$ sees colours $2$ and $1$ at its two neighbours and must take colour $3$. Written in <vertex> order $1,2,3,4$, this second colouring is $1,2,3,1$.
+
+The <path graph> has <chromatic number> two: the first assignment achieves two colours, and any <edge> rules out one. Its <maximum degree of a graph> is two, so three colours in the second assignment still satisfy the bound. The extra colour comes entirely from the processing order. The <crown graph> gives a larger family where a poor order can make <greedy coloring> use arbitrarily many colours although the <chromatic number> remains two.
 
 = Extension of a partial colouring by neighbour-colour savings
 {parent=Greedy coloring}
@@ -736,8 +971,24 @@ A proper three-color <edge coloring> of a <cubic graph>. Label its colors by the
 = Chromatic number
 {parent=Graph coloring}
 {wiki}
+{title2=χ(G)}
 
-The chromatic number $\chi(G)$ is the least number of colours in a proper vertex colouring of $G$.
+For a nonempty finite <simple graph> $G$, the <chromatic number> $\chi(G)$ is the least positive <integer> $k$ for which $G$ has a proper vertex <graph coloring> with at most $k$ colours. To establish an exact <chromatic number>, give a colouring using that many colours and explain why fewer cannot suffice. A colouring alone gives only an upper bound.\a[https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-spring-2015/mit6_042js15_textbook.pdf][Lehman, Leighton and Meyer, Mathematics for Computer Science, Definition 11.7.1]{ref}
+
+\Image[graph-coloring-cycle-examples.png]
+{title=Optimal <graph colorings> of the <cycle graphs> $C_3,C_4,C_5$}
+{description=Numbers inside dots are colour labels, and labels outside are <vertices>. The <cycle graph> $C_4$ alternates two colours. The <odd cycles> $C_3,C_5$ need three, although $C_5$ is a <triangle-free graph>.}
+
+These small <graphs> show why the <chromatic number> measures more than the presence of <triangles in a graph>:
+
+* The <cycle graph> $C_3$, also the <complete graph> $K_3$, has <chromatic number> three. Every pair of <vertices> is adjacent, so three distinct colours are necessary and sufficient.
+* The <cycle graph> $C_4$ has <chromatic number> two. Around the <graph cycle>, the assignment $1,2,1,2$ is proper, and a single colour would violate every <edge>.
+* The <cycle graph> $C_5$ has <chromatic number> three. With two colours, alternation around the <graph cycle> would force the first and fifth <vertices> to have the same colour despite their joining <edge>. The assignment $1,2,1,2,3$ works. Thus a <triangle-free graph> can still require more than two colours.
+* The <complete graph> $K_n$ has <chromatic number> $n$: all $n$ <vertices> are pairwise adjacent, so each must have its own colour.\a[https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-fall-2005/5926091844fc3d60fa18eb75c9a2bc03_slides5w.pdf][Meyer, MIT Graph Coloring, slides 18–19]{ref}
+
+For a <cycle graph> of even length, alternating two colours closes consistently; for an <odd cycle>, it does not, and a third colour on the final <vertex> suffices. More generally, the <two-colourability criterion for bipartite graphs> says that $\chi(G)\leq2$ exactly when $G$ is a <bipartite graph>, and the <odd-cycle characterization of bipartite graphs> identifies the obstruction as an <odd cycle>. A nonempty <graph> with no <edges> has <chromatic number> one; a <bipartite graph> with at least one <edge> has <chromatic number> exactly two.
+
+In the pairwise-conflict scheduling model of <graph coloring>, $\chi(G)$ is the least number of interchangeable slots needed. This turns a drawing into an optimization question: how many groups of compatible activities are unavoidable? <Greedy coloring> constructs a valid grouping quickly, but its number of colours can exceed the <chromatic number>.
 
 = Chromatic number of Euclidean space
 {parent=Chromatic number}
@@ -1441,9 +1692,23 @@ $$
 
 = Flow network
 {parent=Graph theory}
+{title2=$(G,c,s,t)$}
 {wiki}
 
-A flow network is a directed capacitated graph with a source and sink. A feasible flow respects edge capacities and conserves flow at every other vertex.
+A <flow network> is a <directed graph> $G=(V,E)$ with distinct source and sink <vertices> $s,t$ and a nonnegative <flow network edge capacity> $c_{uv}$ on each directed <edge> $(u,v)$. In the finite setting here, every <flow network edge capacity> is a finite real number. A <feasible flow> assigns a nonnegative amount $f_{uv}$ to each original directed <edge>, satisfies the <capacity constraints>, and obeys <flow conservation> at every other <vertex>:
+$$
+0\leq f_{uv}\leq c_{uv},\qquad
+\sum_{u:(u,v)\in E}f_{uv}=\sum_{w:(v,w)\in E}f_{vw}\quad(v\notin\{s,t\}).
+$$
+These are nonnegative arc amounts. The antisymmetric convention in <flow> instead records net amounts $\theta_{uv}=f_{uv}-f_{vu}$, taking a missing arc amount as zero. The two conventions express the same <flow conservation>; keeping them distinct makes backward <residual network> <edges> easier to interpret.
+
+Think of <vertices> as routers, directed <edges> as communication links, <flow network edge capacities> as available bandwidth, and <flow> as a steady transmission rate. An intermediate router can distribute incoming traffic among outgoing links, but <flow conservation> prevents it from creating traffic. The <maximum flow problem> asks how much total traffic can pass from $s$ to $t$, allowing several <graph paths> to share the work. The same <flow network> language models transportation and abstract resource allocation.\a[https://ocw.mit.edu/courses/6-854j-advanced-algorithms-fall-2008/4064d889e5033a9915327a777d12b592_notes_flow.pdf][Goemans, Network flows, introduction and maximum flow formulation]{ref}
+
+Our running <flow network> has <vertices> $V=\{s,a,b,t\}$ and exactly five directed <edges>, with <flow network edge capacities>
+$$
+(c_{sa},c_{sb},c_{ab},c_{at},c_{bt})=(3,2,1,2,3).
+$$
+The cross <edge> $a\to b$ lets traffic entering $a$ use spare capacity on $b\to t$. With this <edge> removed, the two separate <graph paths> can carry only $\min(3,2)+\min(2,3)=4$; including it will let the <maximum flow> reach $5$. Thus a link's usefulness depends on the rest of the <flow network>, rather than just its own <flow network edge capacity>.
 
 = Circulation in a flow network
 {parent=Flow network}
@@ -1468,7 +1733,22 @@ An internal vertex capacity bounds the total <flow> through that vertex, equival
 = Maximum flow
 {synonym}
 
-The maximum flow problem maximises the <strength of a flow> from a source to a sink subject to <flow conservation> and <flow network edge capacities>. The <max-flow min-cut theorem> identifies the optimum with the least capacity of a <cut of a flow network>. A feasible <flow> and a <cut of a flow network> of equal value certify optimality without requiring a particular choice of <augmenting paths>.
+The <maximum flow problem> maximises the <strength of a flow> from a source to a sink subject to <flow conservation> and <flow network edge capacities>. For the nonnegative arc amounts used in <flow network>, its objective is net outflow from the source:
+$$
+|f|=\sum_{v:(s,v)\in E}f_{sv}-\sum_{u:(u,s)\in E}f_{us}
+=\sum_{u:(u,t)\in E}f_{ut}-\sum_{v:(t,v)\in E}f_{tv}.
+$$
+The equality follows by summing <flow conservation> over all internal <vertices>. Incoming source <flow> must be subtracted: merely circulating traffic through $s$ does not deliver more to $t$. The <max-flow min-cut theorem> identifies the optimum with the least <cut capacity> of a <cut of a flow network>. A <feasible flow> and a <cut of a flow network> of equal value certify optimality without requiring a particular choice of <augmenting paths>.
+
+For the five-<edge> <flow network> with <flow network edge capacities> $(3,2,1,2,3)$, take
+$$
+(f_{sa},f_{sb},f_{ab},f_{at},f_{bt})=(3,2,1,2,3).
+$$
+Every <capacity constraint> holds with equality. <Flow conservation> at $a$ is $3=1+2$, and at $b$ it is $2+1=3$. The <strength of a flow> is $|f|=3+2=5$, also $2+3=5$ entering $t$. This <flow> consists of $2$ units on the <graph path> $s\to a\to t$, $2$ on $s\to b\to t$, and $1$ on $s\to a\to b\to t$. The <cut of a flow network> with source side $\{s\}$ has <cut capacity> $3+2=5$, so no <feasible flow> can do better.
+
+Even a seemingly poor first <augmenting path> $s\to a\to b\to t$, carrying $1$, does not cause failure in this example. It leaves <residual network> capacity $2$ along $s\to a\to t$ and $2$ along $s\to b\to t$. These two subsequent <augmenting paths> yield values $1$, $3$, and $5$, and produce exactly the <flow> above. Backward <residual network> <edges> become essential in the unit-capacity example under <residual network>, where this same first choice blocks every unused forward route.
+
+Discrete assignment is another reason to study <maximum flow>. Put unit-capacity <edges> from $s$ to job <vertices>, from each job to eligible worker <vertices>, and from workers to $t$. An integral <flow> selects a <matching in a graph>: each job and worker participates at most once, and the <strength of a flow> counts assigned jobs. The <integral max-flow theorem> therefore turns maximum cardinality assignment into <maximum flow>. Minimizing assignment costs is the related <assignment problem>, modeled by <minimum-cost flow>.\a[https://ocw.mit.edu/courses/6-854j-advanced-algorithms-fall-2008/4064d889e5033a9915327a777d12b592_notes_flow.pdf][Goemans, Network flows, assignment formulation]{ref}
 
 = Sports elimination by maximum flow
 {parent=Maximum flow problem}
@@ -1584,14 +1864,40 @@ An infinite locally finite connected graph is a <transient graph> exactly when i
 
 = Max-flow min-cut theorem
 {parent=Flow network}
+{title2=$\max_f|f|=\min_{S:s\in S,\,t\notin S}c(S,V\setminus S)$}
 {wiki}
 
-The greatest value of a feasible source-to-sink flow equals the least capacity of a source-to-sink cut. For a maximum flow, the vertices reachable from the source in the residual graph define a cut whose forward edges are saturated and whose backward edges carry zero flow.
+For a finite <flow network> with finite nonnegative real <flow network edge capacities>, the greatest <strength of a flow> of a <feasible flow> equals the least <cut capacity> of a source-to-sink <cut of a flow network>:
+$$
+\max_{f\text{ feasible}}|f|
+=\min_{S\subseteq V:\,s\in S,\,t\notin S}
+\sum_{(u,v)\in E:\,u\in S,\,v\notin S}c_{uv}.
+$$
+For a <maximum flow>, the <vertices> reachable from the source in the <residual network> define a <minimum cut> whose outgoing original <edges> are saturated and whose incoming original <edges> carry zero <flow>.\a[https://courses.csail.mit.edu/6.854/21/Notes/n06-flow.html][Karger, MIT 6.854 Notes 6, maximum-flow optimality conditions]{ref}
+
+Why is a <cut of a flow network> an upper bound? Sum <flow conservation> on its source side $S$. Internal <edge> contributions cancel, leaving
+$$
+|f|=\sum_{(u,v)\in E:\,u\in S,\,v\notin S}f_{uv}
+-\sum_{(u,v)\in E:\,u\notin S,\,v\in S}f_{uv}
+\leq\sum_{(u,v)\in E:\,u\in S,\,v\notin S}c_{uv}
+=c(S,V\setminus S).
+$$
+Only directed <edges> leaving $S$ contribute to <cut capacity>. Directed <edges> entering $S$ are subtracted in net <flow>, so adding their capacities to the upper bound would lose the intended bottleneck. This inequality is <weak duality>; the theorem says the bound is attained, an instance of <strong duality>. Its beauty is that a routing plan and a separating boundary independently witness each other's optimality.
+
+In the running <flow network>, the two internal <vertices> give four possible source sides. For $S=\{s\}$, the <cut capacity> is $c_{sa}+c_{sb}=3+2=5$. For $S=\{s,a\}$ it is $c_{sb}+c_{ab}+c_{at}=2+1+2=5$. For $S=\{s,b\}$ it is $c_{sa}+c_{bt}=3+3=6$; the incoming <edge> $a\to b$ contributes nothing to that <cut capacity>. Finally, $S=\{s,a,b\}$ gives $c_{at}+c_{bt}=2+3=5$. Thus the <minimum cut> has <cut capacity> $5$, matching the explicitly computed <maximum flow>.
+
+\Image[max-flow-cut-certificate.png]
+{title=Maximum flow of value five and two minimum-cut certificates}
+{description=Labels show flow/capacity on each directed edge. The shaded source sides give cuts of capacities three plus two and two plus one plus two, both equal to the flow value.}
+
+Ford and Fulkerson's 1956 paper opens with a railway-capacity question attributed there to T. Harris and proves a minimal-cut theorem as Theorem 1. Its original formulation uses <graph paths> carrying nonnegative amounts; the <residual reachability certificate for maximum flow> below gives the finite directed <flow network> proof used here.\a[https://doi.org/10.4153/CJM-1956-045-5][Ford and Fulkerson, Maximal Flow Through a Network, Canadian Journal of Mathematics 8 (1956), pp. 399–404]{ref}
 
 = Residual reachability certificate for maximum flow
 {parent=Max-flow min-cut theorem}
 
-In a finite capacitated directed network, a <maximum flow> exists because the feasible flow set is nonempty and compact. A residual source-to-sink path would permit positive augmentation, contradicting maximality. The source-reachable residual vertices therefore define a cut whose outgoing original arcs are saturated and incoming original arcs carry zero flow. Conservation makes the flow value equal to this cut capacity. This proof applies to arbitrary finite real capacities without claiming finite termination of an augmenting-path algorithm.
+In a finite <flow network>, a <maximum flow> exists because the <feasible flow> set contains the zero <flow> and is a <compact set>: the <capacity constraints> bound every coordinate, and they and <flow conservation> define a <closed set>. The <strength of a flow> is a <continuous function>, so the <extreme value theorem> gives an attained maximum. An <augmenting path> in the <residual network> would permit positive augmentation, contradicting maximality. The source-reachable <vertices> in the <residual network> therefore define a <cut of a flow network> whose outgoing original <edges> are saturated and incoming original <edges> carry zero <flow>. <Flow conservation> makes the <strength of a flow> equal to this <cut capacity>, proving the <max-flow min-cut theorem>.
+
+Existence and <strong duality> for finite real <flow network edge capacities> do not imply finite termination for every choice of <augmenting paths> in the <Ford-Fulkerson algorithm>. With irrational capacities, some choices can continue forever. With integer capacities, <integrality of the Ford-Fulkerson algorithm> instead forces finite termination; rational capacities reduce to that case by a common denominator. Choosing shortest <augmenting paths> as in the <Edmonds–Karp algorithm> avoids dependence on capacity magnitudes.\a[https://courses.csail.mit.edu/6.854/21/Notes/n06-flow.html][Karger, MIT 6.854 Notes 6, section 2.1, rational and real capacities]{ref}
 
 = Uniform capacity perturbation of a flow network
 {parent=Max-flow min-cut theorem}
@@ -1625,8 +1931,25 @@ In a finite bipartite graph, the maximum size of a matching equals the minimum s
 
 = Residual network
 {parent=Max-flow min-cut theorem}
+{title2=$G_f$}
 
-For a feasible flow $f$, the residual network has forward residual capacity $c(u,v)-f(u,v)$ and reverse residual capacity $f(u,v)$. It records every local increase or cancellation that preserves the capacity constraints.
+For a <feasible flow> $f$, each original directed <edge> $u\to v$ supplies a forward <residual network> <edge> of capacity $c_{uv}-f_{uv}$ and a backward one $v\to u$ of capacity $f_{uv}$; zero-capacity residual <edges> may be omitted. The forward <edge> permits an increase, while the backward <edge> permits cancellation of existing <flow>. In particular, backward residual capacity is the amount already sent, rather than unused original capacity. If both original orientations exist, keep their residual contributions separate, or add capacities for contributions with the same direction. An <augmenting path> uses these permitted changes while preserving <flow conservation> and the <capacity constraints>.
+
+To see why cancellation matters, give all five directed <edges> $s\to a$, $s\to b$, $a\to b$, $a\to t$, $b\to t$ unit <flow network edge capacities>. Starting from zero <flow>, an <augmenting path> $s\to a\to b\to t$ carrying $1$ yields
+$$
+(f_{sa},f_{sb},f_{ab},f_{at},f_{bt})=(1,0,1,0,1),\qquad |f|=1.
+$$
+The remaining unused original <edges> are $s\to b$ and $a\to t$, which do not form a source-to-sink <graph path>. However, the backward residual <edge> $b\to a$ has capacity $f_{ab}=1$. Consequently the <residual network> contains the <augmenting path> $s\to b\to a\to t$, with residual capacities $1,1,1$.
+
+Augment by $1$: increase $f_{sb}$ and $f_{at}$ from $0$ to $1$, and decrease $f_{ab}$ from $1$ to $0$. The result is
+$$
+(f_{sa},f_{sb},f_{ab},f_{at},f_{bt})=(1,1,0,1,1),\qquad |f|=2.
+$$
+Now <flow conservation> is $1=0+1$ at $a$ and $1+0=1$ at $b$. The final <flow> sends one unit along each of $s\to a\to t$ and $s\to b\to t$. The <cut of a flow network> $S=\{s\}$ has <cut capacity> $1+1=2$, proving this is a <maximum flow>. Traversing $b\to a$ in the <residual network> revised the earlier routing decision; it did not send actual traffic along a nonexistent original <edge>.
+
+\Image[residual-flow-rerouting.png]
+{title=Backward residual capacity reroutes the first unit of flow}
+{description=Before: one unit follows s to a to b to t. Middle: the residual augmenting path s to b to a to t cancels flow on a to b. After: two units use the separate paths, and the middle original edge carries zero flow.}
 
 = Residual maximum flow is the remaining optimality gap
 {parent=Residual network}
@@ -1636,8 +1959,9 @@ For an undirected capacitated network, write the net edge flow as $y_{ij}=-y_{ji
 
 = Augmenting path
 {parent=Residual network}
+{title2=$\Delta=\min_{e\in P}c_f(e)>0$}
 
-An augmenting path is a source-to-sink path of positive capacities in the <residual network>. Increasing the flow by the smallest residual capacity on the path gives another feasible flow of strictly greater value.
+An <augmenting path> is a source-to-sink <graph path> $P$ of positive capacities in the <residual network>. Its bottleneck is $\Delta=\min_{e\in P}c_f(e)>0$. Add $\Delta$ to original <flow> on forward residual <edges> and subtract $\Delta$ on backward residual <edges>. Each internal <vertex> still satisfies <flow conservation>, and the bottleneck guarantees every <capacity constraint>. The resulting <feasible flow> has <strength of a flow> $|f|+\Delta$. In the unit-capacity <residual network> example, $\Delta=1$, and the subtraction on $a\to b$ is precisely what allows the value to rise from $1$ to $2$.
 
 = Widest augmenting path
 {parent=Augmenting path}

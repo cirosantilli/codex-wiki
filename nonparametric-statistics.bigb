@@ -1,7 +1,9 @@
 = Nonparametric statistics
 {wiki}
 
-Nonparametric statistics uses models whose effective dimension can grow with the sample size instead of fixing a finite-dimensional parametric family.
+Nonparametric statistics studies <statistical inference> without restricting the unknown <probability distribution> or target <function> to a fixed finite-dimensional <parametric statistical model>. In <density estimation> and <nonparametric regression>, the number of features that an <estimator> can represent may grow with the <sample size>. <Rank tests> offer another approach: the <probability distribution> of their <test statistic> under the <null hypothesis> can be obtained without specifying the common continuous <probability distribution>.
+
+"Nonparametric" does not mean free of assumptions or tuning choices. A <kernel density estimator> still requires a <kernel for density estimation> and a <smoothing bandwidth>, and its interpretation depends on assumptions about the <statistical sample>. The freedom is useful when a prescribed shape, such as a single <normal distribution>, would hide features that the observations might reveal.
 
 = Rank test
 {parent=Nonparametric statistics}
@@ -129,11 +131,20 @@ In one dimension, a <nearest neighbour density estimator> is $\widehat f_{(k)}(x
 
 = Kernel for density estimation
 {parent=Density estimation}
+{title2=$K,\quad K_h(u)=h^{-1}K(u/h)$}
 
 = Kernels for density estimation
 {synonym}
 
-A kernel for density estimation is an integrable function $K$ with unit integral, usually nonnegative and centered, whose rescaling $K_h(u)=h^{-1}K(u/h)$ averages observations over bandwidth $h$.
+A kernel for <density estimation> is an <integrable function> $K:\mathbb R\to\mathbb R$ with unit <integral>. For an ordinary <kernel density estimator> that is itself a <probability density function>, take
+$$
+K(u)\geq0,\qquad \int_{\mathbb R}K(u)\,du=1,\qquad K_h(u)=\frac1hK\!\left(\frac uh\right),\quad h>0.
+$$
+Thus $K$ specifies the bump's shape and the <smoothing bandwidth> $h$ specifies its width. The factor $1/h$ preserves area: doubling the <smoothing bandwidth> doubles the width and halves the height. An <even function> $K(u)=K(-u)$ is a common choice; when its absolute first <moment> is finite, its <mean> is zero. Symmetry is useful but is not required for normalization.
+
+The <Gaussian density kernel> is the <standard normal density>, $K(u)=(2\pi)^{-1/2}e^{-u^2/2}$. Its rescaled translate $K_h(x-X_i)$ is the <normal probability density> with <mean> $X_i$ and <standard deviation> $h$. It is positive everywhere, whereas an <Epanechnikov kernel> has <compact support>. With the <Gaussian density kernel>, the <smoothing bandwidth> is a <standard deviation>, not a cutoff beyond which observations have no influence.
+
+The broader convention also allows signed <kernels of order ell>, such as the <flat-top kernel for density estimation>, to cancel <moments> and reduce the <bias of an estimator>. Their unit <integral> still normalizes total area, but a resulting <kernel density estimator> can take negative values and need not be a <probability density function>. Nonnegativity is therefore an additional condition, not a consequence of unit <integral>.
 
 = Triweight kernel
 {parent=Kernel for density estimation}
@@ -202,10 +213,55 @@ For normalized <Legendre polynomials>, this <kernel for density estimation> repr
 = Kernel density estimator
 {synonym}
 
-Given <independent and identically distributed random variables> $X_1,\ldots,X_n$, the kernel density estimate is
+Let $X_1,\ldots,X_n$ be real <independent and identically distributed random variables> with unknown <probability density function> $f$, let $n\geq1$, and choose a nonnegative, unit-<integral> <kernel for density estimation> $K$ and a <smoothing bandwidth> $h>0$. The <kernel density estimator> is
 $$
-\widehat f_{n,h,K}(x)=\frac1n\sum_{i=1}^nK_h(x-X_i).
+\widehat f_{n,h,K}(x)=\frac1{nh}\sum_{i=1}^nK\!\left(\frac{x-X_i}{h}\right)=\frac1n\sum_{i=1}^nK_h(x-X_i),\qquad x\in\mathbb R.
 $$
+Place a bump at every observation and add their contributions. Each bump $K_h(x-X_i)/n$ has area $1/n$, so for every realized <statistical sample>
+$$
+\widehat f_{n,h,K}(x)\geq0,\qquad \int_{\mathbb R}\widehat f_{n,h,K}(x)\,dx=\frac1n\sum_{i=1}^n\int_{\mathbb R}K(u)\,du=1.
+$$
+The <change of variables> is $u=(x-X_i)/h$. Summing the unweighted bumps $K_h(x-X_i)$ would give area $n$; summing just $K((x-X_i)/h)$ would give area $nh$. Those raw sums do not have the normalization of a <probability density function>.
+
+Unlike a <histogram>, the construction does not require choosing bin origins, and a <Gaussian density kernel> gives a smooth curve. Its appeal is that identical local contributions can combine into a <probability density function> with several peaks without first choosing their number. This makes <kernel density estimation> useful for exploring an unknown <probability distribution> and estimating interval <probabilities>, while the <smoothing bandwidth> controls how much detail is visible.
+
+\Image[kernel-density-components.png]
+{title=Three Gaussian contributions, each of area one third, add to a normalized kernel density estimate}
+
+Before the <statistical sample> is observed, $\widehat f_{n,h,K}$ is a random <function>; afterwards it is a fitted <probability density function>. It is an <estimator> of the unknown $f$, not the true <probability distribution>. For fixed $K,h$, its <expectation> is the <convolution> $K_h*f$, generally different from $f$, and repeating the sampling changes the fitted curve. The <exact mean integrated squared error of a kernel density estimator> separates this smoothing <bias of an estimator> from sampling <variance>. Allowing signed <kernels of order ell> retains the formula but can lose nonnegativity.
+
+= Gaussian kernel density worked example
+{c}
+{parent=Kernel density estimation}
+{title2=$\widehat f(0)=0.337949\ldots$}
+
+Take the realized <statistical sample> $(-1,0,1)$, the <Gaussian density kernel> $\phi(u)=(2\pi)^{-1/2}e^{-u^2/2}$ and <smoothing bandwidth> $h=1/2$. Then
+$$
+\widehat f(x)=\frac23\bigl[\phi(2x+2)+\phi(2x)+\phi(2x-2)\bigr].
+$$
+At $x=0$, the three contributions are $0.03599398$, $0.26596152$, and $0.03599398$, because $\phi(0)=0.39894228$ and $\phi(2)=e^{-2}/\sqrt{2\pi}=0.05399097$. Their sum is
+$$
+\widehat f(0)=\frac{2(1+2e^{-2})}{3\sqrt{2\pi}}=0.33794948\ldots.
+$$
+This is a <probability density function> value, not the <probability> of observing exactly zero. Each of the three component curves has area $1/3$, despite having a different height at zero.
+
+Let $\Phi$ be the <cumulative distribution function> of the <standard normal distribution>. The fitted <probability> of the interval $[-1/2,1/2]$ is its area under the <kernel density estimator>:
+$$
+\begin{aligned}
+\int_{-1/2}^{1/2}\widehat f(x)\,dx
+&=\frac13\sum_{a\in\{-1,0,1\}}\bigl[\Phi(1-2a)-\Phi(-1-2a)\bigr]\\
+&=\frac{[\Phi(3)-\Phi(1)]+[\Phi(1)-\Phi(-1)]+[\Phi(-1)-\Phi(-3)]}{3}\\
+&=\frac{0.15730536+0.68268949+0.15730536}{3}=0.33243340\ldots.
+\end{aligned}
+$$
+The shaded area in the diagram is this fitted <probability>. Its agreement to a few digits with $1/3$ is incidental: the <empirical measure> gives this interval mass $1/3$ exactly, whereas <kernel density estimation> redistributes that mass into neighboring intervals.
+
+= History of kernel density estimation
+{parent=Kernel density estimation}
+
+Murray Rosenblatt's 1956 paper studied <density estimation> from a one-dimensional <statistical sample>, the unavoidable <bias of an estimator> under its stated conditions, and <asymptotic mean squared error>. It is an early foundation of <kernel density estimation>. \a[https://doi.org/10.1214/aoms/1177728190][Rosenblatt, Remarks on Some Nonparametric Estimates of a Density Function, Annals of Mathematical Statistics 27(3), 832-837 (1956)]{ref}. Emanuel Parzen's 1962 paper developed <statistical consistency> and <asymptotic normality> for <probability density function> estimates and studied estimation of the <mode>. \a[https://doi.org/10.1214/aoms/1177704472][Parzen, On Estimation of a Probability Density Function and Mode, Annals of Mathematical Statistics 33(3), 1065-1076 (1962)]{ref}.
+
+The authors' interests help explain the connection with smoothing. In a conversation recorded in 2006 and published in 2009, Rosenblatt recalled that his <density estimation> work grew out of estimation of the <time-series spectral density> and emphasized the connection with a smoothed <histogram>. This is his retrospective account of the motivation. \a[https://celebratio.org/Rosenblatt_M/article/891/][Brillinger and Davis, A conversation with Murray Rosenblatt, passage immediately before The Chicago, Indiana and Brown years]{ref}. Parzen's original paper lists Stanford University as his affiliation; its opening frames the problem as recovering both a <probability density function> and its <mode> from <independent and identically distributed random variables>. \a[https://bayes.wustl.edu/Manual/Parzen_1962.pdf][Parzen's original paper, p. 1065]{ref}.
 
 = Exact mean integrated squared error of a kernel density estimator
 {parent=Kernel density estimation}
@@ -272,6 +328,22 @@ Over a one-dimensional Hölder density class of smoothness $\beta$, the optimize
 {parent=Kernel density estimation}
 
 For a symmetric bandwidth-$h$ averaging kernel and a density with bounded first derivative, the interior pointwise bias is at most a constant times $h\|f'\|_\infty$. Near a support boundary, an uncorrected symmetric kernel can instead have nonvanishing bias.
+
+= Boundary bias of a kernel density estimator
+{parent=Bias of a kernel density estimator}
+{title2=$\int_{-\infty}^0\widehat f(x)\,dx=\frac1n\sum_i\Phi(-X_i/h)$}
+
+If the unknown <probability distribution> is supported on $[0,\infty)$, an ordinary <Gaussian density kernel> still puts some fitted <probability> below zero. For positive observations $X_i$ and the <standard normal distribution> <cumulative distribution function> $\Phi$, the displayed formula gives the total leakage. For the <statistical sample> $(0.1,0.4,0.9)$ and <smoothing bandwidth> $h=0.5$, it is
+$$
+\frac{\Phi(-0.2)+\Phi(-0.8)+\Phi(-1.8)}3=\frac{0.42074029+0.21185540+0.03593032}{3}=0.22284200\ldots.
+$$
+Thus about $22.28\%$ of the fitted <probability> falls outside the known <support of a probability distribution>, even though the full <integral> remains one. The leakage panel in <smoothing bandwidth> shades this area. Simply deleting the negative part leaves area $0.777158\ldots$; renormalizing it makes another <probability density function> but does not by itself establish that the <bias of an estimator> has been corrected.
+
+The issue also appears in the <expectation> of the <kernel density estimator>. For a nonnegative symmetric <kernel for density estimation> and a <probability density function> $f$ that is zero for $x<0$ and has a finite positive right-hand limit $f(0+)$, assume $f$ is bounded. Then, for fixed $K$ as $h\downarrow0$,
+$$
+\mathbb E\widehat f_h(0)=\int_0^\infty K(u)f(hu)\,du\longrightarrow\frac12 f(0+).
+$$
+Half the averaging window lies on the impossible side of the boundary. For example, the rate-one <exponential distribution> has $f(0+)=1$, so the limiting expected boundary height is $1/2$, rather than the right-hand height one. This refers to estimating the right-hand limit; changing a <probability density function> at a single point does not change its <probability distribution>. Decreasing the <smoothing bandwidth> narrows the affected region but does not remove this boundary-height error. This is why the interior <second-order pointwise bias bound for kernel density estimation> cannot be applied across a jump at the boundary.
 
 = Integrated second-order kernel bias bound
 {parent=Bias of a kernel density estimator}
@@ -491,7 +563,20 @@ A nonnegative <regression kernel> supplies weights $K((x_i-x)/h)$ in a local <we
 {parent=Kernel for nonparametric regression}
 {title2=$h$}
 
-A <smoothing bandwidth> determines the spatial scale over which a <regression kernel> averages data. Larger values reduce <variance> and may increase the <bias of an estimator>.
+A <smoothing bandwidth> $h>0$ determines the scale over which a <regression kernel> averages data, or a <kernel for density estimation> spreads each observation. It has the same units as the observations. In <kernel density estimation>, changing $h$ changes the visible detail while preserving the total <integral> one. For a <Gaussian density kernel>, each bump has <standard deviation> $h$ and its individual contribution has peak height $1/(nh\sqrt{2\pi})$.
+
+If the <smoothing bandwidth> is too small relative to the spacings in a <statistical sample>, the <kernel density estimator> shows narrow spikes tied to individual observations: apparent peaks may be sampling accidents. If it is too large relative to features of the unknown <probability density function>, it blurs distinct groups together and spreads fitted <probability> far from the observations. An intermediate <smoothing bandwidth> can reveal broad structure, but visual smoothness alone cannot establish accuracy.
+
+\Image[kernel-density-bandwidth.png]
+{title=The same sample at three Gaussian bandwidths, and leakage below zero for a separate positive sample}
+
+The first three panels use exactly $(-1.8,-1.4,-1.1,-0.7,0.7,1.1,1.4,1.8)$ with <smoothing bandwidths> $0.08$, $0.35$ and $1.2$, respectively. Every curve has area one; the two groups in the observed <statistical sample> become less distinct as $h$ increases. No true <probability density function> is specified in this illustration, so the middle panel is illustrative, not a certified optimal fit. The fourth panel uses $(0.1,0.4,0.9)$ and $h=0.5$ to illustrate <boundary bias of a kernel density estimator>.
+
+For a fixed nonnegative <kernel for density estimation> $K$ with finite squared <integral>, a <probability density function> $f$ that is bounded and continuous at an interior point $x$ with $f(x)>0$, and a deterministic sequence $h=h_n\downarrow0$, the pointwise sampling <variance> obeys
+$$
+\operatorname{Var}\bigl(\widehat f_{n,h}(x)\bigr)\sim\frac{f(x)}{nh}\int_{\mathbb R}K(u)^2\,du.
+$$
+Thus decreasing the <smoothing bandwidth> increases the leading sampling <variance> while reducing interior smoothing <bias of an estimator>: this is a <bias-variance tradeoff>. The conditions $h_n\to0$ and $nh_n\to\infty$ express two goals, increasingly fine resolution and enough observations contributing locally. Practical methods such as <plug-in bandwidth selection> use the data to choose $h$; <pointwise optimal kernel bandwidth> depends on local features of the unknown <probability density function>. The <smoothing bandwidth> remains a tuning choice in <nonparametric statistics>, and knowing the <support of a probability distribution> can require more than a width adjustment near a boundary.
 
 = Plug-in bandwidth selection
 {parent=Smoothing bandwidth}

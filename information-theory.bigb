@@ -16,6 +16,19 @@ This saves an average of $1/4$ of a <bit> per symbol, or $12.5\%$ of the fixed-l
 
 Claude E. Shannon's *A Mathematical Theory of Communication* appeared in the *Bell System Technical Journal* in July and October 1948. Its introduction separates the engineering problem of reproducing messages from their semantic meaning; subsequent sections develop probabilistic source models, noiseless coding, and transmission with noise. It also acknowledges earlier work by Harry Nyquist and Ralph Hartley.\a[https://www.cs.yale.edu/homes/yry/readings/general/shannon1948.pdf][Shannon, A Mathematical Theory of Communication, 1948, introduction and Parts I–II]{ref}
 
+= Bhattacharyya coefficient
+{c}
+{parent=Information theory}
+{title2=$B(p,q)=\sum_i\sqrt{p_iq_i}$}
+
+For <probability distributions> $p,q$ on the same finite alphabet, the Bhattacharyya coefficient measures their square-root overlap:
+$$
+B(p,q)=\sum_i\sqrt{p_iq_i}.
+$$
+The vectors $(\sqrt{p_i})_i$ and $(\sqrt{q_i})_i$ have unit <Euclidean norm>, so the <Cauchy-Schwarz inequality> gives $0\leq B\leq1$. Equality $B=1$ holds exactly when the distributions agree; $B=0$ holds exactly when they assign positive <probability> to disjoint outcomes. For $p=(0.9,0.1)$ and $q=(0.6,0.4)$, $B=\sqrt{0.54}+0.2\approx0.934847$. This overlap is not the probability that two independent draws agree, which here is $0.58$.
+
+The <fidelity of commuting mixed states> reduces to this coefficient. More generally, the <measurement characterization of quantum fidelity> minimizes it over outcome distributions of a common <quantum measurement>, connecting classical overlap to the <unsquared quantum fidelity>.
+
 = Communication channel
 {parent=Information theory}
 
@@ -33,6 +46,17 @@ A communication channel describes how transmitted inputs become received outputs
 {synonym}
 
 A <bit> is a binary classical symbol with two distinguishable values, zero and one. A uniform random <bit> has one <bit> of <information entropy>, while a biased binary symbol has less. Sending one <bit> means transmitting one symbol from this binary alphabet; the <mutual information> it carries about a particular input need not be one.
+
+= Nat
+{disambiguate=unit}
+{parent=Information theory}
+{wiki}
+{title2=$\mathrm{nat}$}
+
+= Nat
+{synonym}
+
+The unit for <information content> or <information entropy> computed with <natural logarithms>. Converting to <bits> divides the numerical value by $\log2$, so $1\,\mathrm{nat}=(1/\log2)\,\mathrm{bits}$.
 
 = Memoryless classical information source
 {parent=Information theory}
@@ -215,33 +239,189 @@ If every pair of <graphs> in a family on $[n]$ has a <graph intersection> withou
 {parent=Mutual information}
 {wiki}
 
-Conditional mutual information is the average information shared by $X$ and $Y$ after $Z$ is known:
+For finite <discrete random variables>, conditional mutual information measures the average reduction in uncertainty about $X$ from observing $Y$, when $Z$ is already known. With base-two <logarithms>, it is measured in <bits>:
 $$
-I(X;Y\mid Z)=H(X\mid Z)-H(X\mid Y,Z)\geq0.
+I(X;Y\mid Z)=H(X\mid Z)-H(X\mid Y,Z)
+=H(X\mid Z)+H(Y\mid Z)-H(X,Y\mid Z).
 $$
+The second expression follows from the <chain rule for conditional entropy> and makes the symmetry in $X,Y$ visible. Equivalently, compute the <mutual information> separately in each conditional <probability distribution> and then average:
+$$
+\begin{aligned}
+I(X;Y\mid Z)
+&=\sum_{z:p_Z(z)>0}p_Z(z)I(X;Y\mid Z=z)\\
+&=\sum_{z:p_Z(z)>0}p_Z(z)
+D\!\left(p_{X,Y\mid z}\,\middle\Vert\,p_{X\mid z}p_{Y\mid z}\right)\\
+&=\sum_{x,y,z:p(x,y,z)>0}p(x,y,z)
+\log_2\frac{p(x,y\mid z)}{p(x\mid z)p(y\mid z)}.
+\end{aligned}
+$$
+Here $D$ is the <Kullback-Leibler divergence>, also computed with base-two <logarithms>; zero-probability terms contribute zero. The <Gibbs inequality> gives $I(X;Y\mid Z)\geq0$, with equality exactly when $X$ and $Y$ have <conditional independence> given $Z$: the conditional joint <probability mass function> factors for every $z$ of positive <probability>.\a[https://ocw.mit.edu/courses/6-441-information-theory-spring-2016/184197ca5d5418da2415d37e929860b9_MIT6_441S16_chapter_2.pdf][MIT 6.441, Chapter 2, Definition 2.4 and Theorem 2.5(1)]{ref}
+
+For a fully computed example, take <independent random variables> $X,Y$ that are fair <bits>, and let $Z=X\oplus Y$, where $\oplus$ is <exclusive or>. The complete joint <probability distribution> has only these four positive entries:
+
+\Table
+{title=Joint probabilities for two independent fair bits and their exclusive or}
+[
+|| $X$
+|| $Y$
+|| $Z=X\oplus Y$
+|| $p(x,y,z)$
+
+| $0$
+| $0$
+| $0$
+| $1/4$
+
+| $0$
+| $1$
+| $1$
+| $1/4$
+
+| $1$
+| $0$
+| $1$
+| $1/4$
+
+| $1$
+| $1$
+| $0$
+| $1/4$
+]
+
+Every pair $(x,y)$ has <probability> $1/4=p_X(x)p_Y(y)$, so $I(X;Y)=4(1/4)\log_2 1=0$. But $p_Z(0)=p_Z(1)=1/2$. Given $Z=0$, the pairs $(0,0),(1,1)$ each have conditional <probability> $1/2$, while both conditional marginals are fair. Thus
+$$
+I(X;Y\mid Z=0)
+=\frac12\log_2\frac{1/2}{(1/2)(1/2)}
++\frac12\log_2\frac{1/2}{(1/2)(1/2)}=1.
+$$
+Given $Z=1$, the pairs $(0,1),(1,0)$ give the same calculation. Therefore
+$$
+I(X;Y\mid Z)=\frac12\cdot1+\frac12\cdot1=1.
+$$
+The <conditional entropy> calculation tells the same story: $H(X\mid Z)=1$ because either value of $Z$ leaves $X$ fair, whereas $H(X\mid Y,Z)=0$ because $X=Y\oplus Z$. Learning the <exclusive or> does not reveal either <bit> alone; it reveals whether they agree, so learning one then determines the other.
+
+\Image[conditional-information-xor.png]
+{title=Conditioning on the exclusive or reveals one bit of dependence between independent fair bits}
+
+This example distinguishes <conditional independence> from ordinary <independence>. It also disproves the claim that conditioning always reduces <mutual information>, despite <conditioning reduces entropy>. There is no general ordering between $I(X;Y\mid Z)$ and $I(X;Y)$: the example above increases it from zero to one, while taking $Y=X$ and $Z=X$ for a fair <bit> decreases it from one to zero. The <chain rule for mutual information> explains why both are possible.\a[https://ocw.mit.edu/courses/6-441-information-theory-spring-2016/184197ca5d5418da2415d37e929860b9_MIT6_441S16_chapter_2.pdf][MIT 6.441, Chapter 2, note following Theorem 2.5]{ref}
+
+<Conditional mutual information> is useful for asking whether an additional observation tells us anything after information already available has been accounted for. Its zero case expresses <conditional independence> exactly; in a <Markov chain>, this is the step that turns the <chain rule for mutual information> into the <data processing inequality>.
 
 = Chain rule for mutual information
 {parent=Mutual information}
+{title2=$I(X;Y,Z)=I(X;Y)+I(X;Z\mid Y)$}
 
-The information supplied by two observations decomposes as
+For finite <discrete random variables>, the <mutual information> supplied by two observations equals the information supplied by the first plus the additional <conditional mutual information> supplied by the second:
 $$
-I(X;Y_1,Y_2)=I(X;Y_1)+I(X;Y_2\mid Y_1).
+\begin{aligned}
+I(X;Y,Z)&=I(X;Y)+I(X;Z\mid Y)\\
+&=I(X;Z)+I(X;Y\mid Z).
+\end{aligned}
 $$
+The order changes the individual contributions but leaves the total unchanged.\a[https://web.stanford.edu/class/ee376a/files/lecture_3.pdf][Stanford EE376A/STATS376A, Lecture 3, Definition 7 and equations (48)–(51)]{ref} To prove the first identity, add and subtract the intermediate <conditional entropy>:
+$$
+\begin{aligned}
+I(X;Y,Z)&=H(X)-H(X\mid Y,Z)\\
+&=\bigl[H(X)-H(X\mid Y)\bigr]
++\bigl[H(X\mid Y)-H(X\mid Y,Z)\bigr].
+\end{aligned}
+$$
+With base-two <logarithms>, all contributions are in <bits>. Repeatedly inserting intermediate <conditional entropies> makes them cancel, as in a <telescoping series>, and gives the rule for any finite list of observations:
+$$
+I(X;Y_1,\ldots,Y_n)=\sum_{j=1}^{n}I(X;Y_j\mid Y_1,\ldots,Y_{j-1}),
+$$
+where the $j=1$ term is $I(X;Y_1)$. The same calculation with $W$ already known gives $I(X;Y,Z\mid W)=I(X;Y\mid W)+I(X;Z\mid Y,W)$.
+
+For the fair-<bit> <exclusive or> example in <conditional mutual information>, observing $Y$ alone tells nothing about $X$, but observing $Z$ after $Y$ tells everything:
+$$
+I(X;Y,Z)=I(X;Y)+I(X;Z\mid Y)=0+(1-0)=1.
+$$
+Here $H(X\mid Y)=1$ by <independence> and $H(X\mid Y,Z)=0$ because $X=Y\oplus Z$. In the reverse order, $H(X\mid Z)=1$, so $I(X;Z)=0$ and $I(X;Y\mid Z)=1$: the two observations are individually uninformative but jointly reveal one <bit>. Simply adding their separate <mutual informations> would miss all of it.
+
+The chain rule is useful for measuring the value of each new observation without double counting information already supplied. It also guarantees $I(X;Y,Z)\geq I(X;Y)$ by nonnegativity of <conditional mutual information>. Keeping $Y$ and adding $Z$ can help, even though discarding $Y$ and retaining only a processed $Z$ is constrained by the <data processing inequality>. Equating the two observation orders gives the precise identity
+$$
+I(X;Y\mid Z)-I(X;Y)=I(X;Z\mid Y)-I(X;Z),
+$$
+which explains why there is no general rule that conditioning decreases <mutual information>.
 
 = Data processing inequality
 {parent=Mutual information}
 {wiki}
+{title2=$I(X;Z)\leq\min\{I(X;Y),I(Y;Z)\}$}
 
 = Data processing inequality for mutual information
 {synonym}
 
-If $X\to Y\to Z$ is a <Markov chain>, then
+For finite <discrete random variables>, suppose $X\to Y\to Z$ is a <Markov chain>: the final <channel> uses only $Y$, so $X$ and $Z$ have <conditional independence> given $Y$. In terms of the joint <probability mass function>,
+$$
+p(x,y,z)=p_X(x)p(y\mid x)p(z\mid y),
+$$
+and hence $I(X;Z\mid Y)=0$. Then the two data processing inequalities are
 $$
 I(X;Z)\leq I(X;Y),
 \qquad
 I(X;Z)\leq I(Y;Z).
 $$
-Thus deterministic or randomized processing cannot increase the information shared with an unprocessed variable.
+All <mutual informations> here use base-two <logarithms>. Thus deterministic or randomized processing cannot increase the information shared with an unprocessed variable.\a[https://web.stanford.edu/class/cs229t/scribe_notes/12_05_final.pdf][Stanford CS229T/STATS231, Theorem 2.1 and its chain-rule proof]{ref}
+
+For a concrete cascade, take a fair <bit> $X$ and <Bernoulli random variables> $N_q,N_r$ with <probabilities> $q=0.1$, $r=0.2$ of being one. Assume $X,N_q,N_r$ are jointly <independent random variables>, and pass through two <binary symmetric channels>:
+$$
+Y=X\oplus N_q,\qquad Z=Y\oplus N_r.
+$$
+The second noise is independent of both $X$ and $Y$, so this is a <Markov chain>. Both $Y$ and $Z$ are fair <bits>. The net <exclusive or> error is one exactly when one noise flips the <bit> and the other does not:
+$$
+s=\mathbb P(N_q\oplus N_r=1)
+=q(1-r)+(1-q)r=q+r-2qr=0.26.
+$$
+Using the <binary entropy> $h_2(t)=-t\log_2t-(1-t)\log_2(1-t)$, the three <mutual informations> are fully determined:
+$$
+\begin{aligned}
+I(X;Y)&=1-h_2(0.1)\approx1-0.4689955936\approx0.5310044064,\\
+I(Y;Z)&=1-h_2(0.2)\approx1-0.7219280949\approx0.2780719051,\\
+I(X;Z)&=1-h_2(0.26)\approx1-0.8267463725\approx0.1732536275.
+\end{aligned}
+$$
+All numbers are in <bits>. The two losses are $I(X;Y\mid Z)\approx0.3577507789$ and $I(Y;Z\mid X)\approx0.1048182776$. Thus the cascade retains less information about the original source than either individual <channel> shares between its own input and output.
+
+\Image[data-processing-binary-cascade.png]
+{title=Two noisy binary channels compose to a noisier channel and obey both data processing bounds}
+
+With $q=0.1$ fixed and $0\leq r\leq1/2$, the effective error is $s=0.1+0.8r$. At $r=0$, $Z=Y$ and $I(X;Z)=I(X;Y)$; at $r=1/2$, $Z$ is independent of the previous variables and $I(X;Z)=I(Y;Z)=0$. The diagram plots these endpoints and the computed $r=0.2$ example.
+
+The <data processing inequality> is useful for testing what a proposed decoder or data summary could possibly reveal: if its only input is $Y$, even randomized processing cannot provide more <mutual information> about $X$ than $Y$ already contains. The <Markov chain> hypothesis matters. In the <exclusive or> example from <conditional mutual information>, allowing a processor to use both $Y$ and $Z$ reveals $X$ exactly; that processor has additional input, so the conclusion for processing $Y$ alone does not apply.
+
+The <chain rule for mutual information> proves both inequalities and identifies their exact gaps. First expand the information about $X$ in the two observation orders:
+$$
+\begin{aligned}
+I(X;Y,Z)&=I(X;Y)+\underbrace{I(X;Z\mid Y)}_{0}\\
+&=I(X;Z)+I(X;Y\mid Z).
+\end{aligned}
+$$
+Therefore $I(X;Y)-I(X;Z)=I(X;Y\mid Z)\geq0$. Next use $Z$ as the variable being learned:
+$$
+\begin{aligned}
+I(Z;X,Y)&=I(Z;Y)+\underbrace{I(Z;X\mid Y)}_{0}\\
+&=I(Z;X)+I(Z;Y\mid X).
+\end{aligned}
+$$
+Symmetry of <mutual information> gives $I(Y;Z)-I(X;Z)=I(Y;Z\mid X)\geq0$. Both signs follow from the nonnegativity of <conditional mutual information>; the first gap also gives <equality in data processing inequality>.
+
+= Equality in data processing inequality
+{parent=Data processing inequality}
+{title2=$I(X;Z)=I(X;Y)\iff I(X;Y\mid Z)=0$}
+
+Under the finite <Markov chain> hypothesis $X\to Y\to Z$, the gap identity in the <data processing inequality> gives
+$$
+I(X;Z)=I(X;Y)\quad\Longleftrightarrow\quad I(X;Y\mid Z)=0.
+$$
+By the zero criterion for <conditional mutual information>, equality means that $X$ and $Y$ have <conditional independence> given $Z$. After seeing the processed output, the original observation provides no additional information about $X$. Similarly, equality in the other bound, $I(X;Z)=I(Y;Z)$, holds exactly when $I(Y;Z\mid X)=0$.
+
+Equality does not require retaining every detail of $Y$. Let $X,W$ be <independent> fair <bits>, put $Y=(X,W)$, and let the processed output be $Z=X$, the first coordinate of $Y$. This is a <Markov chain>, and
+$$
+I(X;Y)=H(X)-H(X\mid X,W)=1-0=1,
+\qquad I(X;Z)=I(X;X)=1.
+$$
+Also $I(X;Y\mid Z)=H(X\mid X)-H(X\mid X,W)=0$. The output discards the entire unrelated <bit> $W$, reducing $H(Y)=2$ to $H(Z)=1$, while preserving all <mutual information> about $X$. This is what makes equality useful for choosing a compact observation that retains all information about the quantity of interest.
 
 = Conditional data-processing inequality
 {parent=Data processing inequality}
@@ -539,19 +719,31 @@ Hamming distortion is $d(x,y)=\mathbf1_{\{x\ne y\}}$, so its expected distortion
 = Channel capacity
 {parent=Information theory}
 {wiki}
+{title2=$C=\max_{P_X}I(X;Y)$}
 
-The capacity of a discrete memoryless channel is
+<Channel capacity> is the best reliable information rate available through a specified <communication channel>. For a <discrete memoryless channel> with finite input and output <alphabets>, fixed <transition probabilities> $W(y\mid x)$, and no input-cost constraint, it is
 $$
-C=\max_{P_X}I(X;Y).
+C=\max_{P_X}I(X;Y)
 $$
+in <bits> per channel use, when the <mutual information> uses base-two <logarithms>. The maximization varies the input <probability distribution>, while keeping the <communication channel> fixed. A large input <alphabet> or a large output <information entropy> alone does not determine how much information gets through: the receiver needs information about the input, rather than merely unpredictable output.
+
+The operational meaning comes from the <Shannon second coding theorem>. A <block code> represents one of $M$ possible messages by a word of length $n$, giving a rate $\log_2 M/n$ <bits> per use. Take the message label from the <uniform distribution on a finite set> of those $M$ choices when measuring average decoding-error <probability>. For every fixed rate $R<C$, there are sequences of such <block codes> whose decoding-error <probability> tends to zero as $n$ grows; a rate above $C$ cannot have vanishing decoding-error <probability>. This is an asymptotic limit, rather than a promise that an arbitrary finite <block code> at a rate below $C$ works well. See \a[https://ocw.mit.edu/courses/18-310-principles-of-discrete-applied-mathematics-fall-2013/12c7d786302979771e10a8fd31e07405_MIT18_310F13_Ch21.pdf][MIT 18.310, Shannon's Noisy Coding Theorem, sections 1–2]{ref}.
+
+For a <binary symmetric channel> with crossover <probability> $p=0.1$, the <binary symmetric channel capacity> is approximately $0.53100441$ <bits> per use. Thus a binary <code rate> $R=1/2$ lies below the limit, while $R=3/4$ lies above it. At $R=1/2$, two transmitted symbols represent one message <bit> on average; the redundancy helps distinguish messages after noise. This does not split individual physical symbols into fractional pieces.
+
+The result is useful because it separates two tasks. Computing <channel capacity> establishes the target imposed by the <transition probabilities>; constructing an effective <block code> attempts to approach that target with acceptable delay and decoding effort. The surprise is that reliability can improve indefinitely without forcing every positive rate to disappear. In his 1948 paper, Shannon defines noisy <channel capacity> in section 12 and develops its operational significance in section 13, Theorem 11. His original formulation uses information per unit time; the fixed-duration channel-use convention here expresses the same rate question per symbol. \a[https://www.cs.yale.edu/homes/yry/readings/general/shannon1948.pdf][Shannon, A Mathematical Theory of Communication, sections 12–13]{ref}.
 
 = Weakly symmetric channel capacity
 {parent=Channel capacity}
+{title2=$C=\log_2m-H(\text{one row})$}
 
-If every row of an $m$-output channel matrix is a permutation of every other row and all column sums agree, the uniform input achieves a uniform output and
+For a <discrete memoryless channel> with $m$ output symbols, suppose every row of the <transition matrix> is a <permutation> of every other row and all column sums agree. Such a <communication channel> has
 $$
 C=\log_2m-H(\text{one row}).
 $$
+The row <Shannon entropy> is the same for every input, so $H(Y\mid X)$ has that fixed value for every input <probability distribution>. The remaining term $H(Y)$ is at most $\log_2m$ by <maximum entropy on a finite alphabet>.
+
+A uniform input attains the bound. If there are $\ell$ input symbols, the total of all <transition probabilities> in the <matrix> is $\ell$; equal column sums must therefore each be $\ell/m$. Multiplication by the uniform input mass $1/\ell$ gives output mass $1/m$ in each column. Hence $H(Y)=\log_2m$, which proves the displayed formula. The <cyclic ternary channel capacity>, <binary symmetric channel capacity>, and <ternary symmetric channel capacity> are concrete applications of this symmetry calculation.
 
 = Cyclic ternary channel capacity
 {parent=Weakly symmetric channel capacity}
@@ -561,12 +753,50 @@ A <discrete memoryless channel> on the additive <group> $\mathbb Z/3\mathbb Z$ m
 
 = Binary symmetric channel capacity
 {parent=Weakly symmetric channel capacity}
+{title2=$C=1-h_2(p)$}
 
-A binary symmetric channel with crossover probability $p$ has capacity
+A <binary symmetric channel> independently flips each transmitted <bit> with crossover <probability> $p$. Its <channel capacity> is
 $$
-C=1-h_2(p)
+C=1-h_2(p),\qquad 0\leq p\leq1,
 $$
-bits per channel use.
+in <bits> per use, where $h_2$ is <binary entropy> and the endpoint convention is $0\log_2 0=0$. Knowing the input leaves just the uncertainty of the flip, so $H(Y\mid X)=h_2(p)$ for every input <probability distribution>. Since the output is a <bit>, $H(Y)\leq1$, and thus $I(X;Y)\leq1-h_2(p)$. A fair input produces a fair output and reaches the bound. This is the two-symbol case of <weakly symmetric channel capacity>; \a[https://ocw.mit.edu/courses/16-36-communication-systems-engineering-spring-2009/a49d9e2954b440def3794fe73e79756c_MIT16_36s09_lec13_14.pdf][Eytan Modiano, MIT 16.36, Channel Capacity and Coding, slides 4–5]{ref} gives this calculation.
+
+For crossover <probabilities> $p=0.01,0.1,0.25$, the resulting <channel capacities> are approximately $0.91920686$, $0.53100441$, and $0.18872188$ <bits> per use. At $p=0$, the <communication channel> is noiseless; at $p=1/2$, the output is <independent> of the input and the capacity is zero. At $p=1$, every <bit> is inverted, a known reversible rule, and capacity is one again. More generally $C(p)=C(1-p)$, because inverting every received <bit> exchanges the two crossover <probabilities>. The existing <mutual information> figure shows this full symmetric curve.
+
+An uncoded transmission illustrates why the raw bit-error <probability> is not itself <channel capacity>. At $p=0.1$, transmitting 100 uncoded <bits> succeeds on all of them with <probability> $0.9^{100}\approx0.00002656$. The <probability> of at least one error is therefore approximately $0.99997344$. A suitable <block code> changes which received words count as recoverable evidence of a message; simply repeating uncoded transmission at rate one does not obtain the reliability promised at rates below $C$.
+
+= Input distribution optimization for a binary symmetric channel
+{parent=Binary symmetric channel capacity}
+{title2=$I(X;Y)=h_2(p+(1-2p)q)-h_2(p)$}
+
+Let $q=\Pr(X=1)$ for the input <bit> of a <binary symmetric channel> with crossover <probability> $p$. The <law of total probability> gives
+$$
+\Pr(Y=1)=(1-q)p+q(1-p)=p+(1-2p)q.
+$$
+Consequently its <mutual information> is
+$$
+I(X;Y)=h_2\!\left(p+(1-2p)q\right)-h_2(p).
+$$
+Here $p$ specifies the noise and $q$ specifies the input bias; they are different choices. At $p=0.1$ and $q=0.2$, the output has $\Pr(Y=1)=0.26$, giving $H(Y)\approx0.82674637$ and $I(X;Y)\approx0.35775078$ <bits>. With the same noise and the fair input $q=1/2$, the output becomes fair and $I(X;Y)\approx0.53100441$ <bits>, attaining <binary symmetric channel capacity>.
+
+\Image[binary-channel-input-optimization.png]
+{title=A fair input maximizes retained information through a binary symmetric channel}
+{description=The left panel holds the crossover <probability> fixed and varies $q=\Pr(X=1)$. The right panel shows the output <probability distributions> for $p=0.1$ with input biases $q=0.2$ and $q=0.5$. More output <Shannon entropy> helps here because the conditional noise <information entropy> stays fixed.}
+
+For $p\ne1/2$, <binary entropy> reaches one only at output mass $1/2$, and the equation $p+(1-2p)q=1/2$ forces $q=1/2$. Thus the maximizing input is unique in those cases. For $p=1/2$, every input produces the same fair output and zero <mutual information>, so every input bias is optimal and none transmits information. A fixed input $q=0$ or $q=1$ also carries zero <mutual information> for every $p$: noise can make its output unpredictable without creating an unknown message to recover.
+
+= Flips versus erasures in a binary channel
+{parent=Binary symmetric channel capacity}
+
+A <binary erasure channel> marks its failed transmissions with a special output symbol, whereas a <binary symmetric channel> changes a <bit> without announcing whether it changed. At the same nominal failure <probability> $p=0.1$, the two <communication channels> therefore leave different uncertainty. With a fair input, an unerased output determines the input exactly, while the erasure flag leaves one <bit> of <conditional entropy>. Thus $H(X\mid Y)=p$ and $I(X;Y)=1-p=0.9$ for the <binary erasure channel>. This is the binary case of <capacity of a finite-alphabet erasure channel>.
+
+For the <binary symmetric channel> at $p=0.1$, neither possible received symbol rules out either input, and $H(X\mid Y)=h_2(0.1)\approx0.46899559$. Its <channel capacity> is only $1-h_2(0.1)\approx0.53100441$. A receiver benefits from knowing *where* information was lost, even when the fraction of affected transmissions is the same.
+
+\Image[binary-channel-errors-versus-erasures.png]
+{title=Announced erasures preserve more information than hidden bit flips at the same low failure probability}
+{description=Solid arrows carry <probability> $0.9$ and dashed arrows carry <probability> $0.1$ in the two illustrated laws of <transition probabilities>. The erasure flag is distinct from both <bits>. The lower plot compares <channel capacity> for $0\leq p\leq1/2$, using $1-p$ for the <binary erasure channel> and $1-h_2(p)$ for the <binary symmetric channel>.}
+
+This comparison concerns the specified <transition probabilities>, rather than a general ordering of every error mechanism. In particular, at $p=1$, an erasure flag conveys no input information, while deterministic inversion still conveys a full <bit>. Reporting only an error percentage loses the distinction between hidden corruption, announced loss, and a predictable reversible transformation.
 
 = Ternary symmetric channel capacity
 {parent=Weakly symmetric channel capacity}
@@ -605,6 +835,13 @@ The <logarithm> is especially natural because <independent> outcomes have additi
 {title2=$h(X_1,\ldots,X_n)$}
 
 The <information entropy> of the joint <probability distribution> of a <random vector>. For discrete variables it is $-\sum_{x_1,\ldots,x_n}p(x_1,\ldots,x_n)\log p(x_1,\ldots,x_n)$, with zero-mass terms omitted. Factoring joint probabilities into conditional probabilities gives the <chain rule for information entropy>, so joint entropy measures all coordinates together while accounting for their statistical dependence.
+
+= Cross-entropy
+{parent=Information entropy}
+{wiki}
+{title2=$H(P,Q)=-\sum_i p_i\log q_i$}
+
+For finite <probability mass functions> $p_i,q_i$, cross-entropy is the <expected value> under $P$ of the <log-loss> assigned by $Q$. With the same <logarithm> base, it satisfies $H(P,Q)=H(P)+D_{\mathrm{KL}}(P\Vert Q)$ when these quantities are finite. Use the infinite convention if $q_i=0<p_i$.
 
 = Entropy monotonicity under independent addition
 {parent=Information entropy}

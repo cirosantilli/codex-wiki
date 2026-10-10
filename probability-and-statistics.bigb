@@ -7,6 +7,16 @@
 
 Descriptive statistics summarizes observed data, for example through location and spread statistics or graphical summaries such as a <histogram>.
 
+= Mode
+{disambiguate=statistics}
+{parent=Descriptive statistics}
+{wiki}
+
+= Mode
+{synonym}
+
+A mode is a value at which a <probability mass function> or specified <probability density function> attains its largest value. There may be more than one. For the <normal distribution> the unique mode equals the <mean>; the <Maxwell speed distribution> has mode $\sqrt{2k_BT/m}$ and a larger <mean> speed. For a <continuous probability distribution>, a mode maximizes density rather than the <probability> of an exact value, which is zero. Density modes can change under a nonlinear <change of variables>, as the distinction between <Maxwell-Boltzmann velocity distribution> and <Maxwell speed distribution> illustrates.
+
 = Scatter plot
 {parent=Descriptive statistics}
 {wiki}
@@ -111,6 +121,9 @@ Measurement error is the difference between a recorded variable and the quantity
 
 = Measurement noise
 {parent=Measurement error}
+{title2=$n(t)$}
+
+<Measurement noise> is a fluctuating contribution to <measurement error>. An additive model for a <measured output> is $y_m(t)=y(t)+n(t)$, where $y$ is the actual <plant output>. A <controller> using <feedback control> can react to $n$ as though it were a change in the <plant output>. This effect is absent from the ideal noiseless examples under <control theory>; an <errors-in-variables model> represents a related distinction between latent quantities and their noisy observations.
 
 = Errors-in-variables model
 {parent=Measurement error}
@@ -1174,7 +1187,7 @@ $$
 where $p=dP/d\lambda$, $q=dQ/d\lambda$, and the integrand uses the lower-semicontinuous perspective convention at $q=0$.
 
 = Kullback-Leibler divergence
-{title2=$D_{\mathrm{KL}}$}
+{title2=$D_{\mathrm{KL}}(P\Vert Q)$}
 {parent=f-divergence}
 {c}
 {wiki}
@@ -1182,11 +1195,53 @@ where $p=dP/d\lambda$, $q=dQ/d\lambda$, and the integrand uses the lower-semicon
 = Relative entropy
 {synonym}
 
-For probability densities $p$ and $q$, the Kullback-Leibler divergence from $q$ to $p$ is
+The <Kullback-Leibler divergence>, also called <relative entropy>, compares two <probability distributions> in a specified order. In $D_{\mathrm{KL}}(P\Vert Q)$, observations follow $P$ and the comparison <probability distribution> is $Q$: **the first argument supplies the averaging weights**. For <probability mass functions> $p_i,q_i$ on a finite <alphabet>,
 $$
-D_{\mathrm{KL}}(p\Vert q)
-=\mathbb E_p\!\left[\log\frac{p(X)}{q(X)}\right].
+D_{\mathrm{KL}}(P\Vert Q)=\sum_i p_i\log\frac{p_i}{q_i}
+=\mathbb E_P\!\left[\log\frac{p(X)}{q(X)}\right].
 $$
+Here $X$ is a <random variable> with <probability distribution> $P$. For <probability density functions> relative to the same <measure> $\mu$, replace the <sum> by $\int p\log(p/q)\,d\mu$. These formulas use <natural logarithms> unless stated otherwise. The <expected value> is under $P$, even though $Q$ appears in the denominator. \a[https://web.stanford.edu/class/ee276/files/previous_notes/lecture_2.pdf][Weissman, information measures, 2024, Definition 4]{ref}
+
+Take $P=(0.75,0.25)$ and $Q=(0.5,0.5)$ on two outcomes. Direct calculation gives
+$$
+\begin{aligned}
+D_{\mathrm{KL}}(P\Vert Q)&=0.75\log(1.5)+0.25\log(0.5)\approx0.130812,\\
+D_{\mathrm{KL}}(Q\Vert P)&=0.5\log(2/3)+0.5\log2\approx0.143841.
+\end{aligned}
+$$
+The second outcome contributes negatively to the first <sum>: assigning it more <probability> than $P$ does makes its individual contribution negative. Nevertheless, <relative entropy nonnegativity> guarantees a nonnegative total. Reversing the arguments changes both the <likelihood ratio> and the averaging <probabilities>; taking an absolute value inside the <logarithm> would define a different quantity.
+
+\Image[kl-direction-and-support.png]
+{title=Direction changes the averaging weights; a missing outcome can make relative entropy infinite}
+
+The units depend on the <logarithm>: <natural logarithms> give <nats>, whereas base-two <logarithms> give <bits>. Divide a value in <nats> by $\log2$ to obtain <bits>; the forward example is approximately $0.188722$ <bits>. Changing the base rescales every <Kullback-Leibler divergence> by the same positive factor. Since the two calculated directions differ, <Kullback-Leibler divergence> is asymmetric and cannot be a <metric>. It also need not satisfy the <triangle inequality>. \a[https://web.stanford.edu/~kedart/ee376a_winter1617/Lecture_3.pdf][Tse, relative entropy, 2017, Section 3.3]{ref}
+
+The operational meaning is an expected penalty for using the wrong <probability distribution>. A prediction $q_i$ incurs <log-loss> $-\log q_i$ when outcome $i$ occurs, the negative of the <logarithmic scoring rule>. Under $P$, its <expected value> is the <cross-entropy> $H(P,Q)=-\sum_i p_i\log q_i$. Predicting with $P$ itself incurs <information entropy> $H(P)=-\sum_i p_i\log p_i$, so
+$$
+H(P,Q)-H(P)=D_{\mathrm{KL}}(P\Vert Q).
+$$
+Thus <Kullback-Leibler divergence> is exactly excess expected <log-loss>, whenever these separate quantities are finite. \a[https://web.stanford.edu/class/ee276/files/previous_notes/lecture_2.pdf][Weissman, information measures, 2024, property 3]{ref}
+
+For <lossless source coding>, ideal <codeword lengths> $-\log_2q_i$ similarly give excess expected length $D_{\mathrm{KL}}(P\Vert Q)$ in <bits> per symbol. Actual <prefix codes> require integer <codeword lengths>; <Shannon's source coding theorem> explains how long blocks approach ideal per-symbol lengths. The interpretation concerns an average, not a fractional physical <bit> attached to every outcome. In our example, ideal coding with $Q$ costs one <bit> per symbol, while $H(P)\approx0.811278$ <bits>; the difference is exactly the computed $0.188722$ <bits>. \a[https://web.stanford.edu/~kedart/ee376a_winter1617/Lecture_3.pdf][Tse, information theory, 2017, Section 3.4]{ref}
+
+Zeros require explicit conventions. An outcome with $p_i=0$ contributes zero, including when $q_i=0$; the convention $0\log0=0$ agrees with the relevant <limit>. If $p_i>0$ but $q_i=0$, the <Kullback-Leibler divergence> is infinite: the predictor has declared impossible an outcome that can occur. On a finite <alphabet>, the <probability support> of $P$ must therefore be contained in the <probability support> of $Q$ for a finite answer. For example, $P=(1,0)$ and $Q=(0.5,0.5)$ give $D(P\Vert Q)=\log2$, but $D(Q\Vert P)=+\infty$. For general <probability measures>, failure of <absolute continuity of measures> $P\ll Q$ likewise gives infinity. Even $P\ll Q$ does not guarantee a finite <integral>. \a[https://arxiv.org/pdf/1206.2459][van Erven and Harremoës, Rényi Divergence and Kullback-Leibler Divergence, 2014, Section II]{ref}
+
+To see how confidently wrong predictions are punished, hold the true <Bernoulli distribution> parameter at $p=0.75$ and vary the predicted parameter $q$. Its <binary relative entropy> is
+$$
+d(0.75,q)=0.75\log\frac{0.75}{q}+0.25\log\frac{0.25}{1-q}.
+$$
+It vanishes at $q=0.75$, equals approximately $2.894055$ <nats> at $q=0.01$, and equals $0.596495$ <nats> at $q=0.99$. Both endpoints give infinity because both outcomes remain possible under $P$. Predicting almost no successes is especially costly because successes actually occur three quarters of the time. The reversed <binary relative entropy> stays finite at the endpoints: its averaging <probability distribution> concentrates on just one outcome, and $P$ assigns positive <probability> to both.
+
+\Image[kl-bernoulli-penalty.png]
+{title=Bernoulli relative entropy with true success probability 0.75 and varying predicted probability}
+
+For <model selection>, minimizing expected <log-loss> ranks candidate <statistical models> by $D(P\Vert Q)$, since $H(P)$ is common to them. The true <probability distribution> is usually unknown, so one estimates predictive performance using fresh observations or <cross-validation>. Fitting and assessing on the same data can reward <overfitting>; a small fitted <Kullback-Leibler divergence> alone does not establish useful prediction.
+
+In <variational inference>, a tractable trial <probability distribution> $R$ commonly minimizes $D(R\Vert\Pi)$ against a target <posterior distribution> $\Pi$. Maximizing the <evidence lower bound> accomplishes this without evaluating the target's <normalization constant>. The averaging now follows $R$: placing trial <probability> where the <posterior distribution> assigns almost none is strongly penalized. The chosen direction and trial family therefore matter. \a[https://www.cs.columbia.edu/~blei/papers/BleiKucukelbirMcAuliffe2017.pdf][Blei, Kucukelbir and McAuliffe, Variational Inference: A Review for Statisticians, 2017, Section 2.2]{ref}
+
+These comparisons do not by themselves establish <causal inference>. Two <statistical models> can reproduce the same observed <probability distribution> while predicting different responses to an <intervention>. Choosing the smaller <Kullback-Leibler divergence> therefore needs additional assumptions or experimental evidence before supporting a causal claim. \a[https://ftp.cs.ucla.edu/pub/stat_ser/r350.pdf][Pearl, Causal inference in statistics: An overview, 2009, Section 2]{ref}
+
+The original reference is S. Kullback and R. A. Leibler's 1951 paper \a[https://doi.org/10.1214/aoms/1177729694][On Information and Sufficiency]{ref}, published in The Annals of Mathematical Statistics 22(1), pages 79–86. Its title connects this comparison with <sufficient statistics>: the historical setting was statistical information, before today's widespread applications in prediction and <variational inference>.
 
 = Binary partition bound for relative entropy
 {parent=Kullback-Leibler divergence}
@@ -1221,7 +1276,13 @@ The differential estimate $I'(t)\leq-2I(t)$ gives the displayed exponential boun
 {parent=Kullback-Leibler divergence}
 {title2=$H(f\mid g)\geq0$}
 
-For <probability densities> $f,g$ with $g>0$, set $q=f/g$. Equal masses give $H(f\mid g)=\int g(q\log q-q+1)\geq0$. The scalar integrand is minimized only at $q=1$, so equality means $f=g$ almost everywhere. Use $0\log0=0$; infinite entropy is allowed.
+For <probability distributions> $P,Q$, <relative entropy> satisfies $D_{\mathrm{KL}}(P\Vert Q)\geq0$, with equality exactly when $P=Q$. Thus truthful prediction uniquely minimizes expected <log-loss> whenever the comparison is well defined, explaining the <strictly proper scoring rule> property of the <logarithmic scoring rule>.
+
+For a short proof with <probability density functions> $f,g$ and $g>0$, set $r=f/g$. Their <integrals> both equal one, giving
+$$
+H(f\mid g)=\int g\bigl(r\log r-r+1\bigr)\,d\mu\geq0.
+$$
+The <strictly convex function> $r\log r-r+1$ is minimized only at $r=1$, so equality means $f=g$ <almost everywhere>. Its value at zero is one by $0\log0=0$. Where $g=0<f$, <relative entropy> is infinite; where both vanish, the contribution is zero. These conventions extend the argument beyond positive reference <probability density functions>.
 
 = Generalized Kullback–Leibler divergence
 {parent=Kullback-Leibler divergence}
@@ -1821,17 +1882,45 @@ For nested <normal linear models>, the decrease in <residual sum of squares> obt
 {parent=Probability and statistics}
 {c}
 {wiki}
+{title2=$Z_{n+1}=\sum_{j=1}^{Z_n}\xi_{n,j}$}
 
-A Galton--Watson process forms each generation by giving every current individual an independent number of offspring with a common distribution.
+A <Galton-Watson process> is a <branching process> that counts individuals by generation. Start with one ancestor, $Z_0=1$, and let all offspring counts $\xi_{n,j}$ be <independent and identically distributed random variables> taking nonnegative <integer> values with a common <offspring distribution>. Then
+$$
+Z_{n+1}=\sum_{j=1}^{Z_n}\xi_{n,j},\qquad \mathbb P(\xi_{n,j}=k)=p_k,\quad k\geq0.
+$$
+The <empty sum> is zero: zero is an <absorbing state>, so once a generation is empty every later generation is empty. The same <offspring distribution> applies to every individual in every generation. \a[https://ocw.mit.edu/courses/18-445-introduction-to-stochastic-processes-spring-2015/27aaeb9eb9a9cecce93d9ad74413ddf5_MIT18_445S15_lecture19.pdf][Hao Wu, MIT 18.445, Lecture 19, slides 3–4]{ref}
+
+For a concrete <offspring distribution>, take $p_0=1/4$, $p_1=1/4$, $p_2=1/2$, and $p_k=0$ for $k\geq3$. An individual has no children with <probability> $1/4$, one with <probability> $1/4$, and two with <probability> $1/2$. The offspring <expected value> is $\mu=5/4$. A possible sequence of generation sizes is $1,2,1,0,0,\ldots$: two children need not lead to a permanently growing family.
+
+The <probability generating function> $F(s)=1/4+s/4+s^2/2$ gives the exact generation <probability distributions> through <branching-process generating-function iteration>. With $G_0(s)=s$ and $G_{n+1}(s)=F(G_n(s))$, the second generation has
+$$
+G_2(s)=\frac{11}{32}+\frac18s+\frac9{32}s^2+\frac18s^3+\frac18s^4.
+$$
+Thus $\mathbb P(Z_2=0)=11/32$ and $\mathbb E[Z_2]=25/16$. The figure shows full generation <probability mass functions>, computed by <polynomial> <function composition>, through generation six; no simulated frequencies are used.
+
+\Image[branching-generation-distributions.png]
+{title=Exact Galton-Watson generation distributions: growing means and increasing extinction mass}
+
+The contrast is striking: the <expected generation size in a Galton-Watson process> grows as $(5/4)^n$, while the <branching extinction probability> is $1/2$. By generation six, $\mathbb P(Z_6=0)\approx0.462186$ although $\mathbb E[Z_6]\approx3.814697$. Larger surviving families carry the rising <expected value>; that <mean> is an average over possible families, not a forecast of one family's path. The <Galton-Watson extinction fixed point> turns an unbounded number of future generations into a single equation for this <probability>.
+
+The historical question was the disappearance of surnames passed through male descendants. In \a[https://math.uchicago.edu/~shmuel/Modeling/Galton%20Watson.pdf][Watson and Galton, On the Probability of the Extinction of Families, pages 139–140]{ref}, <Francis Galton> formulates a constant-law model counting sons who reach adulthood, and Watson computes later generation <probability distributions> by composing <generating functions>. Those are assumptions of their model, rather than a claim that actual human reproduction follows this <offspring distribution>.
 
 = Offspring distribution of a branching process
 {parent=Galton-Watson process}
-{title2=$f(s)=\sum_{j\geq0}p_js^j$}
+{title2=$p_k=\mathbb P(\xi=k),\quad F(s)=\sum_{k\geq0}p_ks^k$}
 
 = Offspring distribution
 {synonym}
 
-In a <Galton-Watson process>, each individual independently has $j$ children with <probability> $p_j$. This <probability distribution> determines its offspring <probability generating function>, its mean $f'(1)$ when finite, and the <branching extinction probability>. A <binomial branching process> and a <Poisson branching process> have different <offspring distributions> even when their means agree.
+The offspring <probability distribution> of a <Galton-Watson process> is the law of one individual's number of children: $p_k=\mathbb P(\xi=k)$ for $k\geq0$, with $p_k\geq0$ and $\sum_{k\geq0}p_k=1$. Its <probability generating function> and, when finite, its <expected value> are
+$$
+F(s)=\mathbb E[s^\xi]=\sum_{k\geq0}p_ks^k,\quad 0\leq s\leq1,\qquad \mu=\mathbb E[\xi]=\sum_{k\geq0}kp_k=F'(1-).
+$$
+Use $0^0=1$ when evaluating the <probability generating function> at zero: $F(0)=p_0$ and $F(1)=1$.
+
+For $p_0=p_1=1/4$ and $p_2=1/2$, $F(s)=1/4+s/4+s^2/2$, $\mu=5/4$, and the offspring <variance> is $11/16$: $\mathbb E[\xi^2]=9/4$ and $\operatorname{Var}(\xi)=9/4-(5/4)^2$. The generation <probability mass functions> pictured under <Galton-Watson process> come from repeatedly composing this <probability generating function>. They describe the whole generation, whereas $(p_k)$ describes one individual's reproduction. \a[https://www.uni-muenster.de/Stochastik/lehre/WS1011/SpezielleStochastischeProzesse/Ch_1.pdf][University of Münster branching-process notes, Section 1.3, Proposition 1.4]{ref}
+
+The whole <offspring distribution> matters for extinction. Another law, $p_0=3/8$ and $p_2=5/8$, has the same offspring <mean> $5/4$ but <branching extinction probability> $3/5$, since $3/8+5s^2/8=s$ has <roots of a polynomial> $3/5$ and $1$. Consequently the two laws have the same <expected generation size in a Galton-Watson process> at each generation but different survival chances. A <binomial branching process> and a <Poisson branching process> likewise specify different <offspring distributions>; a common <mean> does not make their <probability generating functions> identical.
 
 = Fractional-power offspring generating function
 {parent=Offspring distribution of a branching process}
@@ -1928,8 +2017,26 @@ With one initial ancestor and independent offspring counts of finite mean and <v
 = Galton-Watson extinction fixed point
 {parent=Galton-Watson process}
 {c}
+{title2=$q=\min\{s\in[0,1]:F(s)=s\}$}
 
-If $G$ is the offspring probability-generating function, the eventual extinction probability is the smallest fixed point of $G$ in $[0,1]$.
+For a <Galton-Watson process> with one ancestor and offspring <probability generating function> $F$, the <branching extinction probability> $q$ is the smallest <fixed point> of $F$ in $[0,1]$. A direct way to find it is to compute extinction by generation $n$:
+$$
+q_0=0,\qquad q_n=\mathbb P(Z_n=0),\qquad q_{n+1}=F(q_n),\qquad q_n\uparrow q.
+$$
+Zero is an <absorbing state>, so extinction by generation $n$ is exactly the <event> $Z_n=0$. \a[https://ocw.mit.edu/courses/18-445-introduction-to-stochastic-processes-spring-2015/27aaeb9eb9a9cecce93d9ad74413ddf5_MIT18_445S15_lecture19.pdf][Hao Wu, MIT 18.445, Lecture 19, slide 4]{ref}
+
+For $F(s)=1/4+s/4+s^2/2$, the equation is
+$$
+F(s)-s=\frac12\left(s-\frac12\right)(s-1)=0.
+$$
+Both $1/2$ and $1$ are <fixed points>, but iteration from zero selects $q=1/2$. The first values are $q_1=1/4$, $q_2=11/32$, $q_3=809/2048\approx0.395020$, and $q_6\approx0.462186$. Iteration started at $1$ would stay at $1$ forever and would give the wrong extinction answer for this <offspring distribution>.
+
+\Image[branching-extinction-fixed-point.png]
+{title=The smallest extinction fixed point selected by iteration from zero}
+
+The vertical steps in the figure apply the offspring <probability generating function>; horizontal steps return to the diagonal to start the next iteration. This gives a useful numerical calculation even when solving $F(s)=s$ explicitly is difficult. For the displayed law, every finite iteration is a lower bound for the eventual <branching extinction probability>; at generation six, about $0.037814$ additional extinction <probability> remains beyond the current empty families.
+
+Why the smallest <fixed point>? The ancestor's children's descendant families are <independent>; given $k$ children, all are empty $n$ generations later with <probability> $q_n^k$. Averaging gives $q_{n+1}=\sum_kp_kq_n^k=F(q_n)$. The increasing extinction <events> give the <limit> $q$, and <continuity> of the <probability generating function> yields $F(q)=q$. For any other <fixed point> $r\in[0,1]$, $q_0\leq r$ and <monotonicity> of $F$ imply $q_n\leq r$ at every step; hence $q\leq r$. \a[https://www.uni-muenster.de/Stochastik/lehre/WS1011/SpezielleStochastischeProzesse/Ch_1.pdf][University of Münster branching-process notes, Section 1.4, Theorem 1.7]{ref}
 
 = Laziness invariance of branching extinction
 {parent=Galton-Watson extinction fixed point}
@@ -1944,7 +2051,26 @@ For a <Galton-Watson process>, replacing an individual's reproduction by a one-d
 = Branching extinction probability
 {synonym}
 
-For a <Galton-Watson process> with one ancestor this is the probability that some generation is empty. It is the smallest fixed point of the offspring <probability generating function> in $[0,1]$; the complementary survival probability is $1-q$. A <branching process conditioned on extinction> reweights reproduction using this fixed point.
+For a <Galton-Watson process> with one ancestor, the <branching extinction probability> is the <probability> that some generation is empty:
+$$
+q=\mathbb P\left(\bigcup_{n\geq0}\{Z_n=0\}\right)=\lim_{n\to\infty}\mathbb P(Z_n=0).
+$$
+The equality uses the <absorbing state> at zero. The complementary <branching survival probability> $1-q$ is the <probability> that every generation is nonempty. The <Galton-Watson extinction fixed point> computes $q$ from the <offspring distribution>.
+
+For $p_0=p_1=1/4$, $p_2=1/2$, one ancestor has $q=1/2$. Starting instead from $m$ ancestors with <independent> descendant families gives
+$$
+\mathbb P(\text{eventual extinction}\mid Z_0=m)=q^m,\qquad \mathbb P(Z_n=0\mid Z_0=m)=q_n^m.
+$$
+All $m$ families must die out. With three ancestors, eventual extinction has <probability> $1/8$ and survival has <probability> $7/8$; by generation two, extinction has <probability> $(11/32)^3=1331/32768\approx0.040619$. Extra ancestors change the extinction <probability> without changing the <offspring distribution>. \a[https://www.uni-muenster.de/Stochastik/lehre/WS1011/SpezielleStochastischeProzesse/Ch_1.pdf][University of Münster branching-process notes, Lemma 1.2 and equation (1.10)]{ref}
+
+For finite offspring <mean> $\mu$, the extinction classification is:
+* If $\mu<1$, extinction has <probability> $1$. For example $p_0=3/4$, $p_2=1/4$ gives $\mu=1/2$ and $F(s)=3/4+s^2/4$; its only <fixed point> in $[0,1]$ is $1$.
+* If $\mu=1$ and $p_1\ne1$, extinction also has <probability> $1$. For example $p_0=p_2=1/2$ gives $F(s)-s=(s-1)^2/2$ and $q=1$, despite <expected generation size in a Galton-Watson process> remaining one.
+* If $1<\mu<\infty$, extinction has <probability> $q<1$. The value can be zero: if $p_0=0$, every individual has at least one child, so an initially nonempty family never becomes empty. In particular $p_2=1$ gives $Z_n=2^n$ and $q=0$.
+
+The critical exception is $p_1=1$: every individual has exactly one child, $F(s)=s$, and $Z_n=1$ forever from one ancestor. Thus $\mu=1$ but $q=0$; a blanket claim that every critical <Galton-Watson process> becomes extinct would be false. These cases concern the <Galton-Watson process> with its common <offspring distribution> and <independence> assumptions. \a[https://www.uni-muenster.de/Stochastik/lehre/WS1011/SpezielleStochastischeProzesse/Ch_1.pdf][University of Münster branching-process notes, Section 1.4, trivial cases and Theorem 1.7]{ref}
+
+This <probability> answers whether any lineage persists, which the offspring <mean> alone cannot quantify in the supercritical case. A <branching process conditioned on extinction> uses the same <fixed point> to reweight reproduction and describe families known eventually to die out.
 
 = Survival probability of a branching process
 {parent=Extinction probability of a branching process}
@@ -1956,10 +2082,34 @@ For a <Galton-Watson process> with one ancestor this is the probability that som
 For a <Galton-Watson process> started from one ancestor, this is the <probability> that every generation is nonempty. It is the complement of the <branching extinction probability>. The <binomial branching survival correction> distinguishes finite-binomial reproduction from the <Poisson branching process> near mean one.
 
 = Expected generation size in a Galton-Watson process
-{title2=$\mathbb E[Z_n]=m^n$}
 {parent=Galton-Watson process}
+{title2=$\mathbb E[Z_n]=\mu^n$}
 
-If a <Galton-Watson process> starts from one individual and has offspring mean $m$, conditioning on generation $n$ gives $\mathbb E[Z_{n+1}\mid Z_n]=mZ_n$. Induction therefore gives $\mathbb E[Z_n]=m^n$.
+For a <Galton-Watson process> starting with one ancestor and finite offspring <mean> $\mu$, the <expected value> of the generation size is $\mathbb E[Z_n]=\mu^n$. At $n=0$ it is one, including when $\mu=0$; zero offspring <mean> forces every later generation to be empty. With $m$ initial ancestors, the <expected value> is $m\mu^n$.
+
+For $p_0=p_1=1/4$, $p_2=1/2$, the offspring <mean> is $5/4$. The exact calculations used in the generation <probability mass function> figure under <Galton-Watson process> give:
+\Table[
+\Tr[\Th[Generation $n$]\Th[Possible sizes]\Th[Extinction by $n$: $q_n$]\Th[<Expected value> $\mathbb E[Z_n]$]]
+\Tr[\Td[0]\Td[1]\Td[0]\Td[1]]
+\Tr[\Td[1]\Td[0–2]\Td[0.2500000000]\Td[1.25]]
+\Tr[\Td[2]\Td[0–4]\Td[0.3437500000]\Td[1.5625]]
+\Tr[\Td[3]\Td[0–8]\Td[0.3950195313]\Td[1.953125]]
+\Tr[\Td[4]\Td[0–16]\Td[0.4267750978]\Td[2.44140625]]
+\Tr[\Td[5]\Td[0–32]\Td[0.4477622665]\Td[3.0517578125]]
+\Tr[\Td[6]\Td[0–64]\Td[0.4621860903]\Td[3.814697265625]]
+]
+
+Nearly half the families are already empty at generation six, yet the <expected value> exceeds three. Since empty families contribute zero,
+$$
+\mathbb E[Z_n\mid Z_n>0]=\frac{\mu^n}{1-q_n}
+$$
+whenever $q_n<1$. At generation six this <conditional expectation> is about $7.092969$. Conditioning on being nonempty now differs from conditioning on eventual survival: some presently nonempty families will still die out. The eventual <branching extinction probability> is $1/2$, even as the unconditional <expected value> grows without bound.
+
+The <expected value> is useful for computing average population counts and, in the subcritical case, the <expected value> of the <total progeny of a branching process>. Its simple formula comes from one local calculation: <linearity of expectation> and the <independent and identically distributed> offspring counts give
+$$
+\mathbb E[Z_{n+1}\mid Z_n]=\mu Z_n,\qquad \mathbb E[Z_{n+1}]=\mu\mathbb E[Z_n].
+$$
+The <tower property of conditional expectation> gives the second equality; starting from $\mathbb E[Z_0]=1$ gives the formula. It describes an average over the generation <probability distribution>, not deterministic growth of an individual family. \a[https://www.uni-muenster.de/Stochastik/lehre/WS1011/SpezielleStochastischeProzesse/Ch_1.pdf][University of Münster branching-process notes, Section 1.3, Proposition 1.4]{ref}
 
 = Quadratic Galton-Watson extinction bound
 {parent=Galton-Watson process}
@@ -2735,3 +2885,12 @@ This is an orthogonal <projection> interpretation of <linear least squares>. The
 {c}
 
 The residual variance after projection onto one factor is $\operatorname{Var}(Y)-\operatorname{Cov}(X,Y)^2/\operatorname{Var}(X)$, a covariance Schur complement.
+
+= Statistician
+{parent=Probability and statistics}
+{wiki}
+
+= Francis Galton
+{c}
+{parent=Statistician}
+{wiki}

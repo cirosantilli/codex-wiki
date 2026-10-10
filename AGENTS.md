@@ -199,9 +199,9 @@ When documenting a generally useful STEM concepts, we want to aim try to have th
 
 * what is it
 * examples
+* image, maybe even video generation when it makes sense
 * why the concept is useful and beautiful/interesting
 * discovery history
-* images
 
 When you are doing another big job, it is OK to just create stubs for concepts without going into all this detail. But when it gets closer to the matter, this is the ideal we should strive for. To one day make the one book to rule them all.
 

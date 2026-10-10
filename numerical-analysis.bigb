@@ -7,6 +7,122 @@ Three questions organize error analysis. <Truncation error> measures the approxi
 
 For example, the <square root> $s(a)=\sqrt a$ has relative <condition number> $|as'(a)/s(a)|=1/2$ for $a>0$: a small relative change in $a$ produces about half that relative change in $s(a)$. In contrast, $g(a)=1/(1-a)$ has relative <condition number> $|a/(1-a)|$. Changing $a=0.99$ to $0.9901$ changes $g(a)=100$ to about $101.010101$: an input change of about $0.0101\%$ produces an output change of about $1.0101\%$. This sensitivity exists even with exact arithmetic. MIT's conditioning lecture separates the <condition number> from <roundoff error> in precisely this way.\a[https://ocw.mit.edu/courses/18-335j-introduction-to-numerical-methods-spring-2019/pages/week-2/][Steven G. Johnson, MIT 18.335J, Lecture 5: Condition Numbers, 2019]{ref}
 
+= Floating-point arithmetic
+{parent=Numerical analysis}
+{wiki}
+{title2=$\pm(d_0.d_1\cdots d_{p-1})_\beta\,\beta^e$}
+
+<Floating-point arithmetic> represents a <real number> by a sign, a fixed number of significant digits, and a scale. It trades exactness for a compact representation spanning many orders of magnitude. The picture shows the essential compromise: with the same precision, large numbers have wider gaps between representable neighbors. Thus accuracy is naturally relative to magnitude, rather than a fixed distance along the <number line>.
+
+\Image[floating-point-spacing.png]
+{title=Eight normalized four-bit binary values in each of three intervals, with gaps doubling from one eighth to one half}
+
+In radix $\beta$, an <integer> at least two, a nonzero normalized value has the <positional notation>
+$$
+y=\pm\left(d_0+\frac{d_1}{\beta}+\cdots+\frac{d_{p-1}}{\beta^{p-1}}\right)\beta^e,\qquad 1\leq d_0<\beta,\quad 0\leq d_j<\beta\ (j\geq1),
+$$
+where the digits and exponent $e$ are <integers>. The parenthesized factor is the significand; $p$ counts all its significant digits, including the leading digit. Normalization means $d_0\ne0$, so the same value has one such representation. The allowed exponents satisfy $e_{\min}\leq e\leq e_{\max}$. Finite precision restricts the available digits, while the exponent bounds restrict the range. Zero needs a separate representation. This scales a digit string in <positional notation> by a power of its base.\a[https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html][David Goldberg, What Every Computer Scientist Should Know About Floating-Point Arithmetic, §Floating-point Formats, 1991; Oracle's authorized edited reprint]{ref}
+
+For positive normalized values in $[\beta^e,\beta^{e+1})$, increasing the last digit by one gives the constant neighbor spacing
+$$
+\Delta_e=\beta^{e-p+1}.
+$$
+At the next scale, the spacing is multiplied by $\beta$. In the <binary numeral system> with $p=4$, the values in $[1,2)$ are $1,1.125,1.25,\ldots,1.875$; those in $[2,4)$ are $2,2.25,\ldots,3.75$; those in $[4,8)$ are $4,4.5,\ldots,7.5$. The respective gaps are $1/8$, $1/4$, and $1/2$. Although absolute resolution deteriorates with magnitude, $\Delta_e/y$ stays between $\beta^{-p}$ and $\beta^{1-p}$. This scale invariance is why <floating-point arithmetic> suits both microscopic and astronomical calculations.
+
+The IEEE 754 binary64 format uses the <binary numeral system> with $p=53$, including an implicit leading one for normalized values, and normal exponents $-1022\leq e\leq1023$. Its 64 stored <binary digits> comprise one sign digit, 11 exponent digits and 52 trailing significand digits. <Subnormal numbers> extend the range toward zero with a different leading-digit rule. In rounding to nearest, an operation returns the representable value closest to its exact result; a tie goes to the value whose last significant <binary digit> is even. <Machine epsilon> describes the gap just above one, whereas <unit roundoff> bounds a single relative rounding error in the normal range. These format and rounding rules are presented in MIT's floating-point lecture.\a[https://ocw.mit.edu/courses/18-335j-introduction-to-numerical-methods-spring-2019/2f313023ae3404bc217a81a31b227170_MIT18_335JS19_lec2.pdf][Per-Olof Persson, MIT 18.335J, Lecture 2: Floating-Point Arithmetic, the IEEE Standard, slides 6–9, 2019]{ref}
+
+Even an ordinary terminating decimal can require rounding in the <binary numeral system>. The <rational number> $0.1=1/10$ has the repeating <positional notation> $0.0001100110011\ldots{}_2$. Every finite binary <fraction> has a reduced <denominator> that is a power of two, so the factor five in $10$ prevents an exact finite binary representation. In binary64, the exact stored values of three decimal literals and their computed <sum> are
+$$
+\begin{array}{c|c}
+\text{Python expression}&\text{exact stored rational number}\\\hline
+0.1&3602879701896397/36028797018963968\\
+0.2&3602879701896397/18014398509481984\\
+0.3&5404319552844595/18014398509481984\\
+0.1+0.2&1351079888211149/4503599627370496
+\end{array}
+$$
+The exact <sum> of the first two stored <rational numbers> is $10808639105689191/36028797018963968$, halfway between two binary64 values. The even-last-digit tie rule rounds it upward. The printed result is `0.30000000000000004`, one step $2^{-54}$ above stored `0.3`, so `0.1 + 0.2 == 0.3` is false. Both conversion of the inputs and rounding of the <addition> matter here.
+
+To reproduce the table on a Python installation using binary64, inspect exact <fractions> rather than only their printed decimal representations:
+``
+import sys
+assert (sys.float_info.radix, sys.float_info.mant_dig) == (2, 53)
+for value in (0.1, 0.2, 0.3, 0.1 + 0.2):
+    print(repr(value), value.as_integer_ratio())
+print(0.1 + 0.2 == 0.3)  # False
+``
+Python's `as_integer_ratio()` returns a pair of <integers> whose quotient equals the stored finite value exactly.\a[https://docs.python.org/3.14/library/stdtypes.html#float.as_integer_ratio][Python 3.14 documentation, float.as_integer_ratio]{ref} Exact <rational numbers> are also useful for checking <floating-point arithmetic>: a short decimal printout can hide the approximation being made.
+
+Historically, David Goldberg's March 1991 ACM Computing Surveys paper explained representation, rounding and <catastrophic cancellation> together with the IEEE standard's design choices. Oracle provides an authorized edited reprint. Its enduring lesson is practical: use the spacing to understand <roundoff error>, and inspect intermediate values when mathematically equivalent <algorithms> behave differently.\a[https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html][Goldberg, 1991, reprint notice and §§Rounding Error, Cancellation]{ref}
+
+= Machine epsilon
+{parent=Floating-point arithmetic}
+{wiki}
+{title2=$\epsilon_{\rm mach}=\beta^{1-p}$}
+
+= Machine precision
+{synonym}
+
+Here <machine epsilon> means the gap from one to the next larger value in normalized <floating-point arithmetic>:
+$$
+\epsilon_{\rm mach}=\operatorname{next}(1)-1=\beta^{1-p}.
+$$
+It is a relative resolution scale near one, not the smallest positive representable value and not a fixed absolute error for all magnitudes. In binary64, $p=53$ gives
+$$
+\epsilon_{\rm mach}=2^{-52}\approx2.220446049250313\times10^{-16},\qquad u=2^{-53}\approx1.1102230246251565\times10^{-16},
+$$
+where $u$ is <unit roundoff> for rounding to nearest. Some authors instead call $u$ their <machine epsilon>; MIT 18.335J uses this half-gap convention. Always check which definition an error bound uses.\a[https://ocw.mit.edu/courses/18-335j-introduction-to-numerical-methods-spring-2019/2f313023ae3404bc217a81a31b227170_MIT18_335JS19_lec2.pdf][Persson, MIT 18.335J, Lecture 2, slides 3, 8–9: the half-gap convention]{ref}
+
+The gap below one is smaller: the preceding binary64 value is $1-2^{-53}$, whereas the next value above one is $1+2^{-52}$. Under nearest-even rounding, `1.0 + 2.0**-53` is exactly `1.0`: the exact <sum> is a tie and one has the even final <binary digit>. By contrast, `1.0 + 2.0**-52` is the next value. Thus searching for the smallest increment that changes one by trial <addition> also depends on the rounding convention. At $2^{53}$ the next larger binary64 value is $2^{53}+2$, illustrating why a small absolute increment can disappear at large magnitude.
+
+= Unit roundoff
+{parent=Floating-point arithmetic}
+{title2=$u=\tfrac12\beta^{1-p}$}
+
+For <floating-point arithmetic> with precision $p$ in radix $\beta$ and rounding to nearest, <unit roundoff> is the half-gap scale $u=\beta^{1-p}/2$. If a nonzero exact <real number> $z$ lies in the normal finite range, its nearest rounded value satisfies
+$$
+\operatorname{fl}(z)=z(1+\delta),\qquad |\delta|\leq u.
+$$
+Indeed, the absolute distance to the nearest value is at most $\Delta_e/2$, and $|z|\geq\beta^e$ gives the bound. For a correctly rounded <addition>, <subtraction>, <multiplication> or <division>, apply this estimate to the exact result of that one operation on the stored operands. The bound does not include earlier <roundoff error> or automatically bound a whole <algorithm>. Results outside the finite range and tiny <subnormal numbers> require separate treatment. Rounding in a directed mode also changes the bound.\a[https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html][Goldberg, 1991, §§Relative Error and Ulps, Exactly Rounded Operations]{ref}
+
+= Subnormal number
+{parent=Floating-point arithmetic}
+{wiki}
+{title2=$k\beta^{e_{\min}-p+1},\quad 1\leq k<\beta^{p-1}$}
+
+= Denormalized number
+{synonym}
+
+A <subnormal number> is a nonzero representable value smaller in magnitude than the least positive normalized value $\beta^{e_{\min}}$. Keep the exponent scale fixed at $e_{\min}$ and allow a zero leading digit: the positive values are $k\beta^{e_{\min}-p+1}$ for <integers> $1\leq k<\beta^{p-1}$. This fills the gap toward zero with constant absolute spacing, at the cost of fewer significant digits. Goldberg describes this gradual approach to zero and why it matters for differences of small numbers.\a[https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html][Goldberg, 1991, §Denormalized Numbers]{ref}
+
+For binary64 the least positive normalized value is $2^{-1022}$, and <subnormal numbers> are spaced by $2^{-1074}$. With nearest rounding and gradual underflow enabled, an exact result $z$ with $|z|<2^{-1022}$ has absolute rounding error at most $2^{-1075}$. A uniform relative bound by <unit roundoff> fails here: $z=2^{-1075}$ rounds to zero under the even-last-digit tie rule, giving relative error one. <Machine epsilon> measures resolution near one; it does not measure the distance from zero to the first positive value.
+
+= Catastrophic cancellation
+{parent=Floating-point arithmetic}
+{wiki}
+{title2=$\sqrt{1+x}-1=\dfrac{x}{\sqrt{1+x}+1}$}
+
+<Catastrophic cancellation> occurs when <subtraction> of nearly equal approximations removes their matching leading digits and exposes earlier <roundoff error>. The <subtraction> can itself be exact on the stored operands: the information may already have been lost while obtaining them. Goldberg distinguishes this from cancellation of accurately known quantities, which can be harmless.\a[https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html][Goldberg, 1991, §Cancellation]{ref}
+
+For $x>0$, consider the single <real-valued function>
+$$
+f(x)=\sqrt{1+x}-1=\frac{x}{\sqrt{1+x}+1}.
+$$
+The <rationalization of a square-root difference> proves equality in exact <arithmetic>. The two evaluations use the same input $x$, but the direct version first forms a value near one and then subtracts one. The rearranged version keeps the small input in its <numerator> and divides by a <denominator> near two.
+
+\Image[floating-point-cancellation.png]
+{title=Direct and rationalized evaluation of a small square-root difference against a high-precision reference for the same binary64 inputs}
+
+For binary64 `x = 1e-16`, the rounded <sum> `1.0 + x` is one, so `sqrt(1.0 + x) - 1.0` is zero. The rationalized evaluation returns approximately $5\times10^{-17}$. A 100-digit Decimal calculation using the exact stored input gives relative errors of one and about $2.50\times10^{-17}$ respectively. At `x = 1e-12`, the direct result is about $5.0004445029\times10^{-13}$, with relative error $8.89\times10^{-5}$; the rearranged result is about $4.99999999999875\times10^{-13}$, with relative error $1.21\times10^{-17}$.
+
+The plot uses `Decimal.from_float(x)` to preserve the binary input exactly, computes $x/(\sqrt{1+x}+1)$ at 100 decimal digits, and verifies the reference at 160 digits. Exact conversion of a stored binary value is documented by Python.\a[https://docs.python.org/3.14/library/decimal.html#decimal.Decimal.from_float][Python 3.14 documentation, Decimal.from_float]{ref} Each error is $|\widehat f-f|/|f|$, with the computed result converted exactly to Decimal before comparison. Hence the curves measure evaluation error for one common input, rather than a mixture of input conversion error and evaluation error. The plotted interval $10^{-16}\leq x\leq10^{-1}$ is far above the <subnormal number> range.
+
+The original problem is well conditioned with respect to relative changes in $x$. Using the <derivative> $f'(x)=1/(2\sqrt{1+x})$ and <rationalization of a square-root difference>, its relative <condition number> is
+$$
+\kappa_f(x)=\left|\frac{xf'(x)}{f(x)}\right|=\frac{\sqrt{1+x}+1}{2\sqrt{1+x}},\qquad \frac12<\kappa_f(x)<1\quad(x>0).
+$$
+It tends to one as $x$ tends to zero. The direct evaluation instead introduces the intermediate difference $s-1$ with $s=\sqrt{1+x}$; an error of order <unit roundoff> in $s$ is large relative to $f(x)\approx x/2$. This is a failure of the chosen <algorithm>'s accuracy despite a small <condition number> for the same <real-valued function>. The rationalized evaluation avoids that intermediate <catastrophic cancellation>, retaining relative accuracy near the <unit roundoff> scale throughout the plotted interval. Recognizing this structure can improve a calculation far more than merely printing extra digits.
+
 = Newton root-finding iteration
 {c}
 {parent=Numerical analysis}
@@ -83,11 +199,88 @@ A small ball with $(ML/2)r<1$ is invariant under $N$. Iteration there converges 
 
 Let $f\in C^2([a,b])$ have $f',f''>0$ and $f(a)<0<f(b)$. Its unique root $r$ lies in $(a,b)$. Starting <Newton root-finding iteration> at $b$, strict convexity puts the tangent root strictly between $r$ and the current iterate, so the iterates decrease to $r$. Taylor expansion about the current iterate gives $e_{n+1}=f''(\xi_n)e_n^2/[2f'(x_n)]$, where $e_n=x_n-r$ and $\xi_n\in(r,x_n)$. Continuity proves the displayed positive asymptotic constant and <quadratic convergence>.
 
-= Bisection method
+= Bracketing method
 {parent=Numerical analysis}
-{title2=$|t-t_*|\leq(b-a)/2^{r+1}$}
 
-For a continuous scalar function with opposite endpoint signs on $[a,b]$, evaluate its midpoint and retain the half interval with a sign change. The <intermediate value theorem> preserves a root bracket. After $r$ halvings its midpoint is at most $(b-a)/2^{r+1}$ from a bracketed root. Endpoint and midpoint zeros are recorded directly; tangent roots with no sign change require a different isolation test.
+A <bracketing method> finds a <zero of a function> by maintaining a <root bracket> and shrinking it as new values of the <function> become available. The <bisection method> always tries the <midpoint>; its special attraction is a predictable <bisection error bound> without any <derivative> evaluations.
+
+= Root bracket
+{parent=Bracketing method}
+{title2=$[a,b]$}
+
+A <root bracket> is a <closed interval> known to contain at least one <zero of a function>. For a real-valued <continuous function> on $[a,b]$, a strict change of sign between $f(a)$ and $f(b)$ certifies such an enclosure by the <intermediate value theorem>. An endpoint with value zero already supplies a <zero of a function>. For example, $[1,2]$ is a <root bracket> for the <polynomial> $f(x)=x^2-2$, since $f(1)=-1$ and $f(2)=2$. A <root bracket> need not contain a unique <zero of a function>.
+
+= Bisection method
+{parent=Bracketing method}
+{wiki}
+{title2=$m_k=(a_k+b_k)/2$}
+
+The <bisection method> finds a <zero of a function> by repeatedly halving a <root bracket>. Let $f$ be a real-valued <continuous function> on the <closed interval> $[a,b]$, with $a<b$. First check for endpoint <zeros of a function>; otherwise require strictly opposite signs at the endpoints. Evaluate the <midpoint> and retain the half with strictly opposite endpoint signs, stopping immediately if the <midpoint> is a <zero of a function>. The <intermediate value theorem> ensures that every retained <root bracket> still contains a <zero of a function>. This is the construction in MIT's root-finding notes.\a[https://ocw.mit.edu/courses/18-330-introduction-to-numerical-analysis-spring-2012/5b325bfa56a599794c7196de926844b0_MIT18_330S12_Chapter4.pdf][Laurent Demanet, MIT 18.330, Chapter 4, §4.1, pp. 1–2, 2012]{ref}
+
+For a worked <square root> calculation, use the <polynomial> $f(x)=x^2-2$ on $[1,2]$. Write $[a_k,b_k]$ for the <root bracket> after $k$ halvings, with $[a_0,b_0]=[1,2]$. The candidate evaluated during update $k$ is the old <midpoint> $m_{k-1}$:
+$$
+\begin{array}{c|c|r|c}
+\text{update }k&\text{candidate }m_{k-1}&f(m_{k-1})&\text{retained }[a_k,b_k]\\\hline
+1&1.5&0.25&[1,1.5]\\
+2&1.25&-0.4375&[1.25,1.5]\\
+3&1.375&-0.109375&[1.375,1.5]\\
+4&1.4375&0.06640625&[1.375,1.4375]
+\end{array}
+$$
+The initial <midpoint> is $m_0=1.5$. After four halvings the new <midpoint> is $m_4=1.40625$, and the <bisection error bound> is $|m_4-\sqrt2|\leq0.03125$. Its actual error is approximately $0.00796356237310$. The last tested candidate $m_3=1.4375$ and the reported <midpoint> $m_4$ are different points.
+
+\Image[bisection-root-brackets.png]
+{title=Bisection of a square-root bracket: the graph and first four retained intervals}
+
+The useful feature of the <bisection method> is that the retained width halves on every update, independently of the shape of the <function graph>. The <bisection error bound> therefore supplies an accuracy guarantee before the <zero of a function> is known. No <derivative> is needed, and a valid initial <root bracket> gives convergence without a close initial guess. This makes the <bisection method> a dependable fallback for the faster <Newton root-finding iteration>.
+
+= Bisection error bound
+{parent=Bisection method}
+{title2=$|m_k-x_*|\leq(b-a)/2^{k+1}$}
+
+In exact arithmetic, after $k$ completed halvings the retained <root bracket> has width $W_k=b_k-a_k$ and <midpoint> $m_k$, where
+$$
+W_k=\frac{b-a}{2^k},\qquad m_k=\frac{a_k+b_k}{2},\qquad |m_k-x_*|\leq\frac{W_k}{2}=\frac{b-a}{2^{k+1}}.
+$$
+The <absolute value> bound holds for every <zero of a function> $x_*$ in the current <root bracket>, including the one approached by continued <bisection method> updates. A <zero of a function> discarded with an earlier half need not satisfy later bounds. Before update $k\geq1$, the evaluated candidate is $m_{k-1}$, whose corresponding guarantee is $(b-a)/2^k$. After update $k$, the new <midpoint> $m_k$ has the smaller guarantee $(b-a)/2^{k+1}$, even without evaluating $f(m_k)$.
+
+\Image[bisection-error-halving.png]
+{title=Bisection widths, midpoint error bounds, and actual square-root errors after zero to fifteen halvings}
+
+The guaranteed error halves at every step; the actual <absolute value> error need not decrease at every step or have successive ratio $1/2$. In the <square root> example it increases from $|m_6-\sqrt2|\approx0.000151062$ to $|m_7-\sqrt2|\approx0.003755188$, while both errors remain below their guarantees. An exact <midpoint> <zero of a function> instead gives zero error and immediate termination. For this example $\sqrt2$ is an <irrational number>, so no finite exact halving can produce it as a <midpoint>.
+
+For a brief proof outline, each retained half has half the previous width and contains a <zero of a function> by the <intermediate value theorem>. Every point in the retained <root bracket> is at most half its width from its <midpoint>. If the process does not stop at a <zero of a function>, the <nested interval theorem> gives one common point as the widths tend to zero; <continuity> and the opposite endpoint signs force its <function> value to be zero. Uniqueness in the initial <root bracket> is unnecessary.
+
+= Bisection stopping criterion
+{parent=Bisection method}
+{title2=$W_k/2\leq\varepsilon$}
+
+For a requested absolute tolerance $\varepsilon>0$, stop when the retained <root bracket> has width at most $2\varepsilon$, and report its <midpoint>. The <bisection error bound> then guarantees $|m_k-x_*|\leq\varepsilon$ in exact arithmetic. Using the <ceiling function> and the base-two <logarithm>, the required number of halvings is
+$$
+k_{\min}=\max\left\{0,\left\lceil\log_2\frac{b-a}{2\varepsilon}\right\rceil\right\}.
+$$
+The zero allows stopping before any update when the initial <root bracket> is already sufficiently narrow. For the <polynomial> $f(x)=x^2-2$ on $[1,2]$ with $\varepsilon=10^{-3}$, $k_{\min}=\lceil\log_2 500\rceil=9$. After nine halvings,
+$$
+[a_9,b_9]=[1.4140625,1.416015625],\qquad m_9=1.4150390625,\qquad \frac{W_9}{2}=\frac{1}{1024}=0.0009765625.
+$$
+Thus the reported <midpoint> meets the tolerance; its actual error from the <square root> $\sqrt2$ is approximately $0.000825500126905$. After eight halvings the bound is $1/512>10^{-3}$, so eight do not give this worst-case guarantee.
+
+Cache the endpoint values. Each update of the <bisection method> needs just one new <function> evaluation, at the old <midpoint>. With no early <zero of a function>, $k$ updates therefore cost $k+2$ <function> evaluations, including the two initial endpoints. Returning the new <midpoint> requires no additional <function> evaluation; requesting its value would add one. The nine-update example needs eleven evaluations for the guarantee.
+
+A small <function> value $|f(m_k)|$ alone does not guarantee a small position error: rescaling $f$ changes those values without changing its <zeros of a function>. In a practical implementation, use an explicit width test and an iteration limit. With <floating-point arithmetic>, also stop if the computed <midpoint> equals either endpoint: the <root bracket> can no longer shrink, so repeating the update would loop forever. Report this precision limit separately if the requested tolerance remains unmet. Reliable sign evaluations are needed to preserve the <root bracket>; compare signs directly rather than multiplying endpoint values, which can suffer overflow or underflow in <floating-point arithmetic>.
+
+For a rounded <midpoint> $m$ still inside a valid <root bracket>, the geometric error bound is $\max\{m-a_k,b_k-m\}$; it need not equal $W_k/2$ because of <roundoff error>. A rigorous computed enclosure also needs conservative arithmetic for that bound and reliable endpoint signs. The exact-arithmetic <bisection error bound> should not be claimed unchanged after precision prevents further halving.
+
+For practical tolerance conventions, SciPy's `bisect` combines absolute and relative tolerances through $|x-x_0|\leq\mathrm{xtol}+\mathrm{rtol}|x_0|$, and provides a maximum iteration count and convergence status. These differ from the purely absolute width test above.\a[https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.bisect.html][SciPy, scipy.optimize.bisect documentation]{ref}
+
+= Limitations of bisection
+{parent=Bisection method}
+
+Several <zeros of a function> can lie in one initial <root bracket>: the <bisection method> seeks one, rather than enumerating them. For instance, the <polynomial> $(x-1)(x-2)(x-3)$ has opposite endpoint signs on $[0,4]$, but its first <midpoint> evaluation returns only the <polynomial root> $2$. The initial <zero of a function> need not be unique for the <bisection error bound> to apply to a retained <zero of a function>.
+
+A <zero of a function> without a sign change cannot be located by the strict sign-change test alone. The <polynomial> $(x-1)^2$ touches zero at $1$ but is positive on either side. On $[0,3]$ both endpoint values are positive: although the <closed interval> contains a <polynomial root>, it fails the usual starting test for the <bisection method>. An endpoint or evaluated <midpoint> <zero of a function> can still be recognized directly.
+
+Opposite signs certify a <root bracket> only with the required <continuity>. For $f(x)=1/x$, the values at $-1$ and $1$ have opposite signs, but $f$ is undefined at the <midpoint> $0$ and has no <zero of a function>. Hence $[-1,1]$ is invalid input for the <bisection method>; the <intermediate value theorem> does not apply across the gap.
 
 = Chord error bound
 {parent=Numerical analysis}
@@ -99,8 +292,138 @@ If a twice differentiable <parametric curve> $R:[a,b]\to\mathbb R^m$ satisfies $
 = Interval arithmetic
 {parent=Numerical analysis}
 {wiki}
+{title2=$X=[a,b]$}
 
-<Interval arithmetic> computes enclosing intervals rather than single floating-point values. Exclusion and validated root tests on recursively subdivided boxes can support exhaustive implicit-curve tracing and certified geometric error bounds.
+<Interval arithmetic> calculates with <closed intervals> that contain the possible values of a quantity. If all we know is $x\in X=[a,b]$, an <interval enclosure> for a <function> $f$ must contain $f(x)$ for every allowed $x$. The result says what is guaranteed, including uncertainty in the input and, with <outward rounding>, <roundoff error> in the calculation. A wide answer can still be correct; a narrow answer is useful only if it contains every possible value.
+
+The attraction is that a finite calculation can make a statement about infinitely many <real numbers> at once. An <interval enclosure> can certify that a <function> stays positive throughout a whole <closed interval>, or bound its <maximum> for <mathematical optimization>. For example, on $X=[0,1]$, the actual <image of a function> for $f(x)=x(1-x)$ is $[0,1/4]$, but direct <interval arithmetic> gives the wider $[0,1]$. <Interval subdivision> and the <interval square range> improve this answer in different ways.
+
+Historically, Ramon E. Moore's 1962 Stanford dissertation studied <interval arithmetic> and automatic error analysis in digital computing; his book \i[Interval Analysis] followed in 1966. Eldon Hansen's account documents earlier reports as well: these dates describe important steps in developing and disseminating the subject, rather than a claim of sole invention in a particular year.\a[https://interval.louisiana.edu/Moores_early_papers/bibliography.html][Eldon R. Hansen, Publications Related to Early Interval Work of R. E. Moore, 2001, references 5 and 8]{ref} Moore, R. Baker Kearfott and Michael J. Cloud later wrote \i[Introduction to Interval Analysis] (2009).\a[https://interval.louisiana.edu/books.html][R. Baker Kearfott, Books written or edited, entry for Introduction to Interval Analysis]{ref}
+
+= Interval enclosure
+{parent=Interval arithmetic}
+{title2=$f(X)\subseteq F(X)$}
+
+An <interval enclosure> $F(X)=[L,U]$ for a real-valued <function> $f$ on a <closed interval> $X$ satisfies
+$$
+L\leq f(x)\leq U\quad\text{for every }x\in X,\qquad f(X):=\{f(x):x\in X\}\subseteq F(X).
+$$
+Here $f(X)$ means the actual <image of a function>, also called its pointwise range on $X$; $F(X)$ denotes a calculated <interval enclosure>. They need not agree. Sampling a few inputs can suggest a bound, but does not establish an <interval enclosure> between those inputs. Kearfott and coauthors explicitly distinguish the <image of a function> from evaluating an expression with <interval arithmetic>, because different expressions for the same <function> can give different bounds.\a[https://www.tuhh.de/ti3/paper/rump/KeNaNeRuShHe10.pdf][Kearfott, Nakao, Neumaier, Rump, Shary and Van Hentenryck, Standardized notation in interval analysis, 2010, Arithmetic expressions and Intervals and boxes]{ref}
+
+= Interval arithmetic operations
+{parent=Interval arithmetic}
+{title2=$X+Y,\quad X-Y,\quad XY,\quad X/Y$}
+
+For <closed intervals> $X=[a,b]$ and $Y=[c,d]$, exact <addition>, <subtraction> and <multiplication> give
+$$
+\begin{aligned}
+X+Y&=[a+c,b+d],\\
+X-Y&=[a-d,b-c],\\
+XY&=[\min\{ac,ad,bc,bd\},\max\{ac,ad,bc,bd\}].
+\end{aligned}
+$$
+These <interval arithmetic operations> describe all results $u\mathbin{\circ}v$ for $(u,v)$ in the <Cartesian product> $X\times Y$: the two inputs are allowed to vary independently. Independence here means freedom to choose either input anywhere in its <closed interval>; it does not assert anything about <probability>. For example, $[1,2]+[3,5]=[4,7]$ and $[1,2]-[3,5]=[-4,-1]$.
+
+All four endpoint <products> matter when signs change. For $X=[-2,3]$ and $Y=[-4,1]$, the endpoint <products> are $8,-2,-12,3$, so $XY=[-12,8]$. Taking just $ac$ and $bd$, even after sorting them, would give $[3,8]$ and lose valid negative <products>.
+
+For <division>, if $0\notin Y$, the <multiplicative inverse> gives $1/Y=[1/d,1/c]$ and $X/Y=X(1/Y)$. Thus $[1,2]/[3,4]=[1/4,2/3]$. This ordinary finite-<closed-interval> rule requires a <denominator> that excludes zero. When the <denominator> contains zero, <division> is undefined for some pairs and can become unbounded near zero; these formulas cannot supply a finite <interval enclosure> of all quotients. The operations above use exact endpoints; a computer implementation must also apply <outward rounding>.
+
+= Natural interval extension
+{parent=Interval arithmetic operations}
+{title2=$f(X)\subseteq F(X)$}
+
+A <natural interval extension> evaluates a chosen expression by replacing its <arithmetic operations> with <interval arithmetic operations>, its <constants> with enclosing <closed intervals>, and any additional <functions> with valid <interval enclosures>. Each intermediate result must remain defined on its inputs. The resulting $F(X)$ encloses the actual <image of a function> $f(X)$, but its width depends on the expression used. Rump's INTLAB tutorial describes this inclusion principle and warns that repeated inputs can produce severe overestimation.\a[https://www.tuhh.de/ti3/rump/intlab/demos/html/dintval.html][Siegfried M. Rump, Interval computations in INTLAB, Overestimation of interval operations and A common misuse of interval arithmetic]{ref}
+
+= Interval dependency problem
+{parent=Natural interval extension}
+{title2=$X-X\ne\{x-x:x\in X\}$}
+
+= Interval dependency
+{synonym}
+
+The <interval dependency problem> is the loss of relationships between repeated occurrences of the same input. For $X=[0,1]$, interval <subtraction> gives $X-X=[-1,1]$: it permits $u-v$ with independent choices $u,v\in X$. But the <function> $x\mapsto x-x$ has actual <image of a function> $\{0\}=[0,0]$. Giving both operands the name $X$ does not tell an <interval arithmetic> calculation to enforce $u=v$.
+
+For the <polynomial> $f(x)=x(1-x)$ on $X=[0,1]$, the <natural interval extension> is
+$$
+F(X)=X([1,1]-X)=[0,1][0,1]=[0,1].
+$$
+This allows the impossible combination $x=1$ in the first factor and $x=0$ in the second, producing the spurious upper bound $1$. In the actual <function>, both occurrences use the same $x$. <Completing the square> gives $x(1-x)=1/4-(x-1/2)^2$, which lies between $0$ and $1/4$ on $[0,1]$; every value between these bounds occurs, by <continuity> and the <intermediate value theorem>. The <maximum> $1/4$ occurs at $x=1/2$, while either endpoint gives the <minimum> $0$.
+
+\Image[interval-dependency-and-subdivision.png]
+{title=Independent interval inputs lose the diagonal constraint; subdivision tightens the enclosure of x times one minus x}
+{description=Left: the <Cartesian product> permits separate choices $u,v\in[0,1]$, while the actual <function> uses only $u=v$. Right: rectangles from four pieces contain the <polynomial> curve. Below: one, two and four pieces give <interval enclosures> with upper bounds $1$, $1/2$ and $3/8$; the <interval square range> gives the exact $1/4$.}
+
+= Interval subdivision
+{parent=Interval dependency problem}
+{title2=$f(X)\subseteq\bigcup_j F(X_j)$}
+
+<Interval subdivision> covers $X$ by smaller <closed intervals> $X_j$, computes a valid <interval enclosure> $F(X_j)$ on each, and takes their <union>. Every allowed input belongs to a piece, so its output belongs to that <union>. If one <closed interval> is wanted, take the smallest one containing the <union>; gaps between separate output pieces can then be lost. Splitting narrows the freedom given to repeated inputs, while increasing the number of evaluations.
+
+For $f(x)=x(1-x)$, split $[0,1]$ at $1/2$. The <natural interval extensions> are
+$$
+\begin{aligned}
+F([0,1/2])&=[0,1/2][1/2,1]=[0,1/2],\\
+F([1/2,1])&=[1/2,1][0,1/2]=[0,1/2].
+\end{aligned}
+$$
+Their <union> is $[0,1/2]$. Four equal pieces sharpen the upper bound again:
+$$
+\begin{array}{c|c|c}
+X_j&[1,1]-X_j&F(X_j)\\\hline
+[0,1/4]&[3/4,1]&[0,1/4]\\
+[1/4,1/2]&[1/2,3/4]&[1/8,3/8]\\
+[1/2,3/4]&[1/4,1/2]&[1/8,3/8]\\
+[3/4,1]&[0,1/4]&[0,1/4]
+\end{array}
+$$
+The <union> is now $[0,3/8]=[0,0.375]$, still wider than the actual <image of a function> $[0,1/4]$. These are exact <rational number> bounds: the excess width comes from the <interval dependency problem>, rather than <roundoff error>.
+
+= Interval square range
+{parent=Interval arithmetic operations}
+{title2=$\operatorname{sqr}(X)=\{x^2:x\in X\}$}
+
+= Square range operation
+{synonym}
+
+The <interval square range> treats squaring as one <function> of one input. For $X=[a,b]$ it is exactly
+$$
+\operatorname{sqr}([a,b])=
+\begin{cases}
+[0,\max\{a^2,b^2\}],&a\leq0\leq b,\\
+[\min\{a^2,b^2\},\max\{a^2,b^2\}],&\text{otherwise}.
+\end{cases}
+$$
+It retains the relationship that ordinary interval <multiplication> loses: for $Z=[-1/2,1/2]$, the <interval square range> is $[0,1/4]$, whereas the independent-input <product> $ZZ$ is $[-1/4,1/4]$.
+
+Consequently, <completing the square> for $x(1-x)$ and using the <interval square range> gives
+$$
+Z=X-[1/2,1/2]=[-1/2,1/2],\qquad [1/4,1/4]-\operatorname{sqr}(Z)=[0,1/4].
+$$
+This is the exact <image of a function> on $X=[0,1]$. Merely rewriting the expression and evaluating $[1/4,1/4]-ZZ$ gives $[0,1/2]$, so it does not achieve the same sharpening. A mathematical $Z^2$ must be interpreted explicitly here: a <square range operation> and an independent-input interval <product> have different meanings. Choosing an operation that preserves known structure can save many steps of <interval subdivision>.
+
+= Outward rounding
+{parent=Interval arithmetic}
+{title2=$\operatorname{rd}_{\downarrow}(L)\leq L\leq U\leq\operatorname{rd}_{\uparrow}(U)$}
+
+<Outward rounding> replaces an exact lower endpoint by a representable value no larger than it, and an exact upper endpoint by a representable value no smaller than it. This preserves an <interval enclosure> under <floating-point arithmetic>. In the <binary numeral system>, most <rational numbers> cannot be represented exactly with finitely many digits, so the rounding direction is essential even for elementary calculations. Rump explains directed rounding and its use in interval bounds in §§4 and 5.3 of his survey.\a[https://www.tuhh.de/ti3/paper/rump/Ru10.pdf][Siegfried M. Rump, Verification methods: rigorous results using floating-point arithmetic, Acta Numerica 19, 287–449, 2010, §§4 and 5.3]{ref}
+
+To see the issue without long binary digit strings, use an illustrative decimal grid with step $0.001$. Exact interval <division> gives $[1,1]/[3,3]=[1/3,1/3]$. Rounding both endpoints to the nearest grid value gives $[0.333,0.333]$, which excludes the true answer because $0.333<1/3$. <Outward rounding> instead gives
+$$
+\left[\frac{333}{1000},\frac{334}{1000}\right]=[0.333,0.334],\qquad \frac{333}{1000}<\frac13<\frac{334}{1000}.
+$$
+This decimal toy illustrates the rule; its displayed endpoints are not the results of binary directed rounding. Real implementations need valid <outward rounding> throughout the calculation, including input conversion and intermediate <interval arithmetic operations>; rounding only the final output cannot repair an earlier lost bound. INTLAB's tutorial demonstrates why decimal input strings and previously rounded intermediate values need care.\a[https://www.tuhh.de/ti3/rump/intlab/demos/html/dintval.html][Rump, Interval computations in INTLAB, How to define an interval II and Invoking interval operations]{ref}
+
+\Image[interval-rounding-enclosures.png]
+{title=Outward rounding encloses one third on a decimal toy grid; sign-changing interval products require all four endpoint combinations}
+{description=Above: rounding to the nearest decimal grid point misses $1/3$, while down to $0.333$ and up to $0.334$ enclose it. Below: the <Cartesian product> of $[-2,3]$ and $[-4,1]$ has endpoint <products> $8,-2,-12,3$, giving $[-12,8]$. The two same-side endpoint <products> alone give the invalid enclosure $[3,8]$.}
+
+= Interval root exclusion
+{parent=Interval arithmetic}
+{title2=$0\notin F(X)\Rightarrow\forall x\in X:\ f(x)\ne0$}
+
+<Interval root exclusion> certifies that a <function> has no <zero of a function> on $X$ when a valid <interval enclosure> $F(X)$ excludes zero. For $g(x)=x(1-x)-1/3$ on $[0,1]$, the <interval square range> yields $G(X)=[-1/3,-1/12]$, which excludes zero. Direct <interval arithmetic> yields $[-1/3,2/3]$ and is inconclusive, even though the <function> has no <zero of a function> there.
+
+Knowing only that a calculated <interval enclosure> contains zero does not certify a <zero of a function>: it may contain unattainable values. Even the positive <constant function> $f(x)=1$ has a valid, loose <interval enclosure> $[-1,2]$. A separate existence argument, such as reliable opposite endpoint signs together with <continuity> in the <intermediate value theorem>, is required; see <root bracket> and <bisection method>. <Interval subdivision> can resolve some inconclusive pieces, but remaining pieces must be reported as unresolved unless an existence argument succeeds. This makes <interval root exclusion> useful for systematically discarding regions in a search.
 
 // Target: analysis.bigb
 
@@ -381,8 +704,49 @@ A local <subdivision matrix> maps the <control points> in a refinement-invariant
 {c}
 {parent=Computer aided geometric design}
 {wiki}
+{title2=$C(t)=\sum_{i=0}^n\binom ni(1-t)^{n-i}t^iP_i$}
 
-A degree-$p$ <Bézier curve> with control points $B_j$ is $\sum_{j=0}^p\binom pj(1-t)^{p-j}t^jB_j$. Its <Bernstein polynomial> basis gives affine invariance and the <convex hull> property.
+A <Bézier curve> is a <parametric curve> specified by <control points> $P_0,\ldots,P_n$ in a <Euclidean space> and the <Bernstein basis>:
+$$
+C(t)=\sum_{i=0}^n b_{i,n}(t)P_i,\qquad b_{i,n}(t)=\binom ni(1-t)^{n-i}t^i,\qquad 0\leq t\leq1.
+$$
+Here $\binom ni$ is a <binomial coefficient>. Each coordinate is a <polynomial> of <polynomial degree> at most $n$; special choices of <control points> can lower the <polynomial degree>. The ordered <control points> form the <control polygon>. A cubic <Bézier curve> uses four <control points> and has the explicit form
+$$
+C(t)=(1-t)^3P_0+3(1-t)^2tP_1+3(1-t)t^2P_2+t^3P_3.
+$$
+The curve passes through $P_0$ and $P_3$; the interior <control points> steer its shape and need not lie on it.\a[https://ocw.mit.edu/courses/6-837-computer-graphics-fall-2012/aba8735cf2cf7c71ca5d29b46873309a_MIT6_837F12_Lec01.pdf][MIT 6.837, Bézier Curves and Splines, slides 23–31 and 45–47, 2012]{ref}
+
+For a worked example, choose
+$$
+P_0=(0,0),\qquad P_1=(1,2),\qquad P_2=(3,2),\qquad P_3=(4,0).
+$$
+Substituting these <control points> gives
+$$
+C(t)=\bigl(3t+3t^2-2t^3,\;6t(1-t)\bigr),\qquad C(1/2)=\tfrac18P_0+\tfrac38P_1+\tfrac38P_2+\tfrac18P_3=(2,1.5).
+$$
+Here $y(t)=1.5-6(t-1/2)^2\leq1.5$, so neither interior <control point>, both at height $2$, lies on the curve. <De Casteljau's algorithm> computes the same point using only successive <linear interpolations>.
+
+The endpoint <tangent vectors> follow from the <Bézier derivative control polygon>:
+$$
+C'(0)=3(P_1-P_0)=(3,6),\qquad C'(1)=3(P_3-P_2)=(3,-6).
+$$
+Thus the curve leaves $P_0$ toward $P_1$ and arrives at $P_3$ from $P_2$. These nonzero <derivatives> determine the endpoint <tangent lines>; if an endpoint <derivative> vanishes, that formula alone does not determine its tangent direction. Endpoint handles are useful when arranging a <parametric first-derivative join of Bézier curves>.
+
+The parameter $t$ is usually not <arc length>. For this example,
+$$
+C'(t)=\bigl(3+6t-6t^2,\;6-12t\bigr),\qquad \|C'(0)\|=\sqrt{45},\qquad \|C'(1/2)\|=4.5.
+$$
+Equal steps in $t$ therefore do not generally travel equal distances. Distance along the curve is instead the <arc length>, given by the <integral> $s(t)=\int_0^t\|C'(u)\|\,du$; its <derivative> is the <norm> of the <tangent vector> and measures the rate of travel.
+
+Two geometric facts make <Bézier curves> especially convenient for design. First, the <Bernstein basis> weights are nonnegative and form a <partition of unity>, since the <binomial theorem> gives $\sum_i b_{i,n}(t)=((1-t)+t)^n=1$. Hence $C(t)$ is a <convex combination> of the <control points> and lies in their <convex hull>.\a[https://groups.csail.mit.edu/graphics/classes/6.838/S98/meetings/m15/][MIT 6.838, Bézier Curve and B-Spline Curve, §1.4.1, 1998]{ref} The <convex hull> is the smallest <convex set> containing the <control points>, not their <axis-aligned bounding box>. Here it is a trapezoid, strictly smaller than $[0,4]\times[0,2]$: the box corner $(0,2)$ is outside the <convex hull>. The curve need not fill or touch every edge of either enclosure. The <convex hull> guarantee concerns $0\leq t\leq1$; outside that interval weights can be negative.
+
+Second, applying an <affine map> to every <control point> gives exactly the same result as applying it to the entire curve. For $T(x)=Ax+b$,
+$$
+\sum_i b_{i,n}(t)T(P_i)=A\sum_i b_{i,n}(t)P_i+b\sum_i b_{i,n}(t)=T(C(t)).
+$$
+This is <affine equivariance of a geometric basis>: a <translation>, <rotation> or <shear mapping> can be performed on a handful of <control points>. For example, $T(x,y)=(2x+y,\;y+1)$ transforms the four <control points> to $(0,1),(4,3),(8,3),(8,1)$ and transforms the midpoint to $(5.5,2.5)$, also obtained from the same weights $(1,3,3,1)/8$.
+
+These editable handles explain the usefulness of <Bézier curves> in <computer aided geometric design>, <vector graphics> paths and <outline fonts>: a small collection of points controls an entire smooth stroke, and resizing the design preserves its mathematical shape. Cambridge's computer-graphics notes describe their use in graphic design, typography and PostScript outlines. The industrial context includes Pierre Bézier's work at Renault and Paul de Casteljau's work at Citroën.\a[https://www.cl.cam.ac.uk/teaching/1415/CompGraph/cgip.pdf][Neil A. Dodgson and Peter Robinson, Cambridge Computer Graphics and Image Processing, slides 183 and 226–228, 2014]{ref}
 
 // Target: analysis.bigb
 
@@ -403,12 +767,59 @@ Two adjacent <Bézier curves> of degrees $n,m$ and interval lengths $h,k$ have a
 {c}
 {parent=Bézier curve}
 {wiki}
+{title2=$P_i^{(r)}(t)=(1-t)P_i^{(r-1)}(t)+tP_{i+1}^{(r-1)}(t)$}
 
 = De Casteljau algorithm
 {c}
 {synonym}
 
-<De Casteljau's algorithm> repeatedly replaces neighboring control points by $(1-t)B_j+tB_{j+1}$ until a single point remains. The same triangular construction gives both subcurves split at $t$.
+<De Casteljau's algorithm> evaluates a <Bézier curve> by repeated <linear interpolation> between neighboring <control points>. Fix $t\in[0,1]$, start with $P_i^{(0)}(t)=P_i$, and compute
+$$
+P_i^{(r)}(t)=(1-t)P_i^{(r-1)}(t)+tP_{i+1}^{(r-1)}(t),\qquad r=1,\ldots,n,\quad i=0,\ldots,n-r.
+$$
+Each new row has one fewer point. The final point is $P_0^{(n)}(t)=C(t)$. Use the same $t$ at every stage: it describes the fraction of each <line segment> traversed from its first endpoint toward its second. A cubic <Bézier curve> needs three levels containing $3$, $2$, and $1$ <linear interpolations>, respectively.\a[https://graphics.stanford.edu/courses/cs164-10-spring/Handouts/handout19.pdf][Stanford CS348a, Handout 19, §2.3, pp. 10–11]{ref}
+
+For the <Bézier curve> with <control points> $P_0=(0,0)$, $P_1=(1,2)$, $P_2=(3,2)$, $P_3=(4,0)$, evaluation at $t=1/2$ takes the <midpoint> of every neighboring pair. The first level gives
+$$
+Q_0=\tfrac12(P_0+P_1)=(0.5,1),\qquad Q_1=\tfrac12(P_1+P_2)=(2,2),\qquad Q_2=\tfrac12(P_2+P_3)=(3.5,1).
+$$
+The second level gives
+$$
+R_0=\tfrac12(Q_0+Q_1)=(1.25,1.5),\qquad R_1=\tfrac12(Q_1+Q_2)=(2.75,1.5),
+$$
+and the third level gives
+$$
+S=\tfrac12(R_0+R_1)=(2,1.5)=C(1/2).
+$$
+The intermediate <control polygons> shrink toward the evaluated point. Each step is a <convex combination>, giving a geometric explanation of the <convex hull> property; every step also commutes with an <affine map>.
+
+\Image[bezier-de-casteljau-construction.png]
+{title=Cubic Bézier curve, its convex hull and bounding box, and the three levels of De Casteljau's algorithm at t = 1/2}
+
+The same construction splits the <Bézier curve> exactly, with no approximation. The outer edges of the triangular array give the new <control points>: for a cubic, $(P_0,Q_0,R_0,S)$ specify the left piece and $(S,R_1,Q_2,P_3)$ specify the right piece.\a[https://graphics.stanford.edu/courses/cs164-10-spring/Handouts/handout19.pdf][Stanford CS348a, Handout 19, §2.3, p. 11, subsegment control points]{ref} At $t=1/2$ these two lists are
+$$
+L=\bigl((0,0),(0.5,1),(1.25,1.5),(2,1.5)\bigr),\qquad H=\bigl((2,1.5),(2.75,1.5),(3.5,1),(4,0)\bigr).
+$$
+Write $C_L$ and $C_H$ for the <Bézier curves> defined by these lists, each with its own parameter $u\in[0,1]$. Then
+$$
+C_L(u)=C(u/2),\qquad C_H(u)=C((1+u)/2).
+$$
+Their images reproduce the original curve, while their <derivatives> account for the shorter parameter intervals. At the join,
+$$
+C_L(1)=C_H(0)=S,\qquad C_L'(1)=3(S-R_0)=(2.25,0)=3(R_1-S)=C_H'(0).
+$$
+The <chain rule> gives $C_L'(1)=C_H'(0)=C'(1/2)/2$; in the original parameter, both pieces have <derivative> $(4.5,0)$. This is the interval scaling in the <parametric first-derivative join of Bézier curves>.
+
+\Image[bezier-subdivision-and-tangents.png]
+{title=Exact midpoint subdivision with two smaller control polygons, endpoint tangent directions, and equally spaced parameter samples}
+
+Repeated <midpoint> splitting is useful for drawing <vector graphics> paths: each piece has a smaller <control polygon> and its own <convex hull> enclosure. A renderer can refine pieces until they are sufficiently close to <line segments> at the chosen display scale. Evaluating $C(t)$ and splitting it are thus two results of the same short <algorithm>.
+
+For a proof outline, expanding the recursion gives
+$$
+P_i^{(r)}(t)=\sum_{j=0}^r\binom rj(1-t)^{r-j}t^jP_{i+j}.
+$$
+<Pascal's identity> proves this by <induction>; at $r=n$, $i=0$ it is precisely the <Bernstein basis> formula for the <Bézier curve>. The geometric construction remains useful even when expanding the <polynomial> by hand would be cumbersome.
 
 // Target: analysis.bigb
 
@@ -665,6 +1076,18 @@ $$
 $$
 It is exact for linear polynomials.
 
+= Approximation error
+{parent=Numerical analysis}
+{title2=$x_{\mathrm{approx}}-x$}
+
+For a numerical reference value $x$ and a computed value $x_{\mathrm{approx}}$, the signed <approximation error> is $x_{\mathrm{approx}}-x$. Stating the reference matters: comparison with a measured value assesses agreement with that value, rather than with an unknown exact value.
+
+= Absolute error
+{parent=Approximation error}
+{title2=$|x_{\mathrm{approx}}-x|$}
+
+The <absolute error> is the <absolute value> of the <approximation error>, $|x_{\mathrm{approx}}-x|$, measured in the same units as the numerical reference $x$. For example, approximating $1/3$ by $0.33$ gives <absolute error> $|0.33-1/3|=1/300$.
+
 = Truncation error
 {parent=Numerical analysis}
 {wiki}
@@ -817,7 +1240,88 @@ For short enough intervals the last term is absorbed. The <Gronwall inequality> 
 {parent=Numerical analysis}
 {wiki}
 
-The finite element method approximates a variational problem in a finite-dimensional space of piecewise polynomial functions and determines the coefficients by testing against the same trial space.
+= FEM
+{c}
+{synonym}
+
+The <finite element method> replaces an infinite-dimensional <weak formulation> by finitely many unknowns attached to a <finite element mesh>. Simple local functions, often <piecewise polynomial functions>, join to form a global approximation. The attraction is that each <finite element> can be integrated separately, while the assembled equations enforce a global balance. A <piecewise-linear hat function> only meets its immediate neighbors, so a large problem can have a <sparse matrix> rather than a dense one. Gilbert Strang's MIT lecture develops this connection from the one-dimensional <weak formulation> through local hats to the <stiffness matrix> and load integrals.\a[https://ocw.mit.edu/courses/18-085-computational-science-and-engineering-i-fall-2008/676ba0a00eef45a6cb3823c4da61ee11_18-085F08-L18.pdf][Gilbert Strang, MIT 18.085, Lecture 18: Finite Elements in 1D, transcript pp. 2–8, 2008; accessed 2026-10-11]{ref}
+
+For the conforming <Galerkin method>, let $V$ be a real <Hilbert space>, $a$ a bounded <coercive bilinear form>, and $\ell$ a bounded <linear functional>. Given a <conforming finite element space> $V_h\subset V$, the continuous and discrete problems are
+$$
+\begin{aligned}
+u\in V:&\quad a(u,v)=\ell(v)&&\text{for every }v\in V,\\
+u_h\in V_h:&\quad a(u_h,v_h)=\ell(v_h)&&\text{for every }v_h\in V_h.
+\end{aligned}
+$$
+Writing $u_h=\sum_j c_j\phi_j$ in a <basis> of $V_h$ gives the <linear system>
+$$
+Kc=F,\qquad K_{ij}=a(\phi_j,\phi_i),\qquad F_i=\ell(\phi_i).
+$$
+Here $K$ is the <stiffness matrix> and $F$ is the vector of loads tested against the <basis> functions. The <Galerkin method> uses the same trial and test space in this construction. Finite element methods also use the <Petrov-Galerkin method>, with different trial and test spaces; testing against the trial space is therefore a property of this construction, rather than a definition of every <finite element method>.
+
+The <finite element solution of the one-dimensional Poisson equation> below gives every entry explicitly. Refining the <finite element mesh> then improves the approximation by adding local degrees of freedom. For a symmetric <coercive bilinear form>, <Galerkin orthogonality> makes the discrete solution the best approximation in the <energy norm>; the geometry of <orthogonal projection> explains why this local construction yields a globally meaningful answer.
+
+= Finite element solution of the one-dimensional Poisson equation
+{parent=Finite element method}
+{title2=$-u''=1$, $u(0)=u(1)=0$}
+
+Consider the <Poisson equation> on an <interval> with homogeneous <Dirichlet boundary conditions>:
+$$
+-u''(x)=1\quad(0<x<1),\qquad u(0)=u(1)=0.
+$$
+Two <integrations> and the endpoint conditions give the exact solution $u(x)=x(1-x)/2$. To approximate it, multiply by a <test function> $v$ that vanishes at both endpoints. <Integration by parts> gives
+$$
+\int_0^1(-u'')v\,dx
+=\bigl[-u'v\bigr]_0^1+\int_0^1u'v'\,dx
+=\int_0^1v\,dx.
+$$
+The boundary term is zero. Thus the <weak formulation> is to find $u\in V=H_0^1(0,1)$ such that
+$$
+a(u,v):=\int_0^1u'v'\,dx=\ell(v):=\int_0^1v\,dx\qquad(v\in V).
+$$
+The <zero-trace Sobolev space> $H_0^1(0,1)$ consists of square-integrable functions with square-integrable <weak derivatives> and zero endpoint values in their continuous representatives; it does not require a classical second derivative. This is why continuous <piecewise linear functions> are admissible despite corners. The <Poincaré inequality> makes $a$ a <coercive bilinear form> on $V$. Strang derives this one-dimensional <weak formulation>, the <piecewise-linear hat functions>, and their load and derivative-product integrals in the cited lecture; its endpoint example uses a free left endpoint, while both endpoints here are fixed.\a[https://ocw.mit.edu/courses/18-085-computational-science-and-engineering-i-fall-2008/676ba0a00eef45a6cb3823c4da61ee11_18-085F08-L18.pdf][Strang, MIT 18.085, Lecture 18, transcript pp. 2–8: weak form, hat basis, and assembly]{ref}
+
+Take the uniform <finite element mesh> $x_j=jh$, $j=0,\ldots,n$, with $h=1/n$. The continuous $P_1$ trial space is
+$$
+V_h=\{v_h\in C([0,1]):v_h(0)=v_h(1)=0,\quad v_h|_{[x_j,x_{j+1}]}\text{ is affine for every }j\}.
+$$
+Here $P_1$ means <polynomials> of degree at most one on each <interval>. This is a <conforming finite element space> in $V$, with $n-1$ interior <piecewise-linear hat functions> $\phi_i$ as a <basis>. Their endpoint values enforce the <Dirichlet boundary conditions> automatically. Set $u_h=\sum_{i=1}^{n-1}c_i\phi_i$ and test the <weak formulation> against each $\phi_i$:
+$$
+K_{ij}=\int_0^1\phi_j'\phi_i'\,dx,\qquad
+F_i=\int_0^1\phi_i\,dx=h,\qquad Kc=F.
+$$
+Each interior hat has two slopes $1/h$ and $-1/h$, each over a length $h$. Its squared derivative therefore integrates to $2/h$. Adjacent hats have opposite slopes on their one shared <interval>, giving $-1/h$. All other derivative products vanish. The <stiffness matrix> is the <tridiagonal matrix>
+$$
+K_{ii}=\frac2h,\qquad K_{i,i+1}=K_{i+1,i}=-\frac1h,\qquad K_{ij}=0\quad(|i-j|>1).
+$$
+The load $F_i=h$ is the area of a triangle of base $2h$ and height one, including hats next to the boundary. Boundary hats are omitted because the boundary values are prescribed. The <piecewise-linear hat function> article explains how the same entries arise by adding local two-node contributions.
+
+With four <mesh> intervals, $h=1/4$, there are three unknowns:
+$$
+K=\begin{pmatrix}8&-4&0\\-4&8&-4\\0&-4&8\end{pmatrix},\qquad
+F=\begin{pmatrix}1/4\\1/4\\1/4\end{pmatrix},\qquad
+c=\begin{pmatrix}3/32\\1/8\\3/32\end{pmatrix}.
+$$
+For example, the first row gives $8(3/32)-4(1/8)=1/4$ and the middle gives $-4(3/32)+8(1/8)-4(3/32)=1/4$. The <coefficients> are the nodal values $u_h(x_i)=c_i$. At $x=3/8$, <linear interpolation> gives $u_h(3/8)=7/64=0.109375$, whereas $u(3/8)=15/128=0.1171875$: exactness at the nodes still leaves a visible error between them.
+
+In this model the <Galerkin method> solution equals the nodal approximation $I_hu$ obtained by <linear interpolation> on any <finite element mesh>. Indeed, on each <interval> $[a,b]$, $(I_hu)'$ is the average of $u'$ and $v_h'$ is constant. Therefore $\int_a^b(u'-(I_hu)')v_h'\,dx=0$. Summing proves <Galerkin orthogonality> for $I_hu$, and uniqueness gives $u_h=I_hu$. This argument relies on the constant diffusion coefficient, conformity and exact integration; nodal exactness is not a general promise for <finite element methods> with other operators or integration rules.
+
+On a uniform <mesh>, direct subtraction of the chord from the <parabola> gives, on every element $[a,b]$ of length $h$,
+$$
+e(x):=u(x)-u_h(x)=\frac{(x-a)(b-x)}2,\qquad
+e'(x)=\frac{a+b}2-x.
+$$
+The largest value error is at an element midpoint. Its size and the <energy norm> error are exactly
+$$
+\|e\|_{\infty}=\frac{h^2}{8},\qquad
+\|e\|_a^2=\int_0^1|e'|^2\,dx
+=n\int_{-h/2}^{h/2}t^2\,dt=\frac{h^2}{12},\qquad
+\|e\|_a=\frac{h}{\sqrt{12}}.
+$$
+Thus $h=1/4$ gives $\|e\|_\infty=1/128=0.0078125$ and $\|e\|_a=1/(4\sqrt{12})\approx0.0721688$. With eight elements, $h=1/8$, these become $1/512=0.001953125$ and $1/(8\sqrt{12})\approx0.0360844$. Halving the <mesh> spacing quarters the maximum value error but only halves the <energy norm> error: values and slopes converge at different rates. The figure shows the small value error at its own scale, where the four-to-one reduction becomes clear.
+
+\Image[finite-element-poisson-refinement.png]
+{title=Exact Poisson parabola and continuous piecewise-linear finite element solutions on four and eight intervals, with midpoint errors shown separately}
 
 = Semidiscrete finite element heat equation
 {parent=Finite element method}
@@ -844,8 +1348,24 @@ A conforming finite element space is a finite-dimensional <vector subspace> of t
 
 = Finite element mesh
 {parent=Finite element method}
+{title2=$\mathcal T_h$, $h=\max_j(x_{j+1}-x_j)$}
 
-A finite element mesh partitions the domain into simple elements, such as intervals, triangles or tetrahedra. Piecewise-polynomial trial functions and local integration assemble the <stiffness matrix> and <mass matrix>.
+= Mesh
+{synonym}
+
+A <finite element mesh> partitions a domain into simple regions called elements, such as <intervals>, <triangles> or <tetrahedra>. In a conforming partition, distinct element interiors are disjoint, their closures cover the domain closure, and any nonempty intersection is a common face, edge or vertex of both elements. Chen's author notes give this compatibility condition for simplicial <meshes>.\a[https://webapps.math.uci.edu/~chenlong/226/Ch2FEM.pdf][Long Chen, Introduction to Finite Element Methods, §2.1, pp. 3–4; updated January 17, 2024]{ref} Local <piecewise polynomial functions> and local <integrals> are defined on these regions; compatible degrees of freedom join them into a global <conforming finite element space>. The assembled <stiffness matrix> and <mass matrix> then inherit the local overlap pattern.
+
+For the <finite element solution of the one-dimensional Poisson equation>, a <mesh> is simply an ordered list
+$$
+0=x_0<x_1<\cdots<x_n=1,\qquad
+\mathcal T_h=\{[x_j,x_{j+1}]:0\leq j<n\},\qquad
+h=\max_{0\leq j<n}(x_{j+1}-x_j).
+$$
+Nodes are the endpoints; elements are the intervening <intervals>. Four equal elements have five nodes but only three unknown nodal values after imposing the zero <Dirichlet boundary conditions>. A nonuniform partition such as $0,1/8,1/4,1/2,1$ has element lengths $1/8,1/8,1/4,1/2$ and $h=1/2$, so counting elements alone does not measure the largest unresolved scale.
+
+Refining a <finite element mesh> replaces some or all elements by smaller ones. For continuous <piecewise linear functions> in one dimension, retaining all old nodes gives nested <conforming finite element spaces> $V_h\subset V_{h/2}$ when every <interval> is bisected. The old approximation remains available, and the new interior nodes allow additional changes of slope. With a symmetric <coercive bilinear form> and exact integration, best approximation from <Galerkin orthogonality> means that the <energy norm> error cannot increase under such nested refinement.
+
+For the <finite element solution of the one-dimensional Poisson equation>, uniform refinement from four to eight elements increases the unknown count from three to seven. The exact formulas give maximum errors $0.0078125$ and $0.001953125$, and <energy norm> errors approximately $0.0721688$ and $0.0360844$. Refinement near a region of strong curvature can spend unknowns where the <linear interpolation> error matters most; convergence in a general problem still needs approximation and regularity assumptions such as those in the <finite element interpolation estimate>.
 
 = Shape-regular mesh
 {parent=Finite element mesh}
@@ -945,13 +1465,32 @@ A continuous symmetric <coercive bilinear form> $a$ on a real <Hilbert space> an
 A symmetric coercive bilinear form $a$ defines the energy norm $\|v\|_a=\sqrt{a(v,v)}$. In this norm the <Ritz method> is an orthogonal projection onto its finite-dimensional trial space.
 
 = Galerkin orthogonality
+{c}
 {parent=Finite element method}
+{title2=$a(u-u_h,v_h)=0$}
 
-If $u$ solves a variational problem and $u_h$ is its conforming <Galerkin method> approximation in $V_h$, then
+Let $V_h\subset V$ be a <conforming finite element space>. Suppose the exact solution satisfies $a(u,v)=\ell(v)$ for every $v\in V$ and its <Galerkin method> approximation satisfies $a(u_h,v_h)=\ell(v_h)$ for every $v_h\in V_h$, using the same <bilinear form> and <linear functional>. Subtracting the two identities gives <Galerkin orthogonality>:
 $$
-a(u-u_h,v_h)=0
+a(u-u_h,v_h)=0\qquad(v_h\in V_h).
 $$
-for every $v_h\in V_h$.
+This identity itself does not require symmetry. Its interpretation as an <orthogonal projection> in an <energy norm> does require a bounded symmetric <coercive bilinear form>: then $a$ is an <inner product>, $e=u-u_h$ is perpendicular to every available discrete correction, and
+$$
+\|u-v_h\|_a^2=\|u-u_h\|_a^2+\|u_h-v_h\|_a^2\qquad(v_h\in V_h).
+$$
+Consequently $u_h$ is the unique closest point in $V_h$ in the <energy norm>. This <Pythagorean theorem> in a function space explains the beauty of the <Galerkin method>: integrated local equations compute a global best approximation. The <Céa lemma> supplies the corresponding estimate in a chosen reference norm.
+
+For the <finite element solution of the one-dimensional Poisson equation>, $a(w,v)=\int_0^1w'v'\,dx$ and $\|w\|_a=\|w'\|_{L^2(0,1)}$. Testing the error against the $i$th <piecewise-linear hat function> on a uniform <mesh> gives
+$$
+\frac1h\int_{x_{i-1}}^{x_i}e'\,dx
+-\frac1h\int_{x_i}^{x_{i+1}}e'\,dx=0.
+$$
+In this model $e$ vanishes at every node, so each of these <integrals> is individually zero, although $e$ is positive inside every element. <Galerkin orthogonality> controls the derivative-weighted balance; it does not say that the pointwise error vanishes.
+
+The exact identity assumes conformity and exact evaluation of the continuous forms, including any <numerical integration> that is used. If assembly instead uses $a_h$ and $\ell_h$, subtraction gives the consistency defect
+$$
+a(u-u_h,v_h)=(\ell-\ell_h)(v_h)+(a_h-a)(u_h,v_h).
+$$
+Thus inexact <numerical integration> need not preserve the projection. In the <Petrov-Galerkin method> the error is tested against a different test space, and for a nonsymmetric <bilinear form> the displayed identity need not describe perpendicularity in any <energy norm>.
 
 = Céa's lemma
 {c}
@@ -985,11 +1524,41 @@ Thus $\|e\|_{L^2}\leq Ch\|e\|_{H^1}$. Combining this with the <Céa lemma> and a
 
 = Piecewise-linear hat function
 {parent=Finite element method}
+{title2=$\phi_i(x_j)=\delta_{ij}$}
+
+= Hat function
+{synonym}
 
 = Chapeau function
 {synonym}
 
-A piecewise-linear hat function is one at one mesh node, zero at all other nodes, and affine on each adjacent mesh interval. Interior hat functions form the standard nodal basis for continuous piecewise-linear finite elements with homogeneous <Dirichlet boundary conditions>.
+A <piecewise-linear hat function> is a continuous <piecewise linear function> that selects one node of a <finite element mesh>: it is one there and zero at every other node. For an interior node $x_i$, its exact formula on a possibly nonuniform <mesh> is
+$$
+\phi_i(x)=\begin{cases}
+(x-x_{i-1})/(x_i-x_{i-1}),&x_{i-1}\leq x\leq x_i,\\
+(x_{i+1}-x)/(x_{i+1}-x_i),&x_i\leq x\leq x_{i+1},\\
+0,&\text{otherwise}.
+\end{cases}
+$$
+Its <support of a function> is $[x_{i-1},x_{i+1}]$. It rises on the left <interval> and falls on the right, producing its hat-shaped graph. The interior <hat functions> form a <basis> of the continuous $P_1$ <conforming finite element space> with homogeneous <Dirichlet boundary conditions>. Chen's author notes define this nodal <basis> and illustrate it in one and two dimensions.\a[https://webapps.math.uci.edu/~chenlong/226/Ch2FEM.pdf][Chen, Introduction to Finite Element Methods, §3.1, pp. 5–6 and Figure 5: nodal hat basis]{ref} The nodal property $\phi_i(x_j)=\delta_{ij}$ makes the <coefficients> directly readable: if $v_h=\sum_i c_i\phi_i$, then $v_h(x_i)=c_i$. Unlike the global <Lagrange cardinal polynomials>, each of these functions is confined to two neighboring elements.
+
+For example, with $x_j=j/4$, the middle <hat function> is $\phi_2(x)=4x-1$ on $[1/4,1/2]$, $3-4x$ on $[1/2,3/4]$, and zero elsewhere. Hence $\phi_2(3/8)=1/2$, while $\phi_1(3/8)=1/2$ and $\phi_3(3/8)=0$. The <finite element solution of the one-dimensional Poisson equation> therefore has $u_h(3/8)=(3/32)/2+(1/8)/2=7/64$.
+
+Local assembly makes this locality computational. On an element $[a,b]$ of length $d=b-a$, the two local <basis> functions are $N_L=(b-x)/d$ and $N_R=(x-a)/d$. For the <Poisson equation> with unit forcing, their local <stiffness matrix> and load vector are
+$$
+K^{(e)}=\frac1d\begin{pmatrix}1&-1\\-1&1\end{pmatrix},\qquad
+F^{(e)}=\frac d2\begin{pmatrix}1\\1\end{pmatrix}.
+$$
+Add these four matrix entries and two loads to the rows and columns belonging to the element's endpoints, then impose the prescribed boundary values. An interior node receives contributions from its two neighboring elements. Writing $d_L=x_i-x_{i-1}$ and $d_R=x_{i+1}-x_i$ gives
+$$
+K_{ii}=\frac1{d_L}+\frac1{d_R},\qquad
+K_{i,i-1}=-\frac1{d_L},\qquad K_{i,i+1}=-\frac1{d_R},\qquad
+F_i=\frac{d_L+d_R}{2},
+$$
+with off-diagonal entries included only for interior neighbors. On a uniform <mesh> these reduce to $2/h$, $-1/h$ and $h$. Nonadjacent <hat functions> have no derivative overlap of positive length, so all distant entries vanish. This produces a <sparse matrix> with only three diagonals: the global coupling is built entirely from local two-node interactions.
+
+\Image[finite-element-hat-assembly.png]
+{title=Three interior hat functions on a four-interval mesh, with local stiffness and load contributions assembled into the three-unknown Poisson system}
 
 = Arithmetic operation
 {parent=Numerical analysis}
@@ -1118,11 +1687,39 @@ $$
 $$
 The transformed integrand is smooth, so an ordinary second-order midpoint rule recovers its usual convergence rate.
 
-= Polynomial interpolation
+= Interpolation
 {parent=Numerical analysis}
 {wiki}
+{title2=$g(x_i)=y_i$}
 
-Given distinct nodes $x_0,\ldots,x_n$ and values $f(x_i)$, there is a unique polynomial of degree at most $n$ taking those values.
+Interpolation constructs a <function> agreeing exactly with prescribed values at sample points. The resulting function is an <interpolant>. Choosing a family determines how missing values are filled: <polynomial interpolation> selects a <polynomial>, while <linear interpolation> joins adjacent samples by straight segments. The <McShane extension theorem> instead permits any <Lipschitz function> with a specified bound and provides envelopes controlling all allowed choices.
+
+= Interpolant
+{parent=Interpolation}
+{title2=$g(x_i)=y_i$}
+
+An interpolant is a <function> satisfying the prescribed sample conditions $g(x_i)=y_i$. It agrees with the data exactly, but need not agree with an unknown underlying function between samples. The <polynomial interpolation> example shows that a family or a <polynomial degree> restriction can supply uniqueness; the <McShane extension theorem> shows a useful nonunique alternative.
+
+= Polynomial interpolation
+{parent=Interpolation}
+{wiki}
+{title2=$p_n(x_i)=y_i,\quad\deg p_n\leq n$}
+
+<Polynomial interpolation> constructs a <polynomial> that passes exactly through prescribed data. Given $n+1$ distinct <interpolation nodes> $x_0,\ldots,x_n$ and values $y_0,\ldots,y_n$, there is exactly one <interpolation polynomial> $p_n$ of <polynomial degree> at most $n$ with $p_n(x_i)=y_i$ for every $i$. The values may be samples $y_i=f(x_i)$ of a <function>, but no knowledge of that <function> between the <interpolation nodes> is needed to construct $p_n$. The <Lagrange polynomial> and <Newton polynomial> are two representations of this same answer.\a[https://fncbook.com/polynomial/][Toby A. Driscoll and Richard J. Braun, Fundamentals of Numerical Computation, §9.1, Theorems 9.1.1–9.1.2]{ref}
+
+For example, the three data points $(0,1),(1,2),(2,5)$ give the <quadratic polynomial>
+$$
+p_2(x)=x^2+1,\qquad p_2(0)=1,\quad p_2(1)=2,\quad p_2(2)=5.
+$$
+Thus <polynomial interpolation> supplies $p_2(1/2)=5/4$ as an intermediate value. Whether this approximates an unknown underlying <function> well is a separate question about <polynomial interpolation error>.
+
+Both hypotheses in the uniqueness statement matter. The <Lagrange cardinal polynomials> prove existence constructively. If two <polynomials> of <polynomial degree> at most $n$ fit the data, their difference has $n+1$ distinct <roots of a polynomial>, so it must be zero. Repeated <interpolation nodes> with conflicting values have no solution, and repeated equal values provide no additional independent condition; prescribed <derivatives> instead lead to <Hermite interpolation>. Without the <polynomial degree> restriction there are infinitely many solutions:
+$$
+p(x)=p_n(x)+q(x)\prod_{i=0}^n(x-x_i),
+$$
+where $q$ is any <polynomial>. By the <factor theorem>, this describes every <polynomial> fitting the same data. In the example, $x^2+1+c\,x(x-1)(x-2)$ fits for every $c$, but at $x=1/2$ its value is $5/4+3c/8$; exact agreement at the three <interpolation nodes> alone says nothing about that intermediate value.
+
+The usefulness of <polynomial interpolation> is that data become an explicit <function> whose values, <derivatives>, and <integrals> can be calculated. Differentiating or integrating the <Lagrange cardinal polynomials> produces <differentiation weights from nodal evaluations> or a <quadrature rule>. Exact passage through observations is the defining constraint. In <polynomial regression>, <linear least squares> instead chooses a <polynomial degree> and minimizes a sum of squared residuals, generally without passing through every observation. Interpolating noisy values reproduces their errors at the <interpolation nodes> and can amplify them between <interpolation nodes>; <polynomial interpolation> does not itself smooth measurement noise. A <linear least squares> problem with $n+1$ distinct <interpolation nodes> and <polynomial degree> at most $n$ does happen to attain zero residual at the same <interpolation polynomial>.
 
 = Interpolation polynomial
 {parent=Polynomial interpolation}
@@ -1138,13 +1735,52 @@ For a real <continuous function> on a compact interval, choose its <best uniform
 
 = Interpolation node
 {parent=Polynomial interpolation}
+{title2=$x_i$}
 
-An interpolation node is one of the distinct argument values at which an interpolating function is required to match prescribed data.
+An <interpolation node> is an argument value $x_i$ at which an <interpolation polynomial> must take a prescribed value $y_i$. The <interpolation nodes> specify where the constraints apply; the values specify how high the graph must pass there. In the three-point example, the <interpolation nodes> are $0,1,2$, while the prescribed values are $1,2,5$. Changing the <interpolation nodes> changes the <Lagrange cardinal polynomials> and the <polynomial interpolation error>, even if their number stays fixed.
+
+= Chebyshev-Lobatto node
+{c}
+{parent=Interpolation node}
+{title2=$x_k=\cos(k\pi/n),\quad k=0,\ldots,n$}
+
+= Chebyshev extreme point
+{c}
+{synonym}
+
+For $n\geq1$, the $n+1$ <Chebyshev-Lobatto nodes> are the <extrema> of the <Chebyshev polynomial> $T_n$ on $[-1,1]$, including both endpoints: $T_n(x_k)=(-1)^k$. Imagine $n+1$ equally spaced angles on a <semicircle> and project their points onto the horizontal axis. The <interpolation nodes> crowd near $-1$ and $1$ because equal angular steps have smaller horizontal projections there. Reversing the order gives the same set. These are distinct from the <roots of a polynomial> $\cos((2k+1)\pi/(2n+2))$ of $T_{n+1}$, which omit the endpoints. Driscoll and Braun call this endpoint-including family Chebyshev points of the second kind or Chebyshev extreme points.\a[https://fncbook.com/python/stability-1/][Driscoll and Braun, Fundamentals of Numerical Computation, §9.3.2, equation 9.3.2]{ref}
+
+On an interval $[a,b]$, use $x_k=(a+b)/2+(b-a)\cos(k\pi/n)/2$. The <Runge phenomenon> example compares <polynomial interpolation> at eleven <Chebyshev-Lobatto nodes> with eleven equally spaced <interpolation nodes>. The distinction matters whenever sampling locations are a choice rather than fixed observations.
+
+= Runge's phenomenon
+{c}
+{parent=Polynomial interpolation}
+{wiki}
+
+= Runge phenomenon
+{c}
+{synonym}
+
+The <Runge phenomenon> is the failure of increasing-degree <polynomial interpolation> at equally spaced <interpolation nodes> to converge to some smooth target <functions>, with large oscillations near the ends of the interval. It is a property of the approximation problem, and can occur even with exact arithmetic. A numerically stable evaluation method cannot remove it. Endpoint clustering, as in <Chebyshev-Lobatto nodes>, changes the approximation problem and can greatly improve it.\a[https://fncbook.com/python/stability-1/][Driscoll and Braun, Fundamentals of Numerical Computation, §9.3.1–9.3.2]{ref}
+
+Take $f(x)=1/(1+25x^2)$ on $[-1,1]$ and <polynomial degree> at most $10$. Use either $x_k=-1+k/5$ or $x_k=\cos(k\pi/10)$ for $k=0,\ldots,10$. Each <interpolation polynomial> passes through all eleven of its own samples, yet the first has severe endpoint oscillations and the second stays much closer to the target <function>. Evaluating both by the <barycentric interpolation formula> on $20{,}001$ equally spaced points, including the endpoints, gives sampled maximum absolute errors of approximately $1.915659$ and $0.132197$, respectively: about a $14.49$-fold reduction. These are maxima over the stated grid, not certified maxima over the continuous interval. The generator separately checks exact reproduction of all stored nodal values.
+
+\Image[interpolation-node-placement.png]
+{title=Degree-10 interpolation of the Runge function at equally spaced and Chebyshev-Lobatto nodes, with absolute errors}
+
+The <polynomial interpolation error> formula explains why <interpolation nodes> enter the analysis. If $f$ has $n+1$ continuous <derivatives> on an interval containing $x$ and all the <interpolation nodes>, then for a suitable $\xi_x$ in that interval,
+$$
+f(x)-p_n(x)=\frac{f^{(n+1)}(\xi_x)}{(n+1)!}\prod_{i=0}^n(x-x_i).
+$$
+At an <interpolation node> the error is zero directly. Away from the <interpolation nodes>, both the product and the high-order <derivative> matter. A short proof applies <Rolle's theorem> repeatedly to $f(t)-p_n(t)-[f(x)-p_n(x)]\prod_i(t-x_i)/\prod_i(x-x_i)$, which vanishes at $n+2$ distinct points.\a[https://fncbook.com/polynomial/][Driscoll and Braun, Fundamentals of Numerical Computation, §9.1.2, Theorem 9.1.3]{ref}
+
+The successful comparison here does not assert that <Chebyshev-Lobatto nodes> solve every approximation problem for every <function>. The <derivatives>, the <polynomial degree>, and measurement errors still matter. The <Lebesgue constant of interpolation> measures worst-case amplification of nodal errors, while the <polynomial reproduction error bound> relates interpolation to the <best uniform approximation> available at that <polynomial degree>.
 
 = Lagrange polynomial
 {c}
 {parent=Polynomial interpolation}
 {wiki}
+{title2=$p_n(x)=\sum_{i=0}^n y_i\ell_i(x)$}
 
 = Lagrange interpolation polynomial
 {c}
@@ -1157,12 +1793,20 @@ An interpolation node is one of the distinct argument values at which an interpo
 = Polynomial interpolant
 {synonym}
 
-The interpolating polynomial is
+The <Lagrange polynomial> writes the <interpolation polynomial> as a <linear combination> of <Lagrange cardinal polynomials>. Each one selects a single <interpolation node>, so the data values themselves become the coefficients:
 $$
-p_n(x)=\sum_{j=0}^nf(x_j)
-\prod_{\substack{0\leq i\leq n\\i\ne j}}
-\frac{x-x_i}{x_j-x_i}.
+p_n(x)=\sum_{i=0}^n y_i\ell_i(x),\qquad
+\ell_i(x)=\prod_{\substack{0\leq j\leq n\\j\ne i}}\frac{x-x_j}{x_i-x_j}.
 $$
+Distinct <interpolation nodes> make every denominator nonzero. At $x_j$, all terms vanish except $y_j\ell_j(x_j)=y_j$. This gives an explicit construction without solving for <monomial> coefficients. The elegance of the <Lagrange polynomial> is that it builds all constraints into the <basis>, leaving no equations to solve for the data values.
+
+For $(x_0,x_1,x_2)=(0,1,2)$ and $(y_0,y_1,y_2)=(1,2,5)$, substitution gives
+$$
+p_2(x)=\frac{(x-1)(x-2)}2-2x(x-2)+\frac{5x(x-1)}2=x^2+1.
+$$
+At $x=1/2$, the <Lagrange cardinal polynomial> values are $3/8,3/4,-1/8$, so $p_2(1/2)=3/8+2(3/4)+5(-1/8)=5/4$. A negative <Lagrange cardinal polynomial> value is allowed: these weights sum to one but need not be <probabilities>.
+
+The product form is especially useful for deriving <differentiation weights from nodal evaluations> and <quadrature rules>. For repeated numerical evaluation, the <barycentric interpolation formula> reorganizes the same <Lagrange polynomial> into precomputed weights and sums; it avoids evaluating every full product at every argument.
 
 = Differentiation weights from nodal evaluations
 {parent=Lagrange polynomial}
@@ -1185,7 +1829,26 @@ For $n+2$ increasingly ordered nodes $y_j$, let $r_j$ be their <Lagrange cardina
 {c}
 {synonym}
 
-For distinct <interpolation nodes> $x_0,\ldots,x_n$, the polynomial $\ell_i(x)=\prod_{j\ne i}(x-x_j)/(x_i-x_j)$ has $\ell_i(x_j)=\delta_{ij}$. These cardinal polynomials form a <basis> of the <polynomials> of degree at most $n$, and give $p(x)=\sum_i p(x_i)\ell_i(x)$.
+For distinct <interpolation nodes> $x_0,\ldots,x_n$, the <Lagrange cardinal polynomial> $\ell_i$ has value one at its own <interpolation node> and zero at every other <interpolation node>:
+$$
+\ell_i(x)=\prod_{j\ne i}\frac{x-x_j}{x_i-x_j},\qquad
+\ell_i(x_j)=\delta_{ij}=
+\begin{cases}1,&i=j,\\0,&i\ne j.\end{cases}
+$$
+Here $\delta_{ij}$ is the <Kronecker delta>. These <Lagrange cardinal polynomials> form a <basis> of the <vector space> of <polynomials> of <polynomial degree> at most $n$: every such <polynomial> has the unique expansion $p(x)=\sum_i p(x_i)\ell_i(x)$. The nodal evaluation <linear functionals> $E_j(p)=p(x_j)$ form the <dual basis>, since $E_j(\ell_i)=\delta_{ij}$.
+
+For the <interpolation nodes> $0,1,2$, the three <Lagrange cardinal polynomials> are
+$$
+\ell_0(x)=\frac{(x-1)(x-2)}2,\qquad
+\ell_1(x)=-x(x-2),\qquad
+\ell_2(x)=\frac{x(x-1)}2.
+$$
+Their values on the <interpolation nodes> are the rows of the <identity matrix>. In the figure, each colored curve passes through its own unit-height marker and through zero at the other two <interpolation nodes>. Multiplying the curves by the data $1,2,5$ and adding gives the <Lagrange polynomial> $x^2+1$.
+
+\Image[lagrange-interpolation-cardinals.png]
+{title=Lagrange cardinal polynomials at nodes 0, 1, 2 and their weighted sum interpolating values 1, 2, 5}
+
+Since the constant <polynomial> one interpolates data values all equal to one, uniqueness gives $\sum_i\ell_i(x)=1$. Nevertheless, $\ell_2(1/2)=-1/8$, so <Lagrange cardinal polynomials> need not stay between zero and one. If a single data value $y_i$ changes by $\varepsilon$, the <interpolation polynomial> changes by exactly $\varepsilon\ell_i(x)$. Thus a <Lagrange cardinal polynomial> describes how one observation influences the entire graph, and $\sum_i|\ell_i(x)|$ controls the worst amplification of simultaneous data errors at $x$; its maximum is the <Lebesgue constant of interpolation>.
 
 = Endpoint derivative signs of Lagrange cardinal polynomials
 {parent=Lagrange cardinal polynomial}
@@ -1199,22 +1862,40 @@ At decreasing distinct <interpolation nodes> $1\ge t_0>\cdots>t_n\ge-1$, the <La
 
 At distinct <interpolation nodes>, differentiating <Lagrange interpolation> gives $p^{(k)}(x)=\sum_i p(t_i)\ell_i^{(k)}(x)$. The <triangle inequality> gives the displayed upper bound, attained by prescribing each nodal value to be the sign of the corresponding <derivative> weight. For increasingly ordered real nodes, the <Markov interlacing lemma> and <monotonicity of polynomial critical points in their roots> imply that $(-1)^i\ell_i^{(k)}(x)$ has at most one sign change, ignoring zero weights. Thus an extremizer has alternating nodal signs with at most one reversal of that alternating pattern. This reduces a choice among $2^{n+1}$ sign patterns to $n+1$ candidate <polynomials>.
 
+= Barycentric interpolation formula
+{parent=Lagrange polynomial}
+{title2=$p_n(x)=\dfrac{\sum_i w_i y_i/(x-x_i)}{\sum_i w_i/(x-x_i)}$}
+
+The <barycentric interpolation formula> evaluates the same <Lagrange polynomial> using weights that depend only on the distinct <interpolation nodes>:
+$$
+w_i=\frac1{\prod_{j\ne i}(x_i-x_j)},\qquad
+p_n(x)=\frac{\displaystyle\sum_{i=0}^n\frac{w_i y_i}{x-x_i}}
+{\displaystyle\sum_{i=0}^n\frac{w_i}{x-x_i}},\qquad x\ne x_i.
+$$
+At $x=x_i$, return $y_i$ directly, before dividing; the formula has <removable singularities> at the <interpolation nodes>. Multiplying every $w_i$ by the same nonzero constant leaves the answer unchanged. Driscoll and Braun derive this formula as a more efficient, numerically stable way to evaluate <polynomial interpolation>.\a[https://fncbook.com/barycentric/][Driscoll and Braun, Fundamentals of Numerical Computation, §9.2, Theorem 9.2.1 and Algorithm 9.2.1]{ref}
+
+For the <interpolation nodes> $0,1,2$, the weights are $(1/2,-1,1/2)$, or equivalently $(1,-2,1)$. With data $(1,2,5)$, at $x=1/2$ the denominator using the latter weights is $2+4-2/3=16/3$ and the numerator is $2+8-10/3=20/3$, giving $p_2(1/2)=5/4$ again. For eleven <interpolation nodes> in the <Runge phenomenon> figure, the generator computes the weights by the direct products above and returns stored values exactly at every <interpolation node>.
+
+The direct products require $O(n^2)$ <arithmetic operations> once; each subsequent value uses $O(n)$ <arithmetic operations>. Here $O$ denotes <Big O notation>. At large <polynomial degree> or on poorly scaled intervals, forming these products can exceed the range of <floating-point arithmetic>; normalization or specialized weight formulas may be needed. Stable evaluation also cannot cure sensitivity intrinsic to the chosen <interpolation nodes>, measured by the <Lebesgue constant of interpolation>, or the approximation failure in the <Runge phenomenon>.
+
 = Divided difference
 {parent=Polynomial interpolation}
 {wiki}
+{title2=$f[x_0,\ldots,x_k]$}
 
-For distinct nodes,
+For $k+1$ distinct <interpolation nodes>, the <divided difference> $f[x_0,\ldots,x_k]$ is the coefficient of $x^k$ in the <interpolation polynomial> of <polynomial degree> at most $k$ through those <interpolation nodes>. It is the <leading coefficient> when that <polynomial degree> is exactly $k$, and zero when it is smaller. Explicitly,
 $$
 f[x_0,\ldots,x_k]
 =\sum_{j=0}^k\frac{f(x_j)}
 {\prod_{i\ne j}(x_j-x_i)}.
 $$
-It is the leading coefficient of the interpolating polynomial through those nodes and obeys
+starting with $f[x_i]=f(x_i)$. The <divided differences> obey the recurrence
 $$
 f[x_0,\ldots,x_k]
 =\frac{f[x_1,\ldots,x_k]-f[x_0,\ldots,x_{k-1}]}
 {x_k-x_0}.
 $$
+For data $f(0)=1$, $f(1)=2$, $f(2)=5$, the first <divided differences> are $f[0,1]=(2-1)/(1-0)=1$ and $f[1,2]=(5-2)/(2-1)=3$. The second <divided difference> is $f[0,1,2]=(3-1)/(2-0)=1$, the <leading coefficient> of $x^2+1$. The first <divided difference> is the slope of a <secant line>; higher <divided differences> supply successive coefficients for the <Newton polynomial>.
 
 = Omitted-node identities for divided differences
 {parent=Divided difference}
@@ -1245,24 +1926,128 @@ $$
 {c}
 {parent=Divided difference}
 {wiki}
+{title2=$p_n(x)=\sum_{k=0}^n f[x_0,\ldots,x_k]\prod_{i=0}^{k-1}(x-x_i)$}
 
 = Newton interpolation polynomial
 {c}
 {synonym}
 
-Newton's nested interpolation form is
+The <Newton polynomial> expresses the <interpolation polynomial> in products that successively vanish at all previously used <interpolation nodes>. With $y_i=f(x_i)$, the coefficients are <divided differences>:
 $$
 p_n(x)=f(x_0)+\sum_{k=1}^nf[x_0,\ldots,x_k]
 \prod_{i=0}^{k-1}(x-x_i).
 $$
-A triangular divided-difference table computes all its coefficients using exactly $n(n+1)/2$ divisions.
+A triangular <divided difference> table computes all its coefficients using exactly $n(n+1)/2$ divisions. The <Newton polynomial> and the <Lagrange polynomial> have the same <polynomial degree> bound and the same nodal values, hence are equal by uniqueness of <polynomial interpolation>.
+
+For $f(0)=1$, $f(1)=2$, $f(2)=5$, the complete <divided difference> table is
+$$
+\begin{array}{c|r|r|r}
+x_i&f[x_i]&f[x_i,x_{i+1}]&f[x_i,x_{i+1},x_{i+2}]\\\hline
+0&1&1&1\\
+1&2&3&\\
+2&5&&
+\end{array}
+$$
+The first <divided differences> are $1$ and $3$, and their <divided difference> is $(3-1)/(2-0)=1$. Reading the top entries gives
+$$
+p_2(x)=1+1(x-0)+1(x-0)(x-1)=1+x+x(x-1)=x^2+1.
+$$
+The initial term fits $(0,1)$; adding $x$ also fits $(1,2)$; adding $x(x-1)$ fits $(2,5)$ while leaving the first two data values unchanged. This is the practical beauty of the <Newton polynomial>: each new correction respects all previous interpolation constraints.
+
+If a new distinct <interpolation node> $x_{n+1}$ with value $y_{n+1}$ arrives, append one term:
+$$
+p_{n+1}(x)=p_n(x)+c\prod_{i=0}^n(x-x_i),\qquad
+c=\frac{y_{n+1}-p_n(x_{n+1})}{\prod_{i=0}^n(x_{n+1}-x_i)}.
+$$
+For example, appending $(3,11)$ to the three-point data gives $c=(11-10)/(3\cdot2\cdot1)=1/6$, hence $p_3(x)=x^2+1+x(x-1)(x-2)/6$. Changing the order of the <interpolation nodes> changes the <Newton polynomial> coefficients and products, but not the final <interpolation polynomial> in exact arithmetic.
+
+The products also permit nested evaluation analogous to <Horner's method>. If $a_k=f[x_0,\ldots,x_k]$, start with $b_n=a_n$ and work backwards by $b_k=a_k+(x-x_k)b_{k+1}$; the answer is $b_0$. The three-point example becomes $1+x[1+(x-1)]$, needing two multiplications for each evaluation. This organization is useful when adding observations incrementally or evaluating a stored <Newton polynomial> many times; the <Runge phenomenon> still depends on the <interpolation nodes> rather than on which representation is used.
 
 = Discrete Fourier transform
 {parent=Numerical analysis}
 {wiki}
+{title2=$X_k=\sum_{n=0}^{N-1}x_ne^{-2\pi ink/N}$}
 
-For samples $y_0,\ldots,y_{m-1}$, their discrete Fourier transform is
-$$Y_k=\sum_{n=0}^{m-1}y_ne^{-2\pi ink/m}.$$
+= DFT
+{c}
+{synonym}
+
+The <discrete Fourier transform> turns a finite list of samples into the weights of its <discrete Fourier modes>. The goal is to reveal a simple oscillatory recipe hidden in complicated-looking data, while retaining enough information to reconstruct every sample exactly. In <signal processing>, those weights identify sampled <frequencies> and <wave phases>; in <numerical analysis>, they simplify <circular convolution> and the <discrete sine transform Poisson solver>.
+
+Start with eight real samples, indexed by $n=0,\ldots,7$:
+$$
+x_n=1+\cos\left(\frac{2\pi n}{8}\right)+\frac12\sin\left(\frac{4\pi n}{8}\right).
+$$
+Writing $a=\sqrt2/2$, the actual list is
+$$
+x=\left(2,\frac32+a,1,\frac12-a,0,\frac32-a,1,\frac12+a\right).
+$$
+The <discrete Fourier transform> recovers the recipe as
+$$
+X=(8,4,-2i,0,0,0,2i,4).
+$$
+The constant contributes $X_0=8$; the <cosine> contributes $X_1=X_7=4$; the half-sized <sine> contributes $X_2=-2i$ and $X_6=2i$. All other <coefficients> vanish exactly. The imaginary <coefficients> carry the <sine>'s <wave phase>, which a plot of <absolute values> alone would hide.
+
+\Image[dft-frequency-decomposition.png]
+{title=Eight samples become a constant, a cosine pair, and a sine pair in the discrete Fourier transform}
+
+Precisely, for a positive <integer> $N$ and a <vector> $x\in\mathbb C^N$, the forward <discrete Fourier transform> and <inverse discrete Fourier transform> used here are
+$$
+X_k=\sum_{n=0}^{N-1}x_n\exp\left(-\frac{2\pi ink}{N}\right),\qquad k=0,\ldots,N-1,
+$$
+$$
+x_n=\frac1N\sum_{k=0}^{N-1}X_k\exp\left(\frac{2\pi ink}{N}\right),\qquad n=0,\ldots,N-1.
+$$
+Thus the forward exponent has a minus sign and no scale factor; the inverse exponent has a plus sign and the factor $1/N$. The <coefficients> in the reconstruction are $X_k/N$, rather than $X_k$. In the example, $X_0/8=1$, the pair $4/8$ reconstructs the <cosine>, and the pair $-2i/8,2i/8$ reconstructs the half-sized <sine>. These conventions agree with the scaled <Fourier coefficients> in MIT's authored notes.\a[https://ocw.mit.edu/courses/6-02-introduction-to-eecs-ii-digital-communication-systems-fall-2012/06d7972059805d20e6a7db3a52ec23f2_MIT6_02F12_chap13.pdf][Hari Balakrishnan, Christopher Terman, and George Verghese, MIT 6.02 notes, Chapter 13, equations (13.15)–(13.16), 2012]{ref}
+
+The proof idea is <orthogonality of roots of unity>: for <integers> $k,\ell\in\{0,\ldots,N-1\}$,
+$$
+\sum_{n=0}^{N-1}e^{2\pi in(k-\ell)/N}=\begin{cases}N,&k=\ell,\\0,&k\ne\ell.\end{cases}
+$$
+Distinct <discrete Fourier modes> cancel in this finite <geometric series>. Substituting the forward formula into the <inverse discrete Fourier transform> leaves only the desired sample. The same <orthogonality> makes the normalized <discrete Fourier modes> an <orthonormal basis> and gives the <discrete Parseval identity>, in the present convention,
+$$
+\sum_{n=0}^{N-1}|x_n|^2=\frac1N\sum_{k=0}^{N-1}|X_k|^2.
+$$
+For the eight-sample example, direct squaring gives $\sum_nx_n^2=13$, while $\sum_k|X_k|^2=64+16+4+4+16=104$, so $104/8=13$. This identity preserves the squared <L2 norm> after accounting for normalization. The existing <discrete Parseval identity> instead scales the forward <discrete Fourier transform> by $N^{-1/2}$, producing a <unitary matrix> and equal squared <L2 norms> without the factor $1/N$.
+
+For real input, <discrete Fourier conjugate symmetry> pairs positive and negative <frequencies>. The label $k$ is a residue modulo $N$: $k=7$ when $N=8$ represents the same <discrete Fourier mode> as $k=-1$, since $e^{2\pi i7n/8}=e^{-2\pi in/8}$. It therefore represents negative <frequency> $-1/8$ cycles per sample. If samples are $\Delta t$ seconds apart, the corresponding signed <frequency> is $-1/(8\Delta t)$ cycles per second. Similarly, index $6$ represents $-2$, while index $4$ is its own negative modulo $8$.
+
+The <discrete Fourier transform> is an invertible map between two finite <vectors>. The continuous <Fourier transform> instead describes a <function> on the real line by an <integral> over a continuous <frequency> variable. A finite list of samples does not determine the full continuous <frequency spectrum>: <aliasing of discrete Fourier modes> already supplies distinct waveforms with identical observations. Applying the inverse formula at arbitrary <integer> indices gives the <periodic extension of a finite sequence>, repeating the recorded block every $N$ samples. This is a property of that representation, rather than evidence that the physical <signal> repeats beyond the recording. Laurent Demanet's MIT notes place the <discrete Fourier transform> alongside the continuous <Fourier transform> and <Fourier series> to explain the role of sampling and repetition.\a[https://math.mit.edu/icg/resources/teaching/18.330/18.330-Mar21.pdf][Laurent Demanet, Introduction to Numerical Analysis, MIT 18.330, §§6.2–6.3, pp. 57–60, March 22, 2012]{ref}
+
+The beauty is that a change of <basis> exposes cancellation and structure without losing data. Direct evaluation needs $N$ sums of $N$ terms; a <fast Fourier transform> computes the same <discrete Fourier transform> with far less work. Computational speed and the mathematical meaning of the <coefficients> are separate questions.
+
+= Discrete Fourier conjugate symmetry
+{parent=Discrete Fourier transform}
+{title2=$X_{(-k)\bmod N}=\overline{X_k}$}
+
+For real samples, taking the <complex conjugate> of the forward <discrete Fourier transform> changes the exponent's sign and proves the displayed symmetry. Hence $X_0$ is real; for even $N$, $X_{N/2}$ is also real. In the eight-sample example, $X_7=\overline{X_1}=4$ and $X_6=\overline{X_2}=2i$. This is the finite counterpart of <conjugate symmetry of trigonometric polynomial coefficients>. It reduces storage for real <signals> and provides a quick consistency check on a computed <discrete Fourier transform>.
+
+= Periodic extension of a finite sequence
+{parent=Discrete Fourier transform}
+{title2=$x_{n+N}=x_n$}
+
+A block $x_0,\ldots,x_{N-1}$ determines a repeating <sequence> by setting $x_n=x_{n\bmod N}$ for every <integer> $n$. The <inverse discrete Fourier transform> gives this extension because each <discrete Fourier mode> satisfies $e^{2\pi ik(n+N)/N}=e^{2\pi ikn/N}$. The extension explains why <circular convolution> wraps indices around the block. It specifies values at discrete indices; a continuous curve between samples requires an additional choice of <interpolation>.
+
+= Aliasing of discrete Fourier modes
+{parent=Discrete Fourier transform}
+{title2=$e^{2\pi i(m+qN)n/N}=e^{2\pi imn/N}$}
+
+For <integers> $m,q,n$, adding $qN$ to a <frequency> index changes the <complex exponential> by $e^{2\pi iqn}=1$. Thus different continuous <Fourier modes> become identical <discrete Fourier modes> on the sampling grid. This is <aliasing>, caused by sampling before any <discrete Fourier transform> is computed.
+
+For $N=8$, compare the continuous <functions> $\cos(2\pi mt)$ and $\sin(2\pi mt)$ with $m=1$ and $m=9$, sampled at $t=n/8$, $n=0,\ldots,7$. With $a=\sqrt2/2$, both <cosines> give exactly the first row and both <sines> give exactly the second:
+$$
+\begin{array}{c|rrrrrrrr}
+n&0&1&2&3&4&5&6&7\\\hline
+\cos(2\pi n/8)=\cos(18\pi n/8)&1&a&0&-a&-1&-a&0&a\\
+\sin(2\pi n/8)=\sin(18\pi n/8)&0&a&1&a&0&-a&-1&-a
+\end{array}
+$$
+The nine-cycle <sine> agrees in sign as well as magnitude with the one-cycle <sine>: the <frequency> indices differ by $8$, rather than by a sign reversal. Consequently, either <cosine> produces the same <discrete Fourier transform>, $X_1=X_7=4$ with all other <coefficients> zero; either <sine> produces $X_1=-4i$, $X_7=4i$, with all other <coefficients> zero.
+
+\Image[discrete-sampling-frequency-aliasing.png]
+{title=One-cycle and nine-cycle cosine and sine waves have exactly the same eight samples}
+
+An observed low <frequency> therefore does not establish that physical high <frequencies> are absent. To exclude such alternatives, the <Nyquist–Shannon sampling theorem> requires a specified class of <bandlimited functions>. For arbitrary pure <sinusoids> with <frequencies> at most $B$, choose sampling rate $f_s>2B$; equality needs care because $\sin(2\pi(f_s/2)t)$ vanishes at every $t=n/f_s$. The finite-energy <L2 space> version of the <Nyquist–Shannon sampling theorem> permits equality under its own hypotheses. In either case, exact continuous reconstruction generally requires the entire infinite sample <sequence>; eight observed samples alone do not supply it. Demanet derives the grid <aliasing> condition as a difference by an <integer> multiple of the sampling <angular frequency>.\a[https://math.mit.edu/icg/resources/teaching/18.330/18.330-Mar21.pdf][Laurent Demanet, MIT 18.330 notes, §6.2, Definition 11, p. 57: aliases on a grid, 2012]{ref}
 
 = Prime Fourier matrix minor theorem
 {parent=Discrete Fourier transform}
@@ -1310,8 +2095,21 @@ moving the factor $1/n$ between the forward and inverse transforms gives other s
 
 On a cyclic index set of length $n$, the $k$th discrete Fourier mode is the vector with $j$th coordinate $e^{2\pi ikj/n}$. Its real and imaginary parts are the corresponding cosine and sine modes.
 
-= Cooley-Tukey FFT algorithm
+= Fast Fourier transform
 {parent=Discrete Fourier transform}
+{c}
+{wiki}
+
+= FFT
+{c}
+{synonym}
+
+A <fast Fourier transform> is an efficient <algorithm> for computing the <discrete Fourier transform> or <inverse discrete Fourier transform>. The <discrete Fourier transform> specifies the mathematical result; a <fast Fourier transform> specifies how to compute it. Different <fast Fourier transform> <algorithms> reorganize the same finite sums, with the selected sign and normalization. The <Cooley-Tukey FFT algorithm> is one important family of <fast Fourier transforms>, using factorization of the record length.\a[https://ocw.mit.edu/courses/6-02-introduction-to-eecs-ii-digital-communication-systems-fall-2012/06d7972059805d20e6a7db3a52ec23f2_MIT6_02F12_chap13.pdf][Balakrishnan, Terman, and Verghese, MIT 6.02 notes, §13.2.6, p. 194: the FFT computes the existing transform, 2012]{ref}
+
+For a power-of-two length, the radix-two <Cooley-Tukey FFT algorithm> has <time complexity> $O(N\log N)$ in arithmetic operations, compared with $O(N^2)$ for evaluating every sum independently; these are <Big O notation> growth rates rather than machine timings. It returns the same eight <coefficients> $(8,4,-2i,0,0,0,2i,4)$ in the example. In exact arithmetic this reorganization introduces no approximation; actual implementations still incur <roundoff error>.
+
+= Cooley-Tukey FFT algorithm
+{parent=Fast Fourier transform}
 {c}
 {wiki=Cooley–Tukey_FFT_algorithm}
 
@@ -1319,11 +2117,11 @@ On a cyclic index set of length $n$, the $k$th discrete Fourier mode is the vect
 {c}
 {synonym}
 
-= Fast Fourier transform
-{synonym}
-{c}
-
 The radix-two Cooley--Tukey algorithm recursively splits a discrete Fourier transform into transforms of the even-indexed and odd-indexed samples. For a power-of-two length this evaluates the transform in $O(m\log m)$ arithmetic operations.
+
+The saving comes from reusing the two shorter <discrete Fourier transforms> for both halves of the output, through an <FFT butterfly>. For $N=2^p$, each level of the <even--odd fast Fourier transform recursion> needs work proportional to $N$, and there are $p=\log_2N$ levels. This gives the $O(N\log N)$ <time complexity> without changing the <discrete Fourier transform> being computed.
+
+James W. Cooley and John W. Tukey published \i[An Algorithm for the Machine Calculation of Complex Fourier Series] in \i[Mathematics of Computation] 19 (1965), pp. 297–301. Their original paper factors a composite length as $N=r_1\cdots r_p$, derives an operation count $N(r_1+\cdots+r_p)$, and discusses powers of two and in-place storage. Its opening explicitly builds on earlier <algorithms> by I. J. Good; the 1965 paper is a landmark computational formulation, rather than the invention of the underlying <Fourier analysis>. Its positive-exponent convention also illustrates why a <fast Fourier transform>'s exponent sign must be specified.\a[https://janmr.com/files/papers/cooley-tukey.pdf][Cooley and Tukey 1965, original paper, pp. 297–300, equations (1)–(12); scan of the published article]{ref}
 
 = FFT butterfly
 {parent=Cooley-Tukey FFT algorithm}
@@ -1378,27 +2176,105 @@ Thus a sign modulation, one fast cosine transform, and output reversal give an $
 {c}
 {parent=Numerical analysis}
 {wiki}
+{title2=$\lambda\in\bigcup_{i=1}^n D_i(A)$}
 
 = Gershgorin disc theorem
 {synonym}
 {c}
 
-Every eigenvalue of a complex matrix $A=(a_{ij})$ lies in at least one disk
+The <Gershgorin circle theorem> locates every <eigenvalue> of a <square matrix> using only its entries. A diagonal entry supplies a centre in the <complex plane>, and the sum of the off-diagonal <absolute values> in its row supplies a radius. Small off-diagonal couplings therefore confine the <eigenvalues> near the diagonal entries. This turns a global <eigenvalue> problem into a picture built one row at a time.
+
+Precisely, let $A=(a_{ij})\in\mathbb C^{n\times n}$, with $n\geq1$, and define the closed <Gershgorin discs>
 $$
-\left\{z:|z-a_{ii}|\leq\sum_{j\ne i}|a_{ij}|\right\}.
+r_i=\sum_{\substack{j=1\\j\ne i}}^n|a_{ij}|,\qquad D_i(A)=\{z\in\mathbb C:|z-a_{ii}|\leq r_i\},\qquad i=1,\ldots,n.
 $$
+Every <eigenvalue> $\lambda$ of $A$ satisfies $\lambda\in\bigcup_iD_i(A)$, including <eigenvalues> on the boundaries. No symmetry or <diagonalizability> is required. Despite the name, the theorem uses filled <disks>, not just their circular boundaries.\a[https://www.stat.uchicago.edu/~lekheng/courses/302/notes2.pdf][Gene H. Golub, CME 302: Numerical Linear Algebra, Lecture 2, §6, 2005; notes by James Lambers, edited by Lek-Heng Lim]{ref}
+
+The short reason is the <triangle inequality>. For a nonzero <eigenvector> $x$ with $Ax=\lambda x$, choose $i$ with $|x_i|=\max_j|x_j|>0$. The $i$th row gives
+$$
+(\lambda-a_{ii})x_i=\sum_{j\ne i}a_{ij}x_j,\qquad |\lambda-a_{ii}|\leq\sum_{j\ne i}|a_{ij}|\frac{|x_j|}{|x_i|}\leq r_i.
+$$
+Thus the largest <eigenvector> coordinate identifies a <Gershgorin disc> containing $\lambda$, even though that <eigenvector> need never be computed to use the bound.
+
+This is useful when a full <eigenvalue> computation would be expensive: forming the <Gershgorin discs> needs one pass over the nonzero entries of a <sparse matrix>. If $0$ lies outside every <Gershgorin disc>, then $A$ is an <invertible matrix>, since zero is not an <eigenvalue>. The condition is exactly $|a_{ii}|>r_i$ in every row, namely <strict diagonal dominance>. This connects <diagonal dominance> to solvability of a <linear system>; the <inverse infinity-norm bound from diagonal dominance> adds a quantitative bound. It is a sufficient test: failure to exclude zero does not prove singularity.
+
+For a concrete <symmetric matrix>, take
+$$
+A=\begin{pmatrix}2&0.2&0.1\\0.2&5&0.3\\0.1&0.3&9\end{pmatrix},\qquad (r_1,r_2,r_3)=(0.3,0.5,0.4).
+$$
+The three <Gershgorin discs> have centres $2,5,9$ and are pairwise disjoint. The <finite-dimensional spectral theorem> makes the <eigenvalues> real, so their possible locations reduce to the <intervals> $[1.7,2.3]$, $[4.5,5.5]$, and $[8.6,9.4]$. <Gershgorin eigenvalue counting> gives exactly one <eigenvalue> in each. Independently, the <characteristic polynomial> is
+$$
+\det(\lambda I-A)=\lambda^3-16\lambda^2+72.86\lambda-89.422,
+$$
+whose numerical <polynomial roots> are $1.985811$, $4.989942$, and $9.024247$, rounded to six decimal places. All are positive, as <Gershgorin bounds for symmetric matrices> already guarantee without finding those <polynomial roots>.
+
+\Image[gershgorin-eigenvalue-disks.png]
+{title=Three separated Gershgorin discs, each containing one real eigenvalue of the symmetric example}
+
+S. Gerschgorin published the result in 1931 in \i[Über die Abgrenzung der Eigenwerte einer Matrix], in the \i[Bulletin de l'Académie des Sciences de l'URSS], issue 6, pages 749–754. The original paper's §2 states both <eigenvalue> inclusion and counting in separated groups of <Gershgorin discs>; §3 already discusses column bounds and transformations preserving the <eigenvalues>. Thus both the localization picture and ways to sharpen it were part of the original development.\a[https://www.mathnet.ru/php/getFT.phtml?jrnid=im&paperid=5235&what=fullt&option_lang=eng][S. Gerschgorin, Über die Abgrenzung der Eigenwerte einer Matrix, 1931, pp. 749–754; original German paper in the journal archive]{ref}
 
 = Gershgorin disc
 {parent=Gershgorin circle theorem}
 {c}
-{title2=$D_i=\{z:|z-M_{ii}|\leq\sum_{j\ne i}|M_{ij}|\}$}
+{title2=$D_i(A)=\{z\in\mathbb C:|z-a_{ii}|\leq r_i\}$}
 
-For row $i$ of a matrix, the <Gershgorin disc> has centre $M_{ii}$ and radius $\sum_{j\ne i}|M_{ij}|$. The <Gershgorin disc theorem> places every <eigenvalue> in the union of these discs. For a Hermitian matrix the real intervals cut out by the discs bound energies; an isolated disc contains exactly one <eigenvalue>.
+= Gershgorin disk
+{synonym}
+{c}
+
+A row <Gershgorin disc> of a <square matrix> $A=(a_{ij})$ is the closed <disk> in the <complex plane> with centre $a_{ii}$ and radius $r_i=\sum_{j\ne i}|a_{ij}|$. A zero radius gives a single point. The <Gershgorin disc theorem> places every <eigenvalue> in the union of these <disks>. For a <Hermitian matrix>, the real <intervals> cut out by the <Gershgorin discs> bound the <eigenvalues>, including <energy> levels when the <matrix> represents a <Hamiltonian operator>.
+
+Applying the <Gershgorin circle theorem> to the <transpose> $A^T$ gives column <Gershgorin discs> with the same centres and radii $c_i=\sum_{j\ne i}|a_{ji}|$. Since $A$ and $A^T$ have the same <characteristic polynomial>, every <eigenvalue> lies in the intersection of the row-disc union and the column-disc union. This is an intersection of two unions; one cannot generally replace each row radius by $\min(r_i,c_i)$. An isolated row <Gershgorin disc> contains exactly one <eigenvalue> by <Gershgorin eigenvalue counting>.\a[https://www.d.umn.edu/~mhampton/NA/Eigenstuff/][Marshall Hampton, Introduction to Numerical Methods, Eigenstuff: Gershgorin circle theorem]{ref}
+
+= Gershgorin eigenvalue counting
+{c}
+{parent=Gershgorin circle theorem}
+{title2=$\#\{\lambda\text{ in }C\}=k\quad\text{with algebraic multiplicity}$}
+
+Let $C$ be a <connected component> of the union of the row <Gershgorin discs> of an $n\times n$ <matrix>. If $C$ comprises $k$ of the indexed <Gershgorin discs>, then it contains exactly $k$ <eigenvalues>, counted with <algebraic multiplicity>. Coincident <disks> still count separately, once for each row. In particular, a <Gershgorin disc> disjoint from all the others contains one simple <eigenvalue>. More generally, any union of $k$ indexed <Gershgorin discs> disjoint from the remaining $n-k$ contains exactly $k$ <eigenvalues>, whether or not that union is connected.\a[https://cklixx.people.wm.edu/teaching/math408/408-note.pdf][Chi-Kwong Li, Math 408 lecture notes, §6.1, Theorem 6.1.1, p. 48]{ref}
+
+The separation is essential: overlapping <Gershgorin discs> do not individually promise one <eigenvalue> each. Discs that touch at a boundary point belong to the same <connected component>. For example, the <matrix> $\left(\begin{smallmatrix}2&1&0\\0&2&0\\0&0&8\end{smallmatrix}\right)$ has <Gershgorin discs> of radii $1,0,0$ with centres $2,2,8$. The component around $2$ comprises two indexed <disks> and contains the <eigenvalue> $2$ with <algebraic multiplicity> two; the isolated point at $8$ contains the remaining <eigenvalue>.
+
+For intuition, continuously turn on the off-diagonal entries using the <diagonal matrix> $E=\operatorname{diag}(a_{11},\ldots,a_{nn})$ and $A(t)=E+t(A-E)$, $0\leq t\leq1$. At $t=0$ the <eigenvalues> are the disk centres; at every later time the <Gershgorin discs> stay inside their final union. The <continuity> of the <eigenvalues> as a collection means that no <eigenvalue> can cross a gap between final components. The count gives a useful certificate that an <eigenvalue> cluster is complete.\a[https://www.stat.uchicago.edu/~lekheng/courses/302/notes2.pdf][Gene H. Golub, CME 302, Lecture 2, §6: turning on the off-diagonal entries continuously]{ref}
+
+= Gershgorin bounds for symmetric matrices
+{c}
+{parent=Gershgorin circle theorem}
+{title2=$\min_i(a_{ii}-r_i)\leq\lambda\leq\max_i(a_{ii}+r_i)$}
+
+For a real <symmetric matrix>, or more generally a <Hermitian matrix>, the <finite-dimensional spectral theorem> makes all <eigenvalues> real. Intersecting its <Gershgorin discs> with the real axis gives
+$$
+\lambda\in\bigcup_{i=1}^n[a_{ii}-r_i,a_{ii}+r_i],\qquad \min_i(a_{ii}-r_i)\leq\lambda\leq\max_i(a_{ii}+r_i).
+$$
+The union preserves gaps that the single outer <interval> loses. If every $a_{ii}-r_i>0$, all <eigenvalues> are positive, so the <matrix> is a <positive-definite matrix>. This is the positive-diagonal <strictly diagonally dominant matrix> criterion. For the three-by-three example, $1.7\leq\lambda\leq9.4$ gives a <positive-definite matrix> certificate and bounds its <spectral condition number of a positive-definite matrix> by $9.4/1.7\approx5.529412$; the computed value is about $4.544364$.
+
+Strictness matters. The <symmetric matrix> $\left(\begin{smallmatrix}1&-1\\-1&1\end{smallmatrix}\right)$ has positive diagonal and is a <diagonally dominant matrix>, but its <eigenvalues> are $0$ and $2$: it is singular. For a general complex <matrix>, the condition $\operatorname{Re}a_{ii}>r_i$ only puts the <eigenvalues> in the open <right half-plane>. The <Hermitian matrix> assumption is what converts that statement into positive definiteness.
+
+= Diagonal scaling of Gershgorin discs
+{parent=Gershgorin circle theorem}
+{title2=$r_i(D^{-1}AD)=\sum_{j\ne i}|a_{ij}|\,d_j/d_i$}
+
+A positive <diagonal matrix> $D=\operatorname{diag}(d_1,\ldots,d_n)$, with $d_i>0$, is an <invertible matrix> and changes the coordinate scales through the <similarity transformation> $B=D^{-1}AD$. Its diagonal entries are still $a_{ii}$, while $b_{ij}=a_{ij}d_j/d_i$. Thus the <Gershgorin discs> have the same centres but different radii. <Matrix similarity> preserves the <characteristic polynomial> and <eigenvalues>, so the original and scaled disk unions are both valid bounds and may be intersected. Suitable scaling can compensate for badly unbalanced off-diagonal entries; it need not shrink every radius.\a[https://cklixx.people.wm.edu/teaching/math408/408-note.pdf][Chi-Kwong Li, Math 408 lecture notes, §6.1: similarity transformations for eigenvalue localization]{ref}
+
+For example,
+$$
+A=\begin{pmatrix}2&100\\0.01&3\end{pmatrix},\qquad D=\begin{pmatrix}100&0\\0&1\end{pmatrix},\qquad D^{-1}AD=\begin{pmatrix}2&1\\1&3\end{pmatrix}.
+$$
+The original <Gershgorin discs> are $|z-2|\leq100$ and $|z-3|\leq0.01$. Their union is simply the huge first <disk>; the small second <disk> contains no <eigenvalue>. After scaling, both radii are $1$, giving $|z-2|\leq1$ or $|z-3|\leq1$. The two <Gershgorin discs> overlap, so their individual <eigenvalue> counts are not certified. The scaled <matrix> is a real <symmetric matrix>, however, so <matrix similarity> now proves that the original <matrix> has real <eigenvalues> in $[1,4]$ and is an <invertible matrix>. Directly, both <matrices> have <characteristic polynomial> $\lambda^2-5\lambda+5$, hence
+$$
+\lambda_\pm=\frac{5\pm\sqrt5}{2}\approx1.381966,\ 3.618034.
+$$
+The scaling changes the available bounds, while these <eigenvalues> stay fixed.
+
+\Image[gershgorin-diagonal-scaling.png]
+{title=Diagonal similarity scaling replaces a radius-100 Gershgorin disc by two radius-1 discs while preserving both eigenvalues}
 
 = Gershgorin stability bound for a variable-coefficient diffusion stencil
 {parent=Gershgorin circle theorem}
 
-A symmetric conservative five-point diffusion matrix has row center $-s/h^2$ and radius at most $s/h^2$, where $s$ is the sum of its four nonnegative edge coefficients. If every coefficient is at most $a_{\max}$, its eigenvalues lie in $[-8a_{\max}/h^2,0]$. Forward Euler is therefore stable when $\Delta t/h^2\leq1/(4a_{\max})$.
+A <symmetric matrix> obtained from a conservative five-point discretization of a <diffusion equation> has row centre $-s_i/h^2$ and radius at most $s_i/h^2$, where $h>0$ is the grid spacing and $s_i$ is the sum of its four nonnegative edge coefficients. Here the <matrix> represents the diffusion generator, with nonnegative off-diagonal entries; boundary elimination may reduce the row radius. If every coefficient is at most $a_{\max}>0$, then $s_i\leq4a_{\max}$, and the <Gershgorin bounds for symmetric matrices> place every <eigenvalue> in $[-8a_{\max}/h^2,0]$.
+
+For the <forward Euler method>, an <eigenvalue> $\lambda\leq0$ has amplification factor $1+\Delta t\lambda$. Requiring $|1+\Delta t\lambda|\leq1$ for every such <eigenvalue> gives the sufficient <absolute stability> condition $\Delta t/h^2\leq1/(4a_{\max})$. Symmetry makes this also prevent growth of the <Euclidean norm>. For $a_{\max}=2$ and $h=0.1$, the bound is $\lambda\in[-1600,0]$ and $\Delta t\leq0.00125$. At that step size the <interval> maps to amplification factors in $[-1,1]$. This illustrates why cheap <Gershgorin disc> bounds can select a stable time step before any <eigenvalues> are computed.
 
 \Include[finite-difference]{parent=Numerical analysis}
 
@@ -2772,16 +3648,6 @@ $$
 A=LDL^T,
 $$
 where $L$ is unit lower triangular and $D$ is diagonal. Symmetric elimination computes it one <Schur complement> at a time. The matrix is positive definite exactly when every diagonal pivot in $D$ is positive.
-
-= Machine epsilon
-{title2=$\epsilon_{\rm mach}$}
-{parent=Numerical linear algebra}
-{wiki}
-
-= Machine precision
-{synonym}
-
-Machine precision is the characteristic relative rounding scale of a floating-point system.
 
 = Eigenpair residual
 {title2=$r=Av-\lambda v$}

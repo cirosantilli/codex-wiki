@@ -65,24 +65,72 @@ The displayed pointwise <control limits> follow from the <normal approximation> 
 Control limits bound the sampling outcomes expected under a specified reference process. An observation outside a limit is a <statistical hypothesis testing> signal to investigate the reference model. These are limits for observations under that model, rather than a <confidence interval> constructed around each observed estimate. Their calibration may be pointwise, simultaneous or sequential.
 
 = Jackknife resampling
-{c}
 {parent=Statistical inference}
 {wiki}
 
-<Jackknife resampling> recalculates a <statistic> after removing each observation in turn. Comparing these leave-one-out values estimates the sensitivity of the <statistic>, leading to <Jackknife bias correction> and a <Jackknife variance estimator>.
+The delete-one form of <jackknife resampling> recalculates a <statistic> after deleting each observation in turn. It uses one observed <statistical sample> to investigate how sensitive an <estimator> is to its individual observations, and supplies both a <jackknife variance estimator> and <jackknife bias correction>. The calculations are deterministic once the data are fixed: no random draws are needed.
+
+In the basic setting, $X_1,\ldots,X_n$ are <independent and identically distributed random variables>, with <sample size> $n>1$. Let $x_1,\ldots,x_n$ be the observed values and $\widehat\theta_n=t_n(x_1,\ldots,x_n)$ a scalar <estimator> of an <estimand> $\theta$. Apply the same estimation rule to each reduced <statistical sample>, using its new <sample size> $n-1$ wherever the rule requires it:
+$$
+\widehat\theta_{(-i)}=t_{n-1}(x_1,\ldots,x_{i-1},x_{i+1},\ldots,x_n),\qquad
+i=1,\ldots,n,\qquad
+\overline\theta_J=\frac1n\sum_{i=1}^n\widehat\theta_{(-i)}.
+$$
+Every index is deleted exactly once; an unusual value is treated by the same rule as every other value. The <mean> $\overline\theta_J$ summarizes the deletion estimates. They overlap in $n-2$ observations, so they are generally not <independent random variables> representing fresh repetitions of the original experiment. Cosma Shalizi's \a[https://stat.cmu.edu/~cshalizi/490/23/2023-11-29-jackknife.pdf][Carnegie Mellon jackknife notes, Sections 1–3 and 5]{ref} explain this construction and its scaling.
+
+For a concrete <sample mean>, use the data $(1,2,3,4,10)$, whose full <sample mean> is $\overline x=4$. The five deletion <sample means>, in observation order, are
+$$
+(\widehat\theta_{(-1)},\ldots,\widehat\theta_{(-5)})
+=(4.75,4.5,4.25,4,2.5),\qquad \overline\theta_J=4.
+$$
+Deleting $1$ raises the <sample mean> by $0.75$, while deleting $10$ lowers the <sample mean> by $1.5$. Thus $10$ has the largest deletion effect in this <statistical sample>. This is a descriptive sensitivity calculation, not a rule for removing that observation: the full <sample mean> remains $4$.
+
+\Image[jackknife-leave-one-out.png]
+{title=Delete each observation once and recompute the <sample mean>}
+{description=The left panel shows all five reduced <statistical samples> from $(1,2,3,4,10)$; each crossed entry is omitted only for that row. The right panel shows their <sample means> against the full <sample mean> $4$. The orange row makes the deletion effect of $10$ visible.}
+
+Early literature includes M. H. Quenouille's \a[https://academic.oup.com/jrsssb/article/11/1/68/7026551][Approximate Tests of Correlation in Time-Series, JRSS B 11(1), 68–84 (1949)]{ref} and John W. Tukey's one-paragraph abstract \a[https://www.jstor.org/stable/2237363][Bias and Confidence in Not-Quite Large Samples, Annals of Mathematical Statistics 29(2), 614 (1958)]{ref}, within the issue's collected abstracts. Shalizi's \a[https://stat.cmu.edu/~cshalizi/490/23/2023-11-29-jackknife.pdf][historical notes and bibliography]{ref} discuss the later development of <jackknife bias correction> and the <jackknife variance estimator>.
 
 = Jackknife variance estimator
-{c}
 {parent=Jackknife resampling}
 {title2=$\widehat V_J$}
 
-For leave-one-out estimates $\widehat\theta_{(-i)}$ and their average $\overline\theta_J$, the <Jackknife variance estimator> is $\widehat V_J=(n-1)n^{-1}\sum_i(\widehat\theta_{(-i)}-\overline\theta_J)^2$. For a <sample mean> it equals the <sample variance> divided by $n$. Its general interpretation as an estimated <sampling variance> requires appropriate smoothness of the <statistic>.
+The <jackknife variance estimator> estimates the <sampling variance> of the full-data <estimator>, using the deletion estimates and their <mean> from <jackknife resampling>:
+$$
+\widehat V_J=\frac{n-1}{n}\sum_{i=1}^n
+(\widehat\theta_{(-i)}-\overline\theta_J)^2,\qquad
+\widehat{\operatorname{SE}}_J=\sqrt{\widehat V_J}.
+$$
+The square root is the estimated <standard error>. The factor $n-1$ multiplies the divisor-$n$ <variance> of the deletion estimates: those estimates vary less than estimates from new <independent> experiments because almost all their observations are shared. Ryan Tibshirani's \a[https://www.stat.cmu.edu/~ryantibs/statcomp-F15/lectures/design.html][Carnegie Mellon notes on computing jackknife standard errors]{ref} give the same scaling in terms of the divisor-$(n-1)$ <sample variance> of the deletion estimates.
+
+For the <sample mean>, this formula has an exact algebraic simplification. With $s_n^2$ denoting the usual <sample variance>,
+$$
+\widehat\theta_{(-i)}=\frac{n\overline x-x_i}{n-1},\qquad
+\overline\theta_J=\overline x,\qquad
+\widehat\theta_{(-i)}-\overline\theta_J
+=-\frac{x_i-\overline x}{n-1},
+$$
+and therefore
+$$
+\widehat V_J=\frac{1}{n(n-1)}\sum_{i=1}^n(x_i-\overline x)^2
+=\frac{s_n^2}{n}.
+$$
+Under the <independent and identically distributed> assumption and a finite second <moment>, $s_n^2$ is an <unbiased estimator> of the population <variance> $\sigma^2$. Consequently $\widehat V_J$ is an <unbiased estimator> of the <sample mean>'s <sampling variance> $\sigma^2/n$. The equality $\widehat V_J=s_n^2/n$ itself holds for any observed data with $n>1$; its sampling interpretation uses the stated assumptions.
+
+For $(1,2,3,4,10)$, the sum of squared deviations from the <sample mean> is $50$, giving <sample variance> $s_5^2=50/4=12.5$. The deletion <sample means> have squared deviations totaling $3.125$, so
+$$
+\widehat V_J=\frac45(3.125)=2.5=\frac{12.5}{5},\qquad
+\widehat{\operatorname{SE}}_J=\sqrt{2.5}\approx1.58114.
+$$
+Here $12.5$ estimates the <variance> of individual observations, while $2.5$ estimates the <sampling variance> of their <sample mean>. These answer different questions.
+
+For more general <statistics>, validity requires regularity beyond the deletion formula, such as a sufficiently <smooth function> of <sample means> with suitable <moments>. Ordinary delete-one <jackknife resampling> can fail for nonsmooth <quantiles>, including the <median>; see Larry Wasserman's \a[https://www.stat.cmu.edu/~brian/valerie/617-2022/0%20-%20books/2006%20-%20Wasserman%20All%20Of%20Nonparametric%20Statistics.pdf][All of Nonparametric Statistics, Section 3.1]{ref}. With <statistical dependence>, deleting individual observations need not reproduce the relevant <sampling variance>; the deletion scheme must reflect that <statistical dependence>. Shalizi's \a[https://stat.cmu.edu/~cshalizi/490/23/2023-11-29-jackknife.pdf][jackknife notes, Sections 4 and 7]{ref} distinguish the basic <independent and identically distributed> case from extensions.
 
 = Jackknife and bootstrap variance of a sample second moment
 {parent=Jackknife variance estimator}
 {title2=$\widehat v_J=\frac{1}{n(n-1)}\sum_i(x_i^2-\overline{x^2})^2$}
 
-For independent identically distributed observations with finite fourth <moment>, the <sample mean> of their squares has <sampling variance> $\operatorname{Var}(X^2)/n$. Its <Jackknife variance estimator> is exactly the displayed unbiased estimator, since its leave-one-out values differ from their average by $-(x_i^2-\overline{x^2})/(n-1)$. The <conditional bootstrap variance of a sample mean> is $\widehat v_B=n^{-2}\sum_i(x_i^2-\overline{x^2})^2=(n-1)\widehat v_J/n$. Thus the two methods have a known finite-sample scaling difference, despite sharing the same large-sample target.
+For independent identically distributed observations with finite fourth <moment>, the <sample mean> of their squares has <sampling variance> $\operatorname{Var}(X^2)/n$. Its <jackknife variance estimator> is exactly the displayed unbiased estimator, since its leave-one-out values differ from their average by $-(x_i^2-\overline{x^2})/(n-1)$. The <conditional bootstrap variance of a sample mean> is $\widehat v_B=n^{-2}\sum_i(x_i^2-\overline{x^2})^2=(n-1)\widehat v_J/n$. Thus the two methods have a known finite-sample scaling difference, despite sharing the same large-sample target.
 
 = Fisherian conditional inference
 {c}
@@ -1424,7 +1472,13 @@ which gives the usual two-sided interval from the corresponding quantiles.
 {c}
 {synonym}
 
-Bayesian statistics updates a prior distribution to a posterior distribution using likelihood.
+<Bayesian statistics> expresses uncertainty about an unknown <statistical parameter> through a <probability distribution>, then uses <Bayes' theorem> to update it after observing data. The <prior distribution> describes uncertainty before the current observations; the <likelihood function> describes how the <statistical model> generates those observations at each parameter value; the <posterior distribution> describes uncertainty conditional on the observations and that model. A physical parameter can have one fixed value while its value remains uncertain to us. Assigning it a <probability distribution> represents that uncertainty under the chosen model, rather than requiring the physical parameter to change randomly between measurements.
+
+For example, suppose ten <Bernoulli trials> are independent conditional on an unknown heads <probability> $\theta$, with a <beta distribution> <prior> $\operatorname{Beta}(2,2)$. Eight heads and two tails give the <posterior distribution> $\operatorname{Beta}(10,4)$ by <beta-binomial conjugacy>. Its <posterior mean> is $10/14=5/7\approx0.714286$, between the <prior> <mean> $1/2$ and observed <binomial proportion> $8/10$. The <Bayesian posterior> below computes the whole update, and the <credible interval> below summarizes its remaining uncertainty. The conjugate update is explained in \a[https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/mit18_05_s22_class15-prep.pdf][MIT 18.05, Reading 15: beta and normal conjugate priors]{ref}.
+
+The useful feature is that one <posterior distribution> supports several questions: a <posterior mean> estimates a value, a <credible interval> reports a range, and a <posterior predictive distribution> predicts a future observation while averaging over parameter uncertainty. With conditionally independent new data, today's <posterior distribution> can become tomorrow's <prior distribution>. These conclusions remain conditional on the <statistical model> and <prior distribution>; a precise update does not establish that either assumption fits the experiment.
+
+A historical starting point is Thomas Bayes's essay in the 1763 volume of the Royal Society's Philosophical Transactions, communicated after his death by Richard Price. Its opening problem asks for uncertainty about an unknown event <probability> given observed successes and failures: the same direction of reasoning illustrated by the coin example. See \a[https://www.gtfp.cs.rhul.ac.uk/pulskamp/Bayes/bayesessay-rjp.pdf][Bayes and Price, An Essay towards solving a Problem in the Doctrine of Chances, opening letter and problem]{ref}.
 
 = Likelihood reconstruction from posterior simulation
 {parent=Bayesian statistics}
@@ -1543,8 +1597,45 @@ A maximum a posteriori estimate maximizes the posterior density of a parameter o
 = Credible interval
 {parent=Bayesian statistics}
 {wiki}
+{title2=$\mathbb P(\Theta\in C(d)\mid D=d)=1-\alpha$}
 
-A credible interval is an interval whose <posterior probability> equals a prescribed level. Conditional on the observed data and the Bayesian model, the unknown parameter lies in the interval with that probability.
+A <credible interval> is an <interval> $C(d)$ containing a prescribed amount $1-\alpha$ of <posterior probability> for an unknown scalar <statistical parameter> $\Theta$. For a continuous <posterior distribution> with <posterior density> $p(\theta\mid d)$, its endpoints satisfy
+$$
+\mathbb P(a\leq\Theta\leq b\mid D=d)=\int_a^b p(\theta\mid d)\,d\theta=1-\alpha.
+$$
+The conditioning includes the chosen <statistical model> and <prior distribution>. For a discrete <posterior distribution>, exact equality may be impossible because of its <probability masses>; an interval can instead be required to contain at least the requested <posterior probability>. An interval compresses the full <posterior distribution> into a range whose uncertainty can be communicated in the parameter's own units. See \a[https://ocw.mit.edu/courses/18-05-introduction-to-probability-and-statistics-spring-2022/mit18_05_s22_statistics.pdf#page=68][MIT 18.05, Class 16: probability intervals]{ref}.
+
+For the eight-head, two-tail example in <Bayesian statistics>, the <posterior density> is $2860\theta^9(1-\theta)^3$ on $[0,1]$. Its <cumulative distribution function>, obtained by <integration> of this <polynomial>, is
+$$
+F(t)=286t^{10}-780t^{11}+715t^{12}-220t^{13},\qquad 0\leq t\leq1.
+$$
+Solving $F(a)=0.025$ and $F(b)=0.975$ by the <bisection method> gives
+$$
+a\approx0.461868461,\qquad b\approx0.909079605,\qquad F(b)-F(a)=0.95.
+$$
+These are numerical approximations to the exact <quantiles> defined by those equations; the endpoints were computed from the <cumulative distribution function>, rather than read off a plot. The resulting <equal-tailed credible interval> leaves 2.5% <posterior probability> on each side. Its shaded area is 95% of the total area under the <posterior density>.
+
+\Image[bayesian-credible-interval.png]
+{title=Two different 95 percent credible intervals for the same Beta(10,4) posterior}
+
+<Credible intervals> are not unique. The <one-sided credible interval> $[0,F^{-1}(0.95)]\approx[0,0.887334219]$ also has 95% <posterior probability>, but leaves all 5% outside it on the right. A <highest density region> instead selects points above a density threshold; it need not be an <equal-tailed credible interval>, and when the <posterior density> has separated peaks it need not be one <interval> at all. Thus a reported <credible interval> should specify its construction.
+
+A 95% <credible interval> makes a statement about the <statistical parameter> conditional on these observed data and the Bayesian model. A 95% <confidence interval> instead refers to the <coverage probability> of a procedure under repeated sampling at a fixed parameter value. These are different conditioning statements: 95% <posterior probability> does not by itself imply 95% <coverage probability> for every fixed parameter. The <confidence interval> article develops that sampling interpretation.
+
+= Equal-tailed credible interval
+{parent=Credible interval}
+{title2=$[F^{-1}(\alpha/2),F^{-1}(1-\alpha/2)]$}
+
+= Central credible interval
+{synonym}
+
+An <equal-tailed credible interval> uses <quantiles> of a continuous <posterior distribution> to leave <posterior probability> $\alpha/2$ in each tail. It is also called a <central credible interval>; central refers to equal tail probabilities, not equal distances from the <posterior mean>. For the <beta distribution> $\operatorname{Beta}(10,4)$ in <credible interval>, the 95% endpoints are approximately $0.461868461$ and $0.909079605$, whose midpoint $0.685474033$ differs from the <posterior mean> $5/7$.
+
+= One-sided credible interval
+{parent=Credible interval}
+{title2=$(-\infty,F^{-1}(1-\alpha)]$}
+
+A <one-sided credible interval> puts all excluded <posterior probability> in one tail. For a continuous <posterior distribution>, an upper bound $u=F^{-1}(1-\alpha)$ satisfies $\mathbb P(\Theta\leq u\mid D=d)=1-\alpha$; a lower bound uses $F^{-1}(\alpha)$. Intersecting with the parameter's allowed range removes points of zero <posterior probability>. For the <beta distribution> $\operatorname{Beta}(10,4)$, the upper 95% bound is $u\approx0.887334219$, so $[0,u]$ is the alternative <credible interval> shown above.
 
 = Empirical Bayes method
 {c}
@@ -1585,6 +1676,7 @@ A Dirichlet prior with parameters $(\alpha_1,\ldots,\alpha_K)$ combined with cat
 = Prior probability
 {parent=Bayesian statistics}
 {wiki}
+{title2=$\Pi(A)=\mathbb P(\Theta\in A)$}
 
 = Prior
 {synonym}
@@ -1592,7 +1684,19 @@ A Dirichlet prior with parameters $(\alpha_1,\ldots,\alpha_K)$ combined with cat
 = Prior distribution
 {synonym}
 
-A prior probability describes uncertainty about an event or parameter before the current observation is incorporated.
+<Prior probability> describes uncertainty before the current observations are incorporated. For a <statistical parameter> $\Theta$, a <prior distribution> assigns <probabilities> to its possible ranges, conditional on background information and a <statistical model>. A continuous <prior density> $\pi(\theta)$ specifies these probabilities through <integration>:
+$$
+\mathbb P(\Theta\in A)=\int_A\pi(\theta)\,d\theta,\qquad \pi(\theta)\geq0,\qquad \int\pi(\theta)\,d\theta=1.
+$$
+Here the <probability density function> is relative to <Lebesgue measure> $d\theta$; a discrete <prior distribution> instead uses a <probability mass function> and sums. Density at one point is not the <probability> of that point. A nonnegative kernel with infinite total mass is an <improper prior>, whose use requires a separate check of <posterior propriety>.
+
+For the coin model in <Bayesian statistics>, the <beta distribution> $\operatorname{Beta}(2,2)$ has <prior density> $\pi(\theta)=6\theta(1-\theta)$ on $[0,1]$. Its <mean> is $1/2$ and its <variance> is $1/20$. It favors moderate heads probabilities without ruling out values near zero or one. For example,
+$$
+\mathbb P(\Theta>3/4)=\int_{3/4}^1 6\theta(1-\theta)\,d\theta=\frac5{32}=0.15625.
+$$
+The prior curve in <Bayesian posterior> makes this preference visible; <moment matching for a beta prior> explains how to choose a <beta distribution> from a desired <mean> and <variance>.
+
+A <prior distribution> lets earlier evidence or elicited knowledge contribute to <statistical inference> when the current <sample size> is limited. It also exposes assumptions that can be checked by <prior elicitation> and a <prior predictive check>. Before the same eight heads and two tails, a <uniform prior> $\operatorname{Beta}(1,1)$ would give <posterior mean> $9/12=3/4$, compared with $5/7$ under $\operatorname{Beta}(2,2)$: the observations do not uniquely determine a <Bayesian posterior>. Even a <uniform prior> makes a choice of parameter coordinates; its child article explains why changing coordinates can destroy uniformity.
 
 = Prior elicitation
 {parent=Prior probability}
@@ -1624,7 +1728,8 @@ A <uniform prior> on a finite-volume parameter region assigns constant <probabil
 = Bayesian posterior
 {parent=Bayesian statistics}
 {c}
-{wiki}
+{wiki=Posterior_probability}
+{title2=$p(\theta\mid d)=p(d\mid\theta)\pi(\theta)/m(d)$}
 
 = Posterior distribution
 {synonym}
@@ -1632,7 +1737,33 @@ A <uniform prior> on a finite-volume parameter region assigns constant <probabil
 = Posterior
 {synonym}
 
-The posterior density is proportional to likelihood times prior density.
+The <Bayesian posterior> is the <conditional probability> distribution of an unknown <statistical parameter> after observing data. Suppose a continuous <prior distribution> has <prior density> $\pi(\theta)$ relative to <Lebesgue measure> $d\theta$, and $p(d\mid\theta)$ is the sampling <probability mass function> or <probability density function> of the observed data $d$ in the <statistical model>. <Bayes' theorem> gives
+$$
+p(\theta\mid d)=\frac{p(d\mid\theta)\pi(\theta)}{m(d)},\qquad
+m(d)=\int p(d\mid t)\pi(t)\,dt,\qquad 0<m(d)<\infty.
+$$
+The <Bayesian model evidence> $m(d)$ is the <normalization constant> making the <posterior density> integrate to one. The strict positive, finite condition is essential: a zero or infinite normalizer does not define this <posterior distribution>, even if the unnormalized expression can be written down. Other reference measures give the corresponding density formula; discrete parameter values replace the integral by a sum. The <posterior propriety> article gives examples where normalization fails.
+
+With $d$ fixed, $L(\theta;d)=p(d\mid\theta)$ is a <likelihood function> of $\theta$. Its normalization as a sampling distribution is over possible data, not over parameter values. In particular, a <likelihood function> is not a <probability density function> for $\Theta$ and need not integrate to one over $\theta$. The <prior density> supplies the probability weighting, and the <Bayesian model evidence> normalizes their product. This distinction prevents a tempting mistake: reversing the conditioning merely by exchanging the words “data” and “parameter”.
+
+For eight heads among ten conditionally independent <Bernoulli trials>, take the observed data to be the heads count $D=8$. Its <binomial distribution> <likelihood function> and the $\operatorname{Beta}(2,2)$ <prior density> give
+$$
+L(\theta;8)=\binom{10}{8}\theta^8(1-\theta)^2=45\theta^8(1-\theta)^2,\qquad
+L(\theta;8)\pi(\theta)=270\theta^9(1-\theta)^3.
+$$
+Using the <Euler beta function> $B(10,4)=1/2860$, the <Bayesian model evidence> and normalized <posterior density> are
+$$
+m(8)=270B(10,4)=\frac{27}{286},\qquad
+p(\theta\mid D=8)=2860\theta^9(1-\theta)^3,\quad 0<\theta<1.
+$$
+Thus the <posterior distribution> is $\operatorname{Beta}(10,4)$. If the data are instead one particular ordered sequence with eight heads and two tails, its <likelihood function> omits the factor 45 and its <Bayesian model evidence> becomes $3/1430$. The factor cancels in <Bayes' theorem>, leaving the same <posterior distribution>; these two data descriptions have different sampling probabilities but identical information about $\theta$ here.
+
+\Image[bayesian-prior-likelihood-posterior.png]
+{title=Beta(2,2) prior, peak-normalized Bernoulli likelihood, and Beta(10,4) posterior after eight heads and two tails}
+
+The <prior density> and <posterior density> use the left axis and each integrate to one. The dashed <likelihood function> uses the right axis and is divided by its maximum solely to compare its shape; it is not a parameter <probability density function>. The <likelihood function> peaks at $8/10$, while the <posterior mode> is $9/12=3/4$ and the <posterior mean> is $5/7$. Multiplying by the <prior density> shifts the preferred values toward one half while preserving a range of possibilities.
+
+The resulting <posterior variance> is $10\cdot4/(14^2\cdot15)=2/147\approx0.0136054$, compared with <prior> <variance> $1/20$. In this example the update reduces uncertainty. The <posterior predictive probability> of heads on the next conditionally independent toss is $\mathbb E[\Theta\mid D=8]=5/7$, and the <credible interval> above reports a 95% range. These are summaries of the same <posterior distribution>, rather than competing estimates of one density peak.
 
 = Exponential posterior for a uniform endpoint
 {parent=Bayesian posterior}
@@ -2518,16 +2649,54 @@ and $\log Z=\operatorname{ELBO}(q)+D_{\mathrm{KL}}(q\Vert p(\theta\mid y))$.
 
 = Jackknife bias correction
 {parent=Statistical inference}
+{title2=$\widetilde T_J=nT_n-(n-1)\overline T_J$}
 
-For an estimator $T_n$ and leave-one-out versions $T_{(-i)}$, the jackknife bias estimate and corrected estimator are
+The <jackknife bias correction> uses <jackknife resampling> to estimate and subtract the <bias of an estimator>. Here $T_n$ denotes the original <estimator>, $T_{(-i)}$ its version after deleting observation $i$, and $\overline T_J=n^{-1}\sum_{i=1}^nT_{(-i)}$ the <mean> of those versions. For <sample size> $n>1$, define
 $$
-\widehat B_n=(n-1)\left(\frac1n\sum_iT_{(-i)}-T_n\right),
-\qquad
-\widetilde T_{\rm JACK}=T_n-\widehat B_n.
+\widehat B_n=(n-1)(\overline T_J-T_n),\qquad
+\widetilde T_J=T_n-\widehat B_n=nT_n-(n-1)\overline T_J.
 $$
-If $B_n=a/n+b/n^2+O(n^{-3})$, the correction leaves bias $O(n^{-2})$.
+The sign matters: a negative estimated <bias> increases the corrected value. The original <estimator> and all deletion versions must target the same <estimand> and use the same estimation rule at their respective <sample sizes>. The definition alone does not make $\widetilde T_J$ an <unbiased estimator>.
 
-This is the bias-correction application of <Jackknife resampling>; the same leave-one-out values also yield variance estimates.
+For an exact worked example, take the <empirical variance>
+$$
+T_n=\frac1n\sum_{i=1}^n(X_i-\overline X_n)^2.
+$$
+On $(1,2,3,4,10)$, the <sample mean> is $4$ and $T_5=50/5=10$. Each deletion <empirical variance> is recomputed around its own deletion <sample mean>, with divisor $4$, giving
+$$
+(T_{(-1)},\ldots,T_{(-5)})
+=(9.6875,11.25,12.1875,12.5,1.25),\qquad
+\overline T_J=9.375.
+$$
+For instance, deleting $10$ leaves $(1,2,3,4)$, whose <sample mean> is $2.5$ and whose <empirical variance> is $1.25$. The correction on the full <statistical sample> is
+$$
+\widehat B_5=4(9.375-10)=-2.5,\qquad
+\widetilde T_J=10-(-2.5)=12.5.
+$$
+The same data thus give a <jackknife variance estimator> of $2.5$ for the <sample mean>, and a corrected <empirical variance> of $12.5$; these are different <estimands>.
+
+\Image[jackknife-variance-bias.png]
+{title=Two uses of the same deletions: <sampling variance> and <jackknife bias correction>}
+{description=The left panel plots contributions to the <jackknife variance estimator> of the <sample mean>, summing to $2.5$. The right panel plots the five deletion <empirical variances> and their <mean> $9.375$, then compares the original <empirical variance> $10$ with the corrected <sample variance> $12.5$.}
+
+The exact equality with the usual <sample variance> is not an accident of these numbers. For any data with $n>1$, write $Q=\sum_i(x_i-\overline x)^2=nT_n$. Removing $x_i$ changes this sum to $Q-n(x_i-\overline x)^2/(n-1)$, so
+$$
+T_{(-i)}=\frac{Q}{n-1}-\frac{n(x_i-\overline x)^2}{(n-1)^2},\qquad
+\overline T_J=\frac{n(n-2)}{(n-1)^2}T_n,\qquad
+\widetilde T_J=\frac{n}{n-1}T_n=s_n^2.
+$$
+For <independent and identically distributed random variables> with finite second <moment> and population <variance> $\sigma^2$, the <expectation> is $\mathbb E T_n=(1-1/n)\sigma^2$. Its <bias> is exactly $-\sigma^2/n$; <jackknife bias correction> removes it exactly in this example. Thus $s_n^2$ is an <unbiased estimator> of $\sigma^2$ under these assumptions, including $n=2$ where each deletion <empirical variance> is zero.
+
+More generally, suppose the <bias> has a regular expansion at both <sample sizes> $n$ and $n-1$, with coefficients $a,b$ independent of $n$:
+$$
+B_n=\mathbb E T_n-\theta=\frac an+\frac b{n^2}+O(n^{-3}).
+$$
+Under <independent and identically distributed> sampling, each deletion <estimator> has the same <expectation> as $T_{n-1}$. Hence the corrected <bias> is
+$$
+\mathbb E\widetilde T_J-\theta=nB_n-(n-1)B_{n-1}=O(n^{-2}),
+\qquad n\frac an-(n-1)\frac a{n-1}=0.
+$$
+The leading $O(n^{-1})$ term cancels; the remaining <bias> need not vanish. The $O$ notation is <big O notation>. This argument presumes the expansion, rather than proving it for every <statistic>; the regularity conditions discussed for the <jackknife variance estimator> and <statistical dependence> still require care. Shalizi's \a[https://stat.cmu.edu/~cshalizi/490/23/2023-11-29-jackknife.pdf][jackknife notes, Section 5.1]{ref} develop the cancellation argument and cite Quenouille's \a[https://academic.oup.com/biomet/article-abstract/43/3-4/353/345190][Notes on Bias in Estimation, Biometrika 43(3–4), 353–360 (1956)]{ref}.
 
 = Sample variance
 {title2=$s_n^2$}
@@ -2538,6 +2707,12 @@ $$
 s_n^2=\frac1{n-1}\sum_{i=1}^n(X_i-\overline X_n)^2.
 $$
 For independent identically distributed observations with finite variance $\sigma^2$, it converges in probability to $\sigma^2$.
+
+= Empirical variance
+{parent=Sample variance}
+{title2=$T_n=n^{-1}\sum_{i=1}^n(X_i-\overline X_n)^2$}
+
+The <empirical variance> is the <variance> of the <empirical distribution>, which puts <probability> $1/n$ on each observation. It uses divisor $n$, whereas the usual <sample variance> uses divisor $n-1$. For <independent and identically distributed random variables> with finite second <moment>, <jackknife bias correction> converts the <empirical variance> into the <unbiased estimator> $s_n^2$ exactly.
 
 = Pooled sample variance
 {parent=Sample variance}
