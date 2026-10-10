@@ -1,7 +1,30 @@
 = Inverse problem
 {wiki}
+{title2=$A(x)=y$}
 
-An inverse problem seeks an unknown $u$ from data $f$ related by a forward map $A(u)=f$. Small singular values of the forward map can amplify measurement noise and make direct inversion unstable.
+An inverse problem reconstructs an unknown object $x$ from observed data $y$ and a specified model $A(x)=y$. The associated <forward problem> predicts the observations from $x$. In <image deblurring>, $x$ contains sharp pixel values and a <matrix> $A$ mixes neighbouring pixels; in <tomography>, the observations are integrals through the object. The appeal is that indirect measurements can reveal otherwise inaccessible structure. The difficulty is that the <forward problem> may erase precisely the distinctions we want to recover.
+
+Consider this completely computable two-pixel <image deblurring> model:
+$$
+A=\begin{pmatrix}0.55&0.45\\0.45&0.55\end{pmatrix},\qquad
+x_{\mathrm{true}}=\begin{pmatrix}1\\0\end{pmatrix},\qquad
+y=Ax_{\mathrm{true}}=\begin{pmatrix}0.55\\0.45\end{pmatrix}.
+$$
+Each measured pixel retains $55\%$ of its own value and receives $45\%$ of its neighbour's. Adding <measurement noise> $e=(0.01,-0.01)^T$ gives $y^\delta=(0.56,0.44)^T$, whose direct reconstruction is $A^{-1}y^\delta=(1.1,-0.1)^T$. The <Euclidean norm> of the reconstruction error is $0.1\sqrt2$, ten times the data error $0.01\sqrt2$. A negative second pixel appears even though both observed pixels are positive.
+
+Despite this wrong reconstruction, its <residual of an inverse problem> is exactly zero: the predicted data equal the noisy observations. Thus matching the data perfectly does not certify reconstruction accuracy. The relevant question is how large a change in the unknown could hide within the measurement uncertainty. A <condition number> quantifies that sensitivity for an invertible <matrix>; the <null space> identifies changes that no improvement in precision can reveal.
+
+The exact <singular value decomposition> explains this amplification. With the <orthonormal basis>
+$$
+q_+=\frac{(1,1)^T}{\sqrt2},\qquad q_-=\frac{(1,-1)^T}{\sqrt2},\qquad
+A=Q\begin{pmatrix}1&0\\0&0.1\end{pmatrix}Q^T,\quad Q=(q_+,q_-),
+$$
+the mean mode survives unchanged while the difference mode shrinks tenfold. Direct inversion multiplies difference-mode <measurement noise> by ten. The <condition number> is $\kappa_2(A)=\sigma_{\max}/\sigma_{\min}=10$. The beauty of the <singular value decomposition> is this separation into independent channels: it identifies which information survives and which needs protection by <regularization of an inverse problem>.
+
+= Image deblurring
+{parent=Inverse problem}
+
+Image deblurring reconstructs a sharper image from observations described by a blur model. In the linear model, a <matrix> or <linear operator> mixes values of the unknown image; <measurement noise> perturbs the observed result. The <inverse problem> must therefore recover attenuated distinctions while controlling amplification of <measurement noise>, as the two-pixel example illustrates.
 
 = Tomography
 {parent=Inverse problem}
@@ -27,7 +50,19 @@ A form of <tomography> that reconstructs an internal radioactive source from dir
 = Ill-posed inverse problem
 {parent=Inverse problem}
 
-An <inverse problem> is an <ill-posed problem> when its specified data do not give existence, uniqueness and continuous dependence of the recovered object in the chosen spaces. Missing Fourier modes can cause nonuniqueness, while small singular values can cause instability even when a unique solution exists. <Regularization of an inverse problem> adds information or a stability preference to the reconstruction.
+An <inverse problem> is an <ill-posed problem> if it fails any requirement of a <well-posed problem>: existence for every admissible datum, uniqueness, or <continuity> of the reconstructed object as the data change. These requirements depend on the chosen spaces and <norms>, not just the equation. Clason's regularization notes formulate this distinction explicitly.\a[https://arxiv.org/pdf/2001.00617][Christian Clason, Regularization of Inverse Problems, §3]{ref}
+
+Complete averaging illustrates lost information:
+$$
+B=\begin{pmatrix}0.5&0.5\\0.5&0.5\end{pmatrix},\qquad
+B(t,1-t)^T=(0.5,0.5)^T\quad\hbox{for every }t.
+$$
+The difference mode $q_-=(1,-1)^T/\sqrt2$ belongs to the <null space> because $Bq_-=0$. Even restricting both pixels to $[0,1]$ leaves infinitely many indistinguishable inputs. This is failure of uniqueness. Data such as $(0.51,0.49)^T$ also have no exact preimage under $B$, illustrating failure of existence when arbitrary two-component observations are admissible.
+
+The two-pixel <matrix> $A$ in the <inverse problem> example has a weakly observed difference mode, not a <null space> mode. Its inverse is continuous: this finite-dimensional problem is a <well-posed problem> with noise-sensitive conditioning. Small positive <singular values> alone do not imply mathematical ill-posedness. In infinite-dimensional problems, positive <singular values> approaching zero can make inversion unbounded: unit solution modes then produce data tending to zero. This destroys <continuity> even without a <null space>. <Regularization of an inverse problem> must distinguish missing information from information recoverable only at the cost of amplifying <measurement noise>.
+
+\Image[inverse-problem-nullspace.png]
+{title=Two-pixel averaging compresses a square to a thin diamond or collapses it to a line}
 
 = X-ray transform
 {parent=Inverse problem}
@@ -288,11 +323,16 @@ A problem is well posed in the sense of Hadamard when a solution exists for ever
 
 = Regularization of an inverse problem
 {parent=Inverse problem}
+{title2=$x_\alpha^\delta=R_\alpha y^\delta$}
 
 = Inverse-problem regularization
 {synonym}
 
-A regularization is a family of continuous maps $R_\alpha$ such that $R_\alpha f\to A^\dagger f$ as $\alpha\downarrow0$ for every datum in the domain of the <Moore–Penrose inverse of an operator>. A linear regularization uses bounded <linear operators>; nonlinear <variational regularization> can use nonquadratic penalties. A parameter rule that also ensures stability as the data noise tends to zero makes it a <convergent regularization of an inverse problem>.
+Regularization replaces sensitive inversion by a controlled approximation. For a <bounded linear operator> between <Hilbert spaces>, a <linear regularization> is a family of <bounded linear operators> $R_\alpha$ satisfying $R_\alpha y\to A^\dagger y$ as $\alpha\downarrow0$ for each datum in the domain of the <Moore–Penrose inverse of an operator>. Noisy-data convergence additionally requires a suitable <regularization parameter choice>.\a[https://arxiv.org/pdf/2001.00617][Christian Clason, Regularization of Inverse Problems, §4.1]{ref} Nonlinear <variational regularization> can instead use nonquadratic penalties.
+
+The <noise-bias decomposition for linear regularization> separates two costs: amplifying <measurement noise> and changing the exact-data reconstruction. <Truncated singular value decomposition> discards weak modes; <Tikhonov regularization> attenuates them smoothly. A <quadratic norm penalty> expresses a preference for smaller reconstructions. Neither method manufactures a missing <null space> component: with complete averaging, the <minimum-norm least-squares solution> for $(0.5,0.5)^T$ is $(0.5,0.5)^T$, even if the original image was $(1,0)^T$. The preference selects a representative; extra observations or justified constraints are needed to identify the original.
+
+For <Tikhonov regularization>, the <Tikhonov stability bound> limits transmitted <measurement noise> of <norm> at most $\delta$ to $\delta/(2\sqrt\alpha)$. Taking $\alpha\to0$ while $\delta/\sqrt\alpha\to0$ gives a sufficient rule for <convergent regularization of an inverse problem>. Holding $\alpha$ fixed leaves approximation bias; letting it vanish too quickly can admit overwhelming <measurement noise>.
 
 = Lavrentiev regularization
 {c}
@@ -370,13 +410,37 @@ Truncated singular value decomposition retains only singular components above a 
 = Tikhonov regularization
 {c}
 {parent=Regularization of an inverse problem}
-{wiki}
+{title2=$x_\alpha^\delta=(A^*A+\alpha I)^{-1}A^*y^\delta$}
 
-Tikhonov regularization minimizes
+For a <bounded linear operator> between <Hilbert spaces> and $\alpha>0$, Tikhonov regularization minimizes
 $$
-\lVert Ax-y^\delta\rVert^2+\alpha\lVert x\rVert^2,
+\lVert Ax-y^\delta\rVert^2+\alpha\lVert x\rVert^2.
 $$
-giving $x_\alpha^\delta=(A^*A+\alpha I)^{-1}A^*y^\delta$. The spectral filter $\sigma/(\sigma^2+\alpha)$ suppresses unstable division by small singular values.
+The <quadratic norm penalty> makes this functional a <strictly convex>, <coercive function>, yielding the unique minimizer displayed in the title. Here $A^*$ is the <adjoint operator> and $I$ the <identity operator>. Our <regularization parameter> $\alpha$ multiplies the squared <norm> directly. Hansen's notes instead write $\lambda^2\|x\|^2$: the same reconstruction requires $\alpha=\lambda^2$, not $\alpha=\lambda$.\a[https://www.imm.dtu.dk/~pcha/Regutools/RTv4manual.pdf][Per Christian Hansen, Regularization Tools, §§2.4 and 2.7.1]{ref}
+
+For a real <matrix> with <singular value decomposition> $Av_j=\sigma_j u_j$, the exact reconstruction is
+$$
+x_\alpha^\delta=\sum_{\sigma_j>0}\underbrace{\frac{\sigma_j}{\sigma_j^2+\alpha}}_{g_\alpha(\sigma_j)}(u_j^Ty^\delta)v_j,\qquad
+\phi_\alpha(\sigma)=\sigma g_\alpha(\sigma)=\frac{\sigma^2}{\sigma^2+\alpha}.
+$$
+The <singular-system Tikhonov filter> $g_\alpha$ is the data-to-solution gain; $\phi_\alpha$ is the fraction of an exact solution mode retained. If $y^\delta=Ax_{\mathrm{true}}+e$, a positive <singular value> mode has error
+$$
+v_j^T(x_\alpha^\delta-x_{\mathrm{true}})
+=-\frac{\alpha}{\sigma_j^2+\alpha}v_j^Tx_{\mathrm{true}}
++\frac{\sigma_j}{\sigma_j^2+\alpha}u_j^Te.
+$$
+The first term is approximation bias; the second is transmitted <measurement noise>. Suppressing a weak mode suppresses its true signal too.
+
+For the two-pixel <matrix> in the <inverse problem> example and $\alpha=0.01$ ($\lambda=0.1$), the mean and difference attenuation factors are $100/101$ and $1/2$. Since $y^\delta=q_+/\sqrt2+0.12q_-/\sqrt2$, the reconstruction is
+$$
+x_{0.01}^\delta=\frac{100}{101}\frac{q_+}{\sqrt2}+\frac35\frac{q_-}{\sqrt2}
+=\begin{pmatrix}803/1010\\197/1010\end{pmatrix}
+\approx\begin{pmatrix}0.79505\\0.19505\end{pmatrix}.
+$$
+Its noise contribution is $(0.05,-0.05)^T$, half the direct inverse's, but its exact-data reconstruction is $(0.74505,0.24505)^T$. Consequently its total error <Euclidean norm>, about $0.28293$, exceeds the direct inverse's $0.14142$: this parameter sacrifices too much contrast. Taking $\alpha=0.001$ instead gives $(1.04496,-0.04595)^T$ and error about $0.06429$. <Regularization parameter choice> matters; attenuation alone does not guarantee accuracy.
+
+\Image[inverse-problem-blur-and-regularization.png]
+{title=Tikhonov attenuation reduces difference-mode noise while biasing the reconstructed contrast}
 
 = Tikhonov regularization of spherical far-field continuation
 {parent=Tikhonov regularization}

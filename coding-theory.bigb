@@ -1,6 +1,19 @@
 = Coding theory
 {wiki}
 
+Coding theory studies representations of messages that make decoding efficient, reliable, or compact. In <channel coding>, messages are mapped to separated <codewords>, so a corrupted word can still be recognized as coming from one particular message. In <lossless source coding>, a <prefix code> instead assigns short descriptions to frequent symbols. The objectives differ, but both exploit structure in the set of allowed words.
+
+The simplest error-correction example sends $0$ as $000$ and $1$ as $111$. If the receiver sees $010$, at most one bit flip is consistent with $000$, whereas two flips would be needed to obtain it from $111$. A <repetition code> therefore recovers the original by taking the <majority function> of the received <bits>. The <Hamming distance> between the valid <codewords> is three: the spaces of one-error outputs around them do not overlap. This turns error correction into geometry in a discrete space.
+
+The central tradeoff is between <code rate> and <minimum distance>. Additional separation makes correction possible but leaves fewer words available for messages at a fixed length. The <Hamming bound> counts disjoint error neighborhoods, while <linear codes> turn encoding and error detection into computations with <matrices> over <finite fields>. These connections explain why <combinatorics>, <linear algebra>, and <probability theory> all enter the subject.
+
+Richard W. Hamming's *Error Detecting and Error Correcting Codes* appeared in the *Bell System Technical Journal* in April 1950, pp. 147–160. Its introduction motivates automatic correction through failures in digital computing, and its constructions go beyond detecting an error to identifying and correcting its location.\a[https://zoo.cs.yale.edu/classes/cs323/doc/Hamming.pdf][Hamming, Error Detecting and Error Correcting Codes, 1950]{ref}
+
+= Channel coding
+{parent=Coding theory}
+
+Channel coding represents messages with <codewords> chosen to withstand transmission errors. An <error-correcting code> deliberately supplies redundancy, so a receiver can distinguish nearby corrupted outputs and recover the message. <Lossless source coding> instead removes predictable redundancy; practical communication can use both operations. The <Shannon second coding theorem> relates achievable rates on a <discrete memoryless channel> to its <channel capacity>.
+
 = Code encoding
 {parent=Coding theory}
 
@@ -97,13 +110,28 @@ A binary $[n,m,d]$ code is a set of $m$ distinct words in $\mathbb F_2^n$ whose 
 {parent=Binary block code}
 {wiki}
 
-An error-correcting code is a set of codewords chosen with enough separation to detect or correct transmission errors.
+An error-correcting code is a set of <codewords> chosen with enough separation to recover a transmitted message after specified errors. For equal-length words and bit-flip errors, separation is measured by <Hamming distance>. If the <minimum distance> is $d$, any nonzero pattern of at most $d-1$ flips changes a valid word into an invalid word and can therefore be detected. Every pattern of at most $t=\lfloor(d-1)/2\rfloor$ flips can be corrected by choosing the unique nearby <codeword>.
+
+The distinction matters. A distance-two code detects a single flip but need not locate it; a distance-three code corrects a single flip. The <triangle inequality> explains the correction threshold: a received word within distance $t$ of two distinct <codewords> would put those <codewords> within distance $2t<d$, a contradiction. Actual decoders also need an efficient way to find the nearby word; a <parity-check matrix> and <syndrome decoding> exploit the structure of a <linear code> to do this.
 
 = Repetition code
 {parent=Error-correcting code}
 {wiki}
 
-A binary repetition code represents one bit by repeating it a fixed number of times. Majority decoding corrects fewer than half as many bit flips as the block length.
+A binary repetition code represents one <bit> by repeating it $n$ times, using <codewords> $0^n$ and $1^n$. Their <Hamming distance> is $n$, and the <code rate> is $1/n$. For odd $n$, the <majority function> recovers the input whenever fewer than half the positions have flipped. Even $n$ allows a tied vote, so a decoder must specify how it handles that case.
+
+For $n=3$, the received words $000,001,010,100$ decode to zero; $111,110,101,011$ decode to one. The decoder therefore corrects every single flip. This guarantee concerns the number of flipped positions, independent of any probabilistic model.
+
+If each position passes independently through a <binary symmetric channel> with crossover <probability> $q$, a decoded error requires at least two flips. The <binomial distribution> gives
+$$
+P_{\mathrm{error}}=3q^2(1-q)+q^3=3q^2-2q^3.
+$$
+At $q=0.1$, the uncoded error <probability> is $0.1$, while the three-bit code's decoded error <probability> is $0.028$. This improvement costs three transmitted <bits> per message <bit>. For $0<q<1/2$, $3q^2-2q^3<q$; for $q>1/2$, one should first exploit the known tendency to invert symbols rather than applying the same majority rule blindly.
+
+\Image[repetition-code-reliability.png]
+{title=Three-bit majority decoding corrects one flip and lowers the error probability at the cost of rate}
+
+Independent flips are an essential assumption for the displayed formula. If a single common disturbance flips all three positions together with <probability> $q$, repetition provides no improvement. More efficient <error-correcting codes> distribute redundancy across larger message blocks; repetition is useful as a transparent example of the geometry and the reliability–rate tradeoff.
 
 = Hamming distance
 {title2=$d_H$}
@@ -787,6 +815,12 @@ If a binary length-$N$ cyclic code has generator of degree $r$ and check polynom
 {parent=Parity-check matrix}
 
 The syndrome of a received word $y$ with respect to a <parity-check matrix> $H$ is $s=Hy^T$. It vanishes exactly when $y$ is a codeword and otherwise identifies the coset containing the error pattern.
+
+= Syndrome decoding
+{parent=Syndrome}
+{title2=$s=Hy^T=He^T$}
+
+For a <linear code> with <parity-check matrix> $H$, write the received word as $y=c+e$, where $c$ is a <codeword> and $e$ an error pattern. Its <syndrome> depends only on the error because $Hc^T=0$. A syndrome decoder chooses a representative error $\widehat e$ with that syndrome and returns $y-\widehat e$. Choosing a minimum-<Hamming weight> representative gives <minimum-distance decoding>; within the guaranteed correction radius it recovers the unique transmitted <codeword>. Several representatives may tie outside that radius.
 
 = Syndrome classification of code cosets
 {parent=Syndrome}

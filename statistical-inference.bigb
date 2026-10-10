@@ -1,7 +1,11 @@
 = Statistical inference
 {wiki}
 
-Statistical inference estimates unknown parameters and quantifies uncertainty from observed data.
+<Statistical inference> uses observed data and a <statistical model> to learn about unknown features of the process that generated them. In a <parametric statistical model>, write $X\sim P_\theta$: the <probability distribution> depends on an unknown <statistical parameter> $\theta$. An <estimand> specifies the target, such as a <mean> or a difference of <means>. A <statistic> is a function of the observations; an <estimator> is a <statistic> used to estimate the target. Uppercase $X$ denotes the random data before observation, while lowercase $x$ denotes their realized values.
+
+Three questions lead to different outputs. <Statistical estimation> asks which target value the observations suggest. A <confidence interval> asks for a range produced by a procedure with calibrated <coverage probability>. A <hypothesis test> asks whether the observations depart sufficiently from a specified <null hypothesis> to enter its <rejection region>. These outputs complement one another: an estimated <effect size> describes magnitude, while a <standard error> describes the <sampling distribution> of an <estimator>. A <p-value> describes a tail <probability> under the <null hypothesis>.
+
+The appeal of <statistical inference> is that it turns variable observations into reproducible uncertainty statements. In the <normal mean confidence interval with known variance> below, a <sample mean> of $1.2$ has <standard error> $0.5$: both the estimated shift and its precision matter. The calibration depends on the <statistical model>, including <independence> and the specified <probability distribution>. Increasing <sample size> improves precision under those assumptions; it does not repair a systematically misleading sampling procedure. <Bayesian inference> provides another framework, using a <prior distribution> and a <likelihood function> to obtain a <posterior distribution>.
 
 = Effect size
 {parent=Statistical inference}
@@ -1211,14 +1215,86 @@ For independent $X_i\sim N(\theta,1)$ with $\theta\ge0$, the sample mean has con
 = Confidence interval
 {parent=Statistical inference}
 {wiki}
+{title2=$C(X)=[L(X),U(X)]$}
 
-A confidence interval is a random interval constructed from sample data so that, under repeated sampling, it contains the fixed target parameter with a prescribed coverage probability.
+A <confidence interval> is a random interval constructed from a <statistical sample> to cover a fixed unknown <statistical parameter> with a prescribed <coverage probability>. For a scalar target $\theta$, a procedure with nominal confidence $1-\alpha$ satisfies
+$$
+\mathbb P_\theta\{L(X)\leq\theta\leq U(X)\}\geq1-\alpha
+\quad\text{for every admissible }\theta.
+$$
+The subscript records which <probability distribution> generates the repeated samples. The endpoints are <statistics>, so they vary from sample to sample; the target is fixed. Equality gives exact nominal <coverage probability>, while the inequality also permits conservative procedures. For a general <estimand> $\psi(\theta)$, replace the target inside the interval by $\psi(\theta)$.
+
+A realized <confidence interval> communicates the precision of an estimate in the target's own units. Reporting $1.2$ alone conceals the difference between an estimate with <standard error> $0.5$ and one with <standard error> $0.05$. A narrow <confidence interval> indicates greater precision for the stated <statistical model>, rather than a guarantee that its assumptions describe the experiment correctly.
+
+Once $x$ is observed, $C(x)$ either contains the fixed target or does not. The 95% statement concerns the random procedure $C(X)$, not a <posterior probability> of 0.95 that this particular interval contains $\theta$. A <credible interval> instead assigns specified <posterior probability> to a region under <Bayesian inference>. These interpretations can differ even when the numerical endpoints agree. The repeated-sampling interpretation is explained in \a[https://www.itl.nist.gov/div898/handbook/eda/section3/eda352.htm][NIST's confidence-limits teaching reference]{ref}.
+
+Jerzy Neyman's 1937 paper formulates the fixed-target, random-endpoint construction in Section II, especially equation (20) on page 348. Its confidence coefficient must hold across the allowed <statistical parameters>, rather than only at the value suggested by one sample. See \a[https://doi.org/10.1098/rsta.1937.0005][Neyman, Outline of a Theory of Statistical Estimation Based on the Classical Theory of Probability]{ref} and the \a[https://wwwusers.ts.infn.it/~milotti/Didattica/StatisticaAvanzata/Neyman_1937.pdf][original paper scan]{ref}.
+
+= Normal mean confidence interval with known variance
+{parent=Confidence interval}
+{title2=$\bar X\pm z_{1-\alpha/2}\sigma/\sqrt n$}
+
+Suppose $X_1,\ldots,X_n$ are <independent and identically distributed> with <normal distribution> $N(\mu,\sigma^2)$, where the <mean> $\mu$ is unknown and the <standard deviation> $\sigma>0$ is known. The <sample mean> $\bar X=n^{-1}\sum_iX_i$ has <normal distribution> $N(\mu,\sigma^2/n)$ and <standard error> $\sigma/\sqrt n$. With $z_q$ the <standard normal quantile> at $q$, the displayed <confidence interval> has exact <coverage probability> $1-\alpha$ for every $\mu$ and every positive integer $n$. No <central limit theorem> approximation is needed.
+
+Take $\sigma=2$, $n=16$ and nominal confidence 95%. The <standard error> is $2/\sqrt{16}=0.5$, and $z_{0.975}=1.9599639845\ldots$. Therefore
+$$
+C(X)=[\bar X-0.9799819923\ldots,\ \bar X+0.9799819923\ldots].
+$$
+Rounded for reporting, this is $\bar x\pm0.98$. If $\bar x=1.2$, the realized <confidence interval> is approximately $[0.22,2.18]$. Exact 95% calibration refers to the unrounded <standard normal quantile>; using $1.96$ literally gives <coverage probability> $0.9500042097\ldots$, almost but not exactly 0.95.
+
+The <confidence interval>'s width scales as $n^{-1/2}$: increasing <sample size> from 16 to 64 halves its half-width to $0.4899909961\ldots$. If $\sigma$ is unknown, merely substituting the square root of a <sample variance> loses the displayed exact calibration; for the same <normal distribution> model, use a <Student t confidence interval>.
+
+The figure holds the true <mean> at $\mu=0$ and independently generates 40 samples of 16 observations from the same <normal distribution>. NumPy's PCG64 generator with seed 42 gives 39 covering <confidence intervals> and one miss, at sample 32: observed coverage is $39/40=97.5\%$. Every bar uses the unrounded <standard normal quantile>. This finite collection illustrates the moving endpoints; it does not establish the analytic <coverage probability> or require exactly two misses.
+
+\Image[confidence-interval-coverage.png]
+{title=Forty normal-mean confidence intervals and their exact 95% coverage event}
+
+The beauty of the construction is that a familiar <standard normal distribution> calibrates every possible unknown <mean> at once. For a short proof, the <pivotal quantity>
+$$
+Z=\frac{\bar X-\mu}{\sigma/\sqrt n}\sim N(0,1)
+$$
+has a <probability distribution> independent of $\mu$. The event $|Z|\leq z_{1-\alpha/2}$ has <probability> $1-\alpha$; rearranging it gives $\mu\in C(X)$. The right panel shows the equivalent event $|\bar X|\leq0.9799819923\ldots$ when $\mu=0$.
+
+= Normal mean confidence interval and hypothesis test duality
+{parent=Normal mean confidence interval with known variance}
+{title2=$z=(\bar x-\mu_0)/(\sigma/\sqrt n),\quad p=2[1-\Phi(|z|)]$}
+
+For the same <normal distribution> model, a <two-sided test> compares the <null hypothesis> $H_0:\mu=\mu_0$ with the <alternative hypothesis> $H_1:\mu\ne\mu_0$. Under the <null hypothesis>, the standardized <test statistic> has <standard normal distribution>. Write $\Phi$ for the <standard normal distribution function>. With $\bar x=1.2$, $\sigma=2$, $n=16$ and $\mu_0=0$, the observed <test statistic> is $z=1.2/0.5=2.4$. Its <p-value> is
+$$
+p=\mathbb P_{\mu_0}(|Z|\geq2.4)
+=2[1-\Phi(2.4)]
+=0.01639507185\ldots.
+$$
+Thus the <p-value> is a tail <probability> computed under the <null hypothesis>, including departures in both directions. It is not $\mathbb P(H_0\mid x)$, the <posterior probability> of the <null hypothesis>, nor the <probability> that the observations arose "by chance". The <normal distribution> <test statistic> and its calibration appear in \a[https://www.itl.nist.gov/div898/handbook/prc/section2/prc22.htm][NIST's teaching reference for testing a process mean]{ref}; the tail interpretation is stated in \a[https://online.stat.psu.edu/stat200/Lesson05][Penn State's hypothesis-testing notes]{ref}.
+
+Choose the <significance level> $\alpha=0.05$ before observing the sample. The <rejection region> is $|Z|>z_{0.975}$, whose <probability> under $H_0$ is exactly 0.05. Here $2.4>1.9599639845\ldots$, so reject $H_0$. This agrees with zero lying outside $[0.22,2.18]$. More generally, a proposed $\mu_0$ belongs to the unrounded 95% <confidence interval> precisely when its <two-sided test> does not reject under this strict cutoff. The equality boundary has <probability> zero in this continuous <statistical model>.
+
+\Image[hypothesis-test-normal-tails.png]
+{title=The chosen 5% rejection tails and the observed two-sided p-value}
+
+The <significance level> and <statistical power> describe different repeated-experiment <probabilities>. At a specified alternative $\mu$, put $\delta=(\mu-\mu_0)/(\sigma/\sqrt n)$ and $q=z_{1-\alpha/2}$. Then
+$$
+\begin{aligned}
+\mathbb P_{\mu_0}(\text{reject }H_0)&=\alpha,\\
+\beta(\mu)=\mathbb P_\mu(\text{do not reject }H_0)&=\Phi(q-\delta)-\Phi(-q-\delta),\\
+\mathbb P_\mu(\text{reject }H_0)&=1-\beta(\mu).
+\end{aligned}
+$$
+The first is the <Type I error> <probability>; the second is the <Type II error> <probability> at that alternative. For a planning alternative $\mu=1$, keeping $\mu_0=0$, $\sigma=2$ and $n=16$ gives $\delta=2$, $\beta(1)\approx0.483995$ and <statistical power> $0.516005$. At $n=64$, $\delta=4$ and <statistical power> rises to $0.979327$. These are model calculations for specified alternatives, not <posterior probabilities> inferred from a nonsignificant result. They explain why failure to reject cannot establish equality and why choosing <sample size> before an experiment is useful.
+
+Historically, Ronald Fisher's 1925 book discusses the normal cutoff $1.96$ and tail <probability> 0.05 as a convenient convention on page 47, rather than a mathematically compulsory threshold: \a[https://books.google.com/books/about/Statistical_Methods_for_Research_Workers.html?id=I0NBAAAAIAAJ][Fisher, Statistical Methods for Research Workers, first edition]{ref}.
 
 = Coverage probability
 {parent=Confidence interval}
 {title2=$\mathbb P_\theta(\theta\in C(Y))$}
 
-The repeated-sampling probability that a random <confidence interval> contains the fixed true <statistical parameter>. An exact level-$1-\alpha$ procedure has coverage at least $1-\alpha$ at every admissible parameter; an asymptotic procedure approaches that value as sample size grows. Coverage is not a posterior probability for the realized interval. Higher-order <Edgeworth expansions> quantify the discrepancy from nominal coverage.
+The <coverage probability> is the repeated-sampling <probability> that a random <confidence interval> contains the fixed true <statistical parameter>. A finite-sample level-$1-\alpha$ procedure has <coverage probability> at least $1-\alpha$ at every admissible <statistical parameter>; exact nominal coverage means equality. An asymptotically calibrated procedure approaches the nominal value as <sample size> grows, under its stated assumptions. Higher-order <Edgeworth expansions> can quantify the discrepancy from nominal <coverage probability> when their regularity conditions hold.
+
+Observed coverage in finitely many repetitions is itself random. For $m$ independent repetitions of the exact <normal mean confidence interval with known variance>, the count $K$ of covering <confidence intervals> has <binomial distribution> $\operatorname{Binomial}(m,0.95)$. At $m=40$, its <expectation> is $38$, but
+$$
+\mathbb P(K=39)=\binom{40}{39}0.95^{39}0.05\approx0.270552.
+$$
+Consequently, the 39 successes in the figure are compatible with exact 95% <coverage probability>. The guarantee follows from the <pivotal quantity>'s <probability distribution>; the finite observed fraction is an illustration. Also distinguish a <confidence interval> for a fixed <mean> from a <prediction interval> for a future observation: the latter must accommodate the new observation's variation as well as estimation uncertainty.
 
 = Extreme-order-statistic tolerance interval
 {parent=Confidence interval}

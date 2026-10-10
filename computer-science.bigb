@@ -1,6 +1,12 @@
 = Computer science
 {wiki}
 
+Computer science studies how information can be represented and transformed by <algorithms>, and what those transformations can achieve. Its central questions connect <mathematics> to practical design: what answer should a procedure produce, why is it correct, and how much work does it require as its <input> grows? <Computability theory> asks which tasks can be solved at all; <computational complexity theory> asks what resources a solution needs.
+
+The beauty is that choosing a representation can change what is feasible. Finding a name among a million entries sounds like a million checks. Store the entries in a <sorted array>, and <binary search> needs at most twenty middle-entry comparisons. The order makes each unsuccessful comparison eliminate a whole region of possibilities. A <data structure> supplies useful organization; an <algorithm> exploits it; <time complexity> explains the resulting savings.
+
+<Algorithm correctness> covers every permitted <input>, including absent names and empty collections. <Time complexity> predicts scaling; <statistical program profiling> investigates a particular implementation.
+
 = Encapsulation
 {disambiguate=computer programming}
 {parent=Computer science}
@@ -410,6 +416,21 @@ An execution stream with its own registers and stack, usually sharing its proces
 {wiki}
 
 // Target: computer-science.bigb
+
+= Array
+{disambiguate=data structure}
+{parent=Data structure}
+
+= Array
+{synonym}
+
+A <data structure> storing entries at numbered positions and supporting access by index. In the cost model used for <binary search>, one indexed access has constant cost.
+
+= Sorted array
+{parent=Array (data structure)}
+{title2=$A_0\leq A_1\leq\cdots\leq A_{n-1}$}
+
+An <array> whose entries appear in nondecreasing order under a specified <total order>. The displayed inequalities allow repeated values.
 
 = FIFO queue
 {parent=Data structure}
@@ -1067,6 +1088,32 @@ A signature based on private <RSA cryptosystem> exponentiation, with public expo
 
 An algorithm is a finite, precise procedure for transforming an <input> into an <output>.
 
+Here "finite" refers to the description: a short <algorithm> can perform arbitrarily many steps on increasingly large <inputs>. Solving a <computational problem> additionally requires termination and the specified <output> on every permitted <input>. State assumptions explicitly: <binary search> requires a <sorted array>.
+
+An <algorithm> is an idea that can have implementations in different <programming languages>. Its explanation should make three things visible: the permitted <inputs>, the rule for each step, and the meaning of the returned <output>. <Algorithm correctness> then separates finding the right answer from eventually finishing; <time complexity> asks how much work finishing requires.
+
+A particularly useful design question is: what knowledge survives each step? In <binary search>, it is the location of every possible match inside the remaining candidate range. Writing that fact as a <loop invariant> turns an intuitive shortcut into a procedure whose discarded candidates can be justified. This often helps discover the <algorithm>, rather than merely check it afterward.
+
+= Algorithm correctness
+{parent=Algorithm}
+
+Partial correctness means that, if the <algorithm> terminates on a permitted <input>, its <output> meets the specification. Total correctness additionally requires termination on every permitted <input>.
+
+= Loop invariant
+{parent=Algorithm correctness}
+{wiki}
+
+A statement true whenever execution reaches a chosen point in a loop, usually immediately before its condition is tested. Establish it initially, preserve it through each iteration, and combine it with the exit condition to establish <algorithm correctness>. Termination needs a separate argument.\a[https://www.cs.cornell.edu/courses/cs2112/2019fa/lectures/loopinv/][Cornell CS 2112: loop invariants]{ref}
+
+= Linear search
+{parent=Algorithm}
+{wiki}
+
+= Sequential search
+{synonym}
+
+Inspect entries one by one until a match is found or all entries have been checked. <Linear search> needs no ordering assumption; an absent target requires $n$ equality comparisons in a collection of $n$ entries.
+
 = Strength reduction
 {parent=Algorithm}
 
@@ -1110,7 +1157,51 @@ Merges two sorted sequences by repeatedly choosing their smaller remaining head.
 {parent=Algorithm}
 {wiki}
 
-Binary search identifies a position in an ordered list by repeatedly comparing with a middle entry and keeping the appropriate half. For $N$ possible positions, this requires at most $\lceil\log_2N\rceil$ comparisons. The interval of remaining positions is an invariant of the <algorithm>: every answer removes only positions incompatible with the comparison. A <decision tree> with $q$ binary answers has at most $2^q$ leaves, explaining the logarithmic lower bound.
+<Binary search> finds a target $x$ in a <sorted array> $A$ by inspecting the middle of the remaining candidate range. If the middle entry is smaller than $x$, every entry to its left is also too small; if larger, every entry to its right is too large. One comparison therefore rules out many entries. Equal entries are allowed; this version returns any matching index, without promising the first occurrence.
+
+Use indices starting at zero and inclusive endpoints $L,R$. Initially $L=0$, $R=n-1$, where $n$ is the <array> length. While $L\leq R$, choose
+$$
+m=L+\left\lfloor\frac{R-L}{2}\right\rfloor.
+$$
+The brackets denote the <floor function>. Compare $A_m$ with $x$: return $m$ on equality; set $L=m+1$ if $A_m<x$; otherwise set $R=m-1$. If $L>R$, report absence. The updates exclude the already inspected middle entry. This also handles an empty <array>, whose initial endpoints are $0,-1$. Sedgewick and Wayne specify a <sorted array> as <input> and return a matching index or $-1$ for absence.\a[https://algs4.cs.princeton.edu/code/javadoc/edu/princeton/cs/algs4/BinarySearch.html][Sedgewick and Wayne: BinarySearch API]{ref}
+
+For a fully worked example, take the <sorted array>
+$$
+A=(2,5,8,12,16,23,38,56,72,91,104,130,160,205,260).
+$$
+Search for $x=23$:
+
+|| Step
+|| Candidate indices
+|| Middle index and value
+|| Consequence
+
+| 1
+| $0\ldots14$
+| $m=7$, $A_7=56$
+| $23<56$: retain $0\ldots6$.
+
+| 2
+| $0\ldots6$
+| $m=3$, $A_3=12$
+| $23>12$: retain $4\ldots6$.
+
+| 3
+| $4\ldots6$
+| $m=5$, $A_5=23$
+| Return index $5$.
+
+For $x=24$, the first two steps agree. Next $24>23$ retains only index $6$; inspecting $A_6=38$ sets $R=5$. Now $L=6>5=R$, so the answer is "absent" after four comparisons.
+
+\Image[binary-search-intervals.png]
+{title=Binary search retains only candidates compatible with every comparison}
+{description=Blue cells are current candidates, orange marks the middle entry, and green marks a match. Both searches use the same fifteen-entry sorted array.}
+
+The <loop invariant> is: the <array> stays sorted, $0\leq L\leq R+1\leq n$, and every index containing $x$ lies between $L$ and $R$. It holds initially. The <sorted array> property justifies each exclusion. Returning on equality gives a match; an empty candidate range implies absence. Crucially, this <loop invariant> allows $x$ to be absent from the beginning.
+
+For a nonempty range of size $s=R-L+1$, an unsuccessful comparison leaves at most $\lfloor s/2\rfloor$ candidates. Thus sizes satisfy $s_k\leq\lfloor n/2^k\rfloor$ after $k$ unsuccessful comparisons. This proves termination and, for $n\geq1$, at most $\lfloor\log_2 n\rfloor+1$ middle-entry comparisons. The final singleton still needs inspection: $n=1$ requires one comparison, not zero. For $n=15$, the bound is four. This is the halving argument behind logarithmic <time complexity>.\a[https://www.cs.princeton.edu/courses/archive/fall24/cos126/static/lectures/42Algorithms.pdf][Princeton COS 126: binary search analysis]{ref}
+
+A <decision tree> with $q$ binary tests has at most $2^q$ leaves. Distinguishing $n$ possible matching positions therefore requires $q\geq\lceil\log_2 n\rceil$. This lower bound counts binary tests, whereas the bound above counts three-way comparisons.
 
 = Karatsuba multiplication
 {parent=Algorithm}
@@ -1592,8 +1683,17 @@ A complexity class is a collection of <computational problem>[computational prob
 = Time complexity
 {parent=Complexity class}
 {wiki}
+{title2=$T(n)$}
 
 The time complexity of an <algorithm> bounds its number of computation steps as a function of its input length.
+
+Specify both the size parameter and the operations counted. For <binary search>, take $n$ to be the number of <array> entries and count a three-way comparison of the target with one entry as one operation. Code using separate equality and less-than tests may perform two primitive tests per inspected entry; this changes a constant factor. The <input> size in bits is a different parameter when entries have variable-length representations.
+
+Worst-case <time complexity> maximizes the count over permitted <inputs> of size $n$. An absent target forces $n$ comparisons in <linear search>. For <binary search>, the worst-case count is $\lfloor\log_2 n\rfloor+1$ for $n\geq1$, attained by a target larger than every entry. Both have a best case of one comparison when the first inspected entry matches.
+
+In <Big O notation>, the worst-case bounds are $O(n)$ and $O(\log n)$ respectively. Here $T(n)=O(g(n))$ means that fixed constants $C,n_0$ exist with $T(n)\leq Cg(n)$ for all $n\geq n_0$. It is an upper bound, so a logarithmic count is also $O(n)$; the sharper bound communicates its scaling better. The base of the <logarithm> changes only a constant factor.
+
+For $n=1{,}000{,}000$, <linear search> can require $1{,}000{,}000$ comparisons, whereas <binary search> needs at most $20$, since $2^{19}\leq n<2^{20}$. Doubling $n$ adds just one to the worst-case <binary search> count. These are operation counts, not measured machine runtimes. Translating them into logarithmic execution time assumes constant-cost indexed access, comparison and index arithmetic. Long entries can make comparison expensive; a <linked list> does not provide constant-cost access to an arbitrary middle index. Building or sorting the <array> is additional work: <merge sort> can provide order for many subsequent searches, but its cost belongs in the analysis too.
 
 = Amortized analysis
 {parent=Time complexity}

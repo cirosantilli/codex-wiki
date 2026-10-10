@@ -1,7 +1,72 @@
 = Convex optimization
 {wiki}
+{title2=$\inf_{z\in C}f(z)$}
 
-Convex optimization minimizes a convex objective over a convex feasible set.
+Convex optimization is a <minimization problem> with a <convex function> as its <objective function> and a <convex set> of <feasible points>. For a finite-valued $f:C\to\mathbb R$, the problem is to find $z_*\in C$ with $f(z_*)\leq f(z)$ for every $z\in C$. The displayed <infimum> describes its value even when no minimizing point exists. The two convexity requirements concern different objects: the allowed decisions and the scores assigned to them.
+
+A <convex set> contains the whole <line segment> between any two of its points:
+$$
+u,v\in C,\quad 0\leq t\leq1\quad\Longrightarrow\quad (1-t)u+tv\in C.
+$$
+A <convex function> lies below the interpolation of its endpoint values:
+$$
+f((1-t)u+tv)\leq(1-t)f(u)+tf(v).
+$$
+Thus mixing two allowed decisions preserves feasibility, and the mixed score is no worse than the same mixture of endpoint scores. The <objective function> may have flat regions or corners. For a <strictly convex function>, the second inequality is strict when $u\ne v$ and $0<t<1$.
+
+A useful constraint representation is
+$$
+\inf_z f(z)\qquad\text{subject to}\qquad g_i(z)\leq0\ (i=1,\ldots,m),\quad Az=b,
+$$
+where $f,g_i$ are <convex functions> on a common <convex set> $D$, and the equalities are <affine functions>. Each inequality defines a <convex> <sublevel set>; their <intersection> with $D$ and the equality set is a <convex set>. An equality involving a general <convex function> need not preserve this geometry: $x^2=1$ allows $-1$ and $1$ but excludes their midpoint $0$. See \a[https://web.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf#page=150][Boyd and Vandenberghe, Convex Optimization (2004), §4.2.1]{ref} for the standard problem form.
+
+\b[Why local information can certify a global answer.] Every <local minimum> of a <convex optimization> problem is a <global minimum>, including minima on the boundary. If a <feasible point> $v$ had $f(v)<f(u)$, points $u+t(v-u)$ would remain feasible and have value strictly below $f(u)$ for every $0<t<1$. Taking $t$ arbitrarily small contradicts a <local minimum> at $u$. This argument explains the special power of <convexity>: a better distant decision would reveal an improving direction immediately nearby.
+
+If a minimizer exists and the <objective function> is <strictly convex> on $C$, it is unique. Two distinct minimizers of value $p_*$ would have a feasible midpoint with value strictly below $p_*$. Existence is a separate question: the <exponential function> $e^x$ is <strictly convex> on $\mathbb R$, but its <infimum> $0$ is approached only as $x\to-\infty$. Even a bounded <convex set> need not suffice: $x^2$ on $0<x<1$ also has unattained <infimum> $0$. A <continuous function> on a nonempty <compact set> attains its minimum by the <extreme value theorem>.
+
+Nor does <strict convexity> imply <differentiability>. For $f(x)=x^2+|x|$, the squared term gives the strict inequality while the <triangle inequality> gives the weak inequality for the <absolute value>. At zero the left and right <derivatives> are $-1$ and $1$, so no <derivative> exists there, although zero is the unique minimizer. Such objectives require <subgradients> or <proximal operators> rather than an ordinary <gradient> at every point.
+
+For a <differentiable> <convex function> on an open <convex set> containing $C$, the constrained <first-order condition> is
+$$
+\nabla f(z_*)^T(z-z_*)\geq0\qquad\text{for every }z\in C.
+$$
+Indeed, the <subgradient inequality> $f(z)\geq f(z_*)+\nabla f(z_*)^T(z-z_*)$ makes this sufficient; taking the one-sided <derivative> along feasible <line segments> makes it necessary. At an interior minimizer, both directions are feasible and the <gradient> must vanish. At a boundary minimizer it can be nonzero: it only needs to make every feasible direction nondecreasing. See \a[https://web.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf#page=153][Boyd and Vandenberghe, §§3.1.3 and 4.2.3]{ref}.
+
+\b[A fully computed nearest-point problem.] Project $a=(2,1)$ onto the <half-space> $C=\{(x,y):x+y\leq1\}$ by minimizing half the squared <Euclidean distance>:
+$$
+f(x,y)=\tfrac12((x-2)^2+(y-1)^2),\qquad g(x,y)=x+y-1\leq0.
+$$
+The <Hessian matrix> is the <identity matrix>, so the <objective function> is <strictly convex>. The unconstrained minimizer $(2,1)$ violates the inequality. With the convention $g\leq0$, the <optimization Lagrangian> is $L=f+\lambda g$, where the <Lagrange multiplier> satisfies $\lambda\geq0$. Its <Karush-Kuhn-Tucker conditions> are
+$$
+x+y-1\leq0,\quad\lambda\geq0,\quad\lambda(x+y-1)=0,\quad x-2+\lambda=0,\quad y-1+\lambda=0.
+$$
+The last two equations give $x=2-\lambda$, $y=1-\lambda$. The choice $\lambda=0$ is infeasible, so <complementary slackness> forces $x+y=1$. Consequently $3-2\lambda=1$, giving $\lambda=1$, $(x_*,y_*)=(1,0)$ and $f(x_*,y_*)=1$. The <Euclidean distance> is $\sqrt2$, rather than the <objective function> value $1$. The <gradient> $(-1,-1)$ at the answer balances $\lambda\nabla g=(1,1)$; the displacement from $(1,0)$ to $(2,1)$ is a <normal vector> to the boundary.
+
+\Image[convex-projection-optimization.png]
+{title=The nearest feasible point is where an objective contour first touches the half-space boundary}
+
+There is an exact certificate independent of numerical search. Completing squares gives
+$$
+L(x,y,1)=1+\tfrac12((x-1)^2+y^2)\geq1.
+$$
+For every <feasible point>, $g\leq0$ implies $L(x,y,1)\leq f(x,y)$. Thus every feasible objective is at least $1$, and $(1,0)$ attains this bound. More generally the <Lagrangian dual problem> has objective $q(\lambda)=\inf_{x,y}L(x,y,\lambda)=2\lambda-\lambda^2=1-(\lambda-1)^2$ for $\lambda\geq0$. Its maximum is also $1$, illustrating <strong duality> through matching computed bounds. This makes the example a model for <Euclidean projection onto a convex set> and the projection step in <projected gradient descent>.
+
+\b[What the multiplier conditions require.] For <differentiable> <convex functions> $f,g_i$ on an open <convex set> $D$ and equalities $Az=b$ defined by <affine functions>, the <KKT conditions> combine feasibility, $\lambda_i\geq0$, <complementary slackness> $\lambda_i g_i(z_*)=0$, and stationarity
+$$
+\nabla f(z_*)+\sum_i\lambda_i\nabla g_i(z_*)+A^T\nu=0,
+$$
+with unrestricted equality <Lagrange multipliers> $\nu$. They suffice to certify a <global minimum> without an additional regularity assumption: the <optimization Lagrangian> is <convex>, stationarity minimizes it, and feasibility with <complementary slackness> gives the same certificate as above. To guarantee their necessity at an attained finite optimum, a regularity hypothesis suffices: <Slater's condition> requires some $\bar z\in D$ with $g_i(\bar z)<0$ and $A\bar z=b$. The projection example has the strictly feasible point $(0,0)$. See \a[https://web.stanford.edu/~boyd/cvxbook/bv_cvxbook.pdf#page=240][Boyd and Vandenberghe, §§5.2.3 and 5.5.3]{ref}. This hypothesis guarantees suitable multipliers, not existence of a primal minimizer.
+
+Without regularity, necessity can fail even for <convex functions>: minimize $f(x)=x$ subject to $g(x)=x^2\leq0$. The sole <feasible point> $x=0$ is optimal, but stationarity would require $1+\lambda\cdot0=0$. No <Lagrange multiplier> works. There is no strictly feasible point, and the <gradient> of the constraint vanishes at the answer.
+
+\b[The nonconvex contrast.] The <polynomial> $h(x)=(x^2-1)^2+0.2x$ has <derivative> $h'(x)=4x^3-4x+0.2$ and <second derivative> $h''(x)=12x^2-4$. Numerically solving the cubic gives <stationary points> $-1.024120300$, $0.050125947$, and $0.973994353$. Their objective values are respectively $-0.202440434$, $1.005006281$, and $0.197434153$, with second derivatives $8.585869$, $-3.969849$, and $7.383980$. Hence both outer points are <local minima>, and the middle point is a <local maximum>. Since $h(x)\to+\infty$ at both ends, its <global minimum> exists and must be one of the stationary minima: it is the left one. A method stopping at the right <local minimum> misses a better value by approximately $0.399874587$.
+
+\Image[convex-vs-nonconvex.png]
+{title=A strictly convex quadratic has one minimum; a tilted quartic has two local minima with different values}
+
+The practical appeal of <convex optimization> is the ability to check an answer globally using geometry and matching <Lagrangian duality> bounds. The projection certificate certifies every feasible alternative at once; the tilted quartic shows why a zero <gradient> alone cannot do that for general <nonlinear optimization>.
+
+Historically, an early landmark is Kuhn and Tucker's \a[https://digicoll.lib.berkeley.edu/record/112776/files/math_s2_article-35.pdf][Nonlinear Programming, Second Berkeley Symposium (1951), pp. 481–492]{ref}. Its §3 explicitly states a regularity hypothesis for inequality-constrained <Lagrange multipliers>; its discussion of <saddle points> explains how <concave functions> support global conclusions for maximization. This documents an early formulation of the multiplier approach; it does not establish sole discovery of today's <KKT conditions> or of <convex optimization> as a whole.
 
 = Pari-mutuel expected-return allocation
 {parent=Convex optimization}

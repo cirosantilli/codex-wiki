@@ -1,7 +1,27 @@
 = Linear regression
 {wiki}
+{title2=$Y=X\beta+\varepsilon$}
 
-Linear regression models a response mean as a linear combination $X\beta$ of predictors. Ordinary least squares chooses $\beta$ to minimize the sum of squared residuals.
+Linear regression models a response's <conditional expectation> as a <linear combination> of specified predictors. In <matrix> form,
+$$
+Y=X\beta+\varepsilon,\qquad \mathbb E(\varepsilon\mid X)=0,
+$$
+where the <design matrix> $X$ describes the observations, $\beta$ contains the <regression coefficients>, and $\varepsilon$ contains the errors. The <fitted values> $X\widehat\beta$ estimate the response means. The model is linear in its <regression coefficients>; its columns may include powers, interactions, or other transformed predictors, so <polynomial regression> can fit curved relationships using the same machinery.
+
+For a concrete example, take five constructed observations
+$$
+(x_i,y_i)=(0,1),(1,2),(2,2),(3,4),(4,5).
+$$
+An <ordinary least squares> fit with an <intercept> gives the line $\widehat y=0.8+x$. Its <regression residuals> are $(0.2,0.2,-0.8,0.2,0.2)$ and its <residual sum of squares> is $0.8$. A one-unit increase in the predictor corresponds to a one-unit increase in the fitted response. This is a description of this fitted association; interpreting a change as a <causal effect> requires the assumptions of a <causal inference> problem.
+
+\Image[linear-regression-worked-example.png]
+{title=A five-point least-squares fit separates the fitted trend from residual deviations}
+
+The geometric reason for the fit is simple. The possible mean vectors $X\beta$ form the <column space> of $X$. <Ordinary least squares> chooses the <orthogonal projection> of the data vector onto that <vector subspace>, so the remaining <regression residual> is <orthogonal> to every permitted fitted direction. The <least-squares normal equations> express this orthogonality as $X^T(Y-X\widehat\beta)=0$. The data's explained component and unexplained component are therefore separated by the same geometry used in a <Hilbert space>.
+
+The optimization definition makes sense for any observed data. Quantifying the uncertainty of the <regression coefficients> needs additional assumptions about the sampling and errors. With fixed $X$ of <full column rank> and mean-zero errors with <covariance matrix> $\sigma^2I$, <ordinary least squares> is unbiased and has covariance $\sigma^2(X^TX)^{-1}$; the <Gauss-Markov theorem> compares it with other linear unbiased estimators. A <normal linear model> additionally makes <Student t-distribution> intervals and tests exact in finite samples. Model adequacy and predictive assessment remain relevant even when these calculations are available.
+
+Two historical settings help explain the subject's appeal. Adrien-Marie Legendre's *Nouvelles méthodes pour la détermination des orbites des comètes* (1805) includes an appendix on the method of least squares: observations give more equations than unknowns, and squared errors provide a criterion for reconciling them. Its astronomical setting shows the motivation for combining imperfect measurements. \a[https://www.e-rara.ch/zut/content/titleinfo/10838079][Legendre, Nouvelles méthodes pour la détermination des orbites des comètes, 1805, appendix pp. 72–80]{ref} Francis Galton's *Regression Towards Mediocrity in Hereditary Stature* (1886) examines the association between parental and offspring heights and the tendency of group averages toward the population average. This is a historical use of the regression name; the modern linear model is a general statistical formulation. \a[https://zenodo.org/records/1449548][Galton, Regression Towards Mediocrity in Hereditary Stature, 1886, original article]{ref}
 
 = Multiple linear regression
 {parent=Linear regression}
@@ -16,7 +36,11 @@ Linear regression models a response mean as a linear combination $X\beta$ of pre
 = Least-squares normal equations
 {synonym}
 
-Minimizing $\|y-X\theta\|^2$ gives the displayed equations by differentiation. If the design matrix has full column rank, the minimizer is unique and the fitted vector is the <orthogonal projection> of $y$ onto its column space. For an intercept and one explanatory variable, these equations give $\widehat\beta=S_{xy}/S_{xx}$ and $\widehat\alpha=\bar y-\widehat\beta\bar x$, provided $S_{xx}>0$.
+Minimizing $\|y-X\theta\|^2$ gives the displayed equations by <differentiation>. Equivalently, the <regression residual> $r=y-X\widehat\theta$ satisfies $X^Tr=0$: it is <orthogonal> to every column of the <design matrix>. If $X$ has <full column rank>, the minimizer is unique and the <fitted values> are the <orthogonal projection> of $y$ onto its <column space>. A rank-deficient <design matrix> can give multiple coefficient vectors, while the projected fitted vector is still unique.
+
+For an <intercept> and one predictor, put $S_{xx}=\sum_i(x_i-\bar x)^2$ and $S_{xy}=\sum_i(x_i-\bar x)(y_i-\bar y)$. The equations give $\widehat\beta=S_{xy}/S_{xx}$ and $\widehat\alpha=\bar y-\widehat\beta\bar x$, provided $S_{xx}>0$. In the five-point example in <linear regression>, $\bar x=2$, $\bar y=2.8$, $S_{xx}=10$ and $S_{xy}=10$, giving $\widehat\beta=1$ and $\widehat\alpha=0.8$.
+
+The <normal equations> describe the mathematical optimum, but explicitly forming and inverting $X^TX$ can amplify numerical problems. A <QR decomposition> computes the same <least-squares solution> through orthogonal coordinates; a <singular value decomposition> also exposes nearly dependent columns. This connects statistical fitting to <numerical linear algebra> and the choice of a stable algorithm. \a[https://ocw.mit.edu/courses/18-06sc-linear-algebra-fall-2011/][MIT 18.06SC, Projections onto Subspaces and Least Squares]{ref}
 
 = Omitted-variable bias
 {parent=Linear regression}
@@ -138,6 +162,18 @@ A <polynomial regression> of degree two is linear in its unknown <regression coe
 
 In an <ordinary least squares> regression with an intercept and a nonconstant response, $R^2=1-\mathrm{RSS}/\sum_i(Y_i-\overline Y)^2$. It measures the fitted proportion of sample variation relative to an intercept-only baseline. It increases when regressors are added, even if those regressors are unhelpful for prediction. A high value does not establish the assumptions of a <normal linear model> or rule out a systematic <regression residual> pattern.
 
+For the five-point example in <linear regression>, the total centered <sum of squares> is $10.8$ and the <residual sum of squares> is $0.8$, so $R^2=25/27\approx0.926$. This summarizes the fitted reduction in squared error. It does not record the order or shape of the <regression residuals>, which are worth examining in a <residual-versus-fitted plot>.
+
+Here is a fully constructed illustration. Use $x=(-2,-1,0,1,2)$ and the same fitted line $3+x$ for both datasets. Add respectively the residual vectors
+$$
+r_{\rm curve}=0.2(2,-1,-2,-1,2),\qquad
+r_{\rm alt}=0.2\sqrt{\frac75}(1,-2,0,2,-1).
+$$
+Both sum to zero, both have zero <inner product> with $x$, and both have squared <norm> $0.56$. Their <ordinary least squares> fit is therefore exactly the same line, with the same $R^2=10/(10+0.56)=125/132\approx0.947$. But the first residual is $0.2(x^2-2)$, a systematic quadratic shape, while the second changes direction across the predictor values. These examples show directly which information the scalar $R^2$ discards; neither constructed pattern proves a random-error model.
+
+\Image[regression-residual-patterns.png]
+{title=Two constructed datasets share a fitted line and R squared but have different residual shapes}
+
 = Adjusted coefficient of determination
 {parent=Coefficient of determination}
 {title2=$\overline R^2$}
@@ -155,6 +191,8 @@ It compares the residual <variance> estimate with the unmodelled <sample varianc
 {parent=Linear regression}
 
 A <residual-versus-fitted plot> displays residuals vertically against predicted responses horizontally. Curvature suggests an incorrect conditional-mean model; a fan-shaped spread suggests <heteroscedasticity>, while isolated large residuals may indicate unusual observations. It does not alone measure leverage or influence: <regression leverage> records unusual predictor combinations, and <Cook's distance> combines leverage and residual size.
+
+The figure in <coefficient of determination> shows why the plot is useful: subtracting the fitted linear trend makes a small curved component easy to see. A visible pattern supplies a reason to investigate the model, while the absence of a pattern in a small sample does not establish that all assumptions hold. Other views address other questions: <regression residuals> against observation order can reveal temporal dependence, and a <normal probability plot> examines distributional shape. NIST's statistical handbook develops this use of graphical residual analysis for model validation. \a[https://www.itl.nist.gov/div898/handbook/pmd/section4/pmd44.htm][NIST, How can I tell if a model fits my data?]{ref}
 
 = Scale-location plot
 {parent=Residual-versus-fitted plot}
@@ -274,7 +312,14 @@ The Frisch–Waugh–Lovell theorem says that a regression coefficient can be ob
 {parent=Linear regression}
 {wiki}
 
-Simple linear regression uses one predictor and an intercept, $Y_i=\alpha+\beta x_i+\varepsilon_i$.
+Simple linear regression uses one predictor and an <intercept>, $Y_i=\alpha+\beta x_i+\varepsilon_i$, with $\mathbb E(\varepsilon_i\mid x_i)=0$. The <regression coefficients> describe a straight conditional-mean line: $\alpha$ is its value at zero and $\beta$ its rate of change per unit of the predictor. When zero is outside the observed range, <predictor centering> can make the <intercept> refer to a more representative predictor value.
+
+For fixed predictors and uncorrelated mean-zero errors of common <variance> $\sigma^2$, with $S_{xx}>0$,
+$$
+\operatorname{Var}(\widehat\beta)=\frac{\sigma^2}{S_{xx}},\qquad
+\operatorname{Var}(\widehat\alpha)=\sigma^2\left(\frac1n+\frac{\bar x^2}{S_{xx}}\right).
+$$
+A larger predictor spread improves slope precision under this model. In the worked example $S_{xx}=10$ and $n=5$; the estimated error <variance> is $s^2=\operatorname{RSS}/(n-2)=0.8/3$. A <normal linear model> gives the slope pivot $(\widehat\beta-\beta)/(s/\sqrt{S_{xx}})$ a <Student t-distribution> with $n-2$ <degrees of freedom>. The distinction between a fitted line and a reliable uncertainty statement is precisely the role of the error assumptions.
 
 = Centred simple linear regression
 {parent=Simple linear regression}

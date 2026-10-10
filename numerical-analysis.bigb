@@ -1,14 +1,53 @@
 = Numerical analysis
 {wiki}
 
-Numerical analysis studies algorithms for approximating mathematical problems and controlling their errors.
+Numerical analysis designs <algorithms> that approximate mathematical answers while controlling cost and error. Its central question is how much of a computed answer can be trusted. Finding a <zero of a function>, evaluating an <integral>, solving a <linear system>, and evolving an <ordinary differential equation> all demand choices about accuracy, work, and the information available. MIT's numerical-methods course explicitly treats performance and accuracy as joint concerns.\a[https://ocw.mit.edu/courses/18-335j-introduction-to-numerical-methods-spring-2019/pages/week-1/][Steven G. Johnson, MIT 18.335J, Week 1, 2019]{ref}
+
+Three questions organize error analysis. <Truncation error> measures the approximation introduced by an <algorithm> even in exact arithmetic; <roundoff error> comes from finite precision; the <condition number> measures sensitivity inherent in the problem. <Numerical stability> asks how the chosen <algorithm> propagates perturbations. These distinctions suggest different remedies: refine an approximation, change precision or arithmetic, or improve the accuracy of the input.
+
+For example, the <square root> $s(a)=\sqrt a$ has relative <condition number> $|as'(a)/s(a)|=1/2$ for $a>0$: a small relative change in $a$ produces about half that relative change in $s(a)$. In contrast, $g(a)=1/(1-a)$ has relative <condition number> $|a/(1-a)|$. Changing $a=0.99$ to $0.9901$ changes $g(a)=100$ to about $101.010101$: an input change of about $0.0101\%$ produces an output change of about $1.0101\%$. This sensitivity exists even with exact arithmetic. MIT's conditioning lecture separates the <condition number> from <roundoff error> in precisely this way.\a[https://ocw.mit.edu/courses/18-335j-introduction-to-numerical-methods-spring-2019/pages/week-2/][Steven G. Johnson, MIT 18.335J, Lecture 5: Condition Numbers, 2019]{ref}
 
 = Newton root-finding iteration
 {c}
 {parent=Numerical analysis}
 {title2=$t_{r+1}=t_r-F(t_r)/F'(t_r)$}
 
-The Newton root-finding iteration solves the local tangent-line approximation to a scalar equation $F(t)=0$. For a twice continuously differentiable function near a simple root, with <derivative> bounded away from zero, Taylor's theorem gives $|t_{r+1}-t_*|\leq C|t_r-t_*|^2$ once the iteration is sufficiently close. Global convergence is not automatic. A sign-changing bracket can safeguard the method by replacing unsuitable steps by the <bisection method>.
+The Newton root-finding iteration seeks a <zero of a function> $F$ by repeatedly solving its <tangent line> approximation. At a current guess $t_r$ with <derivative> $F'(t_r)\ne0$, set
+$$
+0=F(t_r)+F'(t_r)(t_{r+1}-t_r),\qquad t_{r+1}=t_r-\frac{F(t_r)}{F'(t_r)}.
+$$
+Geometrically, follow the <tangent line> to the horizontal axis, then return to the <function graph> for the next <tangent line>. Close to a suitable <zero of a function>, the error becomes dramatically smaller.\a[https://ocw.mit.edu/courses/18-330-introduction-to-numerical-analysis-spring-2012/5b325bfa56a599794c7196de926844b0_MIT18_330S12_Chapter4.pdf][Laurent Demanet, MIT 18.330, Chapter 4, §4.1, 2012]{ref}
+
+For a concrete <square root> calculation, take the <polynomial> $F(t)=t^2-2$ and start at $t_0=1$. The <Newton root-finding iteration> becomes $t_{r+1}=(t_r+2/t_r)/2$, giving
+$$
+\begin{array}{c|c|c}
+r&t_r&|t_r-\sqrt2|\\\hline
+0&1&4.14214\times10^{-1}\\
+1&1.5&8.57864\times10^{-2}\\
+2&1.416666666667&2.45310\times10^{-3}\\
+3&1.414215686275&2.12390\times10^{-6}\\
+4&1.414213562375&1.59486\times10^{-12}
+\end{array}
+$$
+The errors use the unrounded iterates. After the first step, each iterate overestimates $\sqrt2$, and the exact identity
+$$
+t_{r+1}-\sqrt2=\frac{(t_r-\sqrt2)^2}{2t_r}
+$$
+exhibits <quadratic convergence>: once close, the number of correct decimal digits roughly doubles per step. This speed makes the <Newton root-finding iteration> useful when accurate <derivatives> are available.
+
+\Image[newton-root-iteration.png]
+{title=Newton tangent steps toward a square root and a nonconvergent two-cycle}
+
+Global convergence requires additional care. For the <polynomial> $F(x)=x^3-2x+2$, starting at $x_0=0$ gives $F(0)=2$, $F'(0)=-2$, hence $x_1=1$. Then $F(1)=1$, $F'(1)=1$ gives $x_2=0$. The sequence repeats $0,1,0,1,\ldots$ forever, although a real <polynomial root> lies in $(-2,-1)$ by the <intermediate value theorem>. Neither point in the cycle is a <zero of a function>, and neither has zero <derivative>. A maintained sign-changing interval and fallback <bisection method> can protect a root solver from unsuitable Newton steps.
+
+= Local quadratic convergence of Newton iteration
+{c}
+{parent=Newton root-finding iteration}
+{title2=$|e_{r+1}|\leq\frac{M}{2m}|e_r|^2$}
+
+Let $F$ be twice <continuously differentiable> on an interval around a <zero of a function> $t_*$, with $|F'(t)|\geq m>0$ and $|F''(t)|\leq M$ there. Choose a closed interval $[t_*-\rho,t_*+\rho]$ inside that interval with $M\rho/(2m)<1$. Starting inside it makes the <Newton root-finding iteration> well defined, keeps it inside, and gives the displayed <quadratic convergence> bound for $e_r=t_r-t_*$. The nonzero <derivative> and sufficiently close start are essential hypotheses. The scalar estimate follows from the <Taylor remainder> argument in MIT's root-finding notes.\a[https://ocw.mit.edu/courses/18-330-introduction-to-numerical-analysis-spring-2012/5b325bfa56a599794c7196de926844b0_MIT18_330S12_Chapter4.pdf][Laurent Demanet, MIT 18.330, Chapter 4, pp. 2–3, 2012]{ref}
+
+For a short proof outline, apply <Taylor's theorem> between $t_r$ and $t_*$; subtract the defining <tangent line> equation. The linear error cancels, leaving $e_{r+1}=F''(\xi_r)e_r^2/(2F'(t_r))$. The displayed bound shrinks the error and preserves the chosen interval. If $F''(t_*)\ne0$, the error ratio tends to $|F''(t_*)/(2F'(t_*))|$; if it vanishes, convergence can be faster.
 
 = Newton iteration in a Banach space
 {parent=Newton root-finding iteration}
@@ -409,7 +448,9 @@ For two noncoplanar <triangles>, first reject vertices strictly on one side of t
 = Roundoff error
 {synonym}
 
-Round-off error arises from representing numbers and performing arithmetic at finite precision. It is distinct from discretization error. Cancellation, ill-conditioning and accumulation can amplify it, so decreasing a mesh size or time step indefinitely need not improve the final accuracy.
+<Round-off error> arises when numbers or arithmetic results are rounded to a finite set of representable values. Its scale is associated with <machine epsilon>, and its effects depend on subsequent operations. Even a formula with zero <truncation error> can lose information. In decimal arithmetic rounded to three significant digits, $1.234$ becomes $1.23$ and $1.233$ becomes $1.23$: subtracting the stored numbers gives zero although the exact difference is $0.001$. The subtraction exposes errors already present in its nearly equal operands.
+
+This example also has a large <condition number>: independently perturbing the two inputs of $a-b$ can produce a relative amplification $(|a|+|b|)/|a-b|=2467$. High sensitivity belongs to the input-output problem; <numerical stability> concerns the arithmetic used to solve it. Conversely, on a common binary system with 53 significant bits and rounding to nearest, $(10^{16}+1)-10^{16}$ evaluates to zero while $(10^{16}-10^{16})+1$ evaluates to one. Exact arithmetic makes both one: changing summation order changes the accumulated <roundoff error>. MIT's summation lecture explains why <numerical stability> and the <condition number> must be assessed separately.\a[https://ocw.mit.edu/courses/18-335j-introduction-to-numerical-methods-spring-2019/pages/week-2/][Steven G. Johnson, MIT 18.335J, Lecture 3: Floating-Point Summation and Backwards Stability, 2019]{ref}
 
 = Richardson extrapolation
 {parent=Numerical analysis}
@@ -628,7 +669,11 @@ It is exact for linear polynomials.
 {parent=Numerical analysis}
 {wiki}
 
-A truncation error is the error introduced by replacing an exact mathematical operation with a finite approximation, such as replacing a <derivative> by a <finite difference>.
+<Truncation error> is introduced by replacing an exact operation with a finite approximation. It remains even when all arithmetic is exact. For $f(x)=x^2$, the forward <finite difference> for its <derivative> at $x=1$ gives
+$$
+\frac{f(1+h)-f(1)}h=2+h,\qquad f'(1)=2.
+$$
+Thus the <truncation error> is exactly $h$: $h=0.1$ gives $2.1$ and $h=0.01$ gives $2.01$. In finite precision, however, the numerator subtracts nearly equal values, and their <roundoff error> can be amplified by division by $h$. For smooth data with bounded evaluation errors of scale $u$, a typical bound has competing terms $C_1h+C_2u/h$. Smaller $h$ reduces the first term and increases the second; with fixed positive constants the balancing scale is $h\sim\sqrt u$. This is why blindly refining a <finite difference> eventually stops improving it.
 
 = Spectral method
 {parent=Numerical analysis}
@@ -684,7 +729,13 @@ The Fourier–Galerkin method seeks a finite <Fourier series> whose residual is 
 = Numerical stability
 {synonym}
 
-For a numerical evolution, stability means that perturbations of the initial data and forcing remain bounded over a fixed time interval, with a bound independent of the discretization parameters. For a linear homogeneous recurrence, a mesh-uniform bound on powers of its update <matrix> provides this estimate. <Von Neumann stability analysis> and the <energy method> are two complementary ways to establish it.
+For a numerical evolution, <numerical stability> means that perturbations remain controlled over a fixed finite interval by a bound independent of sufficiently small discretization parameters. With perturbations $\delta_n$ to starting data and added step defects $d_n$, a typical estimate is
+$$
+\max_{nh\leq T}\|\delta_n\|\leq C_T\left(\|\delta_0\|+\sum_{nh<T}\|d_n\|\right),
+$$
+where $C_T$ is independent of $h$. For a linear homogeneous recurrence, a uniform bound on powers of its update <matrix> supplies this control. <Von Neumann stability analysis> and the <energy method> provide complementary tools.
+
+Finite-interval <numerical stability> differs from <absolute stability> at a fixed step size. Applying the <Euler method> to $y'=-2y$ multiplies a perturbation by $1-2h$ each step. At $h=0.2$ this is $0.6$, so perturbations shrink; at $h=1.2$ it is $-1.4$, so they alternate and grow. Nevertheless the <Euler method> converges as $h\to0$ for this problem: failure at a coarse step does not contradict the convergence theorem. <Absolute stability> asks whether a selected step preserves boundedness of the <Dahlquist test equation> over arbitrarily many steps. MIT's analysis uses strict decay, $|1+h\lambda|<1$, rather than the boundary-inclusive boundedness convention.\a[https://ocw.mit.edu/courses/18-330-introduction-to-numerical-analysis-spring-2012/a9d2bd9be098f0ada172af40379a17cc_MIT18_330S12_Chapter5.pdf][Laurent Demanet, MIT 18.330, Chapter 5, Example 14, 2012]{ref}
 
 = Consistency of a numerical method
 {parent=Numerical analysis}
@@ -692,7 +743,13 @@ For a numerical evolution, stability means that perturbations of the initial dat
 = Numerical consistency
 {synonym}
 
-A numerical method is consistent when its local defect tends to zero at the rate required to approximate the differential equation. Stability then determines whether these local defects accumulate into a convergent global approximation.
+For a one-step approximation $y_{n+1}=y_n+h\phi(t_n,y_n,h)$ to an <ordinary differential equation>, insert the exact solution and define the unscaled <local truncation error>
+$$
+\tau_{n+1}=y(t_n+h)-y(t_n)-h\phi(t_n,y(t_n),h).
+$$
+<Consistency of a numerical method> requires $\tau_{n+1}/h\to0$ uniformly on the finite interval being approximated, under the stated smoothness assumptions. Merely asking $\tau_{n+1}\to0$ is too weak: the useless update $y_{n+1}=y_n$ has defect $h y'(t_n)+O(h^2)$, which tends to zero but generally fails the scaled test. Here $O$ denotes <Big O notation>. MIT uses this division-by-step convention.\a[https://ocw.mit.edu/courses/18-330-introduction-to-numerical-analysis-spring-2012/a9d2bd9be098f0ada172af40379a17cc_MIT18_330S12_Chapter5.pdf][Laurent Demanet, MIT 18.330, Chapter 5, Definition 6, 2012]{ref}
+
+For the <Euler method>, <Taylor's theorem> gives $\tau_{n+1}=h^2y''(\xi_n)/2$. A bounded second <derivative> therefore gives <local truncation error> $O(h^2)$ and a scaled defect $O(h)$. Under a uniform <Lipschitz continuity> assumption on $f$ in $y$, within a region containing the exact and numerical solutions, <numerical stability> controls accumulation over about $T/h$ steps. This yields <global error> $O(h)$ with exact starting data. <Consistency of a numerical method> checks each step; <numerical stability> controls their combination.
 
 = Order of a numerical method
 {parent=Consistency of a numerical method}
@@ -3018,6 +3075,7 @@ A numerical time-stepping method is $A(\alpha)$-stable if its <absolute stabilit
 {c}
 {parent=Linear stability domain}
 {wiki}
+{title2=$y_{n+1}=y_n+h f(t_n,y_n)$}
 
 = Explicit Euler method
 {synonym}
@@ -3026,7 +3084,20 @@ A numerical time-stepping method is $A(\alpha)$-stable if its <absolute stabilit
 {synonym}
 {c}
 
-Explicit Euler advances $y'=f(t,y)$ by $y_{n+1}=y_n+h f(t_n,y_n)$. Its <stability function> is $R(z)=1+z$.
+The <Euler method> approximates an <initial value problem> $y'=f(t,y)$, $y(t_0)=y_0$, by evaluating the <derivative> at the current point and moving along that <tangent line> for a time $h$. With $t_n=t_0+nh$, its displayed update needs one evaluation of $f$ per step. This simple rule turns local slope information into a whole approximate trajectory. MIT's course notes derive it by dropping the second-order <Taylor remainder>.\a[https://web.mit.edu/10.001/Web/Course_Notes/Differential_Equations_Notes/node3.html][MIT 10.001, Forward and Backward Euler Methods, equations 6–7]{ref}
+
+Take $y'=-2y$, $y(0)=1$, whose exact solution is the <exponential function> $y(t)=e^{-2t}$. The <Euler method> gives
+$$
+y_{n+1}=(1-2h)y_n,\qquad y_n=(1-2h)^n.
+$$
+At $h=0.2$, the first values are $1,0.6,0.36,0.216$. At $t=1$, five steps give $0.6^5=0.07776$, compared with $e^{-2}\approx0.135335$. The result decays but is too small: <absolute stability> alone does not ensure accuracy. At $h=1.2$, the first values are $1,-1.4,1.96,-2.744$, and at $t=6$ five steps give $-5.37824$, while the exact solution is about $0.00000614421$.
+
+\Image[euler-stability-example.png]
+{title=Euler approximations to exponential decay on the same finite time interval}
+
+For the <Dahlquist test equation> $y'=\lambda y$, the <Euler method> has <stability function> $R(z)=1+z$ with $z=h\lambda$. Its <absolute stability> region is $|1+z|\leq1$, the closed disk centred at $-1$ with radius one. For the present real decay problem and $h>0$, bounded numerical values require $0<h\leq1$; strict decay requires $0<h<1$. At $h=1$ the values alternate $1,-1,1,\ldots$ without decay. These conditions follow directly from the <amplification factor> $1-2h$, matching MIT's criterion for $y'=-ay$.\a[https://web.mit.edu/10.001/Web/Course_Notes/Differential_Equations_Notes/node3.html][MIT 10.001, Forward and Backward Euler Methods, linear decay example]{ref}
+
+The <Euler method> is first order: with bounded second <derivative> and suitable <Lipschitz continuity>, its <global error> is $O(h)$ on a fixed interval. In this example the <logarithm> gives $\log(1-2h)=-2h-2h^2+O(h^3)$ for small positive $h$. At $t=nh$, this means $y_n=e^{-2t}(1-2th+O(h^2))$. It explains both the downward bias and why halving the step roughly halves the error once $h$ is sufficiently small.
 
 = A-stability
 {parent=Linear stability domain}

@@ -1,7 +1,26 @@
 = Statistical learning
+
+Statistical learning constructs predictive rules from data and studies their <prediction error>, <generalization>, and computational fitting. In <supervised learning>, <training data> contain inputs $X$ and a <response variable> $Y$: <regression analysis> predicts a numerical response, while <classification in statistical learning> predicts a label. <Unsupervised learning> instead seeks structure without supplied responses, as in <cluster analysis> and <principal component analysis>. These tasks connect learning to <probability> and <mathematical optimization>. \a[https://web.stanford.edu/~hastie/ISLR2/Slides/Ch2_Statistical_Learning.pdf][James, Witten, Hastie and Tibshirani, ISLR chapter 2 slides]{ref}
+
+For a fitted rule $\widehat f$ and <loss function> $L$, the predictive goal is
+$$
+R(\widehat f)=\mathbb E\bigl[L(Y^*,\widehat f(X^*))\mid\mathcal D_n\bigr],
+$$
+where $(X^*,Y^*)$ is a fresh observation, <independent> of the <training data> $\mathcal D_n$, from the intended target <probability distribution>. This <prediction error> fixes the fitted rule and averages over future observations; averaging again over <training data> gives the learning procedure's average performance. Its practical beauty is that a rule compresses past observations into useful future predictions. Its central difficulty is that excellent <training error> need not imply good <generalization>: <cross-validation> supports <model selection>, and a reserved <test set> assesses the resulting choice.
+
+= Supervised learning
+{parent=Statistical learning}
 {wiki}
 
-Statistical learning constructs predictive rules from data and studies their risk, generalization, and computational fitting.
+Supervised learning fits a prediction rule from <training data> containing both inputs and associated target responses. <Regression analysis> predicts numerical responses; <classification in statistical learning> predicts class labels. A <loss function> specifies which prediction errors matter, and <generalization> concerns performance beyond the observations used to fit the rule.
+
+= Generalization in statistical learning
+{parent=Statistical learning}
+
+= Generalization
+{synonym}
+
+Generalization is the ability of a fitted prediction rule to perform well on new observations under a specified target <probability distribution>. It is assessed through <prediction error> rather than <training error>. The target distribution and use of data are part of the question: <dataset shift> can change performance, and <data leakage> can make an apparent assessment misleading.
 
 = Unsupervised learning
 {parent=Statistical learning}
@@ -180,8 +199,18 @@ A validation set is held out from parameter fitting and used to choose models or
 
 = Test set
 {parent=Validation set}
+{title2=$\mathcal D_{\mathrm{test}}$}
 
-A test set is held out from both model fitting and model selection and is used once to estimate the final selected procedure's out-of-sample performance.
+A test set is held out from both parameter fitting and <model selection> and is used to estimate the final selected procedure's <prediction error>. A <validation set> influences the choice; a <test set> assesses that choice after it is fixed. The distinction concerns how observations are used, not their file names.
+
+For a fixed rule and an <independent> <test set> of size $m$ from the target <probability distribution>,
+$$
+\widehat R_{\mathrm{test}}=\frac1m\sum_{j=1}^m L(Y_j^*,\widehat f(X_j^*)),\qquad
+\mathbb E[\widehat R_{\mathrm{test}}\mid\mathcal D_n]=R(\widehat f).
+$$
+This <test error> is an estimate, with sampling uncertainty; it is not a guarantee for each future prediction. <Dataset shift> changes what performance the estimate represents.
+
+In the <overfitting> example, all degree choices are fixed in advance, <cross-validation> uses only <training data>, and the selected degree is locked before evaluating 400 separate points. Displaying the other curves afterward explains their behavior; it does not authorize selecting by those scores. Repeatedly inspecting a <test set> and changing the model makes it part of <model selection>, introducing <data leakage> and potentially optimistic assessment. \a[https://jmlr.org/papers/v11/cawley10a.html][Cawley and Talbot, over-fitting in model selection, 2010]{ref}
 
 = Prediction error
 {parent=Statistical learning}
@@ -201,8 +230,18 @@ For a predictor $\widehat f$ and an independent response $Y^*$ at covariate $X^*
 
 = Training error
 {parent=Statistical learning}
+{title2=$\widehat R_{\mathrm{train}}=n^{-1}\sum_i L(Y_i,\widehat f(X_i))$}
 
-Training error is the average loss evaluated on the same observations used to fit the prediction rule. Flexible fitting usually makes it optimistically biased for prediction error.
+= In-sample error
+{synonym}
+
+Training error is the average <loss function> evaluated on the observations used to fit the prediction rule. It is the <empirical risk> of the fitted rule on its own <training data>. With <squared-error loss>, it is the average squared <regression residual>, measuring fit to observed responses rather than performance on fresh responses. Flexible fitting usually makes it optimistically biased for <prediction error>, as quantified by <prediction optimism>.
+
+For a reproducible <polynomial regression> example, take $x_i=-1+2i/11$, $i=0,\ldots,11$, and the known noiseless target $f(x)=1+x/2+2x^2$. Construct responses $y_i=f(x_i)+e_i$ with fixed disturbances
+$$
+(e_i)=(0.12,-0.17,0.10,0.18,-0.13,0.08,-0.16,0.11,-0.08,0.15,-0.12,0.06).
+$$
+<Ordinary least squares> over <polynomials> of <polynomial degree> at most 1, 2, and 7 gives <training errors> $0.518937$, $0.015784$, and $0.009257$. The monotone improvement follows because these candidate families are nested: every smaller-degree fit remains available in the larger family. This argument concerns minimum <training error>, not <generalization>, and assumes the fitting <mathematical optimization> is solved. Degrees 2 and 7 fitted instead to the exact noiseless responses $f(x_i)$ have mathematically zero <training error>; the script obtains approximately $5.31\times10^{-31}$ and $7.82\times10^{-31}$ from rounding. Extra flexibility alone does not force <overfitting>.
 
 = Prediction optimism
 {parent=Training error}
@@ -579,9 +618,21 @@ The perceptron is an online linear classifier that adds a misclassified observat
 
 = Cross-validation
 {parent=Statistical learning}
-{wiki}
+{title2=$\operatorname{CV}=n^{-1}\sum_i L(Y_i,\widehat f^{(-k(i))}(X_i))$}
+{wiki=Cross-validation_(statistics)}
 
-Cross-validation estimates predictive performance by repeatedly fitting on one part of the data and evaluating on held-out observations.
+Cross-validation estimates predictive performance by repeatedly fitting on one part of the data and evaluating on held-out observations. In <K-fold cross-validation>, divide <training data> into disjoint folds $I_1,\ldots,I_K$; $k(i)$ identifies observation $i$'s fold, and $\widehat f^{(-k)}$ is fitted without fold $I_k$. The displayed average scores each observation using a rule that did not train on it. Weight by observation count when fold sizes differ. <Leave-one-out cross-validation> uses one observation per fold. \a[https://web.stanford.edu/~hastie/ISLR2/Slides/Ch5_Resampling_Methods.pdf][ISLR chapter 5 slides, resampling methods]{ref}
+
+For the <training error> example, three folds contain indices $i$ with equal remainder modulo 3. Each fit uses eight observations. The <squared-error loss> averages for degrees 1, 2, and 7 are $0.724132$, $0.027192$, and $1.532790$ respectively. Select degree 2 and refit on all twelve <training data> observations. The folds reuse scarce data while challenging each candidate to predict unseen responses; they do not touch the final <test set>.
+
+Any learned preprocessing, including variable selection, must also be fitted within each training fold to avoid <data leakage>. \a[https://web.stanford.edu/~hastie/ISLR2/Slides/Ch5_Resampling_Methods.pdf][ISLR chapter 5 slides, the wrong and right way]{ref} Repeated tuning can itself overfit the <cross-validation> score; <nested cross-validation> uses inner folds for <model selection> and outer folds for assessment of that entire procedure. \a[https://jmlr.org/papers/volume11/cawley10a/cawley10a.pdf][Cawley and Talbot, selection bias in performance evaluation]{ref}
+
+Folds use fewer training observations than the final refit, and their scores are dependent because training observations overlap. \a[https://web.stanford.edu/~hastie/ISLR2/Slides/Ch5_Resampling_Methods.pdf][ISLR chapter 5 slides, correlated fold estimates]{ref} Splitting must match deployment: for <time series> forecasting, rolling-origin <cross-validation> trains on the past and evaluates later observations, preventing future information from entering a forecast. Ordinary random folds need not answer that forecasting question. \a[https://otexts.com/fpp3/tscv.html][Hyndman and Athanasopoulos, time series cross-validation]{ref}
+
+= Nested cross-validation
+{parent=Cross-validation}
+
+Nested cross-validation separates selection from assessment using two levels of held-out data. Within each outer training fold, inner <cross-validation> chooses a model or tuning parameters; the complete selected fitting procedure is then applied to that outer training fold and scored on its untouched outer evaluation fold. This estimates the performance of the <model selection> procedure, including its choices, rather than reusing its best inner score as an assessment. A final model can then be selected and fitted using all available <training data>. \a[https://jmlr.org/papers/v11/cawley10a.html][Cawley and Talbot, selection bias and performance evaluation]{ref}
 
 = Biased cross-validation for density bandwidth
 {parent=Cross-validation}
@@ -766,7 +817,19 @@ For one-hot label $y$ and predicted class probabilities $p$, categorical cross-e
 {parent=Statistical learning}
 {wiki}
 
-Overfitting occurs when further adaptation improves training performance while degrading performance on new data.
+Overfitting occurs when further adaptation improves <training error> while degrading performance on new data, for example by fitting incidental disturbances instead of a stable <regression function>. A gap between <training error> and <test error> alone does not prove that a simpler rule would generalize better. Compare candidates using <cross-validation> or a <validation set>; reserve the <test set> for assessment. <Regularization> and <early stopping> can limit adaptation. \a[https://web.stanford.edu/~hastie/ISLR2/Slides/Ch2_Statistical_Learning.pdf][ISLR chapter 2 slides, assessing model accuracy]{ref}
+
+Evaluate the <training error> example at $z_j=-1+2(j+1/2)/400$, $j=0,\ldots,399$, none coinciding with a training input. The mean squared discrepancy $400^{-1}\sum_j(\widehat f(z_j)-f(z_j))^2$ is $0.373259$, $0.000255$, and $0.006319$ for degrees 1, 2, and 7. Thus degree 7 improves <training error> but worsens recovery of the target relative to degree 2. Degree 1 misses the target's curvature, illustrating <underfitting>.
+
+These are errors against a known noiseless target, not <test errors> against fresh noisy responses. In a separate noiseless control, degrees 2 and 7 both recover this target exactly; their numerical held-out errors are approximately $3.77\times10^{-31}$ and $3.72\times10^{-31}$. The fixed-disturbance simulation illustrates a mechanism, not a universal numerical benchmark or a claim that higher <polynomial degree> always harms <generalization>.
+
+\Image[learning-fit-vs-generalization.png]
+{title=Noisy polynomial fitting, training-only degree selection, and separate noiseless-target evaluation}
+
+= Underfitting
+{parent=Overfitting}
+
+Underfitting occurs when a prediction rule fails to capture useful structure in the target relation. A straight-line <polynomial regression> fitted to a genuinely quadratic noiseless target illustrates a representational limitation. Poor prediction alone does not identify the cause: compare candidate rules using <cross-validation> or a <validation set>, while keeping the final <test set> reserved for assessment.
 
 = Regularization
 {parent=Statistical learning}

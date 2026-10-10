@@ -217,7 +217,7 @@ When you generate an image, if the image was generated via a script, keep the ge
 
 Prefer Python for generating images, e.g. matplotlib or another Python library if something more relevant exists. Maintain a toplevel pyproject.toml documenting all dependencies and also document python version tested at. Attempt to make every script work under those versions. If one is particularly difficult, fine, create a subdirectory pyproject.toml for it.
 
-When dealing with images be mindful of copyright. Only select images compatible with our license.
+When dealing with images be mindful of copyright. For now, we are taking a relaxed approach to this: if there's an image of something real which we cannot recreate ourselves (e.g. photos of people, photos of experimental setups, original illustrations from important papers), it is fine to use them as fair usage. However, we are not going to store them in this repo. Instead, we will link to external providers for those. The best options are Wikimedia and archive.org, but if those are not available, just use other online sources where those may be present. But for things which we can create ourselves, just create a generator script.
 
 For every image you generate, select a reasonable image height or width, as large as needed for good viewing but not larger. There's no need to add `{height}` to the bigb for such images because we now have autodetect for such local images. It is OK to have large images on the output where needed, better have a large image that is viewable than require users to click tiny images to see them at all.
 
