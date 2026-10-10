@@ -201,7 +201,8 @@ When documenting a generally useful STEM concepts, we want to aim try to have th
 * examples
 * image, maybe even video generation when it makes sense
 * why the concept is useful and beautiful/interesting
-* discovery history
+* discovery history.
+* in the case of the natural sciences, it is extremely important to cover motivating experiments in detail when this applies, early motivating experiments as well as simpler modern versions can both be of interest.
 
 When you are doing another big job, it is OK to just create stubs for concepts without going into all this detail. But when it gets closer to the matter, this is the ideal we should strive for. To one day make the one book to rule them all.
 
