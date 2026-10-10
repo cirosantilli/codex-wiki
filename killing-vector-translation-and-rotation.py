@@ -7,7 +7,7 @@ Arrows use one common scale within both panels and keep relative magnitudes.
 from pathlib import Path
 import os
 
-os.environ.setdefault("MPLCONFIGDIR", "/tmp/codex-wiki-batch68-matplotlib")
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/codex-wiki-matplotlib")
 import matplotlib
 
 matplotlib.use("Agg")

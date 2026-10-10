@@ -14,7 +14,7 @@ This saves an average of $1/4$ of a <bit> per symbol, or $12.5\%$ of the fixed-l
 
 <Channel coding> addresses a different problem: errors during transmission. A shorter representation removes predictable structure; an error-correcting representation adds carefully chosen structure that helps recover corrupted symbols. <Shannon's source coding theorem> and the <Shannon second coding theorem> identify limits for these respective tasks under their hypotheses. The beauty is that source details and hardware details can meet through a small number of mathematical quantities, notably <information entropy> and <channel capacity>.
 
-Claude E. Shannon's *A Mathematical Theory of Communication* appeared in the *Bell System Technical Journal* in July and October 1948. Its introduction separates the engineering problem of reproducing messages from their semantic meaning; subsequent sections develop probabilistic source models, noiseless coding, and transmission with noise. It also acknowledges earlier work by Harry Nyquist and Ralph Hartley.\a[https://www.cs.yale.edu/homes/yry/readings/general/shannon1948.pdf][Shannon, A Mathematical Theory of Communication, 1948, introduction and Parts I–II]{ref}
+Claude E. Shannon's *A Mathematical Theory of Communication* appeared in the *Bell System Technical Journal* in July and October 1948. Its introduction separates the engineering problem of reproducing messages from their semantic meaning; subsequent sections develop probabilistic source models, noiseless coding, and transmission with noise. It also acknowledges earlier work by Harry Nyquist and Ralph Hartley.<A Mathematical Theory of Communication by Claude Shannon>{ref}
 
 = Bhattacharyya coefficient
 {c}
@@ -113,26 +113,149 @@ In particular, translating a random variable in a finite group by a value determ
 
 = Conditioning reduces entropy
 {parent=Conditional entropy}
+{title2=$H(X\mid Y)\leq H(X)$}
 
-For discrete random variables, $H(U\mid V)\leq H(U)$, with equality exactly when $U$ and $V$ are <independent random variables>[independent].
+For finite <discrete random variables> $X,Y$, knowing $Y$ reduces the <information entropy> of $X$ on average:
+$$
+H(X\mid Y)=\sum_{y:p_Y(y)>0}p_Y(y)H(X\mid Y=y)\leq H(X).
+$$
+Equality holds exactly when $X$ and $Y$ are <independent random variables>. The average over observations is essential: $H(X\mid Y=y)$ can exceed $H(X)$ for a particular $y$. All <logarithms> here have base two, giving <bits>, and zero-probability terms contribute zero.<6.441 Information Theory (Spring 2016 lecture notes) by Yury Polyanskiy and others/Chapter 1: Information Measures: Entropy and Divergence>[Definition 1.3, printed p. 8; Theorem 1.1(4), printed p. 10]
+
+For <Bayesian inference>, this compares a <prior distribution> with the <posterior distributions> produced by possible observations. An unexpected report can make previously unlikely alternatives plausible, while useful reports reduce uncertainty overall. For <lossless source coding>, an observation shared by <encoder> and <decoder> lets them choose descriptions for the appropriate <conditional distribution>; sending that observation also has a cost. The example below makes both the saving and that cost explicit.
+
+In <A Mathematical Theory of Communication by Claude Shannon> (1948), the definition of <conditional entropy> is already an average over observations, followed by the inequality and its <independence> condition in section 6, property 6. The phrase “knowledge reduces uncertainty” must be read with that averaging convention.<A Mathematical Theory of Communication by Claude Shannon>[p. 12; title page identifies C. E. Shannon and the 1948 journal publication]
+
+= An observation can increase entropy
+{parent=Conditioning reduces entropy}
+
+Consider a binary state $X$ and a report $Y$ with the following <joint probability mass function>:
+$$
+\begin{array}{c|cc|c}
+&Y=0&Y=1&p_X(x)\\\hline
+X=0&4/5&1/10&9/10\\
+X=1&0&1/10&1/10\\\hline
+p_Y(y)&4/5&1/5&1
+\end{array}
+$$
+Before the report, $X=0$ is strongly favored: its <information entropy> is $H(X)=h_2(1/10)\approx0.468996$ <bits>, where $h_2$ is <binary entropy>. A report $Y=1$ makes the two states equally likely, so $H(X\mid Y=1)=1$ <bit>, strictly larger than before. This report occurs with <probability> $1/5$. The more common report $Y=0$ determines $X=0$, giving $H(X\mid Y=0)=0$. Therefore the averaged <conditional entropy> is
+$$
+H(X\mid Y)=\frac45\cdot0+\frac15\cdot1=\frac15<h_2(1/10)=H(X).
+$$
+The resulting <mutual information> is $I(X;Y)=h_2(1/10)-1/5\approx0.268996$ <bits>. The rare report increases uncertainty about the state; that increase does not make the report useless. Together the reports remove uncertainty on average. These are stipulated <probabilities> in an exact model, not measured frequencies.
+
+\Image[conditioning-entropy-outcome-counterexample.png]
+{title=A rare report raises entropy although the weighted average falls}
+
+= Independent revelation of a binary variable
+{parent=Conditioning reduces entropy}
+{title2=$H(X\mid Y)=(1-r)h_2(p),\quad I(X;Y)=rh_2(p)$}
+
+Let $X$ be a <Bernoulli random variable> with $\Pr(X=1)=p$. Independently of $X$, a <Bernoulli random variable> $R$ with $\Pr(R=1)=r$ decides whether to reveal it:
+$$
+Y=\begin{cases}X,&R=1,\\\bot,&R=0.\end{cases}
+$$
+The symbol $\bot$ means “hidden” and is distinct from both binary states. This is a <binary erasure channel> with erasure <probability> $1-r$. The hidden report leaves the <posterior distribution> equal to the <prior distribution>, because hiding is independent of the state. Either visible report determines $X$. Weighting these three reports gives the exact <conditional entropy> and <mutual information>:
+$$
+H(X)=h_2(p),\qquad H(X\mid Y)=(1-r)h_2(p),\qquad I(X;Y)=rh_2(p).
+$$
+For $p=1/4$ and $r=1/2$, $H(X)=h_2(1/4)=2-(3/4)\log_2 3\approx0.811278$ <bits>, while $H(X\mid Y)=I(X;Y)\approx0.405639$ <bits>. With $r=0$ the report tells us nothing; with $r=1$ it reveals the state completely. If $0<p<1$, every positive reveal <probability> makes the conditioning inequality strict. At $p=0$ or $p=1$, the state was already known and every value of $r$ gives equality.
+
+\Image[entropy-independent-binary-revelation.png]
+{title=Independent revelation divides binary entropy into remaining uncertainty and revealed information}
+
+For a <Bayesian inference> problem, this model distinguishes an uninformative missing report from a decisive observed state. If hiding depended on $X$, even $Y=\bot$ could carry <mutual information>, and the displayed calculation would change. In <lossless source coding>, suppose both <encoder> and <decoder> already know the reveal pattern for repeated <independent and identically distributed> pairs. Only the hidden states require descriptions. Applying <Shannon's source coding theorem> to those states gives an asymptotic average rate $(1-r)h_2(p)$ <bits> per original state. A single hidden state need not have a <codeword> of that fractional length.
+
+The reveal pattern itself has <information entropy> $H(R)=h_2(r)$. If that pattern must also be sent, the <chain rule for information entropy> gives $H(R,X)=h_2(r)+h_2(p)$, since $R$ and $X$ are <independent random variables>. Equivalently, $H(Y)=h_2(r)+rh_2(p)$ and $H(X,Y)=H(Y)+H(X\mid Y)=h_2(r)+h_2(p)$. Thus a saving in the description of $X$ given $Y$ assumes that $Y$ is already available; it is not a free saving in the description of the whole pair.
+
+= Additional conditioning reduces entropy
+{parent=Conditioning reduces entropy}
+{title2=$H(X\mid Y,Z)\leq H(X\mid Y)$}
+
+For finite <discrete random variables> $X,Y,Z$, retaining $Y$ and also observing $Z$ gives
+$$
+H(X\mid Y)-H(X\mid Y,Z)=I(X;Z\mid Y)\geq0.
+$$
+Equality means <conditional independence> of $X$ and $Z$ given $Y$. Both sides average over reports; the additional observation is retained alongside $Y$.<6.441 Information Theory (Spring 2016 lecture notes) by Yury Polyanskiy and others/Chapter 2: Information Measures: Mutual Information>[Definition 2.4 and Theorem 2.5(1), printed pp. 26–27]
+
+A short proof of the original inequality uses <Kullback-Leibler divergence>:
+$$
+H(X)-H(X\mid Y)=I(X;Y)=\sum_{y:p_Y(y)>0}p_Y(y)D(p_{X\mid Y=y}\Vert p_X)\geq0.
+$$
+<Gibbs inequality> makes each term nonnegative, vanishing exactly when $p_{X\mid Y=y}=p_X$: <independence> for every possible report. Applying this within each $Y=y$ and averaging proves the additional-conditioning inequality.<6.441 Information Theory (Spring 2016 lecture notes) by Yury Polyanskiy and others/Chapter 2: Information Measures: Mutual Information>[Theorem 2.1, printed p. 20; Theorem 2.3(1,3), printed p. 23; Theorem 2.4(2) and Corollary 2.4, printed p. 24]
+
+= Conditioning and differential entropy
+{parent=Conditioning reduces entropy}
+
+With appropriate <probability density functions> and finite <differential entropies>, $h(X)-h(X\mid Y)=I(X;Y)\geq0$, with equality iff <independence>. <Differential entropy> does not reverse the inequality; infinite or undefined quantities cannot justify subtraction.<6.441 Information Theory (Spring 2016 lecture notes) by Yury Polyanskiy and others/Chapter 2: Information Measures: Mutual Information>[Theorem 2.4(3), printed p. 24: density and finiteness hypotheses for the differential-entropy identity]
+
+However, <differential entropy> can be negative and depends on the choice of coordinates. For $X$ with a <uniform distribution> on an interval of length $a>0$, $h(X)=\log_2a$; in particular $a=1/2$ gives $-1$. Rescaling $X$ by a constant $c>0$ adds $\log_2c$ to both $h(X)$ and $h(X\mid Y)$, whenever they are finite, leaving the <mutual information> unchanged.<A Mathematical Theory of Communication by Claude Shannon>[pp. 37–38: coordinate dependence, negative entropy, and linear rescaling]
+
+If a continuously distributed $X$ is revealed exactly, its <conditional distribution> is a <Dirac measure> with no ordinary <probability density function>. The discrete identity $H(X\mid X)=0$ has no finite <differential entropy> counterpart. <Mutual information>, defined through <relative entropy>, is infinite here.<6.441 Information Theory (Spring 2016 lecture notes) by Yury Polyanskiy and others/Chapter 2: Information Measures: Mutual Information>[Theorem 2.4(1) and its proof, printed p. 24: I(X;X) is infinite for a non-discrete distribution]
 
 = Fano's inequality
 {c}
 {parent=Conditional entropy}
 {wiki}
 
-Let $X$ take values in an alphabet of size $m$, let $\widehat X$ be an estimate determined by $Y$, and put $p_e=\mathbb P(\widehat X\ne X)$. Then
+Fano's inequality turns remaining uncertainty into a constraint on decision errors. If an observation leaves many plausible answers, a <decoder> cannot usually recover the answer reliably. Its elegant idea is to separate two uncertainties: whether the guess was wrong, and which alternative was correct when it was wrong.
+
+Let $X,Y$ be <discrete random variables>, with $X$ taking values in a finite <alphabet> $\mathcal X$ of <cardinality> $M\geq2$. Choose any deterministic <decoder> $\widehat X=f(Y)$ whose output lies in $\mathcal X$, and define its average error <probability> $p_e=\mathbb P\{\widehat X\ne X\}$. With base-two <logarithms>, <Fano's inequality> states
 $$
-H(X\mid Y)\leq h_2(p_e)+p_e\log_2(m-1),
+H(X\mid Y)\leq h_2(p_e)+p_e\log_2(M-1),\qquad 0\leq p_e\leq1.
 $$
-where $h_2$ is the <binary entropy function>. The error indicator costs at most $h_2(p_e)$ bits, and after an error there are at most $m-1$ possible values of $X$.
+Here $H(X\mid Y)$ is <conditional entropy> and $h_2$ is <binary entropy>, with $0\log_2 0=0$ at the endpoints. Both sides are measured in <bits>; using <natural logarithms> throughout gives the same inequality in <nats>. No uniform source, independence of $X,Y$, or optimality of the <decoder> is assumed. Requiring its output to belong to the same <alphabet> is what leaves at most $M-1$ alternatives after an error.https://ocw.mit.edu/courses/6-441-information-theory-spring-2016/5d8f16adc3385c9ff2975b121bd620e4_MIT6_441S16_course_notes.pdf[Polyanskiy and Wu, MIT 6.441 course notes, Section 5.3, Theorem 5.3]{ref}
+
+For an exact toy example, give $X$ the <discrete uniform distribution> on $\{A,B,C,D\}$. A <channel> reports $Y=X$ with <probability> $1-q$ and reports each of the other three symbols with <probability> $q/3$, where $0\leq q\leq1$. Use the <decoder> $f(y)=y$. The output is uniform, and the <conditional probabilities> after any report $y$ are
+$$
+\mathbb P(X=x\mid Y=y)=
+\begin{cases}
+1-q,&x=y,\\
+q/3,&x\ne y.
+\end{cases}
+$$
+Thus $p_e=q$ and direct calculation of the <conditional entropy> gives
+$$
+H(X\mid Y)=-(1-q)\log_2(1-q)-3\frac q3\log_2\frac q3
+=h_2(q)+q\log_2 3.
+$$
+This is equality in <Fano's inequality> for every $q\in[0,1]$. At $q=0.3$, each report leaves <probabilities> $(0.7,0.1,0.1,0.1)$, up to their order, and $H(X\mid Y)\approx1.3568$ <bits>. The two contributions are $h_2(0.3)\approx0.8813$ <bits> for the error flag and $0.3\log_2 3\approx0.4755$ <bits> for identifying the correct alternative after an error. These are theoretical <probabilities>, not measured data.
+
+\Image[fano-four-symbol-posterior.png]
+{title=A symmetric four-symbol toy channel makes every step of Fano's bound an equality}
+
+The identity <decoder> in this example minimizes error only for $0\leq q\leq3/4$: its guessed symbol has the largest <posterior probability> exactly when $1-q\geq q/3$. At $q=3/4$, $X,Y$ are <independent random variables> and all four guesses tie. For $q>3/4$, guessing any one of the three other symbols has error <probability> $1-q/3<q$. Equality in <Fano's inequality> therefore does not certify an optimal <decoder>.
+
+For usefulness, combine $h_2(p_e)\leq1$ with $\log_2(M-1)\leq\log_2 M$ to obtain the simpler consequence
+$$
+p_e\geq\max\!\left\{0,\frac{H(X\mid Y)-1}{\log_2 M}\right\}.
+$$
+For a uniform $X$, $H(X\mid Y)=\log_2 M-I(X;Y)$, so this becomes $p_e\geq\max\{0,1-(I(X;Y)+1)/\log_2 M\}$. This connects <mutual information> to unavoidable decision error in <channel coding> or <classification in statistical learning>; it can rule out reliable recovery regardless of the chosen <decoder>.https://web.stanford.edu/class/ee376a/files/lecture_notes.pdf[Weissman, Ochoa and Tatwawadi, EE376A course notes, Sections 5.7–5.8]{ref}
+
+The sharper right-hand side $F_M(p)=h_2(p)+p\log_2(M-1)$ increases from zero to $\log_2 M$ on $0\leq p\leq1-1/M$, then decreases: in the interior, $F_M'(p)=\log_2((M-1)(1-p)/p)$. When interpreting the inequality by inverting a curve, use its increasing branch to obtain a lower error threshold. A <decoder> that chooses a largest <posterior probability>, as in <maximum a posteriori decoding>, always has $p_e\leq1-1/M$, since the largest of $M$ conditional <probabilities> is at least $1/M$. Arbitrary <decoders> can have larger error. In particular, low <conditional entropy> does not force every <decoder> to work well: with a fair binary $X$ and $Y=X$, the rule $f(Y)=1-Y$ has $p_e=1$ even though $H(X\mid Y)=0$. <Fano's inequality> supplies a constraint, not an exact error prediction for each rule.
 
 = Fano's inequality via an error indicator
 {parent=Fano's inequality}
 {c}
 {title2=$H(X\mid Y)\leq h(p_e)+p_e\log_2(|J_X|-1)$}
 
-For a guess $f(Y)$ of a finite-alphabet variable $X$, let $Z=1_{X\ne f(Y)}$ and $p_e=P(Z=1)$. The <chain rule for conditional entropy> gives $H(X\mid Y)=H(Z\mid Y)+H(X\mid Z,Y)$. The first term is at most the <binary entropy> $h(p_e)$. The second is zero when the guess is right and at most $\log_2(|J_X|-1)$ when it is wrong, proving $H(X\mid Y)\leq h(p_e)+p_e\log_2(|J_X|-1)$. This needs no optimality assumption on the guess.
+Under the hypotheses of <Fano's inequality>, let $J_X=\mathcal X$, $M=|J_X|$, and let $Z=\mathbf1_{\{X\ne f(Y)\}}$ be the <indicator random variable> of an error. Its <probability> of being one is $p_e$. The $h$ in the displayed bound denotes <binary entropy> $h_2$ in <bits>. Since $Z$ is a deterministic <function> of $(X,Y)$, $H(Z\mid X,Y)=0$. Applying the <chain rule for conditional entropy> in both orders gives the exact decomposition
+$$
+\begin{aligned}
+H(X\mid Y)
+&=H(X,Z\mid Y)\\
+&=H(Z\mid Y)+H(X\mid Z,Y).
+\end{aligned}
+$$
+The first term is bounded by $H(Z)=h_2(p_e)$, because <conditioning reduces entropy>. For the second term, fix a report $Y=y$: if $Z=0$, then $X=f(y)$ is known; if $Z=1$, then $X$ lies among at most $M-1$ other symbols. <Maximum entropy on a finite alphabet> bounds the latter uncertainty by $\log_2(M-1)$. Averaging over the reports and the error flag gives
+$$
+H(X\mid Z,Y)\leq(1-p_e)\cdot0+p_e\log_2(M-1).
+$$
+This proves <Fano's inequality>. Events of zero <probability> contribute zero to this average, so the proof also covers $p_e=0,1$ without assigning a conditional distribution to an impossible event.https://web.stanford.edu/class/ee376a/files/lecture_notes.pdf[Weissman, Ochoa and Tatwawadi, EE376A course notes, Section 5.7, proof of Theorem 46]{ref}
+
+\Image[fano-error-entropy-budget.png]
+{title=The four-symbol entropy budget peaks at chance-level error and separates the error flag from the three alternatives}
+
+The decomposition also explains equality. The first bound is exact when the <indicator random variable> $Z$ and $Y$ are <independent random variables>: knowing the report does not change the error <probability>. The second is exact when, for every report with positive error <probability>, the wrong-symbol <conditional distribution> is uniform on all $M-1$ alternatives. Both conditions hold in the four-symbol toy <channel> of <Fano's inequality>. At $q=0$, the second condition is vacuous; at $q=1$, the flag is constant but three alternatives remain, giving $H(X\mid Y)=\log_2 3$. For $M=2$, there is just one alternative after an error, so the second term vanishes: all remaining uncertainty is whether the single alternative must replace the guess.
 
 = List-decoding Fano inequality
 {parent=Fano's inequality}
@@ -255,7 +378,7 @@ D\!\left(p_{X,Y\mid z}\,\middle\Vert\,p_{X\mid z}p_{Y\mid z}\right)\\
 \log_2\frac{p(x,y\mid z)}{p(x\mid z)p(y\mid z)}.
 \end{aligned}
 $$
-Here $D$ is the <Kullback-Leibler divergence>, also computed with base-two <logarithms>; zero-probability terms contribute zero. The <Gibbs inequality> gives $I(X;Y\mid Z)\geq0$, with equality exactly when $X$ and $Y$ have <conditional independence> given $Z$: the conditional joint <probability mass function> factors for every $z$ of positive <probability>.\a[https://ocw.mit.edu/courses/6-441-information-theory-spring-2016/184197ca5d5418da2415d37e929860b9_MIT6_441S16_chapter_2.pdf][MIT 6.441, Chapter 2, Definition 2.4 and Theorem 2.5(1)]{ref}
+Here $D$ is the <Kullback-Leibler divergence>, also computed with base-two <logarithms>; zero-probability terms contribute zero. The <Gibbs inequality> gives $I(X;Y\mid Z)\geq0$, with equality exactly when $X$ and $Y$ have <conditional independence> given $Z$: the conditional joint <probability mass function> factors for every $z$ of positive <probability>.<6.441 Information Theory (Spring 2016 lecture notes) by Yury Polyanskiy and others/Chapter 2: Information Measures: Mutual Information>[Definition 2.4 and Theorem 2.5(1)]
 
 For a fully computed example, take <independent random variables> $X,Y$ that are fair <bits>, and let $Z=X\oplus Y$, where $\oplus$ is <exclusive or>. The complete joint <probability distribution> has only these four positive entries:
 
@@ -303,7 +426,7 @@ The <conditional entropy> calculation tells the same story: $H(X\mid Z)=1$ becau
 \Image[conditional-information-xor.png]
 {title=Conditioning on the exclusive or reveals one bit of dependence between independent fair bits}
 
-This example distinguishes <conditional independence> from ordinary <independence>. It also disproves the claim that conditioning always reduces <mutual information>, despite <conditioning reduces entropy>. There is no general ordering between $I(X;Y\mid Z)$ and $I(X;Y)$: the example above increases it from zero to one, while taking $Y=X$ and $Z=X$ for a fair <bit> decreases it from one to zero. The <chain rule for mutual information> explains why both are possible.\a[https://ocw.mit.edu/courses/6-441-information-theory-spring-2016/184197ca5d5418da2415d37e929860b9_MIT6_441S16_chapter_2.pdf][MIT 6.441, Chapter 2, note following Theorem 2.5]{ref}
+This example distinguishes <conditional independence> from ordinary <independence>. It also disproves the claim that conditioning always reduces <mutual information>, despite <conditioning reduces entropy>. There is no general ordering between $I(X;Y\mid Z)$ and $I(X;Y)$: the example above increases it from zero to one, while taking $Y=X$ and $Z=X$ for a fair <bit> decreases it from one to zero. The <chain rule for mutual information> explains why both are possible.<6.441 Information Theory (Spring 2016 lecture notes) by Yury Polyanskiy and others/Chapter 2: Information Measures: Mutual Information>[Theorem 2.5]
 
 <Conditional mutual information> is useful for asking whether an additional observation tells us anything after information already available has been accounted for. Its zero case expresses <conditional independence> exactly; in a <Markov chain>, this is the step that turns the <chain rule for mutual information> into the <data processing inequality>.
 
@@ -318,7 +441,7 @@ I(X;Y,Z)&=I(X;Y)+I(X;Z\mid Y)\\
 &=I(X;Z)+I(X;Y\mid Z).
 \end{aligned}
 $$
-The order changes the individual contributions but leaves the total unchanged.\a[https://web.stanford.edu/class/ee376a/files/lecture_3.pdf][Stanford EE376A/STATS376A, Lecture 3, Definition 7 and equations (48)–(51)]{ref} To prove the first identity, add and subtract the intermediate <conditional entropy>:
+The order changes the individual contributions but leaves the total unchanged.https://web.stanford.edu/class/ee376a/files/lecture_3.pdf[Stanford EE376A/STATS376A, Lecture 3, Definition 7 and equations (48)–(51)]{ref} To prove the first identity, add and subtract the intermediate <conditional entropy>:
 $$
 \begin{aligned}
 I(X;Y,Z)&=H(X)-H(X\mid Y,Z)\\
@@ -362,7 +485,7 @@ I(X;Z)\leq I(X;Y),
 \qquad
 I(X;Z)\leq I(Y;Z).
 $$
-All <mutual informations> here use base-two <logarithms>. Thus deterministic or randomized processing cannot increase the information shared with an unprocessed variable.\a[https://web.stanford.edu/class/cs229t/scribe_notes/12_05_final.pdf][Stanford CS229T/STATS231, Theorem 2.1 and its chain-rule proof]{ref}
+All <mutual informations> here use base-two <logarithms>. Thus deterministic or randomized processing cannot increase the information shared with an unprocessed variable.https://web.stanford.edu/class/cs229t/scribe_notes/12_05_final.pdf[Stanford CS229T/STATS231, Theorem 2.1 and its chain-rule proof]{ref}
 
 For a concrete cascade, take a fair <bit> $X$ and <Bernoulli random variables> $N_q,N_r$ with <probabilities> $q=0.1$, $r=0.2$ of being one. Assume $X,N_q,N_r$ are jointly <independent random variables>, and pass through two <binary symmetric channels>:
 $$
@@ -727,11 +850,11 @@ C=\max_{P_X}I(X;Y)
 $$
 in <bits> per channel use, when the <mutual information> uses base-two <logarithms>. The maximization varies the input <probability distribution>, while keeping the <communication channel> fixed. A large input <alphabet> or a large output <information entropy> alone does not determine how much information gets through: the receiver needs information about the input, rather than merely unpredictable output.
 
-The operational meaning comes from the <Shannon second coding theorem>. A <block code> represents one of $M$ possible messages by a word of length $n$, giving a rate $\log_2 M/n$ <bits> per use. Take the message label from the <uniform distribution on a finite set> of those $M$ choices when measuring average decoding-error <probability>. For every fixed rate $R<C$, there are sequences of such <block codes> whose decoding-error <probability> tends to zero as $n$ grows; a rate above $C$ cannot have vanishing decoding-error <probability>. This is an asymptotic limit, rather than a promise that an arbitrary finite <block code> at a rate below $C$ works well. See \a[https://ocw.mit.edu/courses/18-310-principles-of-discrete-applied-mathematics-fall-2013/12c7d786302979771e10a8fd31e07405_MIT18_310F13_Ch21.pdf][MIT 18.310, Shannon's Noisy Coding Theorem, sections 1–2]{ref}.
+The operational meaning comes from the <Shannon second coding theorem>. A <block code> represents one of $M$ possible messages by a word of length $n$, giving a rate $\log_2 M/n$ <bits> per use. Take the message label from the <uniform distribution on a finite set> of those $M$ choices when measuring average decoding-error <probability>. For every fixed rate $R<C$, there are sequences of such <block codes> whose decoding-error <probability> tends to zero as $n$ grows; a rate above $C$ cannot have vanishing decoding-error <probability>. This is an asymptotic limit, rather than a promise that an arbitrary finite <block code> at a rate below $C$ works well. See https://ocw.mit.edu/courses/18-310-principles-of-discrete-applied-mathematics-fall-2013/12c7d786302979771e10a8fd31e07405_MIT18_310F13_Ch21.pdf[MIT 18.310, Shannon's Noisy Coding Theorem, sections 1–2]{ref}.
 
 For a <binary symmetric channel> with crossover <probability> $p=0.1$, the <binary symmetric channel capacity> is approximately $0.53100441$ <bits> per use. Thus a binary <code rate> $R=1/2$ lies below the limit, while $R=3/4$ lies above it. At $R=1/2$, two transmitted symbols represent one message <bit> on average; the redundancy helps distinguish messages after noise. This does not split individual physical symbols into fractional pieces.
 
-The result is useful because it separates two tasks. Computing <channel capacity> establishes the target imposed by the <transition probabilities>; constructing an effective <block code> attempts to approach that target with acceptable delay and decoding effort. The surprise is that reliability can improve indefinitely without forcing every positive rate to disappear. In his 1948 paper, Shannon defines noisy <channel capacity> in section 12 and develops its operational significance in section 13, Theorem 11. His original formulation uses information per unit time; the fixed-duration channel-use convention here expresses the same rate question per symbol. \a[https://www.cs.yale.edu/homes/yry/readings/general/shannon1948.pdf][Shannon, A Mathematical Theory of Communication, sections 12–13]{ref}.
+The result is useful because it separates two tasks. Computing <channel capacity> establishes the target imposed by the <transition probabilities>; constructing an effective <block code> attempts to approach that target with acceptable delay and decoding effort. The surprise is that reliability can improve indefinitely without forcing every positive rate to disappear. In his 1948 paper, Shannon defines noisy <channel capacity> in section 12 and develops its operational significance in section 13, Theorem 11. His original formulation uses information per unit time; the fixed-duration channel-use convention here expresses the same rate question per symbol. <A Mathematical Theory of Communication by Claude Shannon>{ref}.
 
 = Weakly symmetric channel capacity
 {parent=Channel capacity}
@@ -759,7 +882,7 @@ A <binary symmetric channel> independently flips each transmitted <bit> with cro
 $$
 C=1-h_2(p),\qquad 0\leq p\leq1,
 $$
-in <bits> per use, where $h_2$ is <binary entropy> and the endpoint convention is $0\log_2 0=0$. Knowing the input leaves just the uncertainty of the flip, so $H(Y\mid X)=h_2(p)$ for every input <probability distribution>. Since the output is a <bit>, $H(Y)\leq1$, and thus $I(X;Y)\leq1-h_2(p)$. A fair input produces a fair output and reaches the bound. This is the two-symbol case of <weakly symmetric channel capacity>; \a[https://ocw.mit.edu/courses/16-36-communication-systems-engineering-spring-2009/a49d9e2954b440def3794fe73e79756c_MIT16_36s09_lec13_14.pdf][Eytan Modiano, MIT 16.36, Channel Capacity and Coding, slides 4–5]{ref} gives this calculation.
+in <bits> per use, where $h_2$ is <binary entropy> and the endpoint convention is $0\log_2 0=0$. Knowing the input leaves just the uncertainty of the flip, so $H(Y\mid X)=h_2(p)$ for every input <probability distribution>. Since the output is a <bit>, $H(Y)\leq1$, and thus $I(X;Y)\leq1-h_2(p)$. A fair input produces a fair output and reaches the bound. This is the two-symbol case of <weakly symmetric channel capacity>; https://ocw.mit.edu/courses/16-36-communication-systems-engineering-spring-2009/a49d9e2954b440def3794fe73e79756c_MIT16_36s09_lec13_14.pdf[Eytan Modiano, MIT 16.36, Channel Capacity and Coding, slides 4–5]{ref} gives this calculation.
 
 For crossover <probabilities> $p=0.01,0.1,0.25$, the resulting <channel capacities> are approximately $0.91920686$, $0.53100441$, and $0.18872188$ <bits> per use. At $p=0$, the <communication channel> is noiseless; at $p=1/2$, the output is <independent> of the input and the capacity is zero. At $p=1$, every <bit> is inverted, a known reversible rule, and capacity is one again. More generally $C(p)=C(1-p)$, because inverting every received <bit> exchanges the two crossover <probabilities>. The existing <mutual information> figure shows this full symmetric curve.
 
@@ -951,15 +1074,66 @@ Indeed $h(Z_i)=h(Y_i)-\mu_i$, while $h(Y_1Y_2)=h(Z_1+Z_2)+\mu_1+\mu_2$, provided
 {parent=Information entropy}
 {wiki}
 
-For a discrete random variable with largest point probability $p_{\max}$, its min-entropy is
+For a <discrete random variable> $X$ with a finite or countable <alphabet> and <probability mass function> $p_x=\mathbb P(X=x)$, define $p_{\max}=\max_xp_x$. Its <min-entropy>, using base-two <logarithms>, is
 $$
-H_\infty(X)=-\log p_{\max}.
+H_\infty(X)=-\log_2p_{\max}
+=\min_{x:p_x>0}(-\log_2p_x).
 $$
+The unit is the <bit>. This is the smallest <information content> of any possible outcome: it records the easiest outcome to predict, whereas <Shannon entropy> averages <information content> over all outcomes. A normalized countable <probability mass function> has an attained positive maximum, so $H_\infty(X)$ is finite even when <Shannon entropy> is infinite. Outcomes of zero <probability> cannot minimize the surprise and are omitted from the minimum; including extra impossible symbols changes neither quantity.https://www.cs.cornell.edu/courses/cs6830/2009fa/lecnotes.pdf[Pass and shelat, A Course in Cryptography, Section 8.3.2, Definition 148.1]{ref}
+
+Suppose someone knows the <probability mass function> but receives no observation correlated with $X$, and must name exactly one outcome. Naming $x$ succeeds with <probability> $p_x$, so naming a most likely outcome is optimal:
+$$
+p_{\mathrm{guess}}(X)=\max_x\mathbb P(X=x)=2^{-H_\infty(X)}.
+$$
+Tied maxima give equally good guesses. Randomizing independently among guesses cannot improve success: if the guess has <probability mass function> $q_x$, its success <probability> is $\sum_xq_xp_x\leq p_{\max}\sum_xq_x=p_{\max}$. This is the simplest instance of <maximum a posteriori decoding>. The identity gives <min-entropy> an operational meaning: $H_\infty(X)\geq k$ <bits> means every single guess succeeds with <probability> at most $2^{-k}$, under these information assumptions.https://arxiv.org/html/0807.1338[König, Renner and Schaffner, The operational meaning of min- and max-entropy, Section I.3.1, equation (18) and the no-side-information case]{ref}
+
+For an exact analytical example on symbols $A,B,C,D,E$, compare the two <probability mass functions>
+$$
+u=(1/4,1/4,1/4,1/4,0),\qquad b=(1/2,1/8,1/8,1/8,1/8).
+$$
+Under $u$, each possible outcome has <information content> $2$ <bits>; under $b$, $A$ has <information content> $1$ <bit> and each other outcome has $3$ <bits>. Consequently their <Shannon entropies> agree exactly,
+$$
+H(u)=4\frac14\cdot2=2,\qquad H(b)=\frac12\cdot1+4\frac18\cdot3=2,
+$$
+but $H_\infty(u)=2$ and $H_\infty(b)=1$ <bits>. A best single guess therefore succeeds with <probability> $1/4$ under $u$ and $1/2$ under $b$. The same average surprise can hide a factor of two in immediate predictability. The zero entry in $u$ contributes zero to <Shannon entropy>, using $0\log_2 0=0$.
+
+\Image[min-entropy-guessing-equal-average.png]
+{title=Two exact probability models have the same average surprise but different best single guesses}
+
+For the <discrete uniform distribution> on $m$ possible outcomes, $H_\infty=\log_2m$ <bits> and the best single guess succeeds with <probability> $1/m$. A certain outcome has $H_\infty=0$ and success <probability> one. Thus <min-entropy> is useful when a common outcome could defeat an attempt to make outputs unpredictable, even if rare alternatives raise <Shannon entropy>.
+
+For <cryptography>, this unconditional calculation alone does not certify security: an observer might know $X$ already. If a report $Y=X$ reveals a uniform four-outcome source, its unconditional <min-entropy> remains $2$ <bits> but guessing after the report succeeds with <probability> one. For finite classical reports, the appropriate success calculation uses <conditional probabilities> and <maximum a posteriori decoding>:
+$$
+p_{\mathrm{guess}}(X\mid Y)=\sum_{y:p_Y(y)>0}p_Y(y)\max_x\mathbb P(X=x\mid Y=y).
+$$
+The <conditional entropy> $H(X\mid Y)$ instead averages remaining surprise. A security argument must specify the observer's information and the protocol's required guarantee; neither unconditional <min-entropy> nor <Shannon entropy> supplies those assumptions.
 
 = Information entropy dominates min-entropy
 {parent=Min-entropy}
 
-For a discrete random variable, $H(X)\geq H_\infty(X)$. Indeed, every point probability satisfies $p_x\leq p_{\max}$, so averaging $-\log p_x\geq-\log p_{\max}$ proves the inequality.
+For a <discrete random variable> $X$ with <probability mass function> $p_x$, using base-two <logarithms> for both <Shannon entropy> and <min-entropy>,
+$$
+H(X)\geq H_\infty(X)\geq0.
+$$
+The first inequality says that average <information content> cannot be below the least <information content> of a possible outcome. For a finite <alphabet>, equality $H(X)=H_\infty(X)$ holds exactly when the <probability mass function> is uniform on its positive-probability outcomes. Impossible outcomes do not need to share that positive <probability>. In particular, $(1/2,1/2,0)$ has both quantities equal to $1$ <bit>, while $(1,0,0)$ has both zero. The same equality characterization holds for a countable <alphabet>: equality forces only finitely many positive-probability outcomes, because all must have the same positive mass. The uniform maximum of <Shannon entropy> is discussed in Shannon's original treatment.https://people.math.harvard.edu/~ctm/home/text/others/shannon/entropy/entropy.pdf[Shannon, A Mathematical Theory of Communication, Section 6, definition of H and properties 1–2]{ref}
+
+For the proof, $0<p_x\leq p_{\max}$ gives $-\log_2p_x\geq-\log_2p_{\max}$; taking the <expected value> proves <information entropy dominates min-entropy>. More precisely, the nonnegative gap is
+$$
+H(X)-H_\infty(X)
+=\sum_{x:p_x>0}p_x\log_2\frac{p_{\max}}{p_x}\geq0.
+$$
+It vanishes precisely when every positive term vanishes, namely $p_x=p_{\max}$ for every possible outcome. With $m$ such outcomes, normalization forces $p_{\max}=1/m$. If <Shannon entropy> is infinite, the inequality still holds and is strict, because <min-entropy> of a countable <probability mass function> is finite. No subtraction of two infinite quantities is needed.
+
+An analytical family makes the gap visible. Give $A$ <probability> $q$ and each of $B,C,D,E$ <probability> $(1-q)/4$, with $1/5\leq q\leq1$. Then $A$ is a most likely outcome, so its <probability> is also the best single-guess success <probability>, and
+$$
+H_\infty(q)=-\log_2q,\qquad H(q)=h_2(q)+2(1-q),
+$$
+where $h_2$ is <binary entropy>. The <entropy bound with one prescribed probability> explains the second expression: it separates whether $A$ occurred from which of four equally likely alternatives occurred. At $q=1/5$, all five outcomes are uniform and both quantities are $\log_2 5\approx2.3219$ <bits>. At $q=1/2$, <Shannon entropy> is $2$ <bits> while <min-entropy> is $1$ <bit>, reproducing the biased example in <min-entropy>. At $q=1$, both are zero; the four impossible alternatives contribute nothing. For every $1/5<q<1$, the <probability mass function> is nonuniform on its possible outcomes and the gap is strictly positive.
+
+\Image[min-entropy-guessing-inequality-family.png]
+{title=An analytical five-outcome model separates average surprise from the surprise of the most likely outcome}
+
+For finite <Shannon entropy>, exponentiating the inequality gives the useful but potentially loose bound $p_{\mathrm{guess}}(X)\geq2^{-H(X)}$. Equality holds exactly for a <discrete uniform distribution> on the possible outcomes. Thus <Shannon entropy> alone supplies a lower bound on optimal success, not the upper bound needed to promise that every guess is unlikely. <Shannon's source coding theorem> concerns average compression under its hypotheses, while <min-entropy> answers the single-guess question directly. The two quantities serve different tasks even when both are expressed in <bits>.
 
 = Varentropy
 {title2=$V_H(X)$}
@@ -1046,7 +1220,7 @@ Order source symbols by decreasing probability and assign the $i$th symbol a bin
 {parent=Information theory}
 {wiki}
 
-Huffman coding makes frequent symbols cheap to store by giving them short <codewords>, while allowing rare symbols longer <codewords>. For a known <probability distribution> on a finite <alphabet> with at least two positive-probability symbols, binary Huffman coding constructs a <prefix code> minimizing <expected codeword length> among binary <prefix codes> that encode one source symbol at a time. The objective is an average under that <probability distribution>; it does not promise to shorten every message. Encoder and decoder must agree on the resulting <Huffman code>. \a[https://xenon.stanford.edu/~blynn/pr/symbol.html][Ben Lynn, Symbol Codes: expected length and Huffman construction]{ref}
+Huffman coding makes frequent symbols cheap to store by giving them short <codewords>, while allowing rare symbols longer <codewords>. For a known <probability distribution> on a finite <alphabet> with at least two positive-probability symbols, binary Huffman coding constructs a <prefix code> minimizing <expected codeword length> among binary <prefix codes> that encode one source symbol at a time. The objective is an average under that <probability distribution>; it does not promise to shorten every message. Encoder and decoder must agree on the resulting <Huffman code>. https://xenon.stanford.edu/~blynn/pr/symbol.html[Ben Lynn, Symbol Codes: expected length and Huffman construction]{ref}
 
 The construction grows a <binary tree> from its leaves towards its <root of a tree>. Start with one leaf per symbol, weighted by its <probability>. Repeatedly join the two currently smallest weights beneath a new <parent in a rooted tree>, whose weight is their sum, and replace the pair by that <subtree>. Include newly formed <subtrees> when choosing the next pair. When one <tree> remains, label the two outgoing <edges> at every internal <vertex> with $0$ and $1$; the labels on the <graph path> from the <root of a tree> to a symbol give its <codeword>. This is a <greedy algorithm>: each step makes a locally cheapest merge, yet the result is an <optimal prefix code>.
 
@@ -1081,7 +1255,7 @@ Its <Shannon entropy> is
 $$
 H(X)=-\sum_xp_x\log_2p_x\approx1.846439
 $$
-<bits> per symbol, slightly below the <expected codeword length> $1.9$. The <entropy lower bound for prefix codes> applies to every binary <prefix code> for this <probability distribution>. It need not be attainable with integer <codeword lengths> for individual symbols; <Huffman coding> reaches the best mean within that class. \a[https://web.iitd.ac.in/~sumeet/mackay.pdf][David J. C. MacKay, Information Theory, Inference, and Learning Algorithms, chapter 5, section 5.4: symbol-code bounds]{ref}
+<bits> per symbol, slightly below the <expected codeword length> $1.9$. The <entropy lower bound for prefix codes> applies to every binary <prefix code> for this <probability distribution>. It need not be attainable with integer <codeword lengths> for individual symbols; <Huffman coding> reaches the best mean within that class. https://web.iitd.ac.in/~sumeet/mackay.pdf[David J. C. MacKay, Information Theory, Inference, and Learning Algorithms, chapter 5, section 5.4: symbol-code bounds]{ref}
 
 \Image[huffman-code-length-and-entropy.png]
 {title=Probability-weighted codeword lengths sum to 1.9 bits per symbol, between entropy and fixed length}

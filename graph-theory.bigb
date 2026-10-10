@@ -10,7 +10,7 @@ The appeal of <graph theory> is that one model serves many practical questions. 
 {title2=$d_G(u,v)\leq t\|u-v\|$}
 {wiki}
 
-A geometric spanner is a <weighted graph> on points in <Euclidean space>, with edge weights equal to their <Euclidean distances>, in which every pair has a <graph path> of <length> at most $t$ times its direct distance. Its <stretch factor> is the largest ratio $d_G(u,v)/\|u-v\|$, where $d_G$ is shortest-path distance. A square's four perimeter edges, without diagonals, give stretch factor $\sqrt2$: adjacent points have ratio one, and diagonal pairs have route <length> $2$ instead of $\sqrt2$. The aim is to retain short routes with fewer edges than a <complete graph>. \a[https://people.scs.carleton.ca/~michiel/encyc_geometric_spanners.pdf][Gudmundsson, Narasimhan and Smid, Geometric Spanners, §1]{ref}.
+A geometric spanner is a <weighted graph> on points in <Euclidean space>, with edge weights equal to their <Euclidean distances>, in which every pair has a <graph path> of <length> at most $t$ times its direct distance. Its <stretch factor> is the largest ratio $d_G(u,v)/\|u-v\|$, where $d_G$ is shortest-path distance. A square's four perimeter edges, without diagonals, give stretch factor $\sqrt2$: adjacent points have ratio one, and diagonal pairs have route <length> $2$ instead of $\sqrt2$. The aim is to retain short routes with fewer edges than a <complete graph>. https://people.scs.carleton.ca/~michiel/encyc_geometric_spanners.pdf[Gudmundsson, Narasimhan and Smid, Geometric Spanners, §1]{ref}.
 
 = Graph excess
 {parent=Graph theory}
@@ -60,7 +60,26 @@ For a connected graph whose <2-core> contains a vertex of degree at least three,
 {parent=Graph theory}
 {wiki}
 
-A chordal graph is an undirected <graph> in which every cycle of length at least four has a chord. Its structure allows exact <junction tree> calculations using its <maximal cliques>.
+A <chordal graph> is a finite <simple graph> with no <induced cycle> of length at least four. Equivalently, every <cycle in a graph> with at least four <vertices> has a chord: an <edge> joining two nonconsecutive <vertices> of that <graph cycle>. The word "induced" matters: the <induced subgraph> on the chosen <vertices> must contain exactly the cycle's <edges>, with no chords. Triangles are allowed. This definition concerns adjacency, independently of how the <graph> is drawn.
+
+For the square <cycle graph> $C_4$, take <vertex set> $\{a,b,c,d\}$ and set of <edges> $\{ab,bc,cd,da\}$, where $ab$ abbreviates $\{a,b\}$. Its <graph neighbourhoods> are $N(a)=N(c)=\{b,d\}$ and $N(b)=N(d)=\{a,c\}$. The square is an <induced cycle>, so $C_4$ is not a <chordal graph>. Add the single <edge> $ac$: now $N(a)=\{b,c,d\}$, $N(b)=\{a,c\}$, $N(c)=\{a,b,d\}$, and $N(d)=\{a,c\}$. The only possible four-<vertex> <graph cycle> has chord $ac$, so this new <graph> is a <chordal graph>. Its <maximal cliques> are exactly $\{a,b,c\}$ and $\{a,c,d\}$.
+
+\Image[chordal-perfect-elimination-square-cliques.png]
+{title=An <induced cycle> loses its obstruction when one diagonal is added; the resulting <maximal cliques> form a <junction tree>}
+
+Connect these two <maximal cliques> by a single <edge> labelled with their intersection $\{a,c\}$. The result is a <junction tree>, also called a clique tree: its nodes are <maximal cliques>, and the nodes containing any fixed original <vertex> induce a <connected graph> inside the <tree>. Here $a,c$ occur in both nodes, while $b,d$ each occur in just one. This is the <running intersection property>. More generally, a nonempty <connected graph> is a <chordal graph> exactly when its <maximal cliques> admit such a <tree>; a disconnected <chordal graph> can be represented by one such <tree> per <connected component of a graph>.<An Introduction to Chordal Graphs and Clique Trees by Jean R. S. Blair and others>[§3.1–3.2]
+
+A <chordal graph> need not be a <planar graph>: the <complete graph> $K_5$ is a <chordal graph>, since every pair of distinct <vertices> is adjacent, but its ten <edges> violate the <planar graph edge bound> $|E|\leq3|V|-6=9$. Conversely, even a plane drawing whose bounded faces are triangles can hide an <induced cycle>: a <wheel graph> with a four-<vertex> rim and a central <vertex> joined to the whole rim still has the rim as an <induced cycle>. Adding chords to obtain a <chordal graph> is called <triangulation of an undirected graph>; this is an adjacency condition, rather than a requirement about planar faces.
+
+Why is this structure useful? The <maximal cliques> collect local interactions, and the <running intersection property> makes their overlaps sufficient for consistent communication. For <random variables> $x_a,x_b,x_c,x_d$ with finite state sets, a <probabilistic graphical model> of the square-plus-diagonal form can have
+$$
+p(x_a,x_b,x_c,x_d)=Z^{-1}\psi_{abc}(x_a,x_b,x_c)\psi_{acd}(x_a,x_c,x_d),
+$$
+where the two nonnegative <clique potentials> have a positive <normalizing constant> $Z$. Eliminating $x_b$ produces the two-variable <junction-tree sum-product message>
+$$
+m(x_a,x_c)=\sum_{x_b}\psi_{abc}(x_a,x_b,x_c),\qquad Z=\sum_{x_a,x_c,x_d}m(x_a,x_c)\psi_{acd}(x_a,x_c,x_d).
+$$
+The shared <clique> $\{a,c\}$ carries everything needed from the eliminated side. For $q$ possible states per <random variable>, this example uses two sums over $q^3$ configurations after reusing the message, rather than directly summing over $q^4$ configurations. The example's message is an exact finite sum, with no simulated data. Large <maximal cliques> still make exact inference expensive; <chordal graphs> provide a decomposition, not a universal guarantee of cheap inference.<Recitation 8: Junction Trees by Massachusetts Institute of Technology, Department of Electrical Engineering and Computer Science>[§1; §6]
 
 = Triangulation of an undirected graph
 {parent=Chordal graph}
@@ -70,7 +89,47 @@ Triangulation adds fill edges to an undirected <graph> to make it a <chordal gra
 = Perfect elimination ordering
 {parent=Chordal graph}
 
-A perfect elimination ordering successively removes a <graph vertex> whose remaining neighbors form a <clique>. An undirected <graph> is a <chordal graph> exactly when it has such an ordering. In one direction, the earliest vertex of an induced long cycle would have two nonadjacent later neighbors, contradicting the ordering. The converse follows by the existence of a simplicial vertex in every finite chordal graph.
+A <perfect elimination ordering> of a finite <simple graph> $G=(V,E)$ is a <permutation> $(v_1,\ldots,v_n)$ of its <vertices> such that each set of later <graph neighbours>
+$$
+N_i^+=\{v_j:j>i,\ \{v_i,v_j\}\in E\}
+$$
+is a <clique>. Thus $v_i$ is a <simplicial vertex (graph theory)> in the remaining <induced subgraph> $G[\{v_i,\ldots,v_n\}]$. Empty and one-<vertex> sets satisfy the <clique> condition automatically. The order here is the order of deletion: $v_1$ goes first.
+
+The characterization is powerful: a finite <simple graph> is a <chordal graph> if and only if it has a <perfect elimination ordering>. For one proof outline, the earliest <vertex> of an <induced cycle> of length at least four would have two later <graph neighbours> on that <graph cycle> that are not adjacent, contradicting the <clique> condition. Conversely, every nonempty <chordal graph> has a <simplicial vertex (graph theory)>, and every <induced subgraph> of a <chordal graph> is a <chordal graph>; repeatedly deleting such a <vertex> supplies the ordering.<An Introduction to Chordal Graphs and Clique Trees by Jean R. S. Blair and others>[§2.2; Theorem 2.2]
+
+In the square-plus-diagonal <chordal graph> above, $(b,d,a,c)$ is a <perfect elimination ordering>, with later <graph neighbourhoods> $\{a,c\}$, $\{a,c\}$, $\{c\}$, and $\varnothing$. Starting instead with $a$ fails: its <graph neighbours> $b,c,d$ do not form a <clique>, because $bd$ is absent. Thus even a <chordal graph> can have a poor elimination ordering.
+
+For a larger example, join three triangles along shared <edges>, using
+$$
+V=\{a,b,c,d,e\},\qquad E=\{ab,ac,bc,bd,cd,ce,de\}.
+$$
+The exact <graph neighbourhoods> are $N(a)=\{b,c\}$, $N(b)=\{a,c,d\}$, $N(c)=\{a,b,d,e\}$, $N(d)=\{b,c,e\}$, and $N(e)=\{c,d\}$. The ordering $(a,b,c,d,e)$ has later <graph neighbourhoods> $\{b,c\}$, $\{c,d\}$, $\{d,e\}$, $\{e\}$, and $\varnothing$, all <cliques>; this certifies that the <graph> is a <chordal graph> without enumerating its <graph cycles>. Its <maximal cliques> $\{a,b,c\}$, $\{b,c,d\}$, $\{c,d,e\}$ form a <junction tree> in that order, with intersections $\{b,c\}$ and $\{c,d\}$.
+
+\Image[chordal-perfect-elimination-triangle-chain.png]
+{title=A <perfect elimination ordering> removes three overlapping triangles without <fill-in>; choosing the central <vertex> first adds three <edges>}
+
+To find an ordering, <maximum cardinality search> starts with all scores zero, repeatedly selects an unselected <vertex> of largest score, and increases each unselected <graph neighbour>'s score by one. Reverse the selection order to obtain a candidate <perfect elimination ordering>. For the three-triangle <graph>, one valid selection sequence is $(e,d,c,b,a)$, with scores at selection $0,1,2,2,2$; reversing it gives the displayed deletion order. On a <chordal graph> every tie choice works. On an arbitrary <graph>, test the resulting later <graph neighbourhoods> for the <clique> condition to recognize <chordal graphs>. Suitable <adjacency lists>, score buckets and a linear-time verification method give $O(|V|+|E|)$ recognition.<Chordal Graphs and Semidefinite Optimization by Lieven Vandenberghe and others>[§4.1–4.2; Algorithm 4.2]
+
+The deletion rule also explains <sparse Gaussian elimination>. For a symmetric <positive-definite matrix> whose <matrix graph> is $G$, eliminating pivot $v$ applies the <Schur complement> update
+$$
+a_{uw}\longleftarrow a_{uw}-\frac{a_{uv}a_{vw}}{a_{vv}}.
+$$
+Only pairs of remaining <graph neighbours> of $v$ can acquire new off-diagonal entries. A <perfect elimination ordering> already has all those <edges>, so <Cholesky decomposition> creates no symbolic <fill-in>. Positive definiteness ensures nonzero pivots in exact arithmetic. Special numerical cancellation can suppress predicted entries, and floating-point rounding affects their values.<Chordal Graphs and Semidefinite Optimization by Lieven Vandenberghe and others>[§9.1; equation 9.2; Theorem 9.1] In the three-triangle <graph>, deleting $c$ first instead connects every pair in $\{a,b,d,e\}$ and adds exactly $ad,ae,be$. The <graph> was already a <chordal graph>; the extra <fill-in> comes from the ordering.
+
+One further reward is optimal <graph coloring>. Process a <perfect elimination ordering> backwards and give each <vertex> the smallest positive color absent from its already colored <graph neighbours>. Those <graph neighbours> form a <clique>, so this <greedy algorithm> uses at most the <clique number> $\omega(G)$ colors; any <clique> of that size requires at least that many. In the three-triangle <graph>, coloring $(e,d,c,b,a)$ gives colors $(1,2,3,1,2)$, so both the <chromatic number> and the <clique number> are three. Every <maximal clique> also occurs among $\{v_i\}\cup N_i^+$: take its earliest <vertex> and use maximality. The same ordering therefore supports <graph coloring>, <maximal clique> extraction and sparse computation.
+
+Historically, Donald J. Rose, Robert E. Tarjan and George S. Lueker's 1976 paper connected <graph> elimination to symmetric <sparse matrices> and gave a search-based $O(|V|+|E|)$ <algorithm> for finding a <perfect elimination ordering> when one exists. Its abstract distinguishes a minimal elimination ordering from a minimum one: removing avoidable <fill-in> does not by itself minimize the total number of added <edges>.<Algorithmic Aspects of Vertex Elimination on Graphs by Donald J. Rose and others>[pp. 266–283; abstract]
+
+= Simplicial vertex
+{disambiguate=graph theory}
+{parent=Perfect elimination ordering}
+
+A <simplicial vertex (graph theory)> is a <graph vertex> whose <graph neighbourhood> is a <clique>. Every isolated <vertex> and every <leaf of a graph> qualifies. In the three-triangle <chordal graph>, initially $a,e$ qualify, but $b$ only becomes a <simplicial vertex (graph theory)> after deleting $a$. This is a property of adjacency in a <graph>; a <vertex of a simplicial complex> is an element of a different kind of structure.
+
+= Maximum cardinality search
+{parent=Perfect elimination ordering}
+
+<Maximum cardinality search> is a <graph> search in which an unselected <vertex>'s score counts its already selected <graph neighbours>. Repeatedly select a <vertex> of maximum score, breaking ties arbitrarily, and update its unselected <graph neighbours>. On a <chordal graph>, the reverse selection order is a <perfect elimination ordering>. On $C_4$, selecting $(a,b,c,d)$ instead yields candidate deletion order $(d,c,b,a)$; $d$'s later <graph neighbours> $a,c$ are not adjacent, so the <clique> check fails.<Chordal Graphs and Semidefinite Optimization by Lieven Vandenberghe and others>[§4.2; Algorithm 4.2]
 
 = Johnson graph
 {parent=Graph theory}
@@ -131,7 +190,28 @@ An algorithm that makes each vertex's distance permanent once it is selected. Wi
 {parent=Shortest path problem}
 {title2=$d_i\le c_{ij}+d_j$}
 
-For an all-to-one <shortest path problem> with root $r$ and $d_r=0$, these inequalities ensure that $d_i$ is no larger than any <directed path> length from $i$ to $r$, by summing along that <directed path>. If every finite $d_i$ is also the length of a discovered <directed path>, the inequalities certify exact shortest-path labels. Nodes from which the root is unreachable retain infinite distance and are handled separately.
+The Bellman inequalities turn local <directed edge> checks into a global certificate for the <shortest path problem>. Here the convention is \i[all-to-one]: every journey ends at a fixed <vertex> $r$, and $c_{ij}$ is the cost of the original <directed edge> $i\to j$. Work in a finite <directed graph> with finite real costs. Write $L_i$ for candidate labels, normalized by $L_r=0$, on the <vertices> that can reach $r$. A feasible potential means precisely that these finite labels satisfy
+$$
+L_i\le c_{ij}+L_j
+$$
+for every <directed edge> within that set. These labels give <lower bounds> on costs \i[to] $r$. A discovered <directed path> of cost $U_i$ instead gives an <upper bound>. The following constructed <graph> shows both bounds and the exact distances between them; its weights are illustrative costs, not measured travel data.
+
+\Image[edge-relaxation-certificate.png]
+{title=<Bellman inequalities> and explicit <directed paths> certify distances to $r$ from opposite sides}
+
+The arrows in the picture point toward the destination, whereas <edge relaxation> propagates an improved label in the opposite direction: an improved $d_j$ can lower $d_i$. In the pictured <graph>, the <directed paths> from $a$ to $r$ cost $7$, $2+3=5$, and $2-2+4=4$. Thus $\delta(a,r)=4$. The candidate $L=(3,1,3,0)$ in <vertex> order $(a,b,c,r)$ is feasible, but underestimates the exact distances $(4,2,4,0)$. Merely satisfying the <Bellman inequalities> does not make a candidate exact.
+
+Why do they give <lower bounds>? Along any <directed path> $i=v_0\to v_1\to\cdots\to v_k=r$, successive substitution gives
+$$
+L_i\le\sum_{\ell=0}^{k-1}c_{v_\ell v_{\ell+1}}+L_r=\sum_{\ell=0}^{k-1}c_{v_\ell v_{\ell+1}}.
+$$
+The same calculation works for a <directed walk>, with repeated <vertices> allowed. Taking the <infimum> of route costs gives $L_i\le\delta(i,r)$. A discovered route gives $\delta(i,r)\le U_i$. If the bounds meet, $L_i=U_i$, they certify an optimum without enumerating routes. Equivalently, check the <Bellman inequalities> for the proposed distances and exhibit <directed paths> realizing them. The authored <Bellman-Ford algorithm> implementation checks the corresponding single-source inequalities and equality on recorded route <edges>; reversing every <directed edge> gives this all-to-one convention.https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/BellmanFordSP.java[Sedgewick and Wayne, BellmanFordSP.java, optimality checks]{ref}
+
+For the exact labels in the picture, the slack $c_{ij}+d_j-d_i$ is respectively $0,3,1,0,0$ on $a\to b$, $a\to r$, $b\to r$, $b\to c$, $c\to r$. Zero slack means equality; the zero-slack <directed path> $a\to b\to c\to r$ realizes the cost $4$. This is the useful beauty of the certificate: a few local <inequalities> rule out every cheaper journey, while one explicit journey attains the bound.
+
+Keep unreachable <vertices> separate: $\delta(i,r)=\infty$ when no <directed path> to $r$ exists, and a finite <lower bound> alone cannot certify that fact. Extended labels can use $\infty+c=\infty$ for finite $c$, but never compute a slack as $\infty-\infty$. If $i$ can reach a negative-cost <directed cycle> and then reach $r$, repeatedly traversing the <directed cycle> makes route costs unbounded below: their <infimum> is $-\infty$, with no finite shortest <directed walk>. A finite feasible potential on such a <directed cycle> is impossible, since summing its <Bellman inequalities> would give $0\le\sum c_{ij}<0$. A negative-cost <directed cycle> that cannot reach $r$ does not affect distances to $r$. These are statements about unrestricted <directed walks>; requiring a <directed path> with no repeated <vertices> is a different optimization problem when negative-cost <directed cycles> exist.https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/5edb13fb34cbe7f4cdccc13d131772e7_MIT6_006F11_lec17.pdf[MIT 6.006, Lecture 17, pp. 1 and 5: relevant negative cycles and simple paths]{ref}
+
+For the single-source convention, the same original <directed edge> $u\to v$ instead gives $L(v)\le L(u)+w_{uv}$ with $L(s)=0$, a <lower bound> on distance \i[from] $s$. The endpoint carrying the label on the left therefore changes with the direction of the problem.
 
 = Label-correcting shortest-path algorithm
 {parent=Shortest path problem}
@@ -194,27 +274,50 @@ Why is the permanent choice safe? Suppose the selected <vertex> $u$ had a cheape
 
 Negative weights break that reasoning. In a <directed graph> with $s\to u$ costing $2$, $s\to v$ costing $5$, and $v\to u$ costing $-4$, the <Dijkstra algorithm> would finalize $u$ at $2$ before discovering the cheaper cost $1$. The <Bellman-Ford algorithm> handles negative <edge> weights when no relevant negative <directed cycle> exists.
 
-With an <adjacency list> and an indexed <binary heap> implementing a <priority queue>, the <time complexity> is $O((|V|+|E|)\log |V|)$ for $|V|\ge2$, using <Big O notation>. Each <vertex> is extracted at most once, each <edge> is inspected once per direction, and each successful <edge relaxation> decreases a heap key in $O(\log |V|)$ time. This assumes constant-cost arithmetic and comparisons; exact computation with very large weights adds their representation cost. The queue uses $O(|V|)$ space beyond the <graph>. Simply scanning all remaining <vertices> gives $O(|V|^2+|E|)$ instead.\a[https://algs4.cs.princeton.edu/44sp/DijkstraSP.java.html][Princeton, DijkstraSP implementation]{ref}\a[https://algs4.cs.princeton.edu/code/javadoc/edu/princeton/cs/algs4/IndexMinPQ.html][Princeton, indexed binary heap operations]{ref}
+With an <adjacency list> and an indexed <binary heap> implementing a <priority queue>, the <time complexity> is $O((|V|+|E|)\log |V|)$ for $|V|\ge2$, using <Big O notation>. Each <vertex> is extracted at most once, each <edge> is inspected once per direction, and each successful <edge relaxation> decreases a heap key in $O(\log |V|)$ time. This assumes constant-cost arithmetic and comparisons; exact computation with very large weights adds their representation cost. The queue uses $O(|V|)$ space beyond the <graph>. Simply scanning all remaining <vertices> gives $O(|V|^2+|E|)$ instead.https://algs4.cs.princeton.edu/44sp/DijkstraSP.java.html[Princeton, DijkstraSP implementation]{ref}https://algs4.cs.princeton.edu/code/javadoc/edu/princeton/cs/algs4/IndexMinPQ.html[Princeton, indexed binary heap operations]{ref}
 
-The 1959 paper presents the <shortest path problem> as its second problem, after the <minimum spanning tree> problem, and grows known shortest routes in increasing distance order.\a[https://www.cs.yale.edu/homes/lans/readings/routing/dijkstra-routing-1959.pdf][Dijkstra, A note on two problems in connexion with graphs, pp. 269–271]{ref} In his later recollection, Dijkstra dated the shortest-route discovery to 1956: a demonstration for the ARMAC computer used a simplified Dutch railway map and printed the route between towns. A practical request became an enduring <algorithm> because the same distance rule applies to any suitable <graph>.\a[https://garfield.library.upenn.edu/classics1983/A1983QA19900001.pdf][Dijkstra's recollection, published in 1983]{ref}
+The 1959 paper presents the <shortest path problem> as its second problem, after the <minimum spanning tree> problem, and grows known shortest routes in increasing distance order.https://www.cs.yale.edu/homes/lans/readings/routing/dijkstra-routing-1959.pdf[Dijkstra, A note on two problems in connexion with graphs, pp. 269–271]{ref} In his later recollection, Dijkstra dated the shortest-route discovery to 1956: a demonstration for the ARMAC computer used a simplified Dutch railway map and printed the route between towns. A practical request became an enduring <algorithm> because the same distance rule applies to any suitable <graph>.https://garfield.library.upenn.edu/classics1983/A1983QA19900001.pdf[Dijkstra's recollection, published in 1983]{ref}
 
 = Tentative distance
 {parent=Dijkstra algorithm}
 {title2=$d(v)$}
 
-A provisional cost of a discovered <graph path>; $\infty$ means no route has yet been discovered.
+A tentative distance $d(v)$ is the cheapest cost so far recorded by a <shortest path problem> <algorithm>. For the single-source convention, initialize $d(s)=0$ and $d(v)=\infty$ elsewhere. Every finite label is the cost of a discovered route from $s$ to $v$, so
+$$
+\delta(s,v)\le d(v).
+$$
+It is an <upper bound> supplied by an actual route, not a guess that might be too low. The <loop invariant> follows directly from <edge relaxation>: extending a discovered route to $u$ by $u\to v$ supplies another discovered route. The usual label initialization and this safety property are stated and proved in the authored MIT notes.https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/6277a1f06100c26a7ff21031af6757b5_MIT6_006F11_lec16.pdf[MIT 6.006, Lecture 16, p. 1: relaxation safety]{ref}
+
+In the trace under <edge relaxation>, $d(t)=10$ first records the direct <directed path> $s\to t$. Later $d(t)=8$ records $s\to a\to t$, and finally $d(t)=3$ records $s\to b\to a\to t$. Each label is a usable route cost, but the first two are not shortest. An infinite <tentative distance> means no route has yet been discovered; only a completed search establishes unreachability. The isolated <vertex> $z$ in that example remains at $\infty$.
+
+In a <directed graph>, the discovered route is formally a <directed walk>, which may repeat <vertices>; in the pictured acyclic <graph> it is always a <directed path>. Negative-cost <directed cycles> can keep supplying cheaper <directed walks> without a finite optimum. In the all-to-one convention, the same meaning applies to discovered routes \i[from] $i$ \i[to] $r$. Do not confuse either version with the <lower bounds> supplied by feasible potentials in the <Bellman inequalities>: one records something achievable, the other rules out anything cheaper.
 
 = Edge relaxation
 {parent=Dijkstra algorithm}
 {title2=$d(v)\gets\min\{d(v),d(u)+w_{uv}\}$}
 
-Improve a <tentative distance> by trying one more <edge> from a reached <vertex>.
+Edge relaxation tests whether extending a recorded route by one <directed edge> improves a <tentative distance>. For a single source $s$ and an original <directed edge> $u\to v$ of weight $w_{uv}$, form the candidate $q=d(u)+w_{uv}$. If $d(u)$ is finite and $q<d(v)$, replace $d(v)$ by $q$ and record the <shortest-path predecessor> $\pi(v)=u$. Otherwise leave both unchanged. The <minimum> formula in the header gives the resulting label in either case. The authored implementation uses this strict comparison and records the incoming <directed edge>.https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/DijkstraSP.java[Sedgewick and Wayne, DijkstraSP.java, relax method]{ref}
+
+\Image[edge-relaxation-trace.png]
+{title=<Edge relaxation> lowers discovered-route costs, including across a negative-weight <directed edge>}
+
+The table lists labels \i[after] each specified operation, keeping $d(s)=0$ throughout this constructed acyclic <graph>. Relaxing $a\to t$ first offers $6+2=8$. Relaxing $b\to a$ then offers $2-1=1$, lowering $a$ from $6$ to $1$; revisiting $a\to t$ now offers $1+2=3$. Finally $b\to t$ offers $2+7=9$, so the label $3$ stays. Changing a label can make a previously checked outgoing <directed edge> worth checking again. This trace illustrates the operation itself, with a deliberately specified order, rather than a run of the <Dijkstra algorithm>.
+
+A single <edge relaxation> does not require nonnegative weights: its candidate is the cost of a real extended <directed walk>, even when the last <directed edge> has negative weight. Nonnegative weights are needed by the <Dijkstra algorithm> to make its selected minimum <tentative distance> permanent. The <Bellman-Ford algorithm> permits negative weights and revisits labels; its authored implementation also checks for reachable negative-cost <directed cycles>.https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/DijkstraSP.java[Sedgewick and Wayne, DijkstraSP.java, nonnegative-weight precondition]{ref}https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/BellmanFordSP.java[Sedgewick and Wayne, BellmanFordSP.java, signed weights and cycle detection]{ref}
+
+For the all-to-one convention of the <Bellman inequalities>, relax the same original <directed edge> $i\to j$ by $d_i\gets\min\{d_i,c_{ij}+d_j\}$. This prepends $i\to j$ to a discovered route from $j$ to $r$, and improves the tail label $d_i$, not the head label $d_j$. Skip the operation when $d_j=\infty$. In exact arithmetic, a full pass over all relevant <directed edges> with no improvement establishes all their <Bellman inequalities>; combined with the discovered-route <upper bounds>, this certifies finite distances. One unsuccessful operation establishes only that this particular candidate did not improve its label at that moment.
 
 = Shortest-path predecessor
 {parent=Dijkstra algorithm}
 {title2=$\pi(v)$}
 
-The previous <vertex> on the currently recorded <graph path>, updated on a strict improvement by <edge relaxation>.
+A shortest-path predecessor $\pi(v)$ records the previous <vertex> on a chosen route from source $s$ to $v$. When <edge relaxation> strictly improves $d(v)$ through $u\to v$, set $\pi(v)=u$. For a <multigraph>, store the actual <directed edge>, since two <edges> with the same endpoints can have different weights. Initialize all <vertices>, including the source, without a <shortest-path predecessor>. The authored implementation reconstructs a route by following these incoming <edges> backwards, then reversing their order.https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/DijkstraSP.java[Sedgewick and Wayne, DijkstraSP.java, edgeTo and pathTo]{ref}
+
+At the end of the <edge relaxation> trace, $\pi(t)=a$, $\pi(a)=b$, and $\pi(b)=s$. Following them gives $t,a,b,s$, so the forward <directed path> is $s\to b\to a\to t$, of cost $2-1+2=3$. This makes the distance useful: a number tells us the best cost, whereas the <shortest-path predecessors> tell us which connections to take. In the <Dijkstra algorithm>, reconstruct a destination's shortest route after its label becomes permanent. In a <label-correcting shortest-path algorithm>, wait for convergence and the appropriate negative-cost <directed cycle> check. During correction, a predecessor's label may have changed since its child's last update: immediately after $b\to a$ in the trace, the current chain to $t$ costs $3$ although $d(t)$ still records the earlier discovered route of cost $8$.
+
+Strict improvement is a useful guard against <directed cycles> in the recorded pointers. Consider $s\to a$ and $s\to b$ of cost zero, followed by $a\to b$ and $b\to a$, also of cost zero. After the first two <edge relaxations>, both labels are zero and both <shortest-path predecessors> are $s$. If equality also allows pointer replacement, the last two operations can set $\pi(b)=a$ and $\pi(a)=b$: following pointers loops forever despite correct distance labels. Keeping the old pointer on ties prevents this example; choosing among equal-cost routes requires a separate rule that preserves a route to the source. Strict improvement alone does not protect against reachable negative-cost <directed cycles>, which can force endless decreases. Equality on recorded <edges> plus the <Bellman inequalities> certifies route costs only when the pointer chains actually terminate at the source.
+
+For all-to-one distances to $r$, record a next <vertex> $j$ whenever relaxing $i\to j$ improves $d_i$. Follow these successors forward in the original <directed graph> to reach $r$. They are <shortest-path predecessors> when viewed in the reversed <directed graph>; keeping the direction convention explicit prevents returning a route whose arrows point the wrong way.
 
 = Graph property
 {parent=Graph theory}
@@ -340,7 +443,7 @@ For integers $n\geq2k\geq2$, the <chromatic number> of the <Kneser graph> is $n-
 = Articulation point
 {synonym}
 
-A <cut vertex>, also called an <articulation point>, is a <vertex> $v$ of an <undirected graph> whose deletion increases the number of <connected components of a graph>. Write $k(G)$ for that count, including isolated <vertices>, and $G-v$ for the <graph> obtained by removing $v$ and every incident <edge>. Then the test is $k(G-v)>k(G)$, even when the original <graph> is disconnected. By contrast, deleting a <bridge in a graph> removes just one <edge> and keeps both endpoint <vertices>. These are different failure models. \a[https://algs4.cs.princeton.edu/41graph/][Sedgewick and Wayne, Algorithms, §4.1: bridges and articulation points]{ref}
+A <cut vertex>, also called an <articulation point>, is a <vertex> $v$ of an <undirected graph> whose deletion increases the number of <connected components of a graph>. Write $k(G)$ for that count, including isolated <vertices>, and $G-v$ for the <graph> obtained by removing $v$ and every incident <edge>. Then the test is $k(G-v)>k(G)$, even when the original <graph> is disconnected. By contrast, deleting a <bridge in a graph> removes just one <edge> and keeps both endpoint <vertices>. These are different failure models. https://algs4.cs.princeton.edu/41graph/[Sedgewick and Wayne, Algorithms, §4.1: bridges and articulation points]{ref}
 
 First take two <triangles in a graph>, $ABC$ and $ADE$, sharing only the <vertex> $A$. This <simple graph> has
 $$
@@ -422,13 +525,13 @@ In a communications network, a <cut vertex> models a router whose failure separa
 
 The beautiful structural consequence is that a <graph> splits into <biconnected components> joined at <cut vertices>. Within each nontrivial robust piece, a single <vertex> failure cannot separate the other <vertices>; between pieces, the shared <cut vertices> reveal the bottlenecks. Also, a <Hamiltonian> <graph> has no <cut vertex>: deleting any <vertex> from its <Hamilton cycle> leaves a <Hamiltonian path> through all remaining <vertices>.
 
-Historically, Tarjan's June 1972 paper developed <depth-first search> as a tool for finding <biconnected components> in time linear in the numbers of <vertices> and <edges>. \a[https://epubs.siam.org/doi/10.1137/0201010][Robert Tarjan, Depth-First Search and Linear Graph Algorithms, SIAM Journal on Computing 1(2), 146–160 (1972)]{ref} In his 1983 recollection, Tarjan credited Hopcroft with the original linear-time <biconnected component> <algorithm> during their collaboration beginning in summer 1970, and described the published version as a refinement. The historical lesson is how a carefully organized traversal turns many separate deletion experiments into one computation. \a[https://garfield.library.upenn.edu/classics1983/A1983QY47200001.pdf][Robert E. Tarjan, Citation Classic recollection (1983)]{ref}
+Historically, Tarjan's June 1972 paper developed <depth-first search> as a tool for finding <biconnected components> in time linear in the numbers of <vertices> and <edges>. https://epubs.siam.org/doi/10.1137/0201010[Robert Tarjan, Depth-First Search and Linear Graph Algorithms, SIAM Journal on Computing 1(2), 146–160 (1972)]{ref} In his 1983 recollection, Tarjan credited Hopcroft with the original linear-time <biconnected component> <algorithm> during their collaboration beginning in summer 1970, and described the published version as a refinement. The historical lesson is how a carefully organized traversal turns many separate deletion experiments into one computation. https://garfield.library.upenn.edu/classics1983/A1983QY47200001.pdf[Robert E. Tarjan, Citation Classic recollection (1983)]{ref}
 
 = Biconnected component
 {parent=Cut vertex}
 {wiki}
 
-A <biconnected component> is a maximal connected <subgraph> with no <cut vertex> of its own. We use the block convention that also includes each <bridge in a graph> with its two endpoint <vertices>, and each isolated <vertex>, as a <biconnected component>. A <biconnected component> with at least three <vertices> stays connected after any single <vertex> deletion. Distinct <biconnected components> share at most one <vertex>; the <vertices> belonging to more than one <biconnected component> are exactly the <cut vertices>. The shared-$A$ example has two <biconnected components>, its two <triangles in a graph>. The joined-$CD$ example has three: $ABC$, the <bridge in a graph> $CD$ with its endpoints, and $DEF$. The <edges> partition into these pieces, while the shared <cut vertices> occur in several pieces. \a[https://algs4.cs.princeton.edu/41graph/][Sedgewick and Wayne, Algorithms, §4.1, biconnected components exercises]{ref}
+A <biconnected component> is a maximal connected <subgraph> with no <cut vertex> of its own. We use the block convention that also includes each <bridge in a graph> with its two endpoint <vertices>, and each isolated <vertex>, as a <biconnected component>. A <biconnected component> with at least three <vertices> stays connected after any single <vertex> deletion. Distinct <biconnected components> share at most one <vertex>; the <vertices> belonging to more than one <biconnected component> are exactly the <cut vertices>. The shared-$A$ example has two <biconnected components>, its two <triangles in a graph>. The joined-$CD$ example has three: $ABC$, the <bridge in a graph> $CD$ with its endpoints, and $DEF$. The <edges> partition into these pieces, while the shared <cut vertices> occur in several pieces. https://algs4.cs.princeton.edu/41graph/[Sedgewick and Wayne, Algorithms, §4.1, biconnected components exercises]{ref}
 
 = DFS discovery time
 {c}
@@ -442,14 +545,14 @@ The <DFS discovery time> of a <vertex> is its first-visit number in <depth-first
 {parent=Cut vertex}
 {title2=$\operatorname{low}(v)$}
 
-For a finite <simple graph> that is an <undirected graph>, the <DFS lowpoint> of $v$ is the smallest <DFS discovery time> reachable by following zero or more discovery <edges> down its <rooted tree>, then at most one non-discovery <edge> to an ancestor. Staying at $v$ is allowed. Ignore the reverse traversal of the discovery <edge> to the <parent in a rooted tree>: it is the same <edge>, not an escape route. Start with $\operatorname{low}(v)=\operatorname{disc}(v)$. On returning from a <child in a rooted tree> $w$, replace $\operatorname{low}(v)$ by $\min\{\operatorname{low}(v),\operatorname{low}(w)\}$. For a non-discovery <edge> from $v$ to an earlier ancestor $a$, replace it by $\min\{\operatorname{low}(v),\operatorname{disc}(a)\}$. This summarizes how far upward the explored branch can reconnect. \a[https://sites.cs.ucsb.edu/~gilbert/cs240a/notes/TarjanDFS.pdf][Tarjan (1972), §3, LOWPT recurrence, pp. 151–153]{ref}
+For a finite <simple graph> that is an <undirected graph>, the <DFS lowpoint> of $v$ is the smallest <DFS discovery time> reachable by following zero or more discovery <edges> down its <rooted tree>, then at most one non-discovery <edge> to an ancestor. Staying at $v$ is allowed. Ignore the reverse traversal of the discovery <edge> to the <parent in a rooted tree>: it is the same <edge>, not an escape route. Start with $\operatorname{low}(v)=\operatorname{disc}(v)$. On returning from a <child in a rooted tree> $w$, replace $\operatorname{low}(v)$ by $\min\{\operatorname{low}(v),\operatorname{low}(w)\}$. For a non-discovery <edge> from $v$ to an earlier ancestor $a$, replace it by $\min\{\operatorname{low}(v),\operatorname{disc}(a)\}$. This summarizes how far upward the explored branch can reconnect. https://sites.cs.ucsb.edu/~gilbert/cs240a/notes/TarjanDFS.pdf[Tarjan (1972), §3, LOWPT recurrence, pp. 151–153]{ref}
 
 The <cut vertex> criterion has a separate case for each <root of a tree> in the discovery <forest>:
 * A nonroot <vertex> $u$ is a <cut vertex> exactly when some <child in a rooted tree> $w$ satisfies $\operatorname{low}(w)\geq\operatorname{disc}(u)$.
 * A <root of a tree> is a <cut vertex> exactly when it has at least two <children in a rooted tree>, counting discovery <edges>, rather than all <graph neighbours>.
 * A discovery <edge> $uw$ is a <bridge in a graph> exactly when $\operatorname{low}(w)>\operatorname{disc}(u)$. A non-discovery <edge> is never a <bridge in a graph>.
 
-Why does equality matter? If $\operatorname{low}(w)=\operatorname{disc}(u)$, the branch below $w$ can reconnect to $u$, so the discovery <edge> $uw$ lies on a <graph cycle> and is not a <bridge in a graph>. Deleting the <vertex> $u$ destroys that reconnection too. If $u$ has a <parent in a rooted tree>, the branch is then separated from that <parent in a rooted tree>, explaining the non-strict <cut vertex> test. For a <root of a tree>, there is no earlier side to separate from; distinct discovery branches cannot have an <edge> between them, since <depth-first search> would have explored them as one branch. This gives the two-<children in a rooted tree> rule. These are proof outlines of the criteria. \a[https://algs4.cs.princeton.edu/41graph/Biconnected.java.html][Sedgewick and Wayne, Biconnected.java: discovery, lowpoint and root tests]{ref}\a[https://algs4.cs.princeton.edu/41graph/][Sedgewick and Wayne, Algorithms, §4.1: bridge detection]{ref}
+Why does equality matter? If $\operatorname{low}(w)=\operatorname{disc}(u)$, the branch below $w$ can reconnect to $u$, so the discovery <edge> $uw$ lies on a <graph cycle> and is not a <bridge in a graph>. Deleting the <vertex> $u$ destroys that reconnection too. If $u$ has a <parent in a rooted tree>, the branch is then separated from that <parent in a rooted tree>, explaining the non-strict <cut vertex> test. For a <root of a tree>, there is no earlier side to separate from; distinct discovery branches cannot have an <edge> between them, since <depth-first search> would have explored them as one branch. This gives the two-<children in a rooted tree> rule. These are proof outlines of the criteria. https://algs4.cs.princeton.edu/41graph/Biconnected.java.html[Sedgewick and Wayne, Biconnected.java: discovery, lowpoint and root tests]{ref}https://algs4.cs.princeton.edu/41graph/[Sedgewick and Wayne, Algorithms, §4.1: bridge detection]{ref}
 
 In the joined-$CD$ example with <DFS discovery times> $1,2,3,4,5,6$, the <DFS lowpoints> in label order are $1,1,1,4,4,4$. For $C$ and its <child in a rooted tree> $D$, $4>3$: $CD$ is a <bridge in a graph>, and $C$ is a <cut vertex>. For $D$ and its <child in a rooted tree> $E$, $4=4$: $D$ is a <cut vertex>, although $DE$ is not a <bridge in a graph>. The <root of a tree> $A$ has only one <child in a rooted tree>, $B$, so it is not a <cut vertex>. In the shared-$A$ example, the <root of a tree> $A$ has two <children in a rooted tree>, $B$ and $D$, and is a <cut vertex>, while every <DFS lowpoint> is $1$ and no <edge> passes the strict <bridge in a graph> test.
 
@@ -464,7 +567,32 @@ Restart <depth-first search> at every undiscovered <vertex> to cover a disconnec
 = Walk
 {synonym}
 
-A sequence of vertices and edges of a <graph>, with each edge joining its two consecutive vertices. Vertices and edges may repeat; a <path in a graph> imposes distinctness conditions. A <closed walk> ends where it starts.
+A <walk> records a journey through a <graph> as a finite alternating <sequence>
+$$
+W=(v_0,e_1,v_1,\ldots,e_m,v_m),\qquad m\geq0,
+$$
+where each <edge> $e_i$ joins the consecutive <vertices> $v_{i-1}$ and $v_i$. Both <vertices> and <edges> may repeat. Its length is $m$, counting <edge> traversals with repetitions, rather than counting different <edges> or measuring the drawing. Here a <graph path> means a <walk> with no repeated <vertices>; a <trail> instead forbids repeated <edges>. These conventions distinguish a journey's record from the <subgraph> consisting of the connections it used.https://ptwiddle.github.io/MAS341-Graph-Theory-2017/lecturenotes/lecture3.html[Paul Johnson, MAS341, Lecture 3: walks and trails]{ref}
+
+Unless stated otherwise, the examples below use a finite <simple graph> that is an <undirected graph>, so an <edge> may be traversed in either direction. In a <multigraph>, retain each <edge>'s individual identity as well as its endpoint <vertices>: two parallel <edges> are different choices for the same step. If <self-loops> are allowed, traversing one leaves the current <vertex> unchanged but adds one to the length. In a <directed graph>, each step must follow its <directed edge> from its initial to its terminal <vertex>, giving a <directed walk>; reversing a journey need not be possible.https://people.math.binghamton.edu/zaslav/Oldcourses/581.S99/notes.html[Thomas Zaslavsky, Supplementary Notes for Graduate Graph Theory: edge identities and walks]{ref}
+
+We allow the zero-length <walk> $(v)$ at every <vertex> $v$. It uses no <edges>, so it is also a <trail> and a <graph path>, and its coinciding endpoints make it a <closed walk>. This means staying put is a legitimate journey; a <graph> with no <vertices> has no such <walk>. Positive-length restrictions will be stated explicitly.https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-spring-2015/mit6_042js15_textbook.pdf[Lehman, Leighton and Meyer, Mathematics for Computer Science, §11.8.1: length-zero convention]{ref}
+
+Use the same constructed <graph> throughout these three sections:
+$$
+V=\{A,B,C,D,E,F\},\qquad E=\{AB,BC,CA,AD,DE,EA,AF\}.
+$$
+Here $AB$ denotes the <unordered pair> $\{A,B\}$, and $CA=AC$. Two <triangles in a graph>, $ABC$ and $ADE$, share $A$, with one extra <edge> $AF$. These are schematic connections, not measured roads; the highlighted connections in the diagram show which <edges> are used, while the numbered <sequence> records their order.
+
+\Image[walks-trails-closed-walks-route-comparison.png]
+{title=One constructed <graph>: repeated <edges> in a <walk>, repeated <vertices> in a <trail>, and a <graph path>}
+
+The length-six <walk> $B,C,A,B,C,A,F$ uses $BC$ and $CA$ twice, so it is not a <trail>. The length-six <trail> $B,C,A,D,E,A,F$ returns to $A$ but uses six different <edges>, so it is not a <graph path>. The length-three <graph path> $B,C,A,F$ repeats neither <vertices> nor <edges>. Thus
+$$
+\{\text{graph paths}\}\subsetneq\{\text{trails}\}\subsetneq\{\text{walks}\}
+$$
+for this particular <graph>. The restrictions answer different routing questions: revisiting a junction is harmless for many journeys, whereas reusing a serviced road segment can matter for an inspection route. Travel costs require a <weighted graph>; a <walk>'s cost adds the weight of each traversal, even when an <edge> is used again.
+
+Every finite <walk> from $s$ to $t$ contains a <graph path> from $s$ to $t$ after deleting detours. For a proof outline, if $v_i=v_j$ with $i<j$, delete the intervening <closed walk>. The retained steps still meet at the same <vertex>, and the length strictly decreases. Repeating terminates with no repeated <vertices>, or with the zero-length <graph path> when $s=t$. This explains why <reachability> can be formulated using either <walks> or <graph paths>. With nonnegative <edge> weights, deletion also cannot increase cost, connecting the argument to the <shortest path problem>; with negative weights that cost conclusion fails.https://ptwiddle.github.io/MAS341-Graph-Theory-2017/lecturenotes/lecture3.html[Paul Johnson, MAS341, Lecture 3: deleting repeated-vertex detours]{ref}
 
 = Trail in a graph
 {parent=Walk in a graph}
@@ -472,13 +600,38 @@ A sequence of vertices and edges of a <graph>, with each edge joining its two co
 = Trail
 {synonym}
 
-A trail is a <walk in a graph> in which no <edge> is traversed more than once. <Vertices> may repeat. In a <multigraph>, parallel <edges> count separately, so the edge sequence must be specified as well as the vertex sequence. An <Eulerian trail> traverses every <edge> of the graph; a <graph path> additionally forbids repeated <vertices>.
+A <trail> is a <walk> whose <edge> <sequence> $e_1,\ldots,e_m$ has no repetitions. Its <vertices> may repeat, including its first and last <vertices>. The zero-length <walk> is a <trail> because it repeats no <edge>. Every <graph path> is a <trail>, but the converse fails: the <trail> in the shared example is
+$$
+B,BC,C,CA,A,AD,D,DE,E,EA,A,AF,F.
+$$
+Its six <edges> $BC,CA,AD,DE,EA,AF$ are pairwise distinct, although $A$ occurs twice. Visiting a junction again and traversing a road segment again are different events.https://people.math.binghamton.edu/zaslav/Oldcourses/581.S99/notes.html[Thomas Zaslavsky, Supplementary Notes for Graduate Graph Theory: trails and paths]{ref}
+
+In an <undirected graph>, traversing $AB$ and then $BA$ repeats the same <edge>; direction of travel does not give it a new identity. In a <multigraph> with distinct parallel <edges> $p,q$ joining $X$ and $Y$, the <closed walk> $(X,p,Y,q,X)$ is a <trail>, whereas $(X,p,Y,p,X)$ is not. Both have the same <vertex> <sequence> $X,Y,X$. In a <directed graph>, separate <directed edges> $X\to Y$ and $Y\to X$ may instead be used once each; record their identities and obey their directions. Thus testing a <trail> means checking the actual <edge> records, not merely checking consecutive endpoint labels.
+
+For a finite <graph>, a <trail> has length at most $|E|$; unrestricted <walks> can have arbitrarily large length whenever a positive-length <closed walk> exists, since it can be repeated. An <Eulerian trail> is the special <trail> that uses every <edge>, so its length is exactly $|E|$. Our length-six <trail> omits $AB$ and is therefore not an <Eulerian trail>. In a road-inspection model, a <trail> describes servicing its selected segments once while allowing returns to junctions; requiring service of every segment leads to the <Eulerian trail> question. If extra travel between serviced segments is necessary, the complete journey can be a <walk> even when each segment is serviced only once. This distinction keeps the service requirement separate from the route actually travelled.
 
 = Closed walk
 {parent=Walk in a graph}
 {title2=$v_m=v_0$}
 
-A <walk in a graph> whose first and last vertices agree. An <Euclidean travelling salesman tour> can be estimated by first constructing a closed walk visiting all locations and then using the <triangle inequality> to shortcut repeated visits.
+A <closed walk> is a <walk> with equal endpoint <vertices>, $v_m=v_0$. Under our convention this includes the zero-length <walk> $(v)$; returning after traversing at least one <edge> requires $m>0$. Closure imposes no other restriction on repeated <vertices> or <edges>. In a <directed graph>, a <closed directed walk> must also follow every <directed edge> in its permitted direction.https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-spring-2015/mit6_042js15_textbook.pdf[Lehman, Leighton and Meyer, Mathematics for Computer Science, §§9.2 and 11.8.1: closed walks]{ref}
+
+\Image[walks-trails-closed-walks-return-comparison.png]
+{title=Returning to $A$: backtracking <closed walk>, closed <trail> with a repeated internal <vertex>, and <graph cycle>}
+
+In the shared <simple graph>, $A,F,A$ is a length-two <closed walk> that immediately backtracks along $AF$. It is not a <trail>, since $AF$ is used twice, and it is not a <graph cycle>. The length-six <closed walk> $A,B,C,A,D,E,A$ is a <trail>, since its six <edges> are distinct, but is not a <graph cycle>: it returns to $A$ midway through the journey. The length-three <closed walk> $A,B,C,A$ is a <graph cycle>, with all <vertices> distinct apart from the required endpoint repetition. In a <simple graph> that is an <undirected graph>, a <graph cycle> has length at least three; the two-step backtrack is excluded.https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-spring-2015/mit6_042js15_textbook.pdf[Lehman, Leighton and Meyer, Mathematics for Computer Science, §11.8.1: cycles and backtracking]{ref}
+
+A positive-length <closed walk> therefore need not reveal a <graph cycle>: even a <tree> permits an out-and-back journey on an <edge>. A positive-length closed <trail> in a <simple graph> does contain a <graph cycle>. For a proof outline, choose a shortest positive-length consecutive portion of the <trail> whose endpoint <vertices> coincide. It cannot repeat an internal <vertex>, since that would give a shorter such portion; it cannot have length one or two because <self-loops> and repeated <edges> are excluded. It is consequently a <graph cycle>. Cutting it out leaves another closed <trail>, possibly of length zero, so repetition partitions the original <edges> into <graph cycles>. In our six-step example these are the two <triangles in a graph>. A closed <trail> using every <edge> would be an <Euler circuit>; here $AF$ is omitted.
+
+Counting return journeys makes <closed walks> useful even when they repeat <edges>. For a finite <simple graph> with <adjacency matrix> $M$, the <walk count from powers of an adjacency matrix> gives $(M^k)_{uv}$ length-$k$ <walks> from $u$ to $v$, for every <nonnegative integer> $k$. A proof outline is that <matrix multiplication> appends one allowed step, summing over the previous endpoint; $M^0$ is the <identity matrix>, recording the unique zero-length <walk> at each <vertex>. Consequently
+$$
+(M^k)_{vv}=\#\{\text{length-}k\text{ closed walks starting at }v\},\qquad \operatorname{tr}(M^k)=\sum_{v\in V}(M^k)_{vv}.
+$$
+The <trace> counts <closed walks> with a specified starting <vertex> and traversal order, not distinct <graph cycles>. These formulas use adjacency entries, not arbitrary travel costs in a <weighted graph>.https://ocw.mit.edu/courses/14-15-networks-spring-2022/mit14_15s22_lec2.pdf[Alexander Wolitzky, Graph Theory and Social Networks, slides 9–10: powers of adjacency matrices]{ref}
+
+In our example, $(M^2)_{AA}=5$: the five length-two <closed walks> are $A,B,A$, $A,C,A$, $A,D,A$, $A,E,A$, and $A,F,A$. Also $(M^3)_{AA}=4$, going round either <triangle in a graph> in either direction, and $\operatorname{tr}(M^3)=12$: each of the two <triangles in a graph> supplies three choices of starting <vertex> and two directions. These exact counts for the constructed <graph> illustrate why return counts and <graph cycle> counts differ.
+
+A <closed walk> naturally models a delivery or inspection journey that returns to its depot. Repeated <vertices> let it combine several excursions; repeated <edges> let it serve a dead end and return. For an <Euclidean travelling salesman tour>, one can first construct a <closed walk> visiting all locations and then use the <triangle inequality> to shortcut repeated visits without increasing total length. That argument assumes direct travel between the retained locations is permitted, as in a <complete graph> weighted by <Euclidean distance>; an arbitrary road network need not contain those shortcut <edges>.
 
 = Undirected graph
 {parent=Graph theory}
@@ -490,7 +643,20 @@ An undirected <graph> has edges that are unordered pairs of vertices. In a simpl
 {wiki}
 {title2=$H\preccurlyeq G$}
 
-A graph minor is obtained by deleting <vertices>, deleting <edges>, and performing <edge contractions>. Equivalently, its <vertices> can be represented by disjoint nonempty connected sets of <vertices> in the original <graph>, with an <edge> joining two sets whenever the corresponding <vertices> are adjacent. These are <branch sets of a graph minor>.
+A <graph minor> compresses connected regions of a <graph> into single <vertices> while retaining selected connections between them. For finite <simple graphs>, $H\preccurlyeq G$ means that some sequence of deleting <vertices>, deleting <edges>, and performing <edge contractions> produces $H$ up to <graph isomorphism>. Deleting a <vertex> also deletes all its incident <edges>; deleting an <edge> leaves its endpoints. The <edge contraction> convention here removes resulting <self-loops> and duplicate <edges>.<Graph Theory by Reinhard Diestel/The Basics (author-hosted chapter preview)>{ref}
+
+For an exact small example, let $G$ be the <cycle graph> $C_4$ with <vertices> $u,v,a,b$ and <edges> $uv,va,ab,bu$. Contract $uv$ to a new <vertex> $w$. The surviving <edges> are $wa,ab,bw$, giving the <complete graph> $K_3$. Thus $K_3\preccurlyeq C_4$, although $C_4$ has no <triangle in a graph> as a <subgraph>. The <branch sets of a graph minor> are $\{u,v\},\{a\},\{b\}$, with the original <edges> $va,ab,bu$ witnessing all three required adjacencies. The first panel of the <edge contraction> diagram shows this operation.
+
+A <subgraph> uses existing <vertices> and <edges>; a <topological minor> permits a <graph subdivision> of the target as a <subgraph>, so target <edges> become <graph paths> with mutually disjoint interiors and no target <vertex> in an interior. An ordinary <graph minor> permits whole connected <branch sets of a graph minor> in place of target <vertices>. Every <topological minor> is a <graph minor>, by contracting the replacement <graph paths>.<Graph Theory by Reinhard Diestel/The Basics (author-hosted chapter preview)>[Proposition 1.7.3(i)]
+
+The converse fails. Take the <tree> with <edges> $uv,ua,ub,vc,vd$. Contracting $uv$ gives the <star graph> $K_{1,4}$. Yet the original <tree> has <maximum degree> three, whereas every <graph subdivision> of $K_{1,4}$ retains a centre of <degree of a vertex> four. Hence $K_{1,4}$ is a <graph minor> but not a <topological minor> of this <tree>. The difference is that a connected <branch set of a graph minor> may gather connections incident to several original <vertices>.
+
+The counts of <vertices> and <edges> never increase under these operations. However, the $C_4$ example shows that being a <bipartite graph> is not preserved: its <graph minor> $K_3$ contains an <odd cycle>. Its <chromatic number> also increases from two to three. A <connected graph> stays connected under an <edge contraction>, because the image of each <graph path> still connects its endpoints, but deletion can disconnect it. Thus one must check the particular <graph property> before treating it as preserved by taking <graph minors>.
+
+Being a <planar graph> is preserved: in a crossing-free drawing, shrink a contracted <edge> and bring its incident <edges> into the merged <vertex>; deletion merely removes parts of the drawing. This makes a nonplanar <graph minor> a certificate that the original <graph> is nonplanar. More strongly, for a finite <simple graph>, being a <planar graph> is equivalent to having neither the <complete graph> $K_5$ nor the <complete bipartite graph> $K_{3,3}$ as a <graph minor>. Finding the corresponding <branch sets of a graph minor> settles nonplanarity even when no literal $K_5$ or $K_{3,3}$ <subgraph> is present. The converse is a substantial theorem, rather than a consequence of preservation alone.<Graph Theory by Reinhard Diestel/Planar Graphs (author-hosted chapter preview)>[Theorem 4.4.6, equivalence of planarity and exclusion of K5 and K3,3 minors]
+
+= Topological minor
+{parent=Graph minor}
 
 = Rooted branch-set reduction
 {parent=Graph minor}
@@ -545,7 +711,20 @@ The density hypothesis is a lower bound. Reversing its inequality would be false
 = Branch sets of a graph minor
 {synonym}
 
-A branch set is a nonempty set of <vertices> inducing a <connected graph> used to represent one <vertex> of a <graph minor>. A $K_t$ <graph minor> is equivalent to $t$ disjoint branch sets with at least one <edge> between every pair. Connectedness allows each set to be reduced to a single <vertex> by <edge contractions>.
+A <branch set of a graph minor> is the connected region representing one target <vertex>. For finite <simple graphs> $G$ and $H$, a witness to $H\preccurlyeq G$ assigns a nonempty <set> $B_x\subseteq V(G)$ to each $x\in V(H)$, such that the <sets> are pairwise disjoint, each <induced subgraph> $G[B_x]$ is a <connected graph>, and every $xy\in E(H)$ has a witnessing <edge> of $G$ between $B_x$ and $B_y$. Extra <edges> between <branch sets of a graph minor> are allowed: they can be deleted. Unused <vertices> are also allowed.<Minor Containment and Disjoint Paths in almost-linear time by Tuukka Korhonen and others>{ref}
+
+\Image[graph-minor-connected-branch-set-adjacency.png]
+{title=Connected <branch sets of a graph minor> and their witnessing <edges>, with an optional <edge> deletion}
+
+In the diagram, the host <graph> has <vertex set> $\{1,2,3,4,5,6\}$ and <edges>
+$$
+12,\ 34,\ 56,\ 23,\ 45,\ 61,\ 24.
+$$
+Choose $B_A=\{1,2\}$, $B_B=\{3,4\}$, and $B_C=\{5,6\}$. Their internal <edges> $12,34,56$ establish connectedness. The <edges> $23,45,61$ witness $AB,BC,CA$, respectively, so they form a model of the <complete graph> $K_3$. The additional <edge> $24$ also joins $B_A$ to $B_B$; it supplies another witness for the same target <edge>, not a fourth target <edge>. Contracting $12,34,56$ and merging duplicate <edges> gives exactly $\{AB,BC,CA\}$.
+
+The same <branch sets of a graph minor> also witness the <path graph> $A,B,C$: retain the witnesses $23,45$, and delete $61$ to remove the unwanted $AC$ adjacency. This demonstrates why the definition requires an <edge> for every target adjacency, without forbidding other adjacencies in the host <graph>. For a <complete graph> $K_t$, there are no unwanted pairs: its model consists of $t$ disjoint connected <branch sets of a graph minor> with an <edge> between every pair.
+
+To turn a model into an operation sequence, keep a <spanning tree> inside each $G[B_x]$, keep one witnessing <edge> for each <edge> of $H$, and delete all other <edges> and unused <vertices>. Contract each chosen <spanning tree> to one <vertex>. Disjointness prevents two target <vertices> from merging; connectedness provides the <edge contractions> that merge each individual region. Conversely, track the original <vertices> merged into every surviving <vertex> during a deletion-and-<edge contraction> sequence. They form disjoint connected <branch sets of a graph minor>, and each surviving <edge> comes from an original <edge> between its two regions. A list of these regions, their connecting <trees>, and their witnessing <edges> therefore gives a directly checkable certificate.
 
 = Random branch-set construction of a complete graph minor
 {parent=Branch set of a graph minor}
@@ -555,8 +734,30 @@ In a dense <graph> with many <common neighbours> for every pair of <vertices>, c
 = Edge contraction
 {parent=Graph minor}
 {wiki}
+{title2=$G/e$}
 
-Contracting an <edge> $uv$ identifies its endpoints, then removes loops and duplicate <edges> to produce a simple <graph>. It reduces the <edge> count by exactly $1+|N(u)\cap N(v)|$: one for $uv$, and one for each <common neighbour>.
+An <edge contraction> merges the two endpoints of an existing <edge>. For a finite <simple graph> $G$ and $e=uv$, replace $u,v$ by a new <vertex> $w$. Retain every <edge> with neither endpoint in $\{u,v\}$, and join $w$ to every member of
+$$
+N_{G/e}(w)=(N_G(u)\cup N_G(v))\setminus\{u,v\}.
+$$
+Here $N_G(u)$ and $N_G(v)$ denote the original open <graph neighbourhoods>, and $N_{G/e}(w)$ is the new <graph neighbourhood>. Remove the <self-loop> arising from $uv$ and merge duplicate <edges>, so the result $G/e$ is again a <simple graph>. This is not deletion of $uv$, which keeps both original <vertices>.<Graph Theory by Reinhard Diestel/The Basics (author-hosted chapter preview)>{ref}
+
+\Image[graph-edge-contraction-common-neighbour-count.png]
+{title=<Edge contraction> of a four-cycle and a <triangle in a graph>: <common neighbours> determine the lost <edge> count}
+
+The left example contracts $uv$ in the <cycle graph> $C_4$ to give $\{wa,ab,bw\}$. Its endpoints have no <common neighbours>, so four <edges> become three. The right example contracts $uv$ in the <triangle in a graph> with <edges> $uv,ua,va$. Its endpoints have the single <common neighbour> $a$, so the two <edges> $ua,va$ become one <edge> $wa$: three <edges> become one.
+
+For any such <edge contraction>, the exact counts are
+$$
+|V(G/e)|=|V(G)|-1,\qquad |E(G/e)|=|E(G)|-1-|N_G(u)\cap N_G(v)|.
+$$
+The contracted <edge> accounts for one loss. Each <common neighbour> $z$ contributes exactly one further loss, since $uz,vz$ become a single <edge> $wz$. All other <edges> correspond one-to-one to surviving <edges>. In particular the new <degree of a vertex> is
+$$
+\deg_{G/e}(w)=\deg_G(u)+\deg_G(v)-2-|N_G(u)\cap N_G(v)|.
+$$
+These formulas depend on simplifying to a <simple graph>; a <multigraph> convention that retains duplicate <edges> has different counts. In the six-<vertex> <branch set of a graph minor> diagram, contracting $12$ loses one <edge>, contracting the resulting $34$ loses two because of its <common neighbour> $A$, and contracting $56$ loses one. Hence its seven <edges> become the three <edges> of $K_3$: $7-1-2-1=3$.
+
+An <edge contraction> can increase a <degree of a vertex> even while decreasing both total counts. For example, contracting $uv$ in the <tree> with <edges> $uv,ua,ub,vc,vd$ merges two <vertices> of <degree of a vertex> three into one of <degree of a vertex> four. This is the mechanism behind the distinction between a <graph minor> and a <topological minor>.
 
 = Vertex cover
 {parent=Graph theory}
@@ -568,7 +769,7 @@ For a finite <simple graph> $G=(V,E)$, a <vertex cover> is a <subset> $C\subsete
 $$
 \{u,v\}\in E\Longrightarrow u\in C\ \text{or}\ v\in C.
 $$
-Both endpoints may be selected; the condition requires at least one. An <isolated vertex> covers no <edge>, so a <minimum vertex cover> never needs it.\a[https://diestel-graph-theory.com/Sample.pdf][Diestel, Graph Theory, fourth electronic edition, Section 2.1, definition of vertex cover]{ref}
+Both endpoints may be selected; the condition requires at least one. An <isolated vertex> covers no <edge>, so a <minimum vertex cover> never needs it.https://diestel-graph-theory.com/Sample.pdf[Diestel, Graph Theory, fourth electronic edition, Section 2.1, definition of vertex cover]{ref}
 
 Take the <cycle graph> $C_5$ with <vertices> $0,1,2,3,4$ and <edges> $01,12,23,34,40$. The <set> $C=\{1,3,4\}$ is a <vertex cover>: <vertex> $1$ covers $01$ and $12$, <vertex> $3$ covers $23$ and $34$, and <vertex> $4$ covers $40$ as well as $34$. In particular, the closing <edge> $40$ is covered even though <vertex> $0$ is unselected.
 
@@ -576,7 +777,7 @@ The unselected <vertices> $I=V\setminus C=\{0,2\}$ form an <independent set>. Th
 $$
 C\text{ is a vertex cover}\quad\Longleftrightarrow\quad V\setminus C\text{ is an independent set}.
 $$
-Here $V\setminus C$ is the <complement of a set> within $V$; the <graph> itself keeps all its <edges>. The <complement graph> is a different construction.\a[https://introtcs.org/public/lec_12_NP.html][Barak, Introduction to Theoretical Computer Science, Chapter 14, vertex-cover exercise]{ref}
+Here $V\setminus C$ is the <complement of a set> within $V$; the <graph> itself keeps all its <edges>. The <complement graph> is a different construction.https://introtcs.org/public/lec_12_NP.html[Barak, Introduction to Theoretical Computer Science, Chapter 14, vertex-cover exercise]{ref}
 
 \Image[vertex-cover-independent-complement.png]
 {title=A minimum vertex cover and its maximum independent complement on the same five-cycle}
@@ -604,7 +805,7 @@ Every <matching in a graph> gives a lower bound on the <vertex cover number>. It
 $$
 |M|\leq |C|,\qquad \nu(G)\leq\tau(G),
 $$
-where $\nu(G)$ is the <matching number>. Exhibiting a <matching in a graph> and a <vertex cover> of the same size certifies that both are optimum. <Kőnig's theorem for bipartite matching> says that every finite <bipartite graph> admits this equality: $\nu(G)=\tau(G)$.\a[https://diestel-graph-theory.com/Sample.pdf][Diestel, Graph Theory, Section 2.1, Theorem 2.1.1 and its lower-bound argument]{ref}
+where $\nu(G)$ is the <matching number>. Exhibiting a <matching in a graph> and a <vertex cover> of the same size certifies that both are optimum. <Kőnig's theorem for bipartite matching> says that every finite <bipartite graph> admits this equality: $\nu(G)=\tau(G)$.https://diestel-graph-theory.com/Sample.pdf[Diestel, Graph Theory, Section 2.1, Theorem 2.1.1 and its lower-bound argument]{ref}
 
 For the <complete bipartite graph> $K_{2,3}$, let the left <vertices> be $L=\{a,b\}$ and the right <vertices> be $R=\{x,y,z\}$. All six <edges> join $L$ to $R$. Selecting $C=L$ covers every <edge>; selecting $M=\{ax,by\}$ gives a <matching in a graph> of size two. The lower bound and this <vertex cover> give $2\leq\tau(K_{2,3})\leq2$, so $\tau(K_{2,3})=\nu(K_{2,3})=2$. The remaining <vertices> $R$ form a largest <independent set> of size three. Crossings of drawn <edges> are not extra <vertices>.
 
@@ -784,11 +985,11 @@ A <graph coloring> assigns labels called colours to elements of a <graph>, subje
 $$
 c:V\to\{1,\ldots,k\},\qquad \{u,v\}\in E\Longrightarrow c(u)\ne c(v).
 $$
-The colour labels need not be visual colours: they can represent time slots or resources. Unused labels are allowed. Properness concerns <graph adjacency>, so moving <vertices> in a drawing does not change whether the <graph coloring> is valid.\a[https://ocw.mit.edu/courses/6-1200j-mathematics-for-computer-science-spring-2024/mit6_1200j_s24_lec11.pdf][MIT, Graphs and Coloring, Section 2.1]{ref}
+The colour labels need not be visual colours: they can represent time slots or resources. Unused labels are allowed. Properness concerns <graph adjacency>, so moving <vertices> in a drawing does not change whether the <graph coloring> is valid.https://ocw.mit.edu/courses/6-1200j-mathematics-for-computer-science-spring-2024/mit6_1200j_s24_lec11.pdf[MIT, Graphs and Coloring, Section 2.1]{ref}
 
 Each <colour class> $c^{-1}(i)$ is an <independent set>: no <edge> has both endpoints in it. Conversely, a <set partition> of $V$ into <independent sets> gives a proper <graph coloring> by assigning one colour to each part. Thus <graph coloring> groups mutually compatible objects, and its <chromatic number> asks for the fewest such groups.
 
-For an illustrative scheduling model, let each <vertex> represent an activity of equal duration and each <edge> represent a pair that cannot occur in the same time slot. A proper <graph coloring> is then a schedule respecting those pairwise conflicts. If the conflicts form a <cycle graph> $C_4$ with <edges> $12,23,34,41$, activities $1,3$ can share one slot and $2,4$ another. This model assumes interchangeable slots and includes only the pairwise conflicts encoded by the <graph>.\a[https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-fall-2010/1ccaf180bcd244fddd32e60789fa922f_h9wxtqoa1jY.pdf][Leighton, MIT Graph Theory and Coloring, transcript pages 8–10]{ref}
+For an illustrative scheduling model, let each <vertex> represent an activity of equal duration and each <edge> represent a pair that cannot occur in the same time slot. A proper <graph coloring> is then a schedule respecting those pairwise conflicts. If the conflicts form a <cycle graph> $C_4$ with <edges> $12,23,34,41$, activities $1,3$ can share one slot and $2,4$ another. This model assumes interchangeable slots and includes only the pairwise conflicts encoded by the <graph>.https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-fall-2010/1ccaf180bcd244fddd32e60789fa922f_h9wxtqoa1jY.pdf[Leighton, MIT Graph Theory and Coloring, transcript pages 8–10]{ref}
 
 The word "colouring" also occurs in <edge coloring>, which requires different colours on <edges> sharing an endpoint. The <chromatic number> discussed here always refers to <proper vertex colouring>.
 
@@ -833,13 +1034,13 @@ If graphs $G_i$ cover the edges of an $n$-vertex graph with <independence number
 = Greedy colouring
 {synonym}
 
-For a finite <simple graph>, choose an order of its <vertices> and process them one at a time. Give each <vertex> the smallest positive colour label not already used by its coloured neighbours, and keep all earlier assignments. This is <greedy coloring>: each step makes a locally available choice. The resulting <graph coloring> is proper because, for each <edge>, its later endpoint avoids the colour of its earlier endpoint.\a[https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-fall-2010/1ccaf180bcd244fddd32e60789fa922f_h9wxtqoa1jY.pdf][Leighton, MIT Graph Theory and Coloring, transcript pages 12–13]{ref}
+For a finite <simple graph>, choose an order of its <vertices> and process them one at a time. Give each <vertex> the smallest positive colour label not already used by its coloured neighbours, and keep all earlier assignments. This is <greedy coloring>: each step makes a locally available choice. The resulting <graph coloring> is proper because, for each <edge>, its later endpoint avoids the colour of its earlier endpoint.https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-fall-2010/1ccaf180bcd244fddd32e60789fa922f_h9wxtqoa1jY.pdf[Leighton, MIT Graph Theory and Coloring, transcript pages 12–13]{ref}
 
 If the <maximum degree of a graph> is $\Delta(G)$, a <vertex> has at most $\Delta(G)$ previously coloured neighbours, forbidding at most that many distinct colours. At least one label among $1,\ldots,\Delta(G)+1$ remains available. Consequently every order gives
 $$
 \chi(G)\leq\text{number of colours used by greedy colouring}\leq\Delta(G)+1.
 $$
-This is an upper bound, not a promise that <greedy coloring> attains the <chromatic number>.\a[https://ocw.mit.edu/courses/6-1200j-mathematics-for-computer-science-spring-2024/mit6_1200j_s24_lec11.pdf][MIT, Graphs and Coloring, Theorem 2]{ref}
+This is an upper bound, not a promise that <greedy coloring> attains the <chromatic number>.https://ocw.mit.edu/courses/6-1200j-mathematics-for-computer-science-spring-2024/mit6_1200j_s24_lec11.pdf[MIT, Graphs and Coloring, Theorem 2]{ref}
 
 \Image[greedy-coloring-order.png]
 {title=Two orders for <greedy coloring> of the same <path graph> $P_4$}
@@ -972,7 +1173,7 @@ Choose $r=\max\{0,\lceil\log_3(4m/n)\rceil\}$. Then <Markov inequality> gives $\
 $$
 k=2^r=O\left(\max\{1,(m/n)^{\log_3 2}\}\right)=O(n^{\log_3 2}).
 $$
-The removed <vertices> can retain their original colors, as the <semicoloring> only requires the retained <induced subgraph> to be proper. A failed draw can be detected and repeated, with at most two trials on average. The case $m=0$ needs just one color. This is the elementary independent-hyperplane construction in \a[https://arxiv.org/abs/cs/9812008][Karger, Motwani and Sudan's paper on approximate graph coloring].
+The removed <vertices> can retain their original colors, as the <semicoloring> only requires the retained <induced subgraph> to be proper. A failed draw can be detected and repeated, with at most two trials on average. The case $m=0$ needs just one color. This is the elementary independent-hyperplane construction in https://arxiv.org/abs/cs/9812008[Karger, Motwani and Sudan's paper on approximate graph coloring].
 
 = Edge coloring
 {parent=Graph coloring}
@@ -1022,7 +1223,7 @@ A proper three-color <edge coloring> of a <cubic graph>. Label its colors by the
 {wiki}
 {title2=χ(G)}
 
-For a nonempty finite <simple graph> $G$, the <chromatic number> $\chi(G)$ is the least positive <integer> $k$ for which $G$ has a proper vertex <graph coloring> with at most $k$ colours. To establish an exact <chromatic number>, give a colouring using that many colours and explain why fewer cannot suffice. A colouring alone gives only an upper bound.\a[https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-spring-2015/mit6_042js15_textbook.pdf][Lehman, Leighton and Meyer, Mathematics for Computer Science, Definition 11.7.1]{ref}
+For a nonempty finite <simple graph> $G$, the <chromatic number> $\chi(G)$ is the least positive <integer> $k$ for which $G$ has a proper vertex <graph coloring> with at most $k$ colours. To establish an exact <chromatic number>, give a colouring using that many colours and explain why fewer cannot suffice. A colouring alone gives only an upper bound.https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-spring-2015/mit6_042js15_textbook.pdf[Lehman, Leighton and Meyer, Mathematics for Computer Science, Definition 11.7.1]{ref}
 
 \Image[graph-coloring-cycle-examples.png]
 {title=Optimal <graph colorings> of the <cycle graphs> $C_3,C_4,C_5$}
@@ -1033,7 +1234,7 @@ These small <graphs> show why the <chromatic number> measures more than the pres
 * The <cycle graph> $C_3$, also the <complete graph> $K_3$, has <chromatic number> three. Every pair of <vertices> is adjacent, so three distinct colours are necessary and sufficient.
 * The <cycle graph> $C_4$ has <chromatic number> two. Around the <graph cycle>, the assignment $1,2,1,2$ is proper, and a single colour would violate every <edge>.
 * The <cycle graph> $C_5$ has <chromatic number> three. With two colours, alternation around the <graph cycle> would force the first and fifth <vertices> to have the same colour despite their joining <edge>. The assignment $1,2,1,2,3$ works. Thus a <triangle-free graph> can still require more than two colours.
-* The <complete graph> $K_n$ has <chromatic number> $n$: all $n$ <vertices> are pairwise adjacent, so each must have its own colour.\a[https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-fall-2005/5926091844fc3d60fa18eb75c9a2bc03_slides5w.pdf][Meyer, MIT Graph Coloring, slides 18–19]{ref}
+* The <complete graph> $K_n$ has <chromatic number> $n$: all $n$ <vertices> are pairwise adjacent, so each must have its own colour.https://ocw.mit.edu/courses/6-042j-mathematics-for-computer-science-fall-2005/5926091844fc3d60fa18eb75c9a2bc03_slides5w.pdf[Meyer, MIT Graph Coloring, slides 18–19]{ref}
 
 For a <cycle graph> of even length, alternating two colours closes consistently; for an <odd cycle>, it does not, and a third colour on the final <vertex> suffices. More generally, the <two-colourability criterion for bipartite graphs> says that $\chi(G)\leq2$ exactly when $G$ is a <bipartite graph>, and the <odd-cycle characterization of bipartite graphs> identifies the obstruction as an <odd cycle>. A nonempty <graph> with no <edges> has <chromatic number> one; a <bipartite graph> with at least one <edge> has <chromatic number> exactly two.
 
@@ -1181,7 +1382,7 @@ For positive <integers> $t<n$ this product vanishes, expressing the impossibilit
 = Independent set
 {synonym}
 
-An <independent set> selects mutually compatible objects when an <edge> of a <graph> represents a conflict. For example, if <vertices> are activities and <edges> join activities that cannot occur together, an <independent set> is a collection that can share one time slot. Finding the largest such collection is measured by the <independence number>.\a[https://introtcs.org/public/lec_12_NP.html][Barak, Introduction to Theoretical Computer Science, Chapter 14, The independent set problem]{ref}
+An <independent set> selects mutually compatible objects when an <edge> of a <graph> represents a conflict. For example, if <vertices> are activities and <edges> join activities that cannot occur together, an <independent set> is a collection that can share one time slot. Finding the largest such collection is measured by the <independence number>.https://introtcs.org/public/lec_12_NP.html[Barak, Introduction to Theoretical Computer Science, Chapter 14, The independent set problem]{ref}
 
 In a finite <simple graph> $G=(V,E)$, an <independent set> is a <subset> $I\subseteq V$ with no <edge> joining two selected <vertices>:
 $$
@@ -1213,7 +1414,7 @@ The <independence number> is the largest <cardinality> of an <independent set> i
 $$
 \alpha(G)=\max\{|I|:I\subseteq V(G),\ I\text{ is an independent set of }G\}.
 $$
-It answers "how many mutually compatible objects can be selected at once?", while the <chromatic number> asks how many compatible groups are needed for all the <vertices>. Diestel uses this notation for a largest <independent set>.\a[https://diestel-graph-theory.com/Sample.pdf][Diestel, Graph Theory, Chapter 2, Exercise 23]{ref}
+It answers "how many mutually compatible objects can be selected at once?", while the <chromatic number> asks how many compatible groups are needed for all the <vertices>. Diestel uses this notation for a largest <independent set>.https://diestel-graph-theory.com/Sample.pdf[Diestel, Graph Theory, Chapter 2, Exercise 23]{ref}
 
 For the <cycle graph> $C_5$, the <independent set> $\{0,2\}$ shows that $\alpha(C_5)\geq2$. Three selected <vertices> would require at least three unselected <vertices> separating them around the <cycle graph>, which has only five <vertices>. Thus $\alpha(C_5)=2$. There are five largest <independent sets>, obtained by rotating $\{0,2\}$ around the <cycle graph>, and five corresponding <minimum vertex covers>.
 
@@ -1334,6 +1535,11 @@ A path graph $P_n$ has $n$ vertices in a single chain and $n-1$ edges. Its endpo
 {synonym}
 
 A cycle is a closed path: its final vertex is joined back to its initial vertex, and no other vertex is repeated.
+
+= Induced cycle
+{parent=Cycle in a graph}
+
+An <induced cycle> is a <cycle in a graph> whose <vertices> induce exactly its cycle <edges>, with no <edge> between nonconsecutive <vertices>. A triangle is an <induced cycle> of length three. A <chordal graph> forbids <induced cycles> of length at least four.
 
 = Girth
 {parent=Cycle in a graph}
@@ -1527,7 +1733,7 @@ The <Graph Laplacian> converts local differences along <edges> into a <linear ma
 $$
 L=D-A,\qquad (Lx)_i=\sum_{j:\{i,j\}\in E}(x_i-x_j).
 $$
-Thus the value at a <vertex> is compared with its neighbours. Every row sums to zero, so $L\mathbf1=0$: a constant <vector> produces no differences. This definition and the associated <Graph Laplacian quadratic form> are developed in Spielman's authored survey.\a[https://www.cs.yale.edu/homes/spielman/PAPERS/SGTChapter.pdf][Spielman, Spectral Graph Theory, Sections 16.3.1–16.3.2]{ref}
+Thus the value at a <vertex> is compared with its neighbours. Every row sums to zero, so $L\mathbf1=0$: a constant <vector> produces no differences. This definition and the associated <Graph Laplacian quadratic form> are developed in Spielman's authored survey.https://www.cs.yale.edu/homes/spielman/PAPERS/SGTChapter.pdf[Spielman, Spectral Graph Theory, Sections 16.3.1–16.3.2]{ref}
 
 For the three-<vertex> <path graph> $A-B-C$, the <vertex degrees> are $1,2,1$, and in that order
 $$
@@ -1543,7 +1749,7 @@ L\begin{pmatrix}1\\-2\\1\end{pmatrix}=3\begin{pmatrix}1\\-2\\1\end{pmatrix}.
 $$
 The constant <eigenvector> has <eigenvalue> zero; the other two describe progressively stronger neighbour disagreement. Dividing these <eigenvectors> by $\sqrt3,\sqrt2,\sqrt6$, respectively, gives an <orthonormal basis>. The four-<vertex> <cycle graph> is already worked out under <circulant matrix>, where <Fourier diagonalization of a circulant matrix> gives its <eigenvalues>.
 
-Every formula here uses $L=D-A$ without degree normalization. For comparison, Chung's treatment uses the degree-scaled <matrix> $D^{-1/2}LD^{-1/2}$, with a convention for isolated <vertices>; its <eigenvalues> must not be substituted into the examples here.\a[https://www.math.ucsd.edu/~fan/cbms.pdf][Chung, Lectures on Spectral Graph Theory, Section 1.2]{ref}
+Every formula here uses $L=D-A$ without degree normalization. For comparison, Chung's treatment uses the degree-scaled <matrix> $D^{-1/2}LD^{-1/2}$, with a convention for isolated <vertices>; its <eigenvalues> must not be substituted into the examples here.https://www.math.ucsd.edu/~fan/cbms.pdf[Chung, Lectures on Spectral Graph Theory, Section 1.2]{ref}
 
 = Weighted graph Laplacian
 {title2=$L_w$}
@@ -1562,7 +1768,7 @@ L_w=\begin{pmatrix}2&-2&0\\-2&5&-3\\0&-3&3\end{pmatrix},\qquad
 x=\begin{pmatrix}2\\0\\-1\end{pmatrix},\qquad
 x^TL_wx=2(2-0)^2+3(0-(-1))^2=11.
 $$
-The <weighted graph Laplacian> is still a <positive semidefinite matrix>. Its <kernel> consists of <vectors> constant on each <connected component of a graph> after zero-weight <edges> are removed: an <edge> of weight zero imposes no constraint. In an <electrical network>, taking the weights to be <electrical conductances> makes $x^TL_wx$ the total power dissipated by <Joule heating> when $x$ gives the <voltages> at the <vertices>. This physical interpretation explains why stronger connections penalize disagreement more heavily.\a[https://www.cs.yale.edu/homes/spielman/PAPERS/SGTChapter.pdf][Spielman, Spectral Graph Theory, Section 16.3.2: resistor networks]{ref}
+The <weighted graph Laplacian> is still a <positive semidefinite matrix>. Its <kernel> consists of <vectors> constant on each <connected component of a graph> after zero-weight <edges> are removed: an <edge> of weight zero imposes no constraint. In an <electrical network>, taking the weights to be <electrical conductances> makes $x^TL_wx$ the total power dissipated by <Joule heating> when $x$ gives the <voltages> at the <vertices>. This physical interpretation explains why stronger connections penalize disagreement more heavily.https://www.cs.yale.edu/homes/spielman/PAPERS/SGTChapter.pdf[Spielman, Spectral Graph Theory, Section 16.3.2: resistor networks]{ref}
 
 = Degree matrix
 {parent=Laplacian matrix}
@@ -1910,7 +2116,7 @@ $$
 $$
 These are nonnegative arc amounts. The antisymmetric convention in <flow> instead records net amounts $\theta_{uv}=f_{uv}-f_{vu}$, taking a missing arc amount as zero. The two conventions express the same <flow conservation>; keeping them distinct makes backward <residual network> <edges> easier to interpret.
 
-Think of <vertices> as routers, directed <edges> as communication links, <flow network edge capacities> as available bandwidth, and <flow> as a steady transmission rate. An intermediate router can distribute incoming traffic among outgoing links, but <flow conservation> prevents it from creating traffic. The <maximum flow problem> asks how much total traffic can pass from $s$ to $t$, allowing several <graph paths> to share the work. The same <flow network> language models transportation and abstract resource allocation.\a[https://ocw.mit.edu/courses/6-854j-advanced-algorithms-fall-2008/4064d889e5033a9915327a777d12b592_notes_flow.pdf][Goemans, Network flows, introduction and maximum flow formulation]{ref}
+Think of <vertices> as routers, directed <edges> as communication links, <flow network edge capacities> as available bandwidth, and <flow> as a steady transmission rate. An intermediate router can distribute incoming traffic among outgoing links, but <flow conservation> prevents it from creating traffic. The <maximum flow problem> asks how much total traffic can pass from $s$ to $t$, allowing several <graph paths> to share the work. The same <flow network> language models transportation and abstract resource allocation.https://ocw.mit.edu/courses/6-854j-advanced-algorithms-fall-2008/4064d889e5033a9915327a777d12b592_notes_flow.pdf[Goemans, Network flows, introduction and maximum flow formulation]{ref}
 
 Our running <flow network> has <vertices> $V=\{s,a,b,t\}$ and exactly five directed <edges>, with <flow network edge capacities>
 $$
@@ -1956,7 +2162,7 @@ Every <capacity constraint> holds with equality. <Flow conservation> at $a$ is $
 
 Even a seemingly poor first <augmenting path> $s\to a\to b\to t$, carrying $1$, does not cause failure in this example. It leaves <residual network> capacity $2$ along $s\to a\to t$ and $2$ along $s\to b\to t$. These two subsequent <augmenting paths> yield values $1$, $3$, and $5$, and produce exactly the <flow> above. Backward <residual network> <edges> become essential in the unit-capacity example under <residual network>, where this same first choice blocks every unused forward route.
 
-Discrete assignment is another reason to study <maximum flow>. Put unit-capacity <edges> from $s$ to job <vertices>, from each job to eligible worker <vertices>, and from workers to $t$. An integral <flow> selects a <matching in a graph>: each job and worker participates at most once, and the <strength of a flow> counts assigned jobs. The <integral max-flow theorem> therefore turns maximum cardinality assignment into <maximum flow>. Minimizing assignment costs is the related <assignment problem>, modeled by <minimum-cost flow>.\a[https://ocw.mit.edu/courses/6-854j-advanced-algorithms-fall-2008/4064d889e5033a9915327a777d12b592_notes_flow.pdf][Goemans, Network flows, assignment formulation]{ref}
+Discrete assignment is another reason to study <maximum flow>. Put unit-capacity <edges> from $s$ to job <vertices>, from each job to eligible worker <vertices>, and from workers to $t$. An integral <flow> selects a <matching in a graph>: each job and worker participates at most once, and the <strength of a flow> counts assigned jobs. The <integral max-flow theorem> therefore turns maximum cardinality assignment into <maximum flow>. Minimizing assignment costs is the related <assignment problem>, modeled by <minimum-cost flow>.https://ocw.mit.edu/courses/6-854j-advanced-algorithms-fall-2008/4064d889e5033a9915327a777d12b592_notes_flow.pdf[Goemans, Network flows, assignment formulation]{ref}
 
 = Sports elimination by maximum flow
 {parent=Maximum flow problem}
@@ -2081,7 +2287,7 @@ $$
 =\min_{S\subseteq V:\,s\in S,\,t\notin S}
 \sum_{(u,v)\in E:\,u\in S,\,v\notin S}c_{uv}.
 $$
-For a <maximum flow>, the <vertices> reachable from the source in the <residual network> define a <minimum cut> whose outgoing original <edges> are saturated and whose incoming original <edges> carry zero <flow>.\a[https://courses.csail.mit.edu/6.854/21/Notes/n06-flow.html][Karger, MIT 6.854 Notes 6, maximum-flow optimality conditions]{ref}
+For a <maximum flow>, the <vertices> reachable from the source in the <residual network> define a <minimum cut> whose outgoing original <edges> are saturated and whose incoming original <edges> carry zero <flow>.https://courses.csail.mit.edu/6.854/21/Notes/n06-flow.html[Karger, MIT 6.854 Notes 6, maximum-flow optimality conditions]{ref}
 
 Why is a <cut of a flow network> an upper bound? Sum <flow conservation> on its source side $S$. Internal <edge> contributions cancel, leaving
 $$
@@ -2098,14 +2304,14 @@ In the running <flow network>, the two internal <vertices> give four possible so
 {title=Maximum flow of value five and two minimum-cut certificates}
 {description=Labels show flow/capacity on each directed edge. The shaded source sides give cuts of capacities three plus two and two plus one plus two, both equal to the flow value.}
 
-Ford and Fulkerson's 1956 paper opens with a railway-capacity question attributed there to T. Harris and proves a minimal-cut theorem as Theorem 1. Its original formulation uses <graph paths> carrying nonnegative amounts; the <residual reachability certificate for maximum flow> below gives the finite directed <flow network> proof used here.\a[https://doi.org/10.4153/CJM-1956-045-5][Ford and Fulkerson, Maximal Flow Through a Network, Canadian Journal of Mathematics 8 (1956), pp. 399–404]{ref}
+Ford and Fulkerson's 1956 paper opens with a railway-capacity question attributed there to T. Harris and proves a minimal-cut theorem as Theorem 1. Its original formulation uses <graph paths> carrying nonnegative amounts; the <residual reachability certificate for maximum flow> below gives the finite directed <flow network> proof used here.https://doi.org/10.4153/CJM-1956-045-5[Ford and Fulkerson, Maximal Flow Through a Network, Canadian Journal of Mathematics 8 (1956), pp. 399–404]{ref}
 
 = Residual reachability certificate for maximum flow
 {parent=Max-flow min-cut theorem}
 
 In a finite <flow network>, a <maximum flow> exists because the <feasible flow> set contains the zero <flow> and is a <compact set>: the <capacity constraints> bound every coordinate, and they and <flow conservation> define a <closed set>. The <strength of a flow> is a <continuous function>, so the <extreme value theorem> gives an attained maximum. An <augmenting path> in the <residual network> would permit positive augmentation, contradicting maximality. The source-reachable <vertices> in the <residual network> therefore define a <cut of a flow network> whose outgoing original <edges> are saturated and incoming original <edges> carry zero <flow>. <Flow conservation> makes the <strength of a flow> equal to this <cut capacity>, proving the <max-flow min-cut theorem>.
 
-Existence and <strong duality> for finite real <flow network edge capacities> do not imply finite termination for every choice of <augmenting paths> in the <Ford-Fulkerson algorithm>. With irrational capacities, some choices can continue forever. With integer capacities, <integrality of the Ford-Fulkerson algorithm> instead forces finite termination; rational capacities reduce to that case by a common denominator. Choosing shortest <augmenting paths> as in the <Edmonds–Karp algorithm> avoids dependence on capacity magnitudes.\a[https://courses.csail.mit.edu/6.854/21/Notes/n06-flow.html][Karger, MIT 6.854 Notes 6, section 2.1, rational and real capacities]{ref}
+Existence and <strong duality> for finite real <flow network edge capacities> do not imply finite termination for every choice of <augmenting paths> in the <Ford-Fulkerson algorithm>. With irrational capacities, some choices can continue forever. With integer capacities, <integrality of the Ford-Fulkerson algorithm> instead forces finite termination; rational capacities reduce to that case by a common denominator. Choosing shortest <augmenting paths> as in the <Edmonds–Karp algorithm> avoids dependence on capacity magnitudes.https://courses.csail.mit.edu/6.854/21/Notes/n06-flow.html[Karger, MIT 6.854 Notes 6, section 2.1, rational and real capacities]{ref}
 
 = Uniform capacity perturbation of a flow network
 {parent=Max-flow min-cut theorem}

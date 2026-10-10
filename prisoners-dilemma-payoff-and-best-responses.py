@@ -1,7 +1,7 @@
 """Draw prisoners-dilemma-payoff-and-best-responses.png in the current directory.
 
 Original diagram; tested with Python 3.14.4 and Matplotlib 3.10.7.
-Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-batch70-mpl python ../prisoners-dilemma-payoff-and-best-responses.py
+Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-matplotlib python ../prisoners-dilemma-payoff-and-best-responses.py
 """
 
 import matplotlib

@@ -1,7 +1,7 @@
 """Draw complementary optimum sets on C5; write the PNG basename to CWD.
 
 Tested with Python 3.14.4 and Matplotlib 3.10.7, as in pyproject.toml.
-Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-batch70-mpl python3 ../vertex-cover-independent-complement.py
+Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-matplotlib python3 ../vertex-cover-independent-complement.py
 """
 from math import cos, pi, sin
 from pathlib import Path

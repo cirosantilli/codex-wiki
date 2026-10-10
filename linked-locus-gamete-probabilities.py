@@ -2,7 +2,7 @@
 
 Tested with Python 3.14.4, Matplotlib 3.10.7 (+dfsg1), NumPy 2.3.5.
 Assumptions: fair segregation and equal reciprocal gamete probabilities.
-Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-batch69-mpl python ../linked-locus-gamete-probabilities.py
+Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-matplotlib python ../linked-locus-gamete-probabilities.py
 """
 
 from pathlib import Path

@@ -1,6 +1,6 @@
 """Count binary configurations of 20 labeled particles by left occupancy.
 
-Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-batch68-mpl python3
+Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-matplotlib python3
 ../boltzmann-entropy-binomial-macrostates.py
 Writes its matching PNG basename to the current working directory.
 Tested with Python 3.14.4, Matplotlib 3.10.7 (Debian +dfsg1).

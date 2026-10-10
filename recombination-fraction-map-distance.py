@@ -2,7 +2,7 @@
 
 Tested with Python 3.14.4, Matplotlib 3.10.7 (+dfsg1), NumPy 2.3.5.
 d is the mean Poisson exchange count on the transmitted chromatid, in morgans.
-Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-batch69-mpl python ../recombination-fraction-map-distance.py
+Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-matplotlib python ../recombination-fraction-map-distance.py
 """
 
 from pathlib import Path

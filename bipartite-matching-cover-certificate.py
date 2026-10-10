@@ -1,7 +1,7 @@
 """Draw a matching/cover optimality certificate in K2,3; write PNG to CWD.
 
 Tested with Python 3.14.4 and Matplotlib 3.10.7, as in pyproject.toml.
-Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-batch70-mpl python3 ../bipartite-matching-cover-certificate.py
+Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-matplotlib python3 ../bipartite-matching-cover-certificate.py
 """
 from itertools import product
 from pathlib import Path

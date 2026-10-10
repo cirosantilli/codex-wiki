@@ -27,13 +27,87 @@ A <scatter plot> represents paired quantitative observations as points in a coor
 {parent=Descriptive statistics}
 {wiki}
 
-A <box plot> displays a median and interquartile interval, with whiskers and separately marked points according to a stated rule. Common whiskers extend to the most extreme observations within 1.5 interquartile ranges of the box. It compares location, spread and unusually distant observations across groups; whiskers need not represent the full range.
+A <box plot> compresses a <statistical sample> into a box spanning its lower and upper <quartiles> $Q_1,Q_3$, a line at its <median> $Q_2$, and two whiskers. It makes location and central spread easy to compare across groups on a common value axis. The box represents the central half in terms of <quantile> levels; with ties or interpolated <quartiles>, it need not contain exactly half the observations. Whisker endpoints require a stated convention: they can be the observed extremes, or they can stop short of separately marked observations. https://www.itl.nist.gov/div898/handbook/eda/section3/boxplot.htm[NIST/SEMATECH, Box Plot, definition and variants]{ref}
+
+Here is one explicitly toy dataset, reused under <histogram>: twelve invented, unitless values, with repeated values counted separately, already arranged as <order statistics>:
+$$
+(x_{(1)},\ldots,x_{(12)})=(1,2,2,3,4,4,5,6,6,7,8,20).
+$$
+For this <box plot> we choose the interpolated <quartiles> defined under <quartile>, using R's type-7 rule. This gives
+$$
+Q_1=2+\tfrac34(3-2)=2.75,\qquad Q_2=4+\tfrac12(5-4)=4.5,\qquad Q_3=6+\tfrac14(7-6)=6.25.
+$$
+The <interquartile range> is $I=Q_3-Q_1=3.5$. Our whisker convention uses the fences
+$$
+L=Q_1-1.5I=-2.5,\qquad U=Q_3+1.5I=11.5.
+$$
+The whiskers end at the smallest and largest observations in the closed <interval> $[L,U]$: here $1$ and $8$. Values strictly outside the fences receive separate <outlier> markers: here only $20$. An observation exactly on a fence is retained within the whisker under this convention. The fences are thresholds, not observed whisker endpoints; the upper whisker is at $8$, not $11.5$. R's documented whisker rule likewise includes observations no more than $1.5$ box lengths away, although its box uses hinges, which can differ from our type-7 <quartiles>. https://stat.ethz.ch/R-manual/R-devel/library/grDevices/html/boxplot.stats.html[R grDevices documentation, boxplot.stats, coef and hinges]{ref}
+
+\Image[boxplot-quartile-fences-toy.png]
+{title=Toy box plot: quartiles define the box, observations define the whiskers}
+{description=The twelve invented values are shown individually below the <box plot>, with repeated values stacked. Type-7 <quartiles> are $2.75,4.5,6.25$; the <interquartile range> is $3.5$. Dashed fences at $-2.5$ and $11.5$ determine whiskers at $1$ and $8$ and a separate marker at $20$. The fence lines and raw-value strip are explanatory additions, not required parts of every <box plot>.}
+
+A separate <outlier> marker is a prompt to investigate, not a finding that the value is bad data and not an instruction to delete it. A distant observation can be a recording error, a legitimate unusual outcome, or evidence that the assumed <statistical model> misses some behavior. Check its provenance and context before deciding how to analyze it. No measurement-error claim is possible for our invented $20$: we deliberately put it there to demonstrate the rule. https://www.itl.nist.gov/div898/handbook/eda/section3/eda35h.htm[NIST/SEMATECH, Detection of Outliers, labeling and investigation]{ref}
+
+The beauty of a <box plot> is its compact comparison of ordered positions rather than every observation. That compression also loses information: many different <statistical samples> have the same <quartiles> and whiskers, so the box alone cannot reveal every cluster or gap that a <histogram> might show. For example, replacing the two invented $6$ values by $5.5$ and $6$ leaves the type-7 <quartiles>, whiskers and separate marker unchanged. Displaying the individual values alongside the <box plot> is especially helpful for such a small <statistical sample>. Always state both the <quartile> rule and the whisker rule; changing either can change which values are marked.
+
+= Quartile
+{parent=Descriptive statistics}
+{wiki}
+{title2=$Q_1,Q_2,Q_3$}
+
+<Quartiles> are the <quantiles> at <probability> levels $1/4,1/2,3/4$; $Q_2$ is a <median>. For a population we can use its <quantile function>, $Q_r=Q(r/4)$ for $r=1,2,3$. Finite-sample conventions differ. Our <box plot> uses linear interpolation between <order statistics>: for $n\geq2$ and $0<p<1$, set
+$$
+h=1+(n-1)p,\qquad j=\lfloor h\rfloor,\qquad g=h-j,\qquad \widetilde Q(p)=(1-g)x_{(j)}+g x_{(j+1)}.
+$$
+Then $Q_r=\widetilde Q(r/4)$. This is R's type-7 convention, described in the documentation authored by Ivan Frohne and Rob J Hyndman. It differs from the generalized-inverse <sample quantile> defined elsewhere in this wiki: for the twelve toy values, that rule selects ranks $3,6,9$ and gives $2,4,6$, rather than $2.75,4.5,6.25$. These are different stated conventions, not arithmetic disagreements. https://stat.ethz.ch/R-manual/R-devel/library/stats/html/quantile.html[Frohne and Hyndman, R stats documentation, sample quantile types]{ref}
+
+= Interquartile range
+{parent=Quartile}
+{wiki}
+{title2=$\mathrm{IQR}=Q_3-Q_1$}
+
+= IQR
+{c}
+{synonym}
+
+The <interquartile range> measures the width between the lower and upper <quartiles>, in the same units as the observations. It describes central spread rather than the distance between the observed extremes. In our toy <box plot>, $\mathrm{IQR}=6.25-2.75=3.5$; moving the largest value from $20$ to $200$ would leave the <quartiles> and <interquartile range> unchanged under the chosen rule, because the <order statistics> used in their interpolation would not change.
 
 = Histogram
 {parent=Descriptive statistics}
 {wiki}
 
-A histogram groups observations into bins and displays the bin counts or frequencies. For a <probability density function> estimate, the height in a bin of width $\delta$ is its sample count divided by $n\delta$, so each bar's area is the observed relative frequency. This scaling ensures that the histogram integrates to one.
+A <histogram> groups numerical observations into adjacent <intervals> called bins and draws one rectangle per bin. Its attraction is that a long list of values becomes a visible pattern of concentration, gaps and <skewness>. Specify the bin edges, the treatment of values on those edges, and what the vertical axis means: count, proportion, or density. Those choices are part of the graphic. https://www.itl.nist.gov/div898/handbook/eda/section3/histogra.htm[NIST/SEMATECH, Histogram, definition and normalization]{ref}
+
+Let $n>0$ observations be covered by disjoint bins $B_j$ with positive widths $\Delta_j$ and counts $n_j$, so $\sum_j n_j=n$. For example, use left-closed, right-open bins, closing the final right edge too. The three common height choices have different meanings:
+
+* Count height $n_j$ gives the number in bin $j$; the sum of heights is $n$.
+* Proportion height $n_j/n$ gives the fraction in bin $j$; the sum of heights is $1$.
+* Density height $n_j/(n\Delta_j)$ makes the area, rather than the height, equal to the fraction in bin $j$.
+
+For the density convention, a <histogram> is a piecewise constant <probability density function> estimate:
+$$
+\widehat f(x)=\frac{n_j}{n\Delta_j}\quad(x\in B_j),\qquad \widehat f(x)=0\quad\left(x\notin\bigcup_jB_j\right).
+$$
+Its normalization follows by adding rectangular areas:
+$$
+\int_{B_j}\widehat f(x)\,dx=\frac{n_j}{n},\qquad \int_{\mathbb R}\widehat f(x)\,dx=\sum_j\frac{n_j}{n}=1.
+$$
+If the observations have units, density has reciprocal units; a density height is not a <probability> and can exceed $1$. With equal bin widths, count heights and density heights differ only by a common scale factor. With unequal widths, count-height areas $n_j\Delta_j$ give wider bins extra visual weight unrelated to their counts. Dividing by width removes that distortion. R's histogram documentation explicitly describes area-one normalization for unequal bins. https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/hist.html[R graphics documentation, hist, frequency versus density]{ref}
+
+Reuse the twelve invented values under <box plot>, with bins $[0,2),[2,4),[4,8),[8,22]$. The counts are $(1,3,6,2)$ and the widths are $(2,2,4,14)$. Hence the density heights and areas are exactly
+$$
+\left(\frac1{24},\frac18,\frac18,\frac1{84}\right),\qquad \left(\frac1{12},\frac14,\frac12,\frac16\right).
+$$
+The second and third bars have equal density heights even though the third contains twice as many observations: it is also twice as wide. The last bar contains only two observations; its count-height area would be $2\cdot14=28$, larger than the six-observation bar's $6\cdot4=24$. Its correct density area is only $1/6$.
+
+\Image[histogram-unequal-bin-area.png]
+{title=Unequal toy bins: counts determine heights, density makes area represent proportion}
+{description=Both panels use the same twelve invented values and bin edges $0,2,4,8,22$. Left: count heights $1,3,6,2$, whose areas are not proportional to counts. Right: density heights $1/24,1/8,1/8,1/84$, with total area $1$. Equal density heights for the second and third bins express equal concentration per unit width. No bars represent measured data.}
+
+Bin choice trades detail against stability. Broad bins merge distinctions: the toy bin $[8,22]$ hides the empty stretch between $8$ and $20$. Narrow bins expose gaps but can make each individual observation dominate a bar. With one-unit bins starting at $0$, the bins $[2,3),[4,5),[6,7)$ each contain two values and appear equally prominent; that apparent pattern depends on grouping the repeated integers together. Moving the bin origin also changes membership without changing the observations. For <density estimation>, this is a form of the <bias-variance tradeoff>: averaging over broad bins loses local detail, while narrow bins give more variable density estimates across repeated <statistical samples>. https://www.stat.cmu.edu/~cshalizi/uADA/24/lectures/ch14.pdf[Cosma Rohilla Shalizi, Estimating Distributions and Densities, Section 14.1]{ref} A useful practice is to compare a few plausible widths and offsets, keeping common edges when comparing groups. Automatic bin selectors are starting points, rather than guarantees of a unique correct picture. https://numpy.org/doc/stable/reference/generated/numpy.histogram_bin_edges.html[NumPy documentation, histogram_bin_edges, Notes on bin selectors]{ref}
+
+A <histogram> retains only bin membership. Its density estimate spreads each bin's fraction uniformly across that bin, so our last bar assigns density throughout $[8,22]$ even though the only toy values there are $8$ and $20$. It does not recover within-bin positions or observation order, and a visually convincing shape does not establish a population <probability distribution>. A <box plot> provides a complementary compact summary of <quartiles>; neither graphic replaces the original observations.
 
 = Birthday problem
 {parent=Probability and statistics}
@@ -59,7 +133,7 @@ A <Q-Q plot> is a <scatter plot> pairing <quantiles> at the same <probability> l
 $$
 (Q_0(p_i),x_{(i)}),\qquad p_i=\frac{i-1/2}{n},\qquad i=1,\ldots,n.
 $$
-Here the horizontal coordinate is a reference value, and the vertical coordinate is an observed value; neither axis is the <probability> $p_i$. The displayed <plotting positions> are our chosen convention, placing every level strictly between zero and one. They are not a claim that the $i$th <order statistic> equals that population <quantile>. For two <statistical samples>, use <sample quantiles> at matching levels, with a stated interpolation convention when their sizes differ. \a[https://www.itl.nist.gov/div898/handbook/eda/section3/qqplot.htm][NIST/SEMATECH, Quantile-Quantile Plot, definition]{ref}
+Here the horizontal coordinate is a reference value, and the vertical coordinate is an observed value; neither axis is the <probability> $p_i$. The displayed <plotting positions> are our chosen convention, placing every level strictly between zero and one. They are not a claim that the $i$th <order statistic> equals that population <quantile>. For two <statistical samples>, use <sample quantiles> at matching levels, with a stated interpolation convention when their sizes differ. https://www.itl.nist.gov/div898/handbook/eda/section3/qqplot.htm[NIST/SEMATECH, Quantile-Quantile Plot, definition]{ref}
 
 As a computed example, take $n=19$ and the <standard normal quantiles> $z_i=\Phi^{-1}(p_i)$, where $\Phi$ is the <standard normal cumulative distribution function>. Construct the ordered values $a_i=10+2z_i$. At ranks $1,10,19$, the <plotting positions> are $1/38,1/2,37/38$, the reference <quantiles> are approximately $-1.937932,0,1.937932$, and the constructed values are approximately $6.124137,10,13.875863$. Every point lies on $a=10+2z$ by construction. These 19 values are deliberately chosen, not random draws or real measurements.
 
@@ -67,7 +141,7 @@ As a computed example, take $n=19$ and the <standard normal quantiles> $z_i=\Phi
 {title=An exact constructed Q-Q line encodes location and scale}
 {description=Left: all 19 pairs $(z_i,a_i)$ lie on $a=10+2z$, with <plotting positions> $p_i=(i-1/2)/19$. Right: subtracting the specified location 10 and dividing by the specified scale 2 puts the same points on the identity line. These parameters are construction constants, not <sample mean> and sample <standard deviation> estimates. The 19 values are deterministic examples, not random draws.}
 
-The usefulness of a <Q-Q plot> is that it turns a comparison of <probability distributions> into geometry: if a reference <random variable> $Z$ is transformed into $X=\mu+\sigma Z$ with $\sigma>0$, its <quantile function> satisfies $Q_X(p)=\mu+\sigma Q_Z(p)$. This follows because a positive scaling preserves ordering. Thus the <location-scale family> produces a straight population <Q-Q plot>, and an approximate sample line suggests a compatible shape over the observed range. Its intercept describes location and its slope describes scale. The identity line requires the same location, scale and units on both axes; even then its displayed angle is 45 degrees only with equal axis scales. Curvature is often more informative than a <histogram> because it shows which <quantiles> depart from the reference. \a[https://www.itl.nist.gov/div898/handbook/eda/section3/qqplot.htm][NIST/SEMATECH, Quantile-Quantile Plot, location and scale comparisons]{ref}
+The usefulness of a <Q-Q plot> is that it turns a comparison of <probability distributions> into geometry: if a reference <random variable> $Z$ is transformed into $X=\mu+\sigma Z$ with $\sigma>0$, its <quantile function> satisfies $Q_X(p)=\mu+\sigma Q_Z(p)$. This follows because a positive scaling preserves ordering. Thus the <location-scale family> produces a straight population <Q-Q plot>, and an approximate sample line suggests a compatible shape over the observed range. Its intercept describes location and its slope describes scale. The identity line requires the same location, scale and units on both axes; even then its displayed angle is 45 degrees only with equal axis scales. Curvature is often more informative than a <histogram> because it shows which <quantiles> depart from the reference. https://www.itl.nist.gov/div898/handbook/eda/section3/qqplot.htm[NIST/SEMATECH, Quantile-Quantile Plot, location and scale comparisons]{ref}
 
 = Normal Q-Q plot
 {parent=Q-Q plot}
@@ -79,7 +153,7 @@ A <normal Q-Q plot> compares <order statistics> with <standard normal quantiles>
 $$
 x_{(i)}\approx\mu+\sigma z_i.
 $$
-The appropriate reference is a line with an intercept and positive slope, not necessarily the identity line. A line can be fitted through two central <sample quantiles>; R's `qqline` uses the <quantile> levels $p=0.25$ and $p=0.75$ by default. Neither that line nor its fitting rule is part of the definition of a <normal Q-Q plot>. \a[https://stat.ethz.ch/R-manual/R-devel/library/stats/html/qqnorm.html][R stats documentation, qqnorm and qqline]{ref}
+The appropriate reference is a line with an intercept and positive slope, not necessarily the identity line. A line can be fitted through two central <sample quantiles>; R's `qqline` uses the <quantile> levels $p=0.25$ and $p=0.75$ by default. Neither that line nor its fitting rule is part of the definition of a <normal Q-Q plot>. https://stat.ethz.ch/R-manual/R-devel/library/stats/html/qqnorm.html[R stats documentation, qqnorm and qqline]{ref}
 
 To isolate curvature, retain the same 19 <plotting positions> and construct two more ordered sequences:
 $$
@@ -95,13 +169,13 @@ Read these shapes relative to their central slope. The <uniform distribution> ex
 
 A nearly straight <normal Q-Q plot> is a diagnostic, not a proof of a <normal distribution> or a formal <hypothesis test>. Random <statistical samples> fluctuate, particularly at extreme <order statistics>, and apparent curvature depends on <sample size>, <plotting positions> and the reference line. A calibrated <hypothesis test> or uncertainty band requires its own assumptions and must account for parameters estimated from the same observations. Sorting also discards the original observation order: rearranging a time series leaves its <Q-Q plot> unchanged, so the plot cannot establish <independence>.
 
-For a <normal linear model>, R's diagnostic <normal Q-Q plot> uses <standardized regression residuals>, also called <internally studentized residuals>. \a[https://stat.ethz.ch/R-manual/R-devel/library/stats/html/plot.lm.html][Maindonald and Maechler, R plot.lm documentation, Details]{ref} Even with independent errors, the <regression residuals> have <covariance matrix> $\sigma^2(I-H)$, where $H$ is the <hat matrix>; fitting parameters generally creates dependencies. Dividing by a shared estimated <standard deviation> creates further dependence, and the <distribution of an internally studentized Gaussian residual> is not exactly the <standard normal distribution>. The <normal Q-Q plot> therefore helps assess error shape alongside other diagnostics rather than certifying independent <normal random variables>.
+For a <normal linear model>, R's diagnostic <normal Q-Q plot> uses <standardized regression residuals>, also called <internally studentized residuals>. https://stat.ethz.ch/R-manual/R-devel/library/stats/html/plot.lm.html[Maindonald and Maechler, R plot.lm documentation, Details]{ref} Even with independent errors, the <regression residuals> have <covariance matrix> $\sigma^2(I-H)$, where $H$ is the <hat matrix>; fitting parameters generally creates dependencies. Dividing by a shared estimated <standard deviation> creates further dependence, and the <distribution of an internally studentized Gaussian residual> is not exactly the <standard normal distribution>. The <normal Q-Q plot> therefore helps assess error shape alongside other diagnostics rather than certifying independent <normal random variables>.
 
 = Plotting position
 {parent=Q-Q plot}
 {title2=$p_i=(i-1/2)/n$}
 
-A <plotting position> assigns a <probability> level to an <order statistic> for a <Q-Q plot>. The displayed formula is one convention, not a universal definition. R's `ppoints` uses $p_i=(i-a)/(n+1-2a)$, with $a=1/2$ by default for $n>10$, which gives our choice at $n=19$; for $n\leq10$ its default is $a=3/8$. NIST's <normal probability plot> instead describes an approximation to <uniform distribution> <order statistic> medians. State the convention when comparing plots, especially their extreme <quantiles>. \a[https://stat.ethz.ch/R-manual/R-devel/library/stats/html/ppoints.html][R stats documentation, ppoints]{ref}\a[https://www.itl.nist.gov/div898/handbook/eda/section3/normprpl.htm][NIST/SEMATECH, Normal Probability Plot, definition]{ref}
+A <plotting position> assigns a <probability> level to an <order statistic> for a <Q-Q plot>. The displayed formula is one convention, not a universal definition. R's `ppoints` uses $p_i=(i-a)/(n+1-2a)$, with $a=1/2$ by default for $n>10$, which gives our choice at $n=19$; for $n\leq10$ its default is $a=3/8$. NIST's <normal probability plot> instead describes an approximation to <uniform distribution> <order statistic> medians. State the convention when comparing plots, especially their extreme <quantiles>. https://stat.ethz.ch/R-manual/R-devel/library/stats/html/ppoints.html[R stats documentation, ppoints]{ref}https://www.itl.nist.gov/div898/handbook/eda/section3/normprpl.htm[NIST/SEMATECH, Normal Probability Plot, definition]{ref}
 
 = Change-point detection
 {parent=Probability and statistics}
@@ -1238,7 +1312,7 @@ $$
 D_{\mathrm{KL}}(P\Vert Q)=\sum_i p_i\log\frac{p_i}{q_i}
 =\mathbb E_P\!\left[\log\frac{p(X)}{q(X)}\right].
 $$
-Here $X$ is a <random variable> with <probability distribution> $P$. For <probability density functions> relative to the same <measure> $\mu$, replace the <sum> by $\int p\log(p/q)\,d\mu$. These formulas use <natural logarithms> unless stated otherwise. The <expected value> is under $P$, even though $Q$ appears in the denominator. \a[https://web.stanford.edu/class/ee276/files/previous_notes/lecture_2.pdf][Weissman, information measures, 2024, Definition 4]{ref}
+Here $X$ is a <random variable> with <probability distribution> $P$. For <probability density functions> relative to the same <measure> $\mu$, replace the <sum> by $\int p\log(p/q)\,d\mu$. These formulas use <natural logarithms> unless stated otherwise. The <expected value> is under $P$, even though $Q$ appears in the denominator. https://web.stanford.edu/class/ee276/files/previous_notes/lecture_2.pdf[Weissman, information measures, 2024, Definition 4]{ref}
 
 Take $P=(0.75,0.25)$ and $Q=(0.5,0.5)$ on two outcomes. Direct calculation gives
 $$
@@ -1252,17 +1326,17 @@ The second outcome contributes negatively to the first <sum>: assigning it more 
 \Image[kl-direction-and-support.png]
 {title=Direction changes the averaging weights; a missing outcome can make relative entropy infinite}
 
-The units depend on the <logarithm>: <natural logarithms> give <nats>, whereas base-two <logarithms> give <bits>. Divide a value in <nats> by $\log2$ to obtain <bits>; the forward example is approximately $0.188722$ <bits>. Changing the base rescales every <Kullback-Leibler divergence> by the same positive factor. Since the two calculated directions differ, <Kullback-Leibler divergence> is asymmetric and cannot be a <metric>. It also need not satisfy the <triangle inequality>. \a[https://web.stanford.edu/~kedart/ee376a_winter1617/Lecture_3.pdf][Tse, relative entropy, 2017, Section 3.3]{ref}
+The units depend on the <logarithm>: <natural logarithms> give <nats>, whereas base-two <logarithms> give <bits>. Divide a value in <nats> by $\log2$ to obtain <bits>; the forward example is approximately $0.188722$ <bits>. Changing the base rescales every <Kullback-Leibler divergence> by the same positive factor. Since the two calculated directions differ, <Kullback-Leibler divergence> is asymmetric and cannot be a <metric>. It also need not satisfy the <triangle inequality>. https://web.stanford.edu/~kedart/ee376a_winter1617/Lecture_3.pdf[Tse, relative entropy, 2017, Section 3.3]{ref}
 
 The operational meaning is an expected penalty for using the wrong <probability distribution>. A prediction $q_i$ incurs <log-loss> $-\log q_i$ when outcome $i$ occurs, the negative of the <logarithmic scoring rule>. Under $P$, its <expected value> is the <cross-entropy> $H(P,Q)=-\sum_i p_i\log q_i$. Predicting with $P$ itself incurs <information entropy> $H(P)=-\sum_i p_i\log p_i$, so
 $$
 H(P,Q)-H(P)=D_{\mathrm{KL}}(P\Vert Q).
 $$
-Thus <Kullback-Leibler divergence> is exactly excess expected <log-loss>, whenever these separate quantities are finite. \a[https://web.stanford.edu/class/ee276/files/previous_notes/lecture_2.pdf][Weissman, information measures, 2024, property 3]{ref}
+Thus <Kullback-Leibler divergence> is exactly excess expected <log-loss>, whenever these separate quantities are finite. https://web.stanford.edu/class/ee276/files/previous_notes/lecture_2.pdf[Weissman, information measures, 2024, property 3]{ref}
 
-For <lossless source coding>, ideal <codeword lengths> $-\log_2q_i$ similarly give excess expected length $D_{\mathrm{KL}}(P\Vert Q)$ in <bits> per symbol. Actual <prefix codes> require integer <codeword lengths>; <Shannon's source coding theorem> explains how long blocks approach ideal per-symbol lengths. The interpretation concerns an average, not a fractional physical <bit> attached to every outcome. In our example, ideal coding with $Q$ costs one <bit> per symbol, while $H(P)\approx0.811278$ <bits>; the difference is exactly the computed $0.188722$ <bits>. \a[https://web.stanford.edu/~kedart/ee376a_winter1617/Lecture_3.pdf][Tse, information theory, 2017, Section 3.4]{ref}
+For <lossless source coding>, ideal <codeword lengths> $-\log_2q_i$ similarly give excess expected length $D_{\mathrm{KL}}(P\Vert Q)$ in <bits> per symbol. Actual <prefix codes> require integer <codeword lengths>; <Shannon's source coding theorem> explains how long blocks approach ideal per-symbol lengths. The interpretation concerns an average, not a fractional physical <bit> attached to every outcome. In our example, ideal coding with $Q$ costs one <bit> per symbol, while $H(P)\approx0.811278$ <bits>; the difference is exactly the computed $0.188722$ <bits>. https://web.stanford.edu/~kedart/ee376a_winter1617/Lecture_3.pdf[Tse, information theory, 2017, Section 3.4]{ref}
 
-Zeros require explicit conventions. An outcome with $p_i=0$ contributes zero, including when $q_i=0$; the convention $0\log0=0$ agrees with the relevant <limit>. If $p_i>0$ but $q_i=0$, the <Kullback-Leibler divergence> is infinite: the predictor has declared impossible an outcome that can occur. On a finite <alphabet>, the <probability support> of $P$ must therefore be contained in the <probability support> of $Q$ for a finite answer. For example, $P=(1,0)$ and $Q=(0.5,0.5)$ give $D(P\Vert Q)=\log2$, but $D(Q\Vert P)=+\infty$. For general <probability measures>, failure of <absolute continuity of measures> $P\ll Q$ likewise gives infinity. Even $P\ll Q$ does not guarantee a finite <integral>. \a[https://arxiv.org/pdf/1206.2459][van Erven and Harremoës, Rényi Divergence and Kullback-Leibler Divergence, 2014, Section II]{ref}
+Zeros require explicit conventions. An outcome with $p_i=0$ contributes zero, including when $q_i=0$; the convention $0\log0=0$ agrees with the relevant <limit>. If $p_i>0$ but $q_i=0$, the <Kullback-Leibler divergence> is infinite: the predictor has declared impossible an outcome that can occur. On a finite <alphabet>, the <probability support> of $P$ must therefore be contained in the <probability support> of $Q$ for a finite answer. For example, $P=(1,0)$ and $Q=(0.5,0.5)$ give $D(P\Vert Q)=\log2$, but $D(Q\Vert P)=+\infty$. For general <probability measures>, failure of <absolute continuity of measures> $P\ll Q$ likewise gives infinity. Even $P\ll Q$ does not guarantee a finite <integral>. https://arxiv.org/pdf/1206.2459[van Erven and Harremoës, Rényi Divergence and Kullback-Leibler Divergence, 2014, Section II]{ref}
 
 To see how confidently wrong predictions are punished, hold the true <Bernoulli distribution> parameter at $p=0.75$ and vary the predicted parameter $q$. Its <binary relative entropy> is
 $$
@@ -1275,11 +1349,11 @@ It vanishes at $q=0.75$, equals approximately $2.894055$ <nats> at $q=0.01$, and
 
 For <model selection>, minimizing expected <log-loss> ranks candidate <statistical models> by $D(P\Vert Q)$, since $H(P)$ is common to them. The true <probability distribution> is usually unknown, so one estimates predictive performance using fresh observations or <cross-validation>. Fitting and assessing on the same data can reward <overfitting>; a small fitted <Kullback-Leibler divergence> alone does not establish useful prediction.
 
-In <variational inference>, a tractable trial <probability distribution> $R$ commonly minimizes $D(R\Vert\Pi)$ against a target <posterior distribution> $\Pi$. Maximizing the <evidence lower bound> accomplishes this without evaluating the target's <normalization constant>. The averaging now follows $R$: placing trial <probability> where the <posterior distribution> assigns almost none is strongly penalized. The chosen direction and trial family therefore matter. \a[https://www.cs.columbia.edu/~blei/papers/BleiKucukelbirMcAuliffe2017.pdf][Blei, Kucukelbir and McAuliffe, Variational Inference: A Review for Statisticians, 2017, Section 2.2]{ref}
+In <variational inference>, a tractable trial <probability distribution> $R$ commonly minimizes $D(R\Vert\Pi)$ against a target <posterior distribution> $\Pi$. Maximizing the <evidence lower bound> accomplishes this without evaluating the target's <normalization constant>. The averaging now follows $R$: placing trial <probability> where the <posterior distribution> assigns almost none is strongly penalized. The chosen direction and trial family therefore matter. https://www.cs.columbia.edu/~blei/papers/BleiKucukelbirMcAuliffe2017.pdf[Blei, Kucukelbir and McAuliffe, Variational Inference: A Review for Statisticians, 2017, Section 2.2]{ref}
 
-These comparisons do not by themselves establish <causal inference>. Two <statistical models> can reproduce the same observed <probability distribution> while predicting different responses to an <intervention>. Choosing the smaller <Kullback-Leibler divergence> therefore needs additional assumptions or experimental evidence before supporting a causal claim. \a[https://ftp.cs.ucla.edu/pub/stat_ser/r350.pdf][Pearl, Causal inference in statistics: An overview, 2009, Section 2]{ref}
+These comparisons do not by themselves establish <causal inference>. Two <statistical models> can reproduce the same observed <probability distribution> while predicting different responses to an <intervention>. Choosing the smaller <Kullback-Leibler divergence> therefore needs additional assumptions or experimental evidence before supporting a causal claim. https://ftp.cs.ucla.edu/pub/stat_ser/r350.pdf[Pearl, Causal inference in statistics: An overview, 2009, Section 2]{ref}
 
-The original reference is S. Kullback and R. A. Leibler's 1951 paper \a[https://doi.org/10.1214/aoms/1177729694][On Information and Sufficiency]{ref}, published in The Annals of Mathematical Statistics 22(1), pages 79–86. Its title connects this comparison with <sufficient statistics>: the historical setting was statistical information, before today's widespread applications in prediction and <variational inference>.
+The original reference is S. Kullback and R. A. Leibler's 1951 paper https://doi.org/10.1214/aoms/1177729694[On Information and Sufficiency]{ref}, published in The Annals of Mathematical Statistics 22(1), pages 79–86. Its title connects this comparison with <sufficient statistics>: the historical setting was statistical information, before today's widespread applications in prediction and <variational inference>.
 
 = Binary partition bound for relative entropy
 {parent=Kullback-Leibler divergence}
@@ -1926,7 +2000,7 @@ A <Galton-Watson process> is a <branching process> that counts individuals by ge
 $$
 Z_{n+1}=\sum_{j=1}^{Z_n}\xi_{n,j},\qquad \mathbb P(\xi_{n,j}=k)=p_k,\quad k\geq0.
 $$
-The <empty sum> is zero: zero is an <absorbing state>, so once a generation is empty every later generation is empty. The same <offspring distribution> applies to every individual in every generation. \a[https://ocw.mit.edu/courses/18-445-introduction-to-stochastic-processes-spring-2015/27aaeb9eb9a9cecce93d9ad74413ddf5_MIT18_445S15_lecture19.pdf][Hao Wu, MIT 18.445, Lecture 19, slides 3–4]{ref}
+The <empty sum> is zero: zero is an <absorbing state>, so once a generation is empty every later generation is empty. The same <offspring distribution> applies to every individual in every generation. https://ocw.mit.edu/courses/18-445-introduction-to-stochastic-processes-spring-2015/27aaeb9eb9a9cecce93d9ad74413ddf5_MIT18_445S15_lecture19.pdf[Hao Wu, MIT 18.445, Lecture 19, slides 3–4]{ref}
 
 For a concrete <offspring distribution>, take $p_0=1/4$, $p_1=1/4$, $p_2=1/2$, and $p_k=0$ for $k\geq3$. An individual has no children with <probability> $1/4$, one with <probability> $1/4$, and two with <probability> $1/2$. The offspring <expected value> is $\mu=5/4$. A possible sequence of generation sizes is $1,2,1,0,0,\ldots$: two children need not lead to a permanently growing family.
 
@@ -1941,7 +2015,7 @@ Thus $\mathbb P(Z_2=0)=11/32$ and $\mathbb E[Z_2]=25/16$. The figure shows full 
 
 The contrast is striking: the <expected generation size in a Galton-Watson process> grows as $(5/4)^n$, while the <branching extinction probability> is $1/2$. By generation six, $\mathbb P(Z_6=0)\approx0.462186$ although $\mathbb E[Z_6]\approx3.814697$. Larger surviving families carry the rising <expected value>; that <mean> is an average over possible families, not a forecast of one family's path. The <Galton-Watson extinction fixed point> turns an unbounded number of future generations into a single equation for this <probability>.
 
-The historical question was the disappearance of surnames passed through male descendants. In \a[https://math.uchicago.edu/~shmuel/Modeling/Galton%20Watson.pdf][Watson and Galton, On the Probability of the Extinction of Families, pages 139–140]{ref}, <Francis Galton> formulates a constant-law model counting sons who reach adulthood, and Watson computes later generation <probability distributions> by composing <generating functions>. Those are assumptions of their model, rather than a claim that actual human reproduction follows this <offspring distribution>.
+The historical question was the disappearance of surnames passed through male descendants. In https://math.uchicago.edu/~shmuel/Modeling/Galton%20Watson.pdf[Watson and Galton, On the Probability of the Extinction of Families, pages 139–140]{ref}, <Francis Galton> formulates a constant-law model counting sons who reach adulthood, and Watson computes later generation <probability distributions> by composing <generating functions>. Those are assumptions of their model, rather than a claim that actual human reproduction follows this <offspring distribution>.
 
 = Offspring distribution of a branching process
 {parent=Galton-Watson process}
@@ -1956,7 +2030,7 @@ F(s)=\mathbb E[s^\xi]=\sum_{k\geq0}p_ks^k,\quad 0\leq s\leq1,\qquad \mu=\mathbb 
 $$
 Use $0^0=1$ when evaluating the <probability generating function> at zero: $F(0)=p_0$ and $F(1)=1$.
 
-For $p_0=p_1=1/4$ and $p_2=1/2$, $F(s)=1/4+s/4+s^2/2$, $\mu=5/4$, and the offspring <variance> is $11/16$: $\mathbb E[\xi^2]=9/4$ and $\operatorname{Var}(\xi)=9/4-(5/4)^2$. The generation <probability mass functions> pictured under <Galton-Watson process> come from repeatedly composing this <probability generating function>. They describe the whole generation, whereas $(p_k)$ describes one individual's reproduction. \a[https://www.uni-muenster.de/Stochastik/lehre/WS1011/SpezielleStochastischeProzesse/Ch_1.pdf][University of Münster branching-process notes, Section 1.3, Proposition 1.4]{ref}
+For $p_0=p_1=1/4$ and $p_2=1/2$, $F(s)=1/4+s/4+s^2/2$, $\mu=5/4$, and the offspring <variance> is $11/16$: $\mathbb E[\xi^2]=9/4$ and $\operatorname{Var}(\xi)=9/4-(5/4)^2$. The generation <probability mass functions> pictured under <Galton-Watson process> come from repeatedly composing this <probability generating function>. They describe the whole generation, whereas $(p_k)$ describes one individual's reproduction. https://www.uni-muenster.de/Stochastik/lehre/WS1011/SpezielleStochastischeProzesse/Ch_1.pdf[University of Münster branching-process notes, Section 1.3, Proposition 1.4]{ref}
 
 The whole <offspring distribution> matters for extinction. Another law, $p_0=3/8$ and $p_2=5/8$, has the same offspring <mean> $5/4$ but <branching extinction probability> $3/5$, since $3/8+5s^2/8=s$ has <roots of a polynomial> $3/5$ and $1$. Consequently the two laws have the same <expected generation size in a Galton-Watson process> at each generation but different survival chances. A <binomial branching process> and a <Poisson branching process> likewise specify different <offspring distributions>; a common <mean> does not make their <probability generating functions> identical.
 
@@ -2061,7 +2135,7 @@ For a <Galton-Watson process> with one ancestor and offspring <probability gener
 $$
 q_0=0,\qquad q_n=\mathbb P(Z_n=0),\qquad q_{n+1}=F(q_n),\qquad q_n\uparrow q.
 $$
-Zero is an <absorbing state>, so extinction by generation $n$ is exactly the <event> $Z_n=0$. \a[https://ocw.mit.edu/courses/18-445-introduction-to-stochastic-processes-spring-2015/27aaeb9eb9a9cecce93d9ad74413ddf5_MIT18_445S15_lecture19.pdf][Hao Wu, MIT 18.445, Lecture 19, slide 4]{ref}
+Zero is an <absorbing state>, so extinction by generation $n$ is exactly the <event> $Z_n=0$. https://ocw.mit.edu/courses/18-445-introduction-to-stochastic-processes-spring-2015/27aaeb9eb9a9cecce93d9ad74413ddf5_MIT18_445S15_lecture19.pdf[Hao Wu, MIT 18.445, Lecture 19, slide 4]{ref}
 
 For $F(s)=1/4+s/4+s^2/2$, the equation is
 $$
@@ -2074,7 +2148,7 @@ Both $1/2$ and $1$ are <fixed points>, but iteration from zero selects $q=1/2$. 
 
 The vertical steps in the figure apply the offspring <probability generating function>; horizontal steps return to the diagonal to start the next iteration. This gives a useful numerical calculation even when solving $F(s)=s$ explicitly is difficult. For the displayed law, every finite iteration is a lower bound for the eventual <branching extinction probability>; at generation six, about $0.037814$ additional extinction <probability> remains beyond the current empty families.
 
-Why the smallest <fixed point>? The ancestor's children's descendant families are <independent>; given $k$ children, all are empty $n$ generations later with <probability> $q_n^k$. Averaging gives $q_{n+1}=\sum_kp_kq_n^k=F(q_n)$. The increasing extinction <events> give the <limit> $q$, and <continuity> of the <probability generating function> yields $F(q)=q$. For any other <fixed point> $r\in[0,1]$, $q_0\leq r$ and <monotonicity> of $F$ imply $q_n\leq r$ at every step; hence $q\leq r$. \a[https://www.uni-muenster.de/Stochastik/lehre/WS1011/SpezielleStochastischeProzesse/Ch_1.pdf][University of Münster branching-process notes, Section 1.4, Theorem 1.7]{ref}
+Why the smallest <fixed point>? The ancestor's children's descendant families are <independent>; given $k$ children, all are empty $n$ generations later with <probability> $q_n^k$. Averaging gives $q_{n+1}=\sum_kp_kq_n^k=F(q_n)$. The increasing extinction <events> give the <limit> $q$, and <continuity> of the <probability generating function> yields $F(q)=q$. For any other <fixed point> $r\in[0,1]$, $q_0\leq r$ and <monotonicity> of $F$ imply $q_n\leq r$ at every step; hence $q\leq r$. https://www.uni-muenster.de/Stochastik/lehre/WS1011/SpezielleStochastischeProzesse/Ch_1.pdf[University of Münster branching-process notes, Section 1.4, Theorem 1.7]{ref}
 
 = Laziness invariance of branching extinction
 {parent=Galton-Watson extinction fixed point}
@@ -2099,14 +2173,14 @@ For $p_0=p_1=1/4$, $p_2=1/2$, one ancestor has $q=1/2$. Starting instead from $m
 $$
 \mathbb P(\text{eventual extinction}\mid Z_0=m)=q^m,\qquad \mathbb P(Z_n=0\mid Z_0=m)=q_n^m.
 $$
-All $m$ families must die out. With three ancestors, eventual extinction has <probability> $1/8$ and survival has <probability> $7/8$; by generation two, extinction has <probability> $(11/32)^3=1331/32768\approx0.040619$. Extra ancestors change the extinction <probability> without changing the <offspring distribution>. \a[https://www.uni-muenster.de/Stochastik/lehre/WS1011/SpezielleStochastischeProzesse/Ch_1.pdf][University of Münster branching-process notes, Lemma 1.2 and equation (1.10)]{ref}
+All $m$ families must die out. With three ancestors, eventual extinction has <probability> $1/8$ and survival has <probability> $7/8$; by generation two, extinction has <probability> $(11/32)^3=1331/32768\approx0.040619$. Extra ancestors change the extinction <probability> without changing the <offspring distribution>. https://www.uni-muenster.de/Stochastik/lehre/WS1011/SpezielleStochastischeProzesse/Ch_1.pdf[University of Münster branching-process notes, Lemma 1.2 and equation (1.10)]{ref}
 
 For finite offspring <mean> $\mu$, the extinction classification is:
 * If $\mu<1$, extinction has <probability> $1$. For example $p_0=3/4$, $p_2=1/4$ gives $\mu=1/2$ and $F(s)=3/4+s^2/4$; its only <fixed point> in $[0,1]$ is $1$.
 * If $\mu=1$ and $p_1\ne1$, extinction also has <probability> $1$. For example $p_0=p_2=1/2$ gives $F(s)-s=(s-1)^2/2$ and $q=1$, despite <expected generation size in a Galton-Watson process> remaining one.
 * If $1<\mu<\infty$, extinction has <probability> $q<1$. The value can be zero: if $p_0=0$, every individual has at least one child, so an initially nonempty family never becomes empty. In particular $p_2=1$ gives $Z_n=2^n$ and $q=0$.
 
-The critical exception is $p_1=1$: every individual has exactly one child, $F(s)=s$, and $Z_n=1$ forever from one ancestor. Thus $\mu=1$ but $q=0$; a blanket claim that every critical <Galton-Watson process> becomes extinct would be false. These cases concern the <Galton-Watson process> with its common <offspring distribution> and <independence> assumptions. \a[https://www.uni-muenster.de/Stochastik/lehre/WS1011/SpezielleStochastischeProzesse/Ch_1.pdf][University of Münster branching-process notes, Section 1.4, trivial cases and Theorem 1.7]{ref}
+The critical exception is $p_1=1$: every individual has exactly one child, $F(s)=s$, and $Z_n=1$ forever from one ancestor. Thus $\mu=1$ but $q=0$; a blanket claim that every critical <Galton-Watson process> becomes extinct would be false. These cases concern the <Galton-Watson process> with its common <offspring distribution> and <independence> assumptions. https://www.uni-muenster.de/Stochastik/lehre/WS1011/SpezielleStochastischeProzesse/Ch_1.pdf[University of Münster branching-process notes, Section 1.4, trivial cases and Theorem 1.7]{ref}
 
 This <probability> answers whether any lineage persists, which the offspring <mean> alone cannot quantify in the supercritical case. A <branching process conditioned on extinction> uses the same <fixed point> to reweight reproduction and describe families known eventually to die out.
 
@@ -2147,7 +2221,7 @@ The <expected value> is useful for computing average population counts and, in t
 $$
 \mathbb E[Z_{n+1}\mid Z_n]=\mu Z_n,\qquad \mathbb E[Z_{n+1}]=\mu\mathbb E[Z_n].
 $$
-The <tower property of conditional expectation> gives the second equality; starting from $\mathbb E[Z_0]=1$ gives the formula. It describes an average over the generation <probability distribution>, not deterministic growth of an individual family. \a[https://www.uni-muenster.de/Stochastik/lehre/WS1011/SpezielleStochastischeProzesse/Ch_1.pdf][University of Münster branching-process notes, Section 1.3, Proposition 1.4]{ref}
+The <tower property of conditional expectation> gives the second equality; starting from $\mathbb E[Z_0]=1$ gives the formula. It describes an average over the generation <probability distribution>, not deterministic growth of an individual family. https://www.uni-muenster.de/Stochastik/lehre/WS1011/SpezielleStochastischeProzesse/Ch_1.pdf[University of Münster branching-process notes, Section 1.3, Proposition 1.4]{ref}
 
 = Quadratic Galton-Watson extinction bound
 {parent=Galton-Watson process}

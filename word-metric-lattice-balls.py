@@ -7,7 +7,7 @@ Tested with Python 3.14.4, Matplotlib 3.10.7, NumPy 2.3.5 (root pyproject.toml).
 
 import os
 
-os.environ.setdefault("MPLCONFIGDIR", "/tmp/codex-wiki-batch69-matplotlib")
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/codex-wiki-matplotlib")
 import matplotlib
 
 matplotlib.use("Agg")

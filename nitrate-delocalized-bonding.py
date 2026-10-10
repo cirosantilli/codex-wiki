@@ -1,6 +1,6 @@
 """Draw an original symbolic nitrate bonding diagram; save basename PNG to cwd.
 
-Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-batch68-mpl python3 ../nitrate-delocalized-bonding.py
+Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-matplotlib python3 ../nitrate-delocalized-bonding.py
 Tested with Python 3.14.4, Matplotlib 3.10.7 (+dfsg1), NumPy 2.3.5.
 Dashed companions symbolize delocalization; this is not a density calculation.
 The fraction 4/3 is an equal-contributor Lewis count, not a universal observable.

@@ -1,7 +1,7 @@
 """Draw repeated-prisoners-dilemma-discount-threshold.png in the current directory.
 
 Original diagram; tested with Python 3.14.4, NumPy 2.3.5 and Matplotlib 3.10.7.
-Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-batch70-mpl python ../repeated-prisoners-dilemma-discount-threshold.py
+Run from _media: MPLCONFIGDIR=/tmp/codex-wiki-matplotlib python ../repeated-prisoners-dilemma-discount-threshold.py
 """
 
 import matplotlib
