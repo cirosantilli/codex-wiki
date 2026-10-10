@@ -30,6 +30,119 @@ Do not add model-attribution lines to solutions.
 
 ## OurBigBook primer
 
+Newlines render as `<br>`, so don't indent code, keep long lines. You almost never want a newline, unless it is followed by a block construct. This is fine though:
+
+```
+My equation:
+$$
+1 + 1
+$$
+is nice
+```
+
+as it contains a block construct. It places the block construct inside the paragraph, which is fine because OurBigBook allows for strong nesting of many constructs in general (except headers which are mroe restricted).
+
+When in doubt, double check that the HTML output is awesome!
+
+### OurBigBook links and references
+
+You rarely want explicit `\a` for links because we already have implicit links:
+
+```
+Hello http://example.com site.
+```
+
+and for custom content:
+
+```
+Hello http://example.com[custom content] site.
+```
+
+Don't use explicit `\a` unless actually required.
+
+For references, links and cross references have the `{ref}` option example:
+
+```
+The sky is blue.http://example.com{ref}
+```
+
+You must understand that this option renders as a superscript`[ref]` on HTML output, so don't count on its contents being present in the main flow of output. Therefore this is bad:
+
+```
+John Smith's https://link.springer.com/book/10.1007/978-3-540-76649-0[Using the Borsuk-Ulam Theorem, 2003]{ref} develops the theorem.
+```
+
+because it won't appear as a clearly visible part of the text, you shouldn't use `{ref}` there just:
+
+```
+Jiří Matoušek's https://link.springer.com/book/10.1007/978-3-540-76649-0[Using the Borsuk-Ulam Theorem, 2003] develops the theorem.
+```
+
+Correct usage is for `{ref}` is providing corroborating sources e.g.:
+
+```
+The sky is blue.http://mybook.com/sky[Page 22, "The sky is blue"]
+```
+
+Even though it does not show up in the direct flow of text, do use as much detail as possible on the content of a `{ref}` link when you do use  `{ref}` to say where and when reasonable quote the exact passage.
+
+For most sources, you want to create a header for the source so that it can be reused, e.g., and then cite with `<>` e.g. the following illustrates:
+
+```
+= Climatology
+
+The sky is blue.<Climatology 101 by John Smith>[Page 22, "The sky is blue"]
+
+= Climatologist
+{parent=Climatology}
+
+= John Smith
+{parent=Climatologist}
+
+Homepage: https://johnsmith.com
+
+= Work by John Smith
+{parent=John Smith}
+
+= Mary Jane
+{parent=Climatologist}
+
+Homepage: https://maryjane.com
+
+= Work by Mary Jane
+{parent=Mary Jane}
+
+= Climatology bibliography
+{parent=Climatology}
+
+= Climatology 101 by John Smith
+{parent=Climatology bibliography}
+{tag=Work by John Smith}
+{title2=1997}
+{title2=978-0702343490}
+
+Official website: https://climatology-101-the-book.com
+
+Amazon: https://www.amazon.co.uk/dp/ABCDEFGHIJ
+
+= What I like about climatology by Mary Jane
+{parent=Climatology bibliography}
+{tag=Work by Mary Jane}
+{title2=2003}
+
+https://maryjane.com/what-i-like-about-climatology
+```
+
+Use the "Climatology 101 by John Smith" formula when it is unambiguous enough, and add further qualification if needed e.g.:
+
+```
+= Climatology 101 by John Smith (2023)
+
+= Climatology 101 by John Smith (2nd edition)
+```
+
+### OurBigBook header features
+
 There are a few important ourbigbook features which you must master and use well, notably for headers:
 
 * `{c}` for capitalization. You want to set this for every header that has a fixed capitalization
@@ -126,20 +239,6 @@ There are a few important ourbigbook features which you must master and use well
 
   because we already convert `à` -> `a` to have nice ASCII IDs where reasonable.
 
-Newlines render as `<br>`, so don't indent code, keep long lines. You almost never want a newline, unless it is followed by a block construct. This is fine though:
-
-```
-My equation:
-$$
-1 + 1
-$$
-is nice
-```
-
-as it contains a block construct. It places the block construct inside the paragraph, which is fine because OurBigBook allows for strong nesting of many constructs in general (except headers which are mroe restricted).
-
-When in doubt, double check that the HTML output is awesome!
-
 ### Include guidelines
 
 When using multiple `\Include`, don't add a blank line between entries. Good:
@@ -206,6 +305,8 @@ When documenting a generally useful STEM concepts, we want to aim try to have th
 
 When you are doing another big job, it is OK to just create stubs for concepts without going into all this detail. But when it gets closer to the matter, this is the ideal we should strive for. To one day make the one book to rule them all.
 
+For now, we are STEM focused. It is OK to create stubs for any reusable non-STEM concepts, but don't expand those beyond stubs for now. You can add STEM specific aspects of non-STEM subjects, but don't steer off too far away from STEM otherwise beyond these stubs.
+
 ### Mathematics guidelines
 
 For mathematical concept headers which have a standard mathematical symbol, don't forget to title2 it.
@@ -234,3 +335,29 @@ not:
 ```
 
 Let's have a `title=` for every Image. It is OK if it repeats the title built into the image itself when one is present.
+
+## People guidelines
+
+People like people. Create a dedicated article for every person that comes up. It is can be a stub, but create it. Put people under their main specialization:
+
+```
+= Mathematics
+
+= Mathematician
+{parent=Mathematics}
+
+= List of mathematicians
+{parent=Mathematician}
+
+= John smith
+{parent=List of mathematicians}
+{title2=1923-}
+
+= Mary Jane
+{parent=List of mathematicians}
+{title2=1911-2024}
+```
+
+Attempt to include the best bust/face image you can find of each person.
+
+Be careful with what you say about living persons. Neutrality is particularly important there.
