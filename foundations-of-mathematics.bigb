@@ -214,13 +214,89 @@ The Church–Turing thesis asserts that every effectively calculable function is
 {parent=Computability theory}
 {wiki}
 
-A pairing function is a computable bijection from $\mathbb N_0^2$ to $\mathbb N_0$ whose inverse coordinate functions are also computable. Iterating it gives computable encodings of every fixed finite tuple of nonnegative integers.
+A <pairing function> is a <computable function> that gives a <bijection> from the <Cartesian product> $\mathbb N_0^2$ to $\mathbb N_0$, with two <computable functions> recovering its coordinates. Here $\mathbb N_0=\{0,1,2,\ldots\}$ consists of the <natural numbers>, including zero. If $p$ is the <pairing function> and $L,R$ its decoding <functions>, the requirements are
+$$
+L(p(x,y))=x,\qquad R(p(x,y))=y,\qquad p(L(z),R(z))=z.
+$$
+Every <ordered pair> has exactly one code, every code represents an <ordered pair>, and decoding always terminates. For a <bijection> given by a <total computable function>, computability of the <inverse function> also follows by enumerating all <ordered pairs> until the one with code $z$ appears. A <primitive recursive pairing function> makes the stronger requirement that both encoding and coordinate decoding are <primitive recursive>.
+
+The <Cantor pairing function> makes this concrete through <triangular numbers>:
+$$
+T(s)=\frac{s(s+1)}2,\qquad \pi(x,y)=T(x+y)+y.
+$$
+On the diagonal $x+y=s$, list $(s,0),(s-1,1),\ldots,(0,s)$. There are $s+1$ <ordered pairs> there, and $T(s)$ <ordered pairs> on earlier diagonals. Their codes therefore occupy precisely the consecutive <natural numbers> from $T(s)$ through $T(s+1)-1$. These intervals touch without overlapping and cover all <natural numbers>; within each interval the offset $y$ determines the <ordered pair>. This proves both <injectivity> and <surjectivity>, hence the <bijection>. It also explains why the infinite grid is a <countably infinite set>: every <ordered pair> is reached after finitely many steps. A row-by-row listing would never finish its first infinite row. Authored treatments give the same diagonal construction with the coordinates exchanged.\a[https://www.cs.cmu.edu/~cdm/resources/02-coding.pdf][Klaus Sutner, Primitive Recursion, Carnegie Mellon University, spring 2021, slides 9–13: pairing systems and the Cantor polynomial]{ref}
+
+For example, the <Cantor pairing function> gives
+$$
+\pi(0,0)=0,\qquad \pi(1,0)=1,\qquad \pi(0,1)=2,\qquad \pi(2,3)=T(5)+3=18.
+$$
+The order of the coordinates matters: $(1,0)$ and $(0,1)$ are different <ordered pairs> with different codes.
+
+\Image[cantor-pairing-diagonal-enumeration.png]{title=The Cantor pairing function on a finite window: labels are codes, and the first 21 ordered pairs fill diagonals zero through five}
+
+To decode a <natural number> $z$, find the unique diagonal index $s$ satisfying
+$$
+T(s)\leq z<T(s+1),\qquad y=z-T(s),\qquad x=s-y.
+$$
+The <inequality> gives $0\leq y\leq s$, so both recovered coordinates are <natural numbers>. At $z=18$, $T(5)=15\leq18<T(6)=21$, hence $s=5$, $y=18-15=3$, and $x=5-3=2$. At $z=0$, $s=0$ and both coordinates are zero. Solving the quadratic <inequality> gives the equivalent <floor function> expression
+$$
+s=\left\lfloor\frac{\sqrt{8z+1}-1}{2}\right\rfloor.
+$$
+This is exact as a statement about the <real numbers> and their <square roots>. An implementation using <floating-point arithmetic> can round across a diagonal boundary, especially for large $z$. Use an exact integer <square root> instead: with $q=\lfloor\sqrt{8z+1}\rfloor$ computed using integer arithmetic, $s=\lfloor(q-1)/2\rfloor$. Alternatively, search for the diagonal using exact integer comparisons. The <primitive recursive pairing function> proof below uses <bounded minimization> and needs no approximate <square root>.
+
+A <pairing function> is a reversible encoding: unlike a <hash function> mapping arbitrarily many inputs into a fixed finite range, it loses no coordinates. This works because the mathematical <natural numbers> have no upper bound. A machine word with $b$ <binary digits> has $2^b$ possible values, while two such words have $2^{2b}$ possible <ordered pairs>; a <bijection> into one word of the same width is impossible. Evaluating the <Cantor pairing function> in a fixed-width integer type can overflow, including in the intermediate product $(x+y)(x+y+1)$. Exact implementation requires sufficiently large integer storage or an explicit restricted input range. One mathematical code need not occupy fewer <binary digits> than its two inputs.
+
+Iterating a <pairing function> gives a reversible encoding of <tuples> of any fixed positive length. With the left-nesting convention, the <Cantor pairing function> encodes $(2,3,4)$ as
+$$
+\pi(\pi(2,3),4)=\pi(18,4)=T(22)+4=253+4=257.
+$$
+Decode the outer <ordered pair> first: $T(22)\leq257<T(23)=276$ gives $(18,4)$. Decode its first coordinate $18$ to recover $(2,3)$, giving the nested <ordered pair> $((2,3),4)$ and thus the original <tuple> $(2,3,4)$.
+
+\Image[pairing-function-tuple-decoding.png]{title=Decoding a known three-entry tuple: first unpair 257 into (18, 4), then unpair 18 into (2, 3)}
+
+The <tuple> length and nesting convention must be known. The same code $257$ represents $(18,4)$ as a two-entry <tuple> and $(2,3,4)$ as a three-entry <tuple>; nesting alone does not make variable-length <tuples> self-describing. To encode variable-length <tuples>, supply their length or another explicit termination convention as part of the encoding. This simple change of representation is useful in <computability theory> and <Gödel numbering>: a <function> of several <natural numbers> can be studied through a single numerical input, while all coordinates remain recoverable. The striking fact is that a whole infinite grid can be serialized without omitting a point.
+
+A historical reference for comparing <sets> through <bijections> is Georg Cantor's paper \i[Ein Beitrag zur Mannigfaltigkeitslehre], published in 1878 in volume 84 of \i[Journal für die reine und angewandte Mathematik], pages 242–258.\a[https://doi.org/10.1515/crelle-1878-18788413][Georg Cantor, Ein Beitrag zur Mannigfaltigkeitslehre, 1878: publisher bibliographic record]{ref}
 
 = Primitive recursive pairing function
 {parent=Pairing function}
 {title2=$\langle x,y\rangle$}
 
-A <pairing function> whose forward map and two inverse coordinate functions are <primitive recursive functions>. For example, the Cantor pairing function $\langle x,y\rangle=(x+y)(x+y+1)/2+y$ has such inverses: find the diagonal index by <bounded minimization> over integers at most the encoded value, then recover $x,y$ by subtraction. It enables finite tuples to be decoded within a <primitive recursive> construction.
+A <primitive recursive pairing function> is a <pairing function> whose encoding <function> and both coordinate <functions> of its <inverse function> are <primitive recursive functions>. Thus the <bijection> can be used in either direction inside a construction by <primitive recursion> and <function composition in recursion theory>. A decoder that is merely a <computable function> would not establish this stronger closure property. Sutner's definition of a primitive recursive pairing system explicitly includes the decoding <functions>; his more general systems need only be <injective>, whereas a <pairing function> here is a <bijection>.\a[https://www.cs.cmu.edu/~cdm/resources/02-coding.pdf][Klaus Sutner, Primitive Recursion, slide 9: primitive recursive encoding and unpairing functions]{ref}
+
+The <Cantor pairing function> is a <primitive recursive pairing function>. For its encoding, construct the <triangular numbers> directly by <primitive recursion>:
+$$
+T(0)=0,\qquad T(s+1)=T(s)+s+1,\qquad \pi(x,y)=T(x+y)+y.
+$$
+Since <addition> is <primitive recursive>, so are $T$ and $\pi$ by <primitive recursion> and <function composition in recursion theory>. This establishes the claim without treating <division> by two as an unexplained primitive operation.
+
+For decoding, use <bounded minimization> to define
+$$
+s(z)=\min\{t\in\mathbb N_0:t\leq z\ \text{and}\ z<T(t+1)\}.
+$$
+The bound is valid for every <natural number> $z$: $T(z+1)=(z+1)(z+2)/2>z$, so the candidate $t=z$ always succeeds. The search includes zero; when $z=0$, it immediately returns $s(0)=0$. If $s(z)>0$, the preceding candidate failed, which gives $T(s(z))\leq z$; when $s(z)=0$, that lower <inequality> follows from $T(0)=0$. Thus this search finds exactly the diagonal in the <Cantor pairing function> inverse, with
+$$
+T(s(z))\leq z<T(s(z)+1).
+$$
+The comparison is <primitive recursive>, and <bounded minimization> of a <primitive recursive> predicate is <primitive recursive>. Therefore $s$ is a <primitive recursive function>. Recover the coordinates by
+$$
+R(z)=z-T(s(z)),\qquad L(z)=s(z)-R(z).
+$$
+In constructions on the <natural numbers>, implement these <subtractions> using the <primitive recursive> operation $a\mathbin{\dot{-}}b=\max(a-b,0)$: apply the <predecessor function> $b$ times to $a$ by <primitive recursion>. On these inputs it agrees with ordinary <subtraction>, since the diagonal <inequalities> imply $0\leq R(z)\leq s(z)$. Consequently $L$ and $R$ are <primitive recursive functions>, and $\pi(L(z),R(z))=z$. Zimmermann proves the relevant closure under <bounded minimization> and the primitive recursive character of the Cantor encoding and coordinate decoding; his convention adds the first coordinate, so its coordinates are exchanged relative to $\pi$ here.\a[https://tore.tuhh.de/bitstream/11420/1312/1/book.pdf][Karl-Heinz Zimmermann, Computability Theory, §2.3, Proposition 2.26 and Propositions 2.32–2.34, printed pages 18 and 21–22]{ref}
+
+For a worked <bounded minimization>, take $z=18$. Candidates $t=0,1,2,3,4$ give $T(t+1)=1,3,6,10,15$, none exceeding $18$. Candidate $t=5$ gives $T(6)=21>18$, so $s(18)=5$, $R(18)=3$, and $L(18)=2$. The search bound was $18$; it terminates much earlier in this example. The bound proves membership in the <primitive recursive functions>; it is not a claim that scanning all candidates is the fastest implementation.
+
+For each fixed $k\geq1$, define a <tuple> encoder by
+$$
+E_1(a_1)=a_1,\qquad E_{k+1}(a_1,\ldots,a_{k+1})=\pi(E_k(a_1,\ldots,a_k),a_{k+1}).
+$$
+Each $E_k$ and each coordinate decoder is <primitive recursive>, by finitely many applications of <function composition in recursion theory> to $\pi,L,R$. For the three-entry <tuple> encoded as $257$, applying $R$ returns $4$, applying $L$ returns $18$, and then $L(18)=2$, $R(18)=3$. The <tuple> length remains part of the agreed convention, as explained for a general <pairing function>.
+
+This makes <primitive recursive pairing functions> useful for encoding several evolving values as one state in <primitive recursion>. For example, store consecutive <Fibonacci numbers> as $c(0)=\pi(0,1)$ and update by
+$$
+c(n+1)=\pi(R(c(n)),L(c(n))+R(c(n))).
+$$
+The codes start $2,4,8,18$, decoding to $(0,1),(1,1),(1,2),(2,3)$. Every step uses <primitive recursive> encoding, decoding and <addition>; a single numerical state therefore carries the two values needed for the next step. This is also the reason a suitable <Gödel numbering> should permit sufficiently simple decoding: representation should preserve the class of <functions> being studied.
 
 = Decimal trailing-zero pairing function
 {parent=Pairing function}

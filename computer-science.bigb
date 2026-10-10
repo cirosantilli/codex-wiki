@@ -320,14 +320,108 @@ A communication interconnect carrying addresses or destinations, data, and contr
 {c}
 {synonym}
 
-Transfer between a device and memory without a processor instruction for each item. The processor sets up a transfer and later observes completion. Multiple bus initiators require arbitration; safe access also requires correct buffer addresses, protection and any necessary cache-coherence handling.
+<Direct memory access> transfers data between a device and <computer memory> without the <CPU> executing a copy instruction for each item. The <CPU> still sets up the operation and observes completion. <DMA> answers who moves the data; an <interrupt> answers how a need for attention is announced. A <DMA> transfer can therefore finish with <interrupt-driven input-output> or with <polled input-output>. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/file-devices.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 36, section 36.5: DMA]{ref}
+
+For a toy receive operation, the <CPU> arranges a four-<byte> <DMA buffer> and tells the device its <DMA address>, length and direction. The device writes the <bytes> `A`, `B`, `C`, `D` into that <DMA buffer>. After completion and any required <DMA buffer synchronization>, the <CPU> can read those four <bytes>. There are four payload <bytes>, but no four-item <CPU> copy loop on the device-to-<computer memory> path. This is a schematic example, not an instruction to operate real hardware.
+
+\Image[dma-data-and-control-paths.png]
+{title=<DMA> separates the device-to-<computer memory> data path from <CPU> setup and completion control}
+
+The useful separation is that the <CPU> can perform other work while a larger transfer proceeds. The reasoning is a division of responsibilities: setup specifies the destination and extent once; the transfer engine advances through the payload; completion reports the result. The data still crosses an interconnect such as a <computer bus>, which must share access among competing initiators. Setup, mapping, synchronization and completion cost work, so <DMA> does not promise a speedup for every transfer size. \a[https://docs.kernel.org/core-api/dma-api.html][James E. J. Bottomley, Linux DMA API, parts Ic–Id: mapping costs, addressing constraints and transfer directions]{ref}
+
+Correctness also requires keeping the <DMA buffer> alive and coordinating its ownership until the device is finished. A <DMA address> need not equal a <CPU> <virtual address> or <physical address>. An <IOMMU>, when present and configured, translates device addresses and can restrict access to authorized <computer memory>; it is not the <CPU>'s <memory management unit>. <Operating-system process> isolation through <virtual memory> alone does not establish those device-access restrictions. \a[https://docs.kernel.org/core-api/dma-api-howto.html][Linux kernel documentation, Dynamic DMA mapping Guide: CPU and DMA addresses]{ref}\a[https://docs.kernel.org/driver-api/vfio.html][Linux kernel documentation, VFIO: IOMMU protection and device isolation]{ref}
+
+= DMA buffer
+{parent=Direct memory access}
+{c}
+
+A region of <computer memory> prepared for <DMA>. In the four-<byte> receive example it is the payload destination, and must remain available until the transfer and required <DMA buffer synchronization> are complete.
+
+= DMA address
+{parent=Direct memory access}
+{c}
+
+An address supplied to a device for <DMA>, in the device's address system. The <Linux kernel>'s mapping interface returns this separately from the <CPU>'s <virtual address>; an <IOMMU> can translate it to a <physical address>. \a[https://docs.kernel.org/core-api/dma-api-howto.html][Linux kernel documentation, Dynamic DMA mapping Guide: CPU and DMA addresses]{ref}
+
+= DMA buffer synchronization
+{parent=Direct memory access}
+{c}
+
+Coordinating <CPU> and device access to a <DMA buffer>, including any required <memory cache> maintenance and ordering. A completed device write must be made visible before the <CPU> consumes it. The <Linux kernel> distinguishes coherent mappings from streaming mappings needing synchronization at ownership changes; even coherent mappings can require ordering of writes. \a[https://docs.kernel.org/core-api/dma-api-howto.html][Linux kernel documentation, Dynamic DMA mapping Guide: types of DMA mappings and using streaming DMA mappings]{ref}\a[https://docs.kernel.org/core-api/dma-api.html][James E. J. Bottomley, Linux DMA API, part Ia: coherent buffers and write ordering]{ref}
+
+= Input-output memory management unit
+{parent=Computer bus}
+{wiki=Input–output_memory_management_unit}
+
+= IOMMU
+{c}
+{synonym}
+
+Hardware translating device <DMA addresses> to <physical addresses>, with access restrictions used for device isolation. Availability, configuration and isolation boundaries depend on the platform; merely having an <IOMMU> does not establish complete isolation. \a[https://docs.kernel.org/driver-api/vfio.html][Linux kernel documentation, VFIO: IOMMUs, device topology and isolation groups]{ref}
+
+= Central processing unit
+{parent=Computer science}
+{wiki}
+
+= CPU
+{c}
+{synonym}
+
+The processor executing a program's instructions. In <polled input-output> the <CPU> explicitly checks status; in <interrupt-driven input-output> it enters an <interrupt handler>; in <DMA> it delegates payload movement while retaining setup and completion work.
+
+= Processor register
+{parent=Central processing unit}
+
+A small storage location within a <CPU> used by its instructions. Some hold data; others describe control state, such as the <program counter> or <stack pointer>. Saving and restoring <processor registers> lets different <software threads> reuse the same <CPU> while retaining separate <execution contexts>.
+
+= Stack pointer
+{parent=Processor register}
+{title2=SP}
+
+A <processor register> identifying the current position in a stack, commonly a <call stack>; the exact convention depends on the architecture. Restoring a <stack pointer> selects the saved stack position, rather than copying the whole <call stack>.
+
+= Input-output
+{parent=Computer science}
+
+Transfers of data between a computer and its devices or external environment. An <operating-system process> can need to wait for an <input-output> operation to complete, leaving the <CPU> available for other runnable work. <Polled input-output>, <interrupt-driven input-output> and <DMA> describe different aspects of arranging and observing such transfers.
 
 // Destination: computer-science.bigb
 
 = Temporal locality
 {parent=Computer science}
 
-The tendency of a recently used item to be used again soon. It motivates <LRU replacement> and recency-based approximations, but is a workload property rather than a guarantee for every future access.
+Temporal locality is the tendency for the same item to be accessed again soon after an earlier access. For <computer memory>, the item might be an <array> element, a <cache line> or a <memory page>; always specify the unit. <Temporal locality> concerns reuse over time, whereas <spatial locality> concerns accesses to nearby addresses. Both are properties of a workload, rather than guarantees about its next <memory reference>. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/vm-beyondphys-policy.pdf][Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau, Operating Systems: Three Easy Pieces, chapter 22, section 22.5 and the Types of Locality aside]{ref}
+
+For a worked example, let $A$ and $B$ denote two distinct <cache blocks> at unrelated, nonadjacent <physical addresses>. An initially empty <fully associative cache> holding two <cache lines>, with <LRU replacement>, receives the <sequence> $A,B,A$. The first $A$ causes a <cache miss> and leaves $A$ resident; $B$ causes another <cache miss> and leaves both $A$ and $B$ resident; the last $A$ is a <cache hit>. <LRU replacement> now regards $B$ as older than $A$. The benefit comes from <temporal locality> of $A$, irrespective of how far apart the <cache blocks> lie. With capacity one, the same <sequence> gives three <cache misses>: reuse helps only if the item survives until it is needed.
+
+The appealing idea is that a small <memory cache> can serve a large computation when its currently useful data stay small. Repeatedly reading a counter or executing the same instructions can exploit <temporal locality>. <LRU replacement> and recency-based approximations try to retain recently used items. A <working set> records recent demand; if the active <working set> cannot fit in resident <memory pages>, <memory thrashing> can defeat this benefit. At <cache-line> granularity, even accesses to different <array> elements can reuse the same <cache block>, as the <spatial locality> example shows.
+
+Peter J. Denning's May 1968 paper connected recent <memory-page> use to near-future demand through the <working set>. Section 3 explicitly discusses the clustering of references to the same <memory page> in time. This is a documented early treatment of the reasoning behind <temporal locality>, rather than a claim about who first coined the term. \a[https://denninginstitute.com/pjd/PUBS/WSModel_1968.pdf][Peter J. Denning, The Working Set Model for Program Behavior, Communications of the ACM 11(5), section 3: Definition and Properties, especially P2: Prediction]{ref}
+
+= Spatial locality
+{parent=Computer science}
+
+Spatial locality is the tendency to access nearby locations in <computer memory> within a short interval. A sequential scan of a contiguous <array> has <spatial locality> even when each element is read only once. A <memory cache> can exploit <spatial locality> by fetching a whole <cache line> on a <cache miss>: later reads of neighbouring elements become <cache hits>. Proximity is in the address layout, so visually adjacent entries in a table need not be adjacent <bytes>.
+
+Consider a $4\times4$ <array> of 32-<bit> <integers>, each occupying four eight-<bit> <bytes>, stored contiguously in <row-major order>. Use toy <physical addresses> starting at zero, aligned to a 16-<byte> <cache-line> boundary. For row $i$ and column $j$, with $0\leq i,j<4$, the address and <cache-block> number are
+$$
+\operatorname{address}(i,j)=4(4i+j),\qquad
+\operatorname{line}(i,j)=\left\lfloor\frac{\operatorname{address}(i,j)}{16}\right\rfloor=i.
+$$
+Here $\lfloor\cdot\rfloor$ is the <floor function>. Each row occupies exactly one <cache line>: row zero begins at addresses $0,4,8,12$, row one at $16,20,24,28$, and so on. <Row-major order> describes this storage layout; traversal can follow rows or columns without moving the elements.
+
+\Image[array-traversal-spatial-locality.png]{title=Two traversal paths through the same <row-major> <array>, coloured by physical <cache line>}
+
+Read all sixteen elements and compute their <integer> sum, keeping the accumulator outside the modelled <memory cache>. Only the sixteen <array> reads count as <memory references>. The toy <fully associative cache> starts empty, holds exactly one 16-<byte> <cache line>, fetches the requested <cache block> on every <cache miss>, and uses <LRU replacement>. No <cache block> is fetched ahead of a request, and no writeback costs are counted because the modelled accesses are reads.
+
+* Traversing by rows, with $j$ varying fastest, requests <cache blocks> $0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3$. Each first read in a row is a <cache miss>; the next three are <cache hits>. Total: four <cache misses> and twelve <cache hits> in sixteen <memory references>.
+* Traversing by columns, with $i$ varying fastest, requests <cache blocks> $0,1,2,3$ four times. Every read replaces the sole resident <cache line>, so the next read always causes a <cache miss>. Total: sixteen <cache misses> and zero <cache hits> in sixteen <memory references>.
+
+\Image[cache-line-traversal-misses.png]{title=All sixteen <memory references> and their <cache hits> or <cache misses> with capacity one <cache line>}
+
+Every element is read once in both traversals. The row traversal exploits <spatial locality> between distinct elements and <temporal locality> of their shared <cache block>. The column traversal returns to each <cache block> after three other distinct <cache blocks>, too late for the one-line <memory cache>. Increase the <fully associative cache> to four <cache lines> and both traversals give four <compulsory misses> and twelve <cache hits>: no loaded <cache block> needs eviction. The difference therefore depends on capacity as well as access order and layout.
+
+This makes <spatial locality> useful and beautiful: the same logical operation on the same elements can use a fetched <cache line> much more fully simply by changing traversal order. The toy counts do not predict a universal speed ratio on real hardware. Actual <cache-line> sizes, capacities, placement rules, fetching ahead of requests and overlapping work affect runtime; measure a concrete implementation with <statistical program profiling>. Ulrich Drepper's November 2007 authored paper explains <cache-line> transfers and gives <array> and <matrix> access examples connecting layout, <temporal locality> and <spatial locality>. Its hardware measurements are historical examples, rather than specifications for every present-day <CPU>. \a[https://www.akkadia.org/drepper/cpumemory.pdf][Ulrich Drepper, What Every Programmer Should Know About Memory, sections 3.2 and 6.2.1: cache operation and optimizing data-cache access]{ref}
 
 // Destination: computer-science.bigb
 
@@ -347,6 +441,18 @@ Evaluate numeric formula dependencies using <depth-first search> and <memoizatio
 = Operating system
 {parent=Computer science}
 {wiki}
+
+An <operating system> manages the resources that let programs run and cooperate. <Operating-system processes> organize running work, <virtual memory> supplies protected <address spaces>, and a <file system> supplies named <files> that can outlive the <operating-system process> that created them. The <operating-system kernel> enforces the core mechanisms; <system calls> let programs request its services. Separating these responsibilities makes it possible to share a <file> while keeping the participating <operating-system processes>' <address spaces> isolated. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/file-intro.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 39, introduction: processes, address spaces and persistent storage]{ref}
+
+A concrete example makes the separation useful: two <operating-system processes> can each use <file descriptor> `3`, yet refer to different <files>; two different names can instead refer to the same <file> through <hard links>. Neither a name nor a small <integer> identifies an object without its context. <Virtual memory> has a related distinction: the same <virtual address> in different <address spaces> can designate different <physical addresses>.
+
+<Unix> provides an influential example of this design. In their July 1974 paper, Dennis M. Ritchie and Ken Thompson date its earliest version to approximately 1969–70 and describe <operating-system processes>, a hierarchical <file system>, and <inodes> separating <directory entries> from <file metadata>. This is a documented historical example, rather than a claim that every <operating system> uses <Unix> conventions. \a[https://www.cs.cmu.edu/~15712/papers/ritchie74.pdf][Ritchie and Thompson, The UNIX Time-Sharing System, Communications of the ACM 17(7), 1974, sections 1, 3 and 4]{ref}
+
+= POSIX
+{parent=Operating system}
+{c}
+
+The Portable Operating System Interface standards specify interfaces and observable behaviour for portable programs, including <file descriptors>, <hard links> and <unlinking an open file>. Their requirements do not prescribe one on-storage <inode> layout. The worked examples below use <POSIX> <Unix> semantics for ordinary <files>. \a[https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap03.html][The Open Group, POSIX.1-2024, definitions of files, directories and file descriptors]{ref}
 
 // Target: computer-science.bigb
 
@@ -369,7 +475,17 @@ A member of the Windows NT operating-system family. Executive services such as o
 = Polled input-output
 {parent=Operating system}
 
-A processor checks device status explicitly, typically repeatedly, until service is possible. Frequent predictable events or very short waits can make polling cheaper than an <interrupt>. Infrequent or long waits waste processor time if busy polling is used.
+In <polled input-output>, the <CPU> explicitly checks a device's status to discover whether work is ready or an operation has completed. Repeatedly checking in a tight loop is busy polling; periodic checks can instead leave time for other work. <Interrupt-driven input-output> changes how readiness is discovered, while <DMA> changes how payload data moves. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/file-devices.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 36, sections 36.3–36.5: polling, interrupts and DMA]{ref}
+
+Use the model drawn under <interrupt-driven input-output>: device events occur at times $2,5,9$, while polls occur at $0,2,4,6,8,10,12$. Assume each event remains pending until detected and an event simultaneous with a poll is visible to that poll. The detection times are $2,6,10$, giving delays $0,1,1$. Four of the seven checks find no new event. These are event-detection delays, not completion times for servicing the events.
+
+More generally, for polls at $0,\Delta,2\Delta,\ldots$ with $\Delta>0$, an event at time $t\geq0$ is first detected at
+$$
+d(t)=\Delta\left\lceil\frac{t}{\Delta}\right\rceil,\qquad 0\leq d(t)-t<\Delta.
+$$
+The <ceiling function> chooses the first poll at or after the event. To verify the bound, that poll is less than one interval beyond $t$; if $t$ is itself a poll time, the delay is zero by the stated visibility convention. This argument assumes instantaneous checks, persistent pending status and an uninterrupted poll schedule. It does not describe missed transient events or a <CPU> too busy to maintain that schedule.
+
+The attraction of <polled input-output> is simple control and the possibility of processing several ready items in one visit. Busy polling spends <CPU> time even when nothing is ready, but short waits or frequent events can make avoiding repeated <interrupt> entry worthwhile. The right choice depends on actual checking, notification and service costs. See <interrupt-driven input-output> for a documented combination of both strategies. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/file-devices.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 36, section 36.4: polling and interrupt tradeoffs]{ref}
 
 // Destination: computer-science.bigb
 
@@ -383,6 +499,74 @@ An authorization table with subjects or protection domains as rows, objects as c
 = File system
 {parent=Operating system}
 {wiki}
+
+A <file system> organizes <files>, their <file metadata>, and the names through which they can be found. In the <Unix> model used here, a <file-system directory> contains <directory entries> associating names with <inodes>; an <inode> describes the underlying <file> and how to locate its contents. The <file-system namespace> answers "what does this name reach?", while the <inode> answers "which <file> is it?". These are distinct responsibilities, even though they cooperate on every lookup.
+
+For a computed toy example, let one <file-system directory> contain names `a` and `b`, both referring to <inode> 42 in the same <file system>. That <inode> has size 6 <bytes> and two <hard links>. Its direct references lead to four-<byte> <file data blocks> 7 and 9: block 7 holds `hell`, while block 9 holds `o` followed by a newline, with two unused slots. Reading either name therefore obtains the same six-<byte> contents `hello` followed by a newline. There is one <file> with two names, not two copies. This direct-reference layout and tiny block size are teaching choices, not requirements on every <file system>.
+
+\Image[file-system-inodes-and-hard-links.png]
+{title=Two <hard links> reach one <inode>; a <file descriptor> reaches it through an <open file description>}
+
+The separation is useful because a rename within this <file system>, from `a` to a previously unused name `c`, can change a <directory entry> without copying the six <bytes> of contents. The remaining name `b` still reaches <inode> 42. A successful write changing the first <byte> through either name changes what both names subsequently read, to `jello` followed by a newline. This sharing is the attraction of <hard links>, and also why a <hard link> is not an independent backup. A program that replaces a named <file> with a different <file> can instead make the names diverge. \a[https://pubs.opengroup.org/onlinepubs/9799919799/functions/rename.html][The Open Group, POSIX.1-2024, rename: changing names and replacing directory entries]{ref}
+
+= Computer file
+{parent=File system}
+
+= File
+{synonym}
+
+An object whose contents and attributes can be accessed through <operating system> interfaces. Here an ordinary <file> means a <byte> sequence with <file metadata>, distinct from a <file-system directory> or a <symbolic link>. Its contents need not disappear when the creating <operating-system process> ends.
+
+= File metadata
+{parent=Computer file}
+
+Information describing a <file>, such as type, owner, access permissions, size, timestamps and <hard link> count. In the toy layout, the <inode> carries these attributes; the <directory entries> carry the names. The distinction matters because renaming a <file> need not copy its contents.
+
+= File data block
+{parent=Computer file}
+
+A storage unit holding part of a <file>'s contents. The toy <inode> references two four-<byte> <file data blocks> for six <bytes> of contents: allocated capacity is $2\cdot4=8$ <bytes>, while logical size is $4+2=6$ <bytes>. This counts only the two <file data blocks>, excluding storage for the <inode> and <directory entries>.
+
+= File-system directory
+{parent=File system}
+
+A <file> containing <directory entries>. Each entry supplies a name in that <file-system directory>; two entries in the same <file-system directory> cannot have the same name. In an <inode>-based <file system>, a <file-system directory> has its own <inode>, and its contents describe names of other objects. \a[https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap03.html#tag_03_103][The Open Group, POSIX.1-2024, sections 3.103–3.104: directory and directory entry]{ref}
+
+= Directory entry
+{parent=File-system directory}
+
+An association between a name in a <file-system directory> and a <file>. In the toy <file system>, the pairs are `(a, 42)` and `(b, 42)`: each name resolves to the same <inode>. The name belongs to the <directory entry>, rather than being the single authoritative name stored in that <inode>.
+
+= File-system namespace
+{parent=File system}
+
+The organization of names and the rules for resolving them to <files>. A path such as `/notes/a` selects successive <directory entries> starting from the root <file-system directory>. Its spelling describes a route, not an immutable identity: replacing the final <directory entry> can make the same path reach a different <inode>.
+
+= Hard link
+{parent=File-system namespace}
+
+A <directory entry> associating a name directly with an existing <file>. In the <inode>-based example, successful `link("a", "b")` adds the second name for <inode> 42 and increases its <hard link> count from 1 to 2. Both <directory entries> have equal status; removing `a` leaves `b` usable. This example assumes both names are in the same <file system>, the destination name is unused, and the operation is permitted. \a[https://pubs.opengroup.org/onlinepubs/9699919799/functions/link.html][The Open Group, POSIX.1-2017, link: adding a directory entry and incrementing the link count]{ref}
+
+= Unlinking an open file
+{parent=Hard link}
+
+For an ordinary <file> under the <POSIX> rules used here, successful `unlink("a")` removes the named <directory entry> and decreases the <hard link> count. An existing <open file description> still refers to the same <file>; removing a name does not detach an already open <file descriptor>. When the final <hard link> disappears, the contents remain available through open references until those references close. This distinction is between the lifetime of a name and the lifetime of the underlying <file>. \a[https://pubs.opengroup.org/onlinepubs/9699919799/functions/unlink.html][The Open Group, POSIX.1-2017, unlink: removal of names and deferred removal of open-file contents]{ref}
+
+Start with names `a` and `b` for <inode> 42 and one <file descriptor> `3` referring to one <open file description>. Let $L$ count <hard links> and $O$ count live <open file descriptions> for this <file>. Assume successful operations, no additional references, and no <memory-mapped file>. The stages are
+$$
+(L,O):\quad (2,1)\xrightarrow{\mathrm{unlink}(a)}(1,1)\xrightarrow{\mathrm{unlink}(b)}(0,1)\xrightarrow{\mathrm{close}(3)}(0,0).
+$$
+After the first removal, `b` still works. After the second, neither name works, but a read through the existing <file descriptor> can still obtain all six <bytes> if its <open file description>'s current position is at the beginning. The final close releases the last open reference, allowing the <inode> and its <file data blocks> to be reclaimed. Freed storage is reusable; this does not promise that old <bytes> are securely erased. \a[https://pubs.opengroup.org/onlinepubs/009604499/functions/close.html][The Open Group, POSIX, close: releasing descriptors, open file descriptions and unlinked-file storage]{ref}
+
+\Image[unlink-open-file-lifetime.png]
+{title=<Hard link> and open-reference counts distinguish removal of names from reclamation of a <file>}
+
+The reasoning is bookkeeping rather than a long proof: each successful removal subtracts one from $L$ and leaves $O$ unchanged; closing the only <file descriptor> in this example releases the sole <open file description>. Storage is reclaimable only at the last stage. $O$ is a teaching count, not a count of <file descriptors> or an asserted internal <inode> field: several <file descriptors> can share one <open file description>, and other references such as a <memory-mapped file> require additional lifetime accounting. The diagrams are abstract models, not operations on actual user <files>.
+
+= Symbolic link
+{parent=File-system namespace}
+
+A separate <file> containing a path string to be interpreted during lookup. A <symbolic link> to `a` stores that spelling rather than adding another <hard link> to <inode> 42; it can remain after `a` disappears and then fail to reach a target. It does not increase the target's <hard link> count. The diagrams below track only <hard links> and open references. \a[https://pubs.opengroup.org/onlinepubs/009695299/functions/symlink.html][The Open Group, POSIX, symlink: storing the supplied path string]{ref}
 
 // Target: computer-science.bigb
 
@@ -432,18 +616,63 @@ Recording intended metadata updates in a recoverable log before applying them. J
 {parent=File system}
 {wiki}
 
+An <inode> is a <data structure> describing an object in an <inode>-based <file system>. For an ordinary <file>, it records <file metadata> such as type, owner, access permissions, size and <hard link> count, together with information locating the contents. In the direct-reference toy layout, <inode> 42 points to <file data blocks> 7 and 9; its two names `a` and `b` live in <directory entries>. Other <file systems> can locate contents differently, so the diagram is a model of the separation rather than a universal storage layout. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/file-implementation.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 40, sections 40.3–40.4: inodes and directory organization]{ref}
+
+An <inode> number is unique only within its <file system> among allocated objects. Two different <file systems> can each have <inode> 42, referring to unrelated <files>. <POSIX> exposes the <file system>'s device identity as `st_dev` and the <file>'s serial number as `st_ino`; the pair identifies a <file> within a running system. Neither the bare <inode> number nor that pair is a permanent historical identifier: after reclamation, a later <file> can reuse the number. In particular, comparing an old saved number with a new one does not establish continuity of the <file>. \a[https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/sys_stat.h.html][The Open Group, POSIX.1-2017, sys/stat.h: joint identity from st_dev and st_ino]{ref}
+
+The design's appeal is that one <inode> unifies the <file metadata> and contents reached through several <directory entries>. Ritchie and Thompson's original 1974 account explicitly describes a <directory entry> as a name and an i-number, with the corresponding <inode> holding ownership, protection, size, content addresses and the <hard link> count. It gives a concrete early explanation of how names and <file> identity can evolve separately. \a[https://www.cs.cmu.edu/~15712/papers/ritchie74.pdf][Ritchie and Thompson, The UNIX Time-Sharing System, 1974, section 4: implementation of the file system]{ref}
+
 // Target: computer-science.bigb
+
+= Synchronous processor exception
+{parent=Operating system}
+
+A processor event attributable to instruction execution, such as a <page fault> during a memory access or a divide exception on <x86>. This causal connection distinguishes it from the asynchronous device <interrupts> discussed here. It also differs from a programming language's <exception handling>, which specifies how program-level exceptions propagate. \a[https://docs.kernel.org/arch/x86/entry_64.html][Linux kernel documentation, Kernel Entries: architecturally defined exceptions]{ref}
+
+= Device driver
+{parent=Operating system}
+{wiki}
+
+Software supplying device-specific operations behind an <operating system> interface. For these examples its responsibilities include <DMA> setup and completion handling, or checking status for <polled input-output>. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/file-devices.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 36, section 36.7: the driver abstraction]{ref}
 
 = Interrupt
 {parent=Operating system}
 {wiki}
+
+An <interrupt> redirects <CPU> execution to an <interrupt handler> in response to an event. Here the main case is an asynchronous hardware <interrupt>: a timer or device requests attention independently of the instruction currently being executed. A device completing a receive operation can announce that its data is ready while the <CPU> is running another program. <Interrupt-driven input-output> illustrates this with an explicit timeline. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 6, section 6.3: timer interrupts and regaining control]{ref}
+
+A <synchronous processor exception>, such as a <page fault> caused by a particular memory access, is tied to instruction execution. A <system call> is an intentional program request for an <operating-system kernel> service. These routes can share entry machinery, and an instruction named a software interrupt can implement a <system call>, but this does not make that request an asynchronous device event. For example, the <Linux kernel> on <x86> documents separate entries for external <interrupts>, divide exceptions, `syscall` and `int 0x80`. \a[https://docs.kernel.org/arch/x86/entry_64.html][Linux kernel documentation, Kernel Entries: interrupt, exception and system-call entry points]{ref}
+
+The usual device route is a request through an <interrupt controller>, architecture-specific entry, and dispatch to an <interrupt handler>. In the <Linux kernel>, generic handling separates controller operations from flow handling and <device driver> callbacks. Requests can arrive through a pin or a message, and several devices can share a request source. Routing, priorities and <interrupt masking> determine which requests can be delivered; notification therefore need not mean immediate execution of the <interrupt handler>. \a[https://docs.kernel.org/core-api/genericirq.html][Linux kernel documentation, generic IRQ handling: abstraction layers and interrupt control flow]{ref}\a[https://docs.kernel.org/core-api/irq/concepts.html][Linux kernel documentation, What is an IRQ?: pin and packet requests, shared sources]{ref}
+
+The <CPU> and entry code preserve the state needed to resume interrupted execution, including the <instruction pointer>. Handling may enter a higher <processor privilege level> when interrupting ordinary program execution, but an <interrupt> can also arrive while privileged code is already running. The protected entry route and handler placement depend on the architecture and <operating system>; a <microkernel> need not place all <device driver> work where a <monolithic kernel> does. An <interrupt> entry is also distinct from a <context switch> to another <operating-system process>. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 6, sections 6.2–6.3: protected entry, saved state and switching]{ref}\a[https://docs.kernel.org/arch/x86/entry_64.html][Linux kernel documentation, Kernel Entries: entry from user mode and already executing kernel code]{ref}
 
 // Target: computer-science.bigb
 
 = Interrupt-driven input-output
 {parent=Interrupt}
 
-A device signals an <interrupt> when it needs service, allowing the processor to perform unrelated work until then. Delivery, entry and completion have costs, so very high event rates can favor <polled input-output> or a combined scheme.
+In <interrupt-driven input-output>, a device signals an <interrupt> when attention is needed, letting the <CPU> avoid repeatedly checking an idle device. The <interrupt handler> determines what happened and arranges the required work; notification itself does not move the payload. <DMA> can supply that separate data-transfer mechanism.
+
+For a toy comparison, let events occur at times $2,5,9$. Ideal <interrupt> notification happens at those same times, while <polled input-output> at $0,2,4,6,8,10,12$ detects them at $2,6,10$. The polling delays are $0,1,1$; ideal notification delays are all zero. Events are assumed to remain pending, with a simultaneous event visible to a poll. The chart is a model, not a measurement: it excludes <interrupt> delivery and dispatch latency, <interrupt handler> service time, and polling overhead. Its zero-delay row is not a real-hardware guarantee.
+
+\Image[interrupt-versus-polling-timeline.png]
+{title=Ideal <interrupt> notification versus periodic <polled input-output> for three persistent device events}
+
+The useful idea is to spend attention when something changes. Sparse events can leave long stretches for useful <CPU> work instead of busy checks. At high event rates, repeated entry and service overhead can consume that saving. Batching notifications can reduce their frequency while delaying some events; switching to <polled input-output> during active periods is another option. No strategy is universally faster. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/file-devices.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 36, section 36.4: interrupt costs and coalescing]{ref}
+
+The <Linux kernel>'s NAPI mechanism is a concrete combination: an <interrupt> normally schedules event processing, which polls for work with a receive budget. Further <interrupts> remain masked during that polling, and are enabled again when polling finishes. NAPI also supports busy polling; the exact processing context and configuration vary. This is a documented <Linux kernel> design, not a requirement on every <operating system>. \a[https://docs.kernel.org/networking/napi.html][Linux kernel documentation, NAPI: basic operation, datapath API, scheduling and IRQ masking]{ref}
+
+= Interrupt handler
+{parent=Interrupt}
+{wiki}
+
+Code entered to handle an <interrupt>. It identifies and acknowledges relevant device state and arranges service, possibly deferring work. The <Linux kernel>'s generic flow layer and <device driver> callback have distinct responsibilities. \a[https://docs.kernel.org/core-api/genericirq.html][Linux kernel documentation, generic IRQ handling: interrupt control flow and default flow implementations]{ref}
+
+= Interrupt controller
+{parent=Interrupt}
+
+Hardware managing and routing <interrupt> requests to a <CPU>, with architecture-dependent masking and priority rules. The <Linux kernel> encapsulates its operations separately from generic flow handlers. \a[https://docs.kernel.org/core-api/genericirq.html][Linux kernel documentation, generic IRQ handling: chip-level hardware encapsulation]{ref}
 
 // Destination: computer-science.bigb
 
@@ -465,6 +694,12 @@ Disabling selected asynchronous interrupt delivery, normally under privileged co
 {wiki}
 
 // Target: computer-science.bigb
+
+= Multiprogramming
+{parent=Operating system}
+{wiki}
+
+Keeping several <operating-system processes> available so <process scheduling> can run another when one waits. Increasing their number can increase the combined <working set> demand beyond the available <page frames>, producing <memory thrashing> rather than more useful <CPU> work.
 
 = Virtual memory
 {parent=Operating system}
@@ -517,15 +752,75 @@ Deferring a copy until modification is needed. With <paging>, <operating-system 
 = Memory thrashing
 {synonym}
 
-Excessive paging when active memory demand exceeds available frames, leaving little useful computation between <page faults>.
+<Memory thrashing> is repeated costly cycling of <memory pages> out of and back into <computer memory>, leaving little useful computation between <page faults>. Active demand can exceed the available <page frames>, especially when <multiprogramming> admits too many <operating-system processes>. A high <page fault rate> during initial loading alone does not establish <memory thrashing>. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/vm-beyondphys-policy.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 22, section 22.11: Thrashing]{ref}
+
+Consider one <operating-system process> making the 20 <memory references> $1,2,3,4,1,2,3,4,\ldots,1,2,3,4$: five repetitions of four <memory pages>. Start with an empty <resident set>, use <demand paging> and exact <LRU replacement>, and assume no prefetching or competing <operating-system processes>. A hit finds the requested <memory page> resident; a miss requires a nonresident <page fault>. With three <page frames>, references 1–3 load pages 1–3. Reference 4 evicts page 1, reference 5 reloads page 1 and evicts page 2, and the cycle continues: every return finds its <memory page> evicted. With four <page frames>, only the first four references miss; all four <memory pages> then remain resident.
+
+|| Available <page frames>
+|| Misses in all 20 <memory references>
+|| Overall <page fault rate>
+|| Misses in references 5–20
+|| <Page fault rate> in references 5–20
+| 3
+| 20
+| 100%
+| 16
+| 100%
+| 4
+| 4
+| 20%
+| 0
+| 0%
+
+The four initial misses with four <page frames> are compulsory first-use misses from the empty <resident set>. They are startup work; the three-<page frame> case keeps faulting after startup. This makes the difference between <memory thrashing> and loading a new <working set> visible. For the three-<page frame> trace, each reused <memory page> has three distinct intervening <memory pages>, so <LRU replacement> has already evicted it before its next use.
+
+\Image[memory-thrashing-lru-capacity.png]
+{title=The same 20 memory references under <LRU replacement>: three <page frames> miss every time, four miss only during startup}
+
+To quantify the cost, assume each hit takes 100 nanoseconds and each miss incurs an additional 1 millisecond of <page fault> service, followed by the same 100-nanosecond memory access. These are toy latencies, not measurements. With miss <probability> $p$, the <expected value> of access time is
+$$
+E[T]=100\,\mathrm{ns}+p\,(1\,\mathrm{ms}).
+$$
+The service cost is additional: it does not include the final 100 nanoseconds. Thus $p=1$ gives $1{,}000{,}100\,\mathrm{ns}$ and $p=0.2$ gives $200{,}100\,\mathrm{ns}$, approximately a fivefold ratio over the complete trace. Over references 5–20, the corresponding ratio is $1{,}000{,}100/100=10{,}001$: repeated <page faults> dominate the useful accesses. The <expected value> model follows the additive miss-penalty convention of OSTEP chapter 22, section 22.1. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/vm-beyondphys-policy.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 22, equation 22.1: average memory access time]{ref}
+
+Not every <page fault> performs disk <input-output>: <demand paging> can allocate zero-filled <memory pages>, and <copy-on-write> can copy an existing <page frame>. The toy service cost models expensive misses; the miss trace alone establishes residency behavior, while <memory thrashing> additionally concerns repeated costly cycling. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/vm-complete.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 23, section 23.1, Other Neat Tricks: demand zeroing and copy-on-write]{ref}
+
+Possible remedies are more resident <page frames>, less <multiprogramming>, or reorganizing accesses to improve <temporal locality>. For this toy <sequence>, one extra <page frame> suffices under <LRU replacement>; that is not a universal threshold or policy. <Page replacement> alone cannot make every simultaneously needed <memory page> fit.
 
 // Target: computer-science.bigb
 
 = Working set
 {parent=Virtual memory}
 {wiki}
+{title2=$W(t,\Delta)$}
 
-Pages recently used by a process within a declared time or reference window. Keeping the active processes' combined working sets resident reduces <memory thrashing>.
+An <operating-system process>'s <working set> is the <set> of distinct <memory pages> used in a declared recent window. Here the window counts <memory references>, not clock time: let $r_i$ identify the <memory page> accessed by the $i$th <memory reference>, and let the positive <integer> $\Delta$ be the window length. Immediately after reference $t$,
+$$
+W(t,\Delta)=\{r_i:\max(1,t-\Delta+1)\leq i\leq t\},\qquad W(0,\Delta)=\varnothing.
+$$
+Repeated <memory references> to the same <memory page> contribute only one <set element>. The <working set size> is the <cardinality> $|W(t,\Delta)|$. This recent footprint estimates current demand; it cannot guarantee which <memory pages> future <memory references> will need. The <resident set> instead records which <memory pages> are actually present in <computer memory>.
+
+For the 20-reference <sequence> in <memory thrashing> and $\Delta=4$, the successive <working sets> begin $\{1\}$, $\{1,2\}$, $\{1,2,3\}$ and $\{1,2,3,4\}$. At $t=5$, the window is references 2–5, namely $2,3,4,1$, so $W(5,4)=\{1,2,3,4\}$ again. Every later four-reference window contains all four <memory pages>. Under three-<page frame> <LRU replacement>, however, the <resident set> at $t=5$ is $\{1,3,4\}$: page 2 was evicted. Consequently the <working set size> is four even though only three <memory pages> are resident. Under four-<page frame> <LRU replacement>, the <resident set> contains the complete <working set> after reference 4.
+
+\Image[working-set-reference-window.png]
+{title=A four-reference <working set> remains four pages while a three-frame <resident set> contains only three}
+
+Window choice matters: on this same <sequence>, $\Delta=2$ reports only two distinct <memory pages> after reference 2, despite the recurring four-page cycle. A short window forgets useful <memory pages> sooner; a long window retains evidence from older phases. Enlarging the window can only enlarge or preserve the <working set> at fixed $t$, because the shorter window is contained in the longer one. No single window is best for every workload.
+
+For a concrete <multiprogramming> budget, suppose three <operating-system processes> each have a four-page <working set>, no shared <page frames>, and only eight <page frames> are available for their data. Their combined demand is 12 <page frames>; all three <working sets> cannot be resident together. Letting two <operating-system processes> run while the third waits makes their eight-page demand fit in this simplified model. Real budgets also reserve <computer memory> for the <operating system> and other uses; shared <memory pages> must not be counted repeatedly as different physical copies.
+
+Peter J. Denning's \a[https://denninginstitute.com/pjd/PUBS/WSModel_1968.pdf][The Working Set Model for Program Behavior, Communications of the ACM, May 1968, sections 3–4]{ref} formalized the <working set> using recent process execution time, rather than this article's reference count. Its central insight connected memory demand to <process scheduling>: deciding which <operating-system processes> run also decides which <working sets> need room. <Temporal locality> makes recent use informative, without making it a promise about the future. The beautiful distinction is between a large possible <address space> and the smaller footprint of the current activity.
+
+= Working set size
+{parent=Working set}
+{title2=$|W(t,\Delta)|$}
+
+The number of distinct <memory pages> in a <working set>, measured by its <cardinality>. It depends on both the current <memory reference> index $t$ and the declared window $\Delta$, not just on the <resident set> capacity.
+
+= Resident set
+{parent=Virtual memory}
+
+The <set> of an <operating-system process>'s <memory pages> currently present in main <computer memory>. A <resident set> may omit recently used <memory pages> after <page replacement>, or retain <memory pages> that have left the chosen <working set> window.
 
 // Target: computer-science.bigb
 
@@ -609,6 +904,8 @@ Keep frames in a circular list with a reference flag and a scanning hand. Clear 
 
 Evict the least recently accessed eligible item. Exact recency tracking on every memory reference can be expensive, whereas accesses to a <buffer cache> already pass through software. Recency captures <temporal locality> but can be defeated by a one-pass scan.
 
+For <page replacement>, update recency on hits as well as misses; evict only when a miss requires a <page frame> and all eligible <page frames> are occupied. The four-page cycle in <memory thrashing> shows how exact <LRU replacement> behaves at capacities three and four. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/vm-beyondphys-policy.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 22, section 22.5: Using History, LRU]{ref}
+
 // Destination: computer-science.bigb
 
 = FIFO page replacement
@@ -635,6 +932,12 @@ A <page fault> is not necessarily a program error or a storage-device read. <Dem
 For a nonresident <memory page> whose contents must be loaded, the handler obtains a <page frame>, possibly invokes <page replacement>, supplies the contents, updates the <page table>, arranges any necessary <translation lookaside buffer> invalidation, and resumes the operation. If no mapping or permission can legally be supplied, it reports failure. This mechanism lets ordinary accesses request work only when it becomes necessary. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/vm-beyondphys.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 21: Beyond Physical Memory, Mechanisms, sections 21.3–21.5]{ref}
 
 // Target: computer-science.bigb
+
+= Page fault rate
+{parent=Page fault}
+{title2=$p$}
+
+For a specified interval of <memory references>, the number causing a <page fault> divided by the total number of <memory references>. In the nonresident-only toy model in <memory thrashing>, this equals the miss fraction used as <probability> $p$ in the <expected value> calculation. Startup and later intervals can have very different <page fault rates>.
 
 = Translation lookaside buffer
 {parent=Paging}
@@ -716,6 +1019,21 @@ Execution of a suitable executable with effective user identity set to its owner
 = Operating-system kernel
 {synonym}
 
+The <operating-system kernel> is the core of an <operating system>, controlling access to resources and supplying mechanisms used by <operating-system processes>. <Processor privilege levels> let it enforce boundaries that ordinary programs cannot simply overwrite. The <operating-system kernel> connects <process scheduling>, <virtual memory> and <file system> operations; a <system call> requests a service across that boundary. A <monolithic kernel> and a <microkernel> divide services differently, so the location of every <file system> service is a design choice.
+
+For the toy <file system>, opening `a` resolves its <directory entry> to <inode> 42, establishes an <open file description>, and returns <file descriptor> `3`. Later reads use that <file descriptor> to reach the existing <open file description>, without resolving the spelling `a` again. This explains how <unlinking an open file> preserves access: the open reference survives the <directory entry>. The per-<operating-system process> table interpreting `3` is maintained by the <operating-system kernel>; `3` itself is the small <integer> passed by the program, not <inode> 42. \a[https://pubs.opengroup.org/onlinepubs/9799919799/functions/open.html][The Open Group, POSIX.1-2024, open: file descriptor to open file description to file]{ref}
+
+= System call
+{parent=Kernel (operating system)}
+
+A request from a program for an <operating-system kernel> service. In the <Unix> examples here, opening, reading, linking and unlinking <files> request controlled changes or access to <operating system> resources. The <operating-system kernel> checks the request and performs the permitted operation; an interface specified by <POSIX> does not by itself dictate every internal implementation detail.
+
+= Linux kernel
+{parent=Kernel (operating system)}
+{c}
+
+A concrete <operating-system kernel> whose documented <file system> interface distinguishes a name-associated `dentry`, an object-associated `inode`, and a `file` object created for an open instance. An <inode> can have several name-associated objects. This illustrates the distinction among <directory entries>, <inodes> and <open file descriptions>; it does not imply identical structures in every <operating system>. \a[https://docs.kernel.org/filesystems/vfs.html][Linux kernel documentation, Overview of the Linux Virtual File System: directory entries, inode objects and file objects]{ref}
+
 // Target: computer-science.bigb
 
 = Monolithic kernel
@@ -742,11 +1060,108 @@ Allows a running kernel execution to be involuntarily suspended for another sche
 = Process scheduling
 {parent=Operating system}
 
+<Process scheduling> chooses which runnable <operating-system process> or <software thread> uses a <CPU> next, and when it gives up that <CPU>. Runnable means able to execute now; work waiting for an <input-output> operation is not eligible until that wait ends. A <ready queue> records eligible work. The policy chooses a recipient; a <context switch> supplies the mechanism for transferring execution. Sharing a single <CPU> lets a long calculation and an interactive program both make progress, although only one execution stream runs on that <CPU> at an instant.
+
+Consider three single-<software thread> <operating-system processes> on one <CPU>, with abstract time units, zero <context switch> or scheduler overhead, and no <input-output> blocking. Their arrival times and <CPU bursts> are $(a_A,b_A)=(0,5)$, $(a_B,b_B)=(1,3)$ and $(a_C,b_C)=(2,1)$. Each <CPU burst> is all the execution that its task needs. With <FCFS>, the current task runs to completion: A occupies $[0,5)$, B $[5,8)$ and C $[8,9)$. With <round-robin scheduling> and <scheduling quantum> $q=2$, the intervals are A $[0,2)$, B $[2,4)$, C $[4,5)$, A $[5,7)$, B $[7,8)$ and A $[8,9)$. At a boundary, arrivals join the <ready queue> before the unfinished task whose <scheduling quantum> has expired; this fixes the otherwise ambiguous ordering at time 2.
+
+\Image[scheduling-fcfs-versus-round-robin.png]
+{title=<FCFS> and <round-robin scheduling> share the same nine units of useful <CPU> work differently}
+
+The following triples always list A, B, C. Completion is an absolute time; <scheduling turnaround time>, <scheduling waiting time> and <scheduling response time> are durations measured from the relevant events.
+
+|| Policy
+|| Completion times
+|| <Scheduling turnaround times>
+|| <Scheduling waiting times>
+|| <Scheduling response times>
+
+| <FCFS>
+| $(5,8,9)$
+| $(5,7,7)$
+| $(0,4,6)$
+| $(0,4,6)$
+
+| <Round-robin scheduling>, $q=2$
+| $(9,8,5)$
+| $(9,7,3)$
+| $(4,4,2)$
+| $(0,1,2)$
+
+For example, B first runs at time 2 under <round-robin scheduling>, so its <scheduling response time> is $2-1=1$. It finishes at time 8, giving <scheduling turnaround time> $8-1=7$ and <scheduling waiting time> $7-3=4$. Under <FCFS>, C waits $8-2=6$ before its sole execution interval. Under <round-robin scheduling>, A waits during $[2,5)$ and $[7,8)$, totaling $3+1=4$. Both timelines do exactly $5+3+1=9$ units of useful <CPU> work; changing the order changes who benefits first.
+
+The appeal is that shared progress can improve responsiveness: B and C get their first <CPU> service sooner under <round-robin scheduling>, while A completes later. The <arithmetic mean> of the <scheduling response times> falls from $10/3$ to $1$; the <arithmetic mean> of the <scheduling turnaround times> is $19/3$ for both policies in this particular example. These are different goals, and this workload establishes no universal ranking. Giving each continuously runnable task repeated turns is a practical form of fairness. A smaller <scheduling quantum> can shorten waits between turns, but makes <context switches> more frequent when competitors remain runnable. If each full slice performs $q$ units of useful work and incurs a fixed switching cost $s$, the overhead fraction in that simplified repeated cycle is $s/(q+s)$. Real costs and workloads determine the choice. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched.pdf][Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau, Operating Systems: Three Easy Pieces, chapter 7, sections 7.2–7.3 and 7.6–7.7: metrics, FCFS and round robin]{ref}
+
+= Ready queue
+{parent=Process scheduling}
+
+A collection of runnable <operating-system processes> or <software threads> waiting for a <CPU>. A running task is not waiting in the <ready queue>, and a task waiting for <input-output> is not runnable. <FCFS> and <round-robin scheduling> can use a <FIFO queue>; other policies can organize eligible work differently, for example with a <priority queue>.
+
+= CPU burst
+{parent=Process scheduling}
+{c}
+{title2=$b_i$}
+
+An interval of useful <CPU> execution needed before a task finishes or must wait, for example for <input-output>. A real <operating-system process> can need many <CPU bursts>; the example under <process scheduling> assigns each task just one <CPU burst>, possibly split across several turns by <round-robin scheduling>.
+
+= Round-robin scheduling
+{parent=Process scheduling}
+
+= RR
+{c}
+{synonym}
+
+Serve the front of a <FIFO queue> of runnable tasks for at most one <scheduling quantum>. If the task finishes or must wait for <input-output>, it leaves the <CPU> earlier; if it remains runnable after consuming its allowance, append it to the rear of the <ready queue>. In the example under <process scheduling>, the <ready queue> at time 2 is B, C, A: B arrived at time 1, C joins at the boundary, then A is requeued. That one convention determines the subsequent order.
+
+= Scheduling quantum
+{parent=Round-robin scheduling}
+{title2=$q$}
+
+The maximum amount of <CPU> execution allotted in one turn by <round-robin scheduling>. A task can finish before consuming its <scheduling quantum>. When other tasks remain runnable, a shorter <scheduling quantum> provides more frequent turns at the cost of more frequent <context switches>.
+
+= Scheduling preemption
+{parent=Process scheduling}
+
+Taking the <CPU> away from a still-runnable task before it voluntarily yields or finishes. <Round-robin scheduling> uses <scheduling preemption> when a <scheduling quantum> expires, commonly using a timer <interrupt> to regain control. <Kernel preemption> is the more specific question of whether an execution already within the <operating-system kernel> can be suspended for another runnable context.
+
+= Scheduling response time
+{parent=Process scheduling}
+{title2=$R_i=f_i-a_i$}
+
+The delay from a task's arrival $a_i$ until its first execution $f_i$: $R_i=f_i-a_i$. This measures access to initial <CPU> service, rather than completion of an entire user request. For C under <round-robin scheduling> in <process scheduling>, $R_C=4-2=2$; its <scheduling turnaround time> is instead $5-2=3$.
+
+= Scheduling turnaround time
+{parent=Process scheduling}
+{title2=$T_i=c_i-a_i$}
+
+The duration from a task's arrival $a_i$ until its completion $c_i$: $T_i=c_i-a_i$. It includes execution and all intervening waits. For A under <round-robin scheduling> in <process scheduling>, $T_A=9-0=9$, despite a <scheduling response time> of zero.
+
+= Scheduling waiting time
+{parent=Process scheduling}
+{title2=$W_i$}
+
+The total duration a task spends runnable but waiting for a <CPU>, including later waits after <scheduling preemption>. Under the zero-overhead, no-<input-output>-blocking assumptions of <process scheduling>, elapsed time partitions into useful execution and such waiting, so $W_i=T_i-b_i$, where $T_i$ is <scheduling turnaround time> and $b_i$ is the total <CPU burst>. Thus C under <round-robin scheduling> has $W_C=3-1=2$. If a task also spends time blocked on <input-output>, that blocked duration belongs to <scheduling turnaround time> but must not be counted as <scheduling waiting time>.
+
 // Target: computer-science.bigb
 
 = Context switch
 {parent=Process scheduling}
 {wiki}
+
+A <context switch> transfers <CPU> execution from one <operating-system process> or <software thread> to another while preserving enough <execution context> for the suspended task to resume. The <operating-system kernel> saves the outgoing task's <processor registers>, including its resume <program counter> and <stack pointer>, and restores the incoming task's saved state. Hardware entry and software switching divide this work differently across architectures; the diagram groups them into logical save and load steps. During the transition the same <CPU> executes the <operating-system kernel>'s scheduler and switching code. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf][Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau, Operating Systems: Three Easy Pieces, chapter 6, section 6.3: saving and restoring context]{ref}
+
+For a schematic switch from A to B, let A's resume <program counter> be $p_A$, its <stack pointer> $u_A$, and one illustrative data <processor register> contain 7. B's saved values are $p_B,u_B,42$. Saving A retains $(p_A,u_A,7)$ in A's <execution context>; loading B establishes $(p_B,u_B,42)$ before B resumes. These are selected fields, not a complete architecture-specific <execution context>. Later restoring A recovers its 7 even though B has used the same physical <processor register> for 42.
+
+\Image[context-switch-state-transfer.png]
+{title=One <CPU> over time: save A's <execution context>, run the scheduler, and restore B's <execution context>}
+
+The useful invariant is that each suspended task retains its own resume state, so another task's use of the <processor registers> does not erase it. This is what makes repeated turns under <round-robin scheduling> possible. Saving an <execution context> does not copy the entire <address space>. Switching between <software threads> of one <operating-system process> can retain the same <address space>; switching between <operating-system processes> with different <address spaces> may also require changing the <memory management unit>'s translation context, such as the active <page table> and associated <address space identifier>, depending on the architecture. Their contents remain in <computer memory>. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/threads-intro.pdf][Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau, Operating Systems: Three Easy Pieces, chapter 26, introduction: thread contexts and shared address spaces]{ref}
+
+Entering the <operating-system kernel> through an <interrupt>, <synchronous processor exception> or <system call> does not automatically imply a <context switch> to another task. The handler may return to the same task; <process scheduling> determines whether another runnable task should take over. A <context switch> consumes time, and a changed <memory cache> or <translation lookaside buffer> working environment can add subsequent costs. Those costs are excluded from the toy <process scheduling> timelines, which are calculations rather than <operating system> benchmarks. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 6, section 6.3: continue the current process or switch]{ref}\a[https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 7, section 7.7: direct and indirect switching costs]{ref}
+
+= Execution context
+{parent=Context switch}
+
+State needed to resume a suspended execution stream, including saved <processor registers> and its position in a <call stack>. An <operating-system kernel> can keep parts in a per-task record and parts on a kernel <call stack>. An <execution context> identifies and preserves that stream's state; it is not a duplicate of all the <computer memory> reachable through its <address space>.
 
 // Target: computer-science.bigb
 
@@ -758,7 +1173,26 @@ Allows a running kernel execution to be involuntarily suspended for another sche
 = Operating-system process
 {synonym}
 
-A running program with an address space, execution context and operating-system resources.
+An <operating-system process> is an execution instance of a program, with an <address space>, one or more <software threads> carrying <execution contexts>, and <operating system> resources such as <file descriptors>. A program describes instructions; an executable <file> stores a form that can be loaded for execution. Starting the same executable twice can create two <operating-system processes>, each with its own evolving state. A <operating-system process> can be waiting for <input-output> or waiting for a turn on the <CPU>, rather than executing at every instant. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-intro.pdf][Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau, Operating Systems: Three Easy Pieces, chapter 4, sections 4.1, 4.3–4.4: program, process and execution states]{ref}
+
+For example, start the same counter program as <operating-system processes> A and B. In this toy mapping, both use <virtual address> `0x1234` for a counter `x`, but A reads `x = 7` while B reads `x = 42`. The number `0x1234` is interpreted through the current <address space>, so it need not denote the same contents in both <operating-system processes>. Writing A's ordinary private counter does not change B's counter. Compare <virtual memory> for an explicit mapping to different <physical addresses>.
+
+\Image[process-and-thread-address-spaces.png]
+{title=Separate <operating-system processes> can interpret the same <virtual address> differently; <software threads> in one process share an <address space>}
+
+Separate <virtual memory> <address spaces> provide a usual default isolation boundary, not a claim that all <computer memory> is universally private. Deliberately shared mappings let <operating-system processes> communicate through the same stored data. Even logically private contents need not occupy distinct <page frames> at every moment: read-only program code can be shared, and <copy-on-write> can keep a common <memory page> until a write requires a private copy. The distinction is between which accesses and changes are permitted and which physical storage is currently reused. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/vm-complete.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 23, section 23.1, Other Neat Tricks: copy-on-write and shared mappings]{ref}\a[https://pubs.opengroup.org/onlinepubs/009695099/functions/shm_open.html][The Open Group, POSIX shared-memory object interface, shm_open: multiple processes can refer to the same shared memory object]{ref}
+
+This abstraction lets independent activities reuse the same executable while keeping their changing state separate. <Process scheduling> distributes <CPU> time; <virtual memory> interprets and protects addresses; <file descriptors> connect an execution to open resources. The useful design is controlled independence with explicit ways to share. Creating <operating-system processes>, maintaining their mappings and performing <context switches> require time and <computer memory>; isolation alone gives no universal performance guarantee.
+
+= File descriptor
+{parent=Process (computing)}
+
+A nonnegative <integer> identifying an open access in one <operating-system process>. The program passes its value to operations such as reading and closing; the <operating-system kernel> interprets it through that <operating-system process>'s descriptor table. In the toy example, table entry `3` refers to an <open file description> for <inode> 42. Another <operating-system process>'s entry `3` can reach a different <file>, and a closed <file descriptor> value can be reused. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/file-intro.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 39, section 39.3: per-process file descriptors]{ref}
+
+= Open file description
+{parent=File descriptor}
+
+A record of an open access to a <file>, including its current position and access mode. Each <file descriptor> reaches one <open file description>, but several <file descriptors> can share it. Separately opening the same ordinary <file> creates separate <open file descriptions> with independent positions while still reaching the same <inode>. Thus <file descriptors>, <open file descriptions> and <hard links> have different counts. \a[https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_258][The Open Group, POSIX.1-2017, section 3.258: open file description]{ref}
 
 // Target: computer-science.bigb
 
@@ -770,7 +1204,48 @@ A running program with an address space, execution context and operating-system 
 = Software thread
 {synonym}
 
-An execution stream with its own registers and stack, usually sharing its process address space and resources with other threads.
+A <software thread> is an execution stream within a <operating-system process>. Each <software thread> has its own <execution context>, including <processor registers>, an <instruction pointer>, and a <call stack> selected by its <stack pointer>. <Software threads> in the same <operating-system process> share its <address space>, global variables, dynamically allocated storage (the memory heap), and resources such as <file descriptors>. Separate register states let two <software threads> pause at different instructions and later resume correctly. A <context switch> saves and restores those states; it does not copy the entire shared <address space>. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/threads-intro.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 26, introduction and figure 26.1: thread contexts and shared address space]{ref}\a[https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap03.html#tag_03_189][The Open Group, POSIX.1-2024, sections 3.189–3.190: Live Process and Live Thread, shared resources and addressable storage]{ref}
+
+In the right half of the diagram under <operating-system process>, T1 and T2 access the same counter `x` at <virtual address> `0x1234`. Their <call stacks> occupy separate regions of the same <address space>, and their saved <processor registers> can contain different values. A <software thread>'s own <call stack> means the stack used for its calls, not a hardware protection boundary against another <software thread>. Another <software thread> with a suitable address can access that stack's live data, subject to the program's lifetime and <synchronization> rules. Sharing an <address space> enables easy communication and makes accidental interference possible.
+
+Concurrency means that several activities can make progress over overlapping intervals; parallel execution means that several activities execute at the same instant. On one <CPU> execution slot, <process scheduling> can interleave <software threads> without simultaneous execution. Multiple processor cores can run eligible <software threads> in parallel, but merely creating <software threads> does not ensure parallel execution or a speedup.
+
+Consider an explicitly abstract interleaving model: shared `x` starts at $0$, and each of T1 and T2 performs three indivisible logical steps in its own order: load `x` into its own register `r`, add $1$ to `r`, then store `r` into `x`. Each load sees the latest preceding store in the displayed order. These model assumptions specify the example; they do not describe every programming language or every hardware memory model. In serial order T1 finishes all three steps before T2 starts, so T2 loads $1$ and stores $2$.
+
+An overlapping order instead gives T1 load $0$, T2 load $0$, T1 add to get `r1 = 1`, T2 add to get `r2 = 1`, T1 store $1$, and T2 store $1$. The load/store subsequence is therefore T1 load $0$, T2 load $0$, T1 store $1$, T2 store $1$: final $x=1$, although each <software thread> incremented its register correctly. The second store replaces the first with the same value, losing one intended update. This <race condition> is possible even with interleaving on a single <CPU>.
+
+\Image[thread-lost-update-interleaving.png]
+{title=Two abstract load/add/store increments retain separate registers but can leave the shared counter at $1$ instead of the serial result $2$}
+
+This is not an unprotected C implementation example. Conflicting unsynchronized accesses to an ordinary non-atomic C object from different <software threads> can constitute a data race, which has undefined behavior; the abstract trace is not a prediction of that program's allowed outcomes. \a[https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf][ISO/IEC JTC1/SC22/WG14, committee draft N1570, 12 April 2011, section 5.1.2.4 paragraph 25: data races and undefined behavior]{ref}
+
+The repair explains why <synchronization> matters: <mutual exclusion> around the whole load/add/store sequence prevents the other <software thread> from starting an increment halfway through it. Alternatively, an appropriate <atomic operation> can make the complete increment one indivisible read-modify-write. In the toy model, either repair makes the two increments take effect in an order, producing $0+1+1=2$. Making only each load and each store an <atomic operation> still permits the displayed lost update. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/threads-locks.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 28, sections 28.1–28.2 and 28.11: locks around updates and atomic fetch-and-add]{ref}
+
+The attraction is independently progressing activities with direct access to shared data: a user-interface <software thread> can handle input while another waits for <input-output>, and workers can divide independent pieces of a large calculation among available cores. The first benefit can exist on one <CPU>; the second requires suitable work and execution resources. <Context switches>, <synchronization>, register-state records and extra <call stacks> consume time or <computer memory>, so the useful partition depends on the workload. \a[https://pages.cs.wisc.edu/~remzi/OSTEP/threads-intro.pdf][Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 26, section 26.1: parallel work and overlapping input-output with other activity]{ref}
+
+= Race condition
+{parent=Thread (computing)}
+
+A dependence of behavior on the relative timing or ordering of concurrent activities. In the abstract example under <software thread>, two increments can leave $x=1$ or $x=2$ depending on their interleaving. A C data race is a language-defined conflict with undefined behavior, rather than a name for every <race condition>.
+
+= Synchronization
+{parent=Thread (computing)}
+{disambiguate=computing}
+
+= Synchronization
+{synonym}
+
+Coordinating concurrent activities so that required ordering and visibility rules hold. <Mutual exclusion> is one form of <synchronization>; waiting for another <software thread> to finish is another.
+
+= Mutual exclusion
+{parent=Synchronization (computing)}
+
+Allowing at most one participating activity at a time to execute a protected region. Protecting the entire increment in <software thread> prevents its load/add/store steps from overlapping another protected increment.
+
+= Atomic operation
+{parent=Synchronization (computing)}
+
+An operation that takes effect indivisibly relative to the specified competing accesses. An atomic increment protects the whole read-modify-write; separate atomic loads and stores do not make their combined sequence an <atomic operation>.
 
 // Target: computer-science.bigb
 
@@ -914,13 +1389,46 @@ With separate chaining, each bucket in a <hash table> contains a collection of r
 = Array
 {synonym}
 
-A <data structure> storing entries at numbered positions and supporting access by index. In the cost model used for <binary search>, one indexed access has constant cost.
+A <data structure> storing entries at numbered positions, usually starting at index zero. The fixed-capacity representation considered here puts equal-sized slots consecutively in <computer memory>. The number $n$ of occupied slots can be smaller than the capacity; unused slots provide room for later entries. An <array> of references stores consecutive references, while the objects they identify can be elsewhere. \a[https://opendatastructures.org/ods-java/2_Array_Based_Lists.html][Pat Morin, Open Data Structures, chapter 2: array-based lists]{ref}
+
+Let the first slot have abstract address $b$ and each slot occupy $s$ address units. Then indexed access computes
+$$
+\operatorname{address}(i)=b+i\,s,\qquad 0\leq i<n.
+$$
+For toy values $b=100$, $s=4$, the slots for $A,B,C$ start at $100,104,108$; index $2$ goes directly to $C$ through $100+2\cdot4=108$. These are illustrative slot addresses, not observed allocation addresses. Under the word-RAM (random-access machine) model for <time complexity>, word-sized <arithmetic operations> and any addressed <computer memory> access have constant cost, and the addresses and entries fit in words. Thus one <array> access takes $O(1)$ time in <Big O notation>, independently of the index. This is the access assumption needed by <binary search>. \a[https://opendatastructures.org/ods-java/1_4_Model_Computation.html][Pat Morin, Open Data Structures, section 1.4: the word-RAM model]{ref}
+
+\Image[array-versus-linked-list-layout.png]
+{title=An <array> computes a slot address; a <linked list> follows links}
+
+Inserting $X$ after $B$ in an <array> holding $A,B,C$ with one unused slot produces $A,B,X,C$: first copy $C$ from slot $2$ to slot $3$, then write $X$ into slot $2$. Writing $X$ first would lose $C$ unless it had been saved separately. More generally, insert at index $i$ by copying occupied slots from right to left, then fill the gap; with spare capacity this moves $n-i$ entries and takes $O(1+n-i)$ time in <Big O notation>, so insertion near the middle has $O(n)$ <time complexity>. Removing an entry closes the gap by shifting later entries left. \a[https://opendatastructures.org/ods-java/2_1_ArrayStack_Fast_Stack_O.html][Pat Morin, Open Data Structures, section 2.1.1: indexed access and shifts]{ref}
+
+A fixed-capacity <array> cannot accept another entry when full. A resizable representation can allocate a larger <array> and copy the entries. Doubling capacity when full gives $O(1)$ append cost by <amortized analysis> over a <sequence> starting empty, but a single append that copies $n$ entries still has $O(n)$ worst-case <time complexity>. The outline is a <geometric series>: copied capacities $1,2,4,\ldots,2^k$ sum to $2^{k+1}-1$, less than twice the number of appends that triggered the last copy. Middle insertion still pays for its shifts. \a[https://opendatastructures.org/ods-java/2_1_ArrayStack_Fast_Stack_O.html][Pat Morin, Open Data Structures, sections 2.1.2–2.1.3: resizing and amortized costs]{ref}
+
+= Row-major order
+{parent=Array (data structure)}
+
+= Row-major
+{synonym}
+
+Storage of a multidimensional <array> with the last index varying fastest in consecutive positions. In a two-dimensional <array>, each row is contiguous. <Row-major order> is a layout convention; a program can traverse that <array> by rows or by columns. See the explicit address calculation in <spatial locality>.
+
+= Column-major order
+{parent=Array (data structure)}
+
+= Column-major
+{synonym}
+
+Storage of a multidimensional <array> with the first index varying fastest in consecutive positions. In a two-dimensional <array>, each column is contiguous. Traversing a <row-major> <array> by columns does not change its storage into <column-major order>.
 
 = Sorted array
 {parent=Array (data structure)}
 {title2=$A_0\leq A_1\leq\cdots\leq A_{n-1}$}
 
 An <array> whose entries appear in nondecreasing order under a specified <total order>. The displayed inequalities allow repeated values.
+
+For example, $(2,5,5,9)$ is a <sorted array> of <integers>. Inserting $7$ at index $3$ gives $(2,5,5,7,9)$: with spare capacity, first shift $9$ one slot right. Appending $7$ would violate the <sorted array> property. Updating an entry also requires preserving the <total order>, or removing and reinserting it in a suitable position.
+
+The useful combination is order plus direct indexed access: <binary search> eliminates a whole interval of candidates at each comparison, giving $O(\log n)$ search <time complexity> under constant-cost comparisons and the <array> cost model. A <sorted array> is therefore attractive for many lookups between changes, while keeping it sorted can still require $O(n)$ shifting work per insertion. A sorted <linked list> has the ordering information but does not supply the same constant-cost access to a middle index.
 
 = FIFO queue
 {parent=Data structure}
@@ -968,12 +1476,56 @@ A <call stack> stores active procedure calls and the information needed to resum
 {parent=Data structure}
 {wiki}
 
+A <binary tree>, in the <data structure> convention used here, is a <rooted tree> in which each <vertex> has zero, one or two <children in a rooted tree>, occupying distinct left and right positions. A single left child and a single right child give different <binary trees>. A <vertex> with no <children in a rooted tree> is called a leaf. An empty <binary tree> has no <root of a tree> and is also allowed as a storage case. \a[https://opendatastructures.org/newhtml/ods/latex2/binarytrees.html][Pat Morin, Open Data Structures, chapter 6: roots, left and right children]{ref}
+
+For example, give the <root of a tree> label $4$, its left child label $2$ and its right child label $6$. Attach $1,3$ as the left and right <children in a rooted tree> of $2$, and $5,7$ as those of $6$. This <binary tree> has seven <vertices>, six <edges>, and <height of a binary tree> $2$: a longest downward <graph path> contains two <edges>. The first diagram below shows this shape alongside the <binary tree> consisting only of successive right children $1,2,\ldots,7$, whose <height of a binary tree> is $6$.
+
+Left and right positions specify an ordered shape, not a numerical <total order> on stored labels. Swapping labels $1$ and $7$ in the first example still gives a <binary tree>, but destroys the <binary search tree> property. Nor must a <binary tree> be balanced: the right-child chain is just as valid. The same shape convention supports a <binary heap>, a <Huffman code>, or a <binary search tree>, each with its own additional rules. The useful idea is to describe two smaller <subtrees> at each <vertex>, making <structural recursion> natural.
+
+= Subtree
+{parent=Binary tree}
+
+For a <vertex> $u$ in a <rooted tree>, its <subtree> contains $u$ and every <vertex> reachable by repeatedly following <children in a rooted tree>, together with the connecting <edges>; its <root of a tree> is $u$. In a <binary tree>, the left <subtree> is rooted at the left child, and is empty when that child is absent; the right <subtree> is defined similarly. A <binary search tree> constrains every key in these <subtrees>.
+
+= Height of a binary tree
+{parent=Binary tree}
+{title2=$h$}
+
+For a nonempty <binary tree>, the largest number of <edges> on a downward <graph path> from its <root of a tree> to a leaf. A single <vertex> has <height of a binary tree> $0$; a chain of $n\geq1$ <vertices> has <height of a binary tree> $n-1$. A convenient <recursion> convention assigns an empty <binary tree> height $-1$, giving $h=1+\max(h_L,h_R)$ for the left and right <subtrees>. A <binary search tree> lookup visits at most $h+1$ <vertices>.
+
+= Inorder traversal
+{parent=Binary tree}
+
+An <inorder traversal> of a <binary tree> uses <recursion> to visit the left <subtree>, output the current <vertex>, and visit the right <subtree>; an empty <subtree> outputs nothing. This is a <depth-first traversal of a tree> with output between the two recursive calls. It produces sorted keys for a <binary search tree>, but arbitrary labels in a <binary tree> need not appear in <total order>.
+
 // Target: computer-science.bigb
 
 = Binary search tree
 {parent=Binary tree}
 
-A <binary tree> storing key-value entries with smaller keys in the left subtree and larger keys in the right subtree. Unique keys identify a partial map. Lookup follows a root-to-leaf path; without balancing the height may be linear in the number of entries.
+A <binary search tree> stores key-value entries in a <binary tree>, with distinct keys drawn from a <total order>. At every <vertex>, all keys in its left <subtree> must be smaller than its own key, and all keys in its right <subtree> must be larger. Thus the entries represent a <partial function> from keys to values: a key has at most one associated value and may be absent. \a[https://opendatastructures.org/newhtml/ods/latex2/binarytrees.html][Pat Morin, Open Data Structures, section 6.2: the binary search tree property]{ref}
+
+Lookup starts at the <root of a tree>. Compare the target with the current key: equality returns its value, a smaller target continues into the left <subtree>, and a larger target continues into the right <subtree>. Reaching an empty <subtree> reports absence. The ordering rule justifies discarding the other <subtree> at every step; this is the <algorithm correctness> argument for lookup. It applies to the entire <subtree>, even if that <subtree> contains many <vertices>. \a[https://opendatastructures.org/newhtml/ods/latex2/binarytrees.html][Pat Morin, Open Data Structures, section 6.2.1: exact-match searching]{ref}
+
+In the seven-key example, search for $5$. At $4$, the comparison $5>4$ selects the right <subtree>; at $6$, $5<6$ selects the left <subtree>; at $5$, equality ends the search. The visited keys are $4\to6\to5$, three key comparisons. The right-child chain stores exactly the same keys and satisfies the same <binary search tree> rule, but lookup of $5$ visits $1\to2\to3\to4\to5$, five comparisons. Searching for absent key $8$ visits $4,6,7$ in the first <binary search tree> and all seven keys in the chain before reaching an empty right <subtree>.
+
+\Image[binary-search-tree-search-path.png]
+{title=Lookup of key $5$ in two <binary search trees> containing the same seven keys}
+{description=Orange highlights visited keys and <edges>; green marks the match. The balanced shape has <height of a binary tree> $2$ and requires three visits, while the chain has <height of a binary tree> $6$ and requires five visits for this target.}
+
+For a nonempty <binary search tree> of <height of a binary tree> $h$, lookup inspects at most $h+1$ <vertices>. Under constant-cost key comparisons and child-reference access, its <time complexity> is $O(h+1)$ in <Big O notation>, usually written $O(h)$ for $h\geq1$. With $n$ entries, $h\leq n-1$, giving $O(n)$ worst-case lookup. If the shape is kept balanced so that $h=O(\log n)$, lookup takes $O(\log n)$ for $n\geq2$. The empty and one-entry cases take constant work. The worst-case linear bound also appears in Sedgewick and Wayne's ordinary, unbalanced implementation. \a[https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/BST.java][Sedgewick and Wayne, Algorithms: BST implementation, complexity contract and get method]{ref}
+
+In a shape with every level full, there are $1+2+\cdots+2^h=2^{h+1}-1$ <vertices>, a <geometric series>. This explains how a small <height of a binary tree> can accommodate many entries. The <binary search tree> ordering rule alone does not guarantee this shape or logarithmic <time complexity>. <Breadth-first search> also gains no logarithmic key-lookup guarantee merely from having a <binary tree>: in the displayed balanced example, its left-to-right level order is $4,2,6,1,3,5,7$, so it inspects six keys before finding $5$, and an absent target requires all seven. Directed lookup uses the <total order> to choose one branch.
+
+The ordering requirement includes every ancestor on the <graph path> from the <root of a tree>. Consider the smaller <binary tree> with root key $4$, left child $2$, right child $6$, and right child $3$ under $2$. Key $3$ must satisfy both $2<3$, from its immediate <parent in a rooted tree>, and $3<4$, from its position in the root's left <subtree>. Replacing $3$ by $5$ preserves all immediate parent-child comparisons, including $2<5$, but violates $5<4$. Lookup for $5$ would incorrectly go from $4$ to $6$ and then to an empty left <subtree>, overlooking the stored key.
+
+\Image[binary-search-tree-ordering-constraint.png]
+{title=The <binary search tree> ordering rule constrains an entire <subtree>}
+{description=The valid example has $2<3<4$. The invalid example passes immediate parent-child comparisons, but key $5$ lies in the left <subtree> of key $4$ and violates its inherited upper bound.}
+
+An <inorder traversal> visits a left <subtree>, then its own <vertex>, then a right <subtree>. On the valid small example its output is $2,3,4,6$; on the invalid example it is $2,5,4,6$, exposing the descent from $5$ to $4$. Both seven-key <binary search trees> yield $1,2,3,4,5,6,7$. The theorem is that an <inorder traversal> of a finite <binary search tree> with distinct keys lists every key once in strictly increasing <total order>. For a short proof outline, use <mathematical induction> on the number of <vertices>: each smaller <subtree> produces its own sorted list, and the full ordering rule places every left key before the current key and every right key after it. Concatenating these three parts preserves strict order. Sedgewick and Wayne's `keys` method uses this left-current-right order. \a[https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/BST.java][Sedgewick and Wayne, Algorithms: BST keys method and inherited-bound isBST check]{ref}
+
+This combination is useful and attractive: one <data structure> supports directed lookup and ordered enumeration. An <inorder traversal> costs $O(n)$ <time complexity> for $n$ entries, since it visits every <vertex>; balance accelerates lookup but cannot eliminate the work of outputting all keys.
 
 // Destination: computer-science.bigb
 
@@ -1001,6 +1553,26 @@ A full binary tree is a binary tree in which every nonleaf has exactly two child
 {parent=Data structure}
 {wiki}
 
+A <data structure> representing a <sequence> through <linked list nodes> and links between them. In the singly linked representation used here, each <linked list node> holds an item and a `next` reference to its successor. `head` identifies the first <linked list node>; the final `next` is `null`, meaning no successor. An empty <linked list> has `head = null`. Sedgewick and Wayne use this representation to implement both a <stack> and a <FIFO queue>. \a[https://algs4.cs.princeton.edu/13stacks/index.php][Sedgewick and Wayne, Algorithms, section 1.3: linked lists]{ref}
+
+For $A\to B\to C$, place the <linked list nodes> at conceptual <computer memory> positions $40,12,76$, respectively. These deliberately separated labels describe a toy layout, not actual pointer values. The <sequence> order comes from the links, not increasing positions. To read index $2$, begin at `head` and follow two `next` references. For index $i$, this takes $i$ link-following steps and $O(1+i)$ <time complexity>, hence $O(n)$ in the worst case for $n$ <linked list nodes>, under the constant-cost operations assumed for the <array> example. \a[https://opendatastructures.org/ods-java/3_Linked_Lists.html][Pat Morin, Open Data Structures, chapter 3: links versus indexed access]{ref}
+
+Suppose a reference to the existing <linked list node> $B$ is already known. To insert a fresh <linked list node> $X$ after it, first set `X.next = B.next`, preserving the old successor $C$, and then set `B.next = X`. The result is $A\to B\to X\to C$; none of the old items moves. Reversing these assignments would read the newly changed `B.next` and set `X.next = X`, losing the route to $C$ from `head`. This is a two-update <algorithm correctness> argument, rather than a claim that finding the insertion location is free.
+
+\Image[linked-list-insertion-pointer-updates.png]
+{title=Insert a <linked list node> by preserving the successor before redirecting the incoming link}
+
+The two pointer updates take $O(1)$ time in <Big O notation>. The complete insertion has $O(1)$ <time complexity> if the predecessor is already known, allocating and initializing the fixed-size <linked list node> costs $O(1)$, and copying its item has constant cost. Finding $B$ from `head` can instead cost $O(n)$; a position described only by an index does not confer the constant-cost advantage. This makes a <linked list> useful when an <algorithm> already holds the needed <linked list node>, or repeatedly works at the front as a <stack> does.
+
+Deletion similarly needs the incoming link: to remove $X$ after known $B$, set `B.next = X.next`. A reference to $X$ alone does not identify its predecessor in this singly linked representation. The head is a special case: after checking for a nonempty <linked list>, remove it with `head = head.next`. If a tail reference is also maintained, deleting the only <linked list node> must clear that reference too; a stored length must also be updated. Removing a <linked list node> from the <sequence> and reclaiming its storage are separate responsibilities. \a[https://opendatastructures.org/ods-java/3_1_SLList_Singly_Linked_Li.html][Pat Morin, Open Data Structures, section 3.1: head removal and empty-list bookkeeping]{ref}
+
+There are practical costs beyond <Big O notation>. Each singly linked <linked list node> needs a successor reference in addition to its item; separate allocation may add further overhead, while an <array> can reserve unused capacity. Consecutive <array> slots can make a scan reuse nearby contents already brought into a <memory cache>; separated <linked list nodes> can make link following wait for successive <computer memory> fetches. These are layout-dependent effects, not a guarantee that every <array> operation beats every <linked list> operation on every machine. An <array> of references can still lead to scattered objects, and <linked list nodes> can be allocated close together. \a[https://people.freebsd.org/~lstewart/articles/cpumemory.pdf][Ulrich Drepper, What Every Programmer Should Know About Memory, sections 3.3 and 6.2: access patterns and cache use]{ref}
+
+= Linked list node
+{parent=Linked list}
+
+One record holding an item and the references that connect it into a <linked list>. In the singly linked examples, its `next` identifies the successor or is `null`. A <linked list node>'s position in the <sequence> can change when links change, without moving the <linked list node> in <computer memory>.
+
 // Target: computer-science.bigb
 
 = Mutable list
@@ -1020,6 +1592,8 @@ A <linked list> whose future structure is obtained by calling a delayed computat
 = Programming language
 {parent=Computer science}
 {wiki}
+
+A <programming language> specifies how programs are written and what their execution means. Its <type system> describes which operations may be combined; an <abstract syntax tree> records the structure on which these rules act. The examples under <type system> use a small teaching language with <integers>, Boolean values and <function types>.
 
 // Target: computer-science.bigb
 
@@ -1177,6 +1751,63 @@ In <Standard ML>, `exn` is an extensible datatype of exception packets. Fresh de
 {parent=Programming language}
 {wiki}
 
+A <type system> assigns types to program expressions and supplies rules governing their use. A type constrains permitted operations: in our teaching <programming language>, `int` admits <integer> addition, `bool` supplies `true` and `false` for conditions, and a <function type> specifies an argument type and a result type. Storage as <bits> alone does not explain these distinctions; the <type system> determines whether an expression can serve as an argument, a condition or an operand.
+
+A <typing judgment> $\Gamma\vdash e:\tau$ says that expression $e$ has type $\tau$ under the assumptions in the <typing context> $\Gamma$. For example,
+$$
+\Gamma=\{x:\mathrm{int},y:\mathrm{int}\},\qquad \Gamma\vdash x+y:\mathrm{int}.
+$$
+The assumptions give each operand type `int`; the addition rule then gives the sum type `int`. Changing $y$ to type `bool` prevents this derivation. Our teaching <programming language> has distinct `int` and `bool` types and no implicit conversions between them.
+
+The conditional rule requires a Boolean condition and the same type for both branches:
+$$
+\frac{\Gamma\vdash c:\mathrm{bool}\qquad\Gamma\vdash e_1:\tau\qquad\Gamma\vdash e_2:\tau}{\Gamma\vdash\mathrm{if}\ c\ \mathrm{then}\ e_1\ \mathrm{else}\ e_2:\tau}.
+$$
+Thus `if true then 1 else 2` has type `int`, while `if true then 1 else false` is rejected: its branches would require $\tau=\mathrm{int}$ and $\tau=\mathrm{bool}$ simultaneously. Even a branch that will not execute is checked by this rule. This is a rule of this particular <type system>; a different <programming language> can choose different rules. \a[https://softwarefoundations.cis.upenn.edu/plf-current/Types.html][Software Foundations, Programming Language Foundations, Type Systems: typing relation]{ref}
+
+The useful feature is compositional reasoning: after checking the parts, a rule explains how to check the whole. The <function type> diagram shows this for a call. <Type inference> can discover the required types automatically, and <type variables> let one express relationships that recur across many concrete types. The result is both a practical early error detector and a small, readable derivation explaining why an expression fits its intended use.
+
+The guarantee depends on the rules and execution model. <Type safety> can exclude specified failures such as adding a Boolean or calling an <integer> as a function. It does not by itself establish every desired runtime property or guarantee that execution terminates. A <type system> that permits unrestricted recursion can accept a computation that runs forever; <exception handling> also needs its own account of permitted outcomes.
+
+= Simple type
+{parent=Type system}
+{title2=$\tau$}
+
+In the examples here, a <simple type> is a finite expression built from the base types `int` and `bool` using <function types>:
+$$
+\tau::=\mathrm{int}\mid\mathrm{bool}\mid(\tau\to\tau).
+$$
+For example, $\mathrm{int}\to\mathrm{bool}$ describes a function accepting an <integer> and producing a Boolean value. During <type inference>, the grammar is extended with <type variables> such as $\alpha$ for types not yet determined. A <type scheme> additionally binds such <type variables>; it is distinct from the individual <simple type> used at one call.
+
+= Typing judgment
+{parent=Type system}
+{title2=$\Gamma\vdash e:\tau$}
+
+A <typing judgment> asserts that expression $e$ has type $\tau$ under a <typing context> $\Gamma$. A rule displays prerequisite <typing judgments> above a line and their conclusion below it. Repeatedly applying rules gives a derivation; the addition example under <type system> uses two assumptions and one addition rule.
+
+= Typing context
+{parent=Typing judgment}
+{title2=$\Gamma$}
+
+A <typing context> records the types assumed for available program names. In $\Gamma=\{x:\mathrm{int},y:\mathrm{int}\}$, looking up either name yields `int`. Checking a <lambda abstraction> extends the <typing context> with its argument's type for the body. In the <Hindley-Milner type system>, a <typing context> can also hold <type schemes> for names introduced by <let polymorphism>.
+
+= Type safety
+{parent=Type system}
+{wiki}
+
+For a specified <programming language> and execution model, <type safety> commonly follows from two properties: a closed expression satisfying a <typing judgment> is either a value or can take an execution step, and taking a step preserves its type. Proofs proceed by <structural induction> on derivations, using <capture-avoiding substitution> for function calls. Repeated preservation keeps the remaining expression typed; the first property then rules out getting stuck at an operation outside the model's permitted cases. This argument does not imply termination or correctness of an arbitrary specification. \a[https://softwarefoundations.cis.upenn.edu/plf-current/Types.html][Software Foundations, Programming Language Foundations, Type Systems: progress, preservation and type soundness]{ref}
+
+= Type inference
+{parent=Type system}
+{wiki}
+
+<Type inference> discovers types consistent with a program's structure and <typing context>. In our examples, it introduces fresh <type variables>, generates <equations> from <typing judgments>, and solves them by <type unification>. For $f\,3$, if $f$ initially has unknown type $\alpha$ and the result has fresh type $\beta$, <lambda application> requires $\alpha=\mathrm{int}\to\beta$.
+
+= Type unification
+{parent=Type inference}
+
+<Type unification> finds a <type substitution> making specified type expressions equal, or reports incompatible constraints. In our <simple type> grammar, matching two <function types> reduces to matching their argument types and their result types. Distinct base types `int` and `bool` fail to match; solving a <type variable> against a nontrivial type expression uses the <occurs check>.
+
 // Target: computer-science.bigb
 
 = Type variable
@@ -1184,17 +1815,64 @@ In <Standard ML>, `exn` is an extensible datatype of exception packets. Fresh de
 {wiki}
 {title2=$\alpha$}
 
+A <type variable> is a placeholder for a type. In a <function type> $\alpha\to\alpha$, the repeated <type variable> requires the argument and result types to agree; $\alpha\to\beta$ does not impose that agreement. A <type substitution> replacing $\alpha$ by `int` changes $\alpha\to\alpha$ to $\mathrm{int}\to\mathrm{int}$ everywhere within that instance.
+
+For the <identity function> written as the <lambda abstraction> $\lambda x.x$, assume $x:\alpha$ in the body. Looking up $x$ gives result type $\alpha$, so the abstraction rule gives $\lambda x.x:\alpha\to\alpha$. In the pure <Hindley-Milner type system>, `let identity = λx.x in ...` gives `identity` the <type scheme> $\forall\alpha.\alpha\to\alpha$ by <let polymorphism>. Each use receives fresh <type variables>: `identity 3` chooses `int` for its instance, and `identity true` chooses `bool` for a separate instance. These choices do not change the original <type scheme>.
+
+\Image[polymorphic-identity-instantiation.png]
+{title=Independent type instantiations of a let-bound identity function}
+{description=The <type scheme> stays general while two uses receive different <type substitutions>. Each use preserves the equality of its own argument and result types.}
+
+For example, `let identity = λx.x in let a = identity 3 in identity true` is valid and has type `bool`. By contrast, `(λf. let a = f 3 in f true) (λx.x)` is rejected by the <Hindley-Milner type system>: the <lambda abstraction> binds `f` to one monomorphic <function type>. The first call requires its argument type to be `int`, and the second requires that same type to be `bool`. Naming the first result with `let a` does not generalize `f`. The distinction makes reusable code possible while keeping the assumptions about a supplied argument consistent.
+
 // Target: computer-science.bigb
+
+= Type substitution
+{parent=Type variable}
+{title2=$S$}
+
+A <type substitution> replaces <type variables> by type expressions consistently. For example, $S=\{\alpha\mapsto\mathrm{int}\}$ gives $S(\alpha\to\alpha)=\mathrm{int}\to\mathrm{int}$. Applying a <type substitution> to a <type scheme> must respect its bound <type variables>; separate instantiation first replaces those bound placeholders by fresh ones.
+
+= Type scheme
+{parent=Type variable}
+{title2=$\forall\alpha.\tau$}
+
+A <type scheme> binds <type variables> that may be instantiated independently at different uses. The <identity function> has <type scheme> $\forall\alpha.\alpha\to\alpha$: choose one type per use, then use that same choice on both sides of its <function type>. A free <type variable> shared with the <typing context> is not automatically such an independently selectable parameter.
 
 = Occurs check
 {parent=Type variable}
 
-A recursive check that a given type variable is absent from a type expression. It prevents constructing a cyclic infinite type when solving an equation such as $\alpha=\alpha\to\beta$.
+The <occurs check> tests whether a <type variable> occurs inside the expression proposed as its replacement during <type unification>. After discarding a trivial <equation> such as $\alpha=\alpha$, solving $\alpha=\tau$ by a <type substitution> requires that $\alpha$ not occur in $\tau$. Thus $\alpha=\mathrm{int}\to\beta$ is permitted when $\alpha$ and $\beta$ are distinct, but $\alpha=\alpha\to\beta$ is rejected in our finite <simple type> grammar.
+
+There is a short reason for the rejection. If a finite replacement $T$ for $\alpha$ existed, with replacement $B$ for $\beta$, the <equation> would become $T=T\to B$. The right side's <abstract syntax tree> has one new arrow node plus the nodes of $T$ and $B$, so it has strictly more nodes than $T$. Equal finite type expressions cannot have different sizes. <Recursive types> are a different design: they explicitly describe self-reference and specify how it interacts with <typing judgments>.
+
+= Recursive type
+{parent=Type system}
+{title2=$\mu\alpha.\tau$}
+
+A <recursive type> explicitly names a type in terms of itself. Notation $\mu\alpha.\tau$ binds $\alpha$ within $\tau$. A <programming language> must specify whether unfolding gives type equality or requires explicit operations; this is outside the finite <simple type> grammar used here. See Benjamin C. Pierce's treatment of <recursive types> in chapters 20–21. \a[https://www.cis.upenn.edu/~bcpierce/tapl/contents.pdf][Pierce, Types and Programming Languages (2002), author-hosted contents, chapters 20–21]{ref}
 
 = Function type
 {parent=Type system}
 {wiki}
 {title2=$\tau_1\to\tau_2$}
+
+A <function type> $\tau_1\to\tau_2$ classifies functions that accept arguments of type $\tau_1$ and produce results of type $\tau_2$ if they return. For example, $\lambda x.x+1$ has <function type> $\mathrm{int}\to\mathrm{int}$ in our teaching <programming language>, while $\lambda b.\mathrm{if}\ b\ \mathrm{then}\ 1\ \mathrm{else}\ 2$ has <function type> $\mathrm{bool}\to\mathrm{int}$. A <function type> specifies how a function may be used; it does not guarantee that a call returns.
+
+\Image[function-typechecking-tree.png]
+{title=Checking an integer function call from its parts}
+{description=An addition rule checks the body of a <lambda abstraction>, the abstraction rule gives its <function type>, and <lambda application> checks the argument and obtains the result type. Arrows run from prerequisite <typing judgments> to their conclusions.}
+
+The two central <typing judgment> rules are
+$$
+\frac{\Gamma,x:\tau_1\vdash e:\tau_2}{\Gamma\vdash\lambda x.e:\tau_1\to\tau_2},\qquad
+\frac{\Gamma\vdash f:\tau_1\to\tau_2\qquad\Gamma\vdash a:\tau_1}{\Gamma\vdash f\,a:\tau_2}.
+$$
+The <lambda abstraction> rule checks the body under an extended <typing context>; the <lambda application> rule checks that the argument has exactly the required type. These rules describe our <simple type> examples. \a[https://softwarefoundations.cis.upenn.edu/plf-current/Stlc.html][Software Foundations, Programming Language Foundations, The Simply Typed Lambda-Calculus: typing rules]{ref}
+
+For $(\lambda x.x+1)\,3$, assume $x:\mathrm{int}$; both $x$ and $1$ have type `int`, so $x+1$ has type `int`. The abstraction therefore has <function type> $\mathrm{int}\to\mathrm{int}$. Since $3$ has type `int`, the call has type `int` and evaluates to $4$. Replacing $3$ by `true` fails the argument requirement. This local derivation explains each step without running the program.
+
+Arrows associate to the right: $\tau_1\to\tau_2\to\tau_3$ means $\tau_1\to(\tau_2\to\tau_3)$, a function returning another function. For instance, $\lambda x.\lambda y.x+y$ has <function type> $\mathrm{int}\to(\mathrm{int}\to\mathrm{int})$. Supplying one <integer> yields a function awaiting the second. Functions can also be arguments: $(\mathrm{int}\to\mathrm{int})\to\mathrm{int}$ accepts an <integer>-to-<integer> function and has an <integer> result type.
 
 // Target: computer-science.bigb
 
@@ -1205,6 +1883,24 @@ A recursive check that a given type variable is absent from a type expression. I
 A function or data structure is parameterized by types and can operate uniformly over their instantiations.
 
 // Target: computer-science.bigb
+
+= Hindley-Milner type system
+{parent=Type system}
+{c}
+{wiki=Hindley–Milner_type_system}
+
+The pure <Hindley-Milner type system> combines <function types>, <type inference> and <let polymorphism>. It solves constraints by <type unification> and generalizes eligible <type variables> at `let` bindings. Robin Milner's 1978 paper presents <Algorithm W> and proves its soundness for the paper's language; it also acknowledges Roger Hindley's earlier work on finding general types. \a[https://www.pure.ed.ac.uk/ws/files/15143545/1_s2.0_0022000078900144_main.pdf][Milner, A Theory of Type Polymorphism in Programming (1978), introduction and sections 3.5, 4.1–4.2]{ref}
+
+= Algorithm W
+{parent=Hindley-Milner type system}
+{c}
+
+<Algorithm W> performs <type inference> by traversing the program's <abstract syntax tree>, introducing fresh <type variables>, combining <type substitutions> obtained by <type unification>, and generalizing eligible `let` bindings. It distinguishes fresh instances of a <type scheme> from the shared monomorphic types of parameters to a <lambda abstraction>.
+
+= Let polymorphism
+{parent=Hindley-Milner type system}
+
+<Let polymorphism> gives an eligible `let`-bound name a <type scheme>, allowing fresh instantiation at each use. In the pure <Hindley-Milner type system>, generalize the inferred type's <type variables> that are free in that type and not free in the current <typing context>. The <identity function> example under <type variable> meets this condition. A <lambda abstraction>'s parameter receives one monomorphic type shared by its uses. Languages with mutation, such as <Standard ML> with <ML reference types>, need additional restrictions on generalization.
 
 = Imperative programming
 {parent=Programming language}
@@ -3173,6 +3869,11 @@ The Agrawal–Biswas primality test checks the identity $(X+1)^n=X^n+1$ modulo $
 
 Storage holding information used by a computer. Here, resident <memory pages> occupy main <computer memory>; a <physical address> identifies a location in the physical address system rather than an <operating-system process>'s private numbering.
 
+= Memory reference
+{parent=Computer memory}
+
+An access to a location in <computer memory>, such as an instruction fetch, a read or a write. A page-level reference <sequence> records the corresponding <memory page> for each access, retaining repetitions and order.
+
 = Physical address
 {parent=Computer memory}
 {wiki}
@@ -3194,6 +3895,34 @@ A unit of information; throughout these examples, one <byte> contains eight <bit
 {synonym}
 
 A store of selected information kept for faster reuse. A <translation lookaside buffer> is a <memory cache> of <address translations>; a <buffer cache> instead holds device-block contents.
+
+= Cache line
+{parent=Cache (computing)}
+
+= Cache block
+{synonym}
+
+A fixed-sized, aligned block of consecutive <bytes> transferred and tracked as a unit by a data <memory cache>. Here <cache line> and <cache block> name that unit of data, including its identity in backing <computer memory>; a resident slot holds a copy. Reading one element can bring neighbouring elements into the same <cache line>, exploiting <spatial locality>.
+
+= Cache hit
+{parent=Cache (computing)}
+
+A request whose required data are already available in the consulted <memory cache>. In the read-only model of <spatial locality>, a requested <cache block> being resident is sufficient for a <cache hit>.
+
+= Cache miss
+{parent=Cache (computing)}
+
+A request whose required data are unavailable in the consulted <memory cache>. The model in <spatial locality> fetches the requested <cache block> and evicts a resident <cache line> only when capacity is full.
+
+= Compulsory miss
+{parent=Cache miss}
+
+A <cache miss> on the first access to a <cache block> in an initially empty <memory cache> with no fetching ahead of requests. Larger capacity cannot eliminate these first fetches; subsequent <cache misses> can have other causes.
+
+= Fully associative cache
+{parent=Cache (computing)}
+
+A <memory cache> allowing any <cache block> to occupy any resident slot. When full, its replacement policy chooses a victim from all resident <cache lines>. The examples in <temporal locality> and <spatial locality> use <LRU replacement>, so no additional placement restriction causes eviction.
 
 = x86
 {parent=Computer science}

@@ -829,8 +829,112 @@ The continuous Lyapunov equation is $AX+XA^T+Q=0$. If every eigenvalue of $A$ ha
 = Transfer function
 {parent=Control theory}
 {wiki}
+{title2=$G(s)=Y(s)/U(s)$}
 
-For a linear time-invariant system with zero initial data, the transfer function is the Laplace-domain ratio $G(s)=Y(s)/F(s)$. A rational causal system is BIBO stable when all poles lie in the open left half-plane.
+A <transfer function> packages the response of a <linear time-invariant system> into a rule for turning a <plant input> into a <plant output>. Instead of solving a <differential equation> separately for every <signal>, take a <Laplace transform>, multiply by $G(s)$, then transform back. This also makes it possible to compare slow and fast oscillations through the <continuous-time frequency response>.
+
+Here consider a continuous-time, causal, finite-dimensional <linear time-invariant system> with one <plant input> $u(t)$ and one <plant output> $y(t)$. With every initial state set to zero, its <transfer function> is defined by
+$$
+U(s)=\mathcal L\{u\}(s),\qquad Y(s)=\mathcal L\{y\}(s),\qquad Y(s)=G(s)U(s).
+$$
+The ratio $G(s)=Y(s)/U(s)$ is used where $U(s)\ne0$ in a common <Laplace convergence region>; $G$ describes the system, independently of that particular <plant input>. Zero initial state matters: stored motion or another nonzero <initial condition> can contribute to the <plant output> even when the <plant input> vanishes. \a[https://ocw.mit.edu/courses/18-03sc-differential-equations-fall-2011/941349ccabc51e8c116a86db62ba6566_MIT18_03SCF11_s30_1text.pdf][MIT 18.03SC, The Transfer Function: rest initial conditions and transformed input/output]{ref}
+
+The <first-order low-pass filter> below shows the same <transfer function> predicting both a step and a sustained <sinusoid>. Its <pole> gives a decay rate, its value at zero gives the eventual gain, and its values along the imaginary axis give the <continuous-time frequency response>. These descriptions make a useful bridge between a physical relaxation model and <control theory> calculations.
+
+= First-order low-pass filter
+{parent=Transfer function}
+{title2=$G(s)=K/(\tau s+1)$}
+
+A <first-order low-pass filter> with positive constant gain $K$ and <time constant> $\tau>0$ obeys the <ordinary differential equation>
+$$
+\tau y'(t)+y(t)=Ku(t).
+$$
+The <derivative> term limits how quickly the <plant output> follows a changing <plant input>. A larger <time constant> means slower adjustment. This standard form, with $K=1$, is developed in \a[https://www.ocw.mit.edu/courses/2-004-dynamics-and-control-ii-spring-2008/2cd1d6082fe3ba8a6a37fae62b10051f_lecture_20.pdf][Derek Rowell, MIT 2.004, lecture 20, section 1.1: first-order systems]{ref}; the following calculation keeps the gain $K$ explicit.
+
+Write $y_0=y(0)$. The <Laplace transform> of the <derivative> is $sY(s)-y_0$, so
+$$
+\tau\bigl(sY(s)-y_0\bigr)+Y(s)=KU(s),\qquad
+Y(s)=\frac{K}{\tau s+1}U(s)+\frac{\tau y_0}{\tau s+1}.
+$$
+Setting the <initial condition> $y_0=0$ gives the <transfer function> $G(s)=K/(\tau s+1)$. Its single <simple pole> is $s=-1/\tau$, which has negative <real part>. The unforced response decays, and the input/output map has <BIBO stability>. The eventual gain for a constant <plant input> is $G(0)=K$.
+
+For a unit step, represented by the <Heaviside step function> $u(t)=H(t)$, the <Laplace transform> is $U(s)=1/s$. From zero <initial condition>,
+$$
+Y(s)=\frac{K}{s(\tau s+1)}
+=\frac Ks-\frac K{s+1/\tau},\qquad
+y(t)=K\bigl(1-e^{-t/\tau}\bigr)\quad(t\ge0).
+$$
+Take $K=2$ and $\tau=3\,\mathrm{s}$, with dimensionless <plant input> and <plant output>. Then $y(t)=2(1-e^{-t/(3\,\mathrm{s})})$ rises toward $2$. After one <time constant>, at $t=3\,\mathrm{s}$, it reaches $2(1-e^{-1})\approx1.2642$, or $63.2\%$ of its final value. At $t=9\,\mathrm{s}=3\tau$, it reaches $2(1-e^{-3})\approx1.9004$, or $95.0\%$. These percentages describe the rise from zero, rather than an instantaneous jump to the target.
+
+With a nonzero <initial condition>, the same step instead gives
+$$
+y(t)=K\bigl(1-e^{-t/\tau}\bigr)+y_0e^{-t/\tau}.
+$$
+For $K=2$ and $\tau=3\,\mathrm{s}$, compare $y_0=0$ with $y_0=1$. Their <plant outputs> differ by $e^{-t/(3\,\mathrm{s})}$ despite having the same <transfer function> and the same <plant input>. The extra <exponential decay> term must be supplied from the <initial condition>; $G$ and $u$ alone cannot determine it.
+
+\Image[first-order-transfer-step-response.png]
+{title=One <transfer function>, one unit step, two <initial conditions>}
+{description=The <first-order low-pass filter> has $K=2$ and <time constant> $\tau=3\,\mathrm{s}$. The blue curve starts at $y_0=0$ and the orange curve at $y_0=1$. The marked $63.2\%$ and $95.0\%$ levels refer to the blue curve's final value $2$; the two curves' difference is the decaying initial-state contribution.}
+
+= Continuous-time frequency response
+{parent=Transfer function}
+{title2=$G(i\omega)$}
+
+The <continuous-time frequency response> is the <frequency response> of a continuous-time <linear time-invariant system>. From zero initial state, a <BIBO stable> system driven by a sustained <sinusoid> $u(t)=A\cos(\omega t)$ approaches the steady response
+$$
+y_{\mathrm{ss}}(t)=A|G(i\omega)|\cos\bigl(\omega t+\arg G(i\omega)\bigr).
+$$
+Any decaying initial or switching transient is separate. The <modulus> $|G(i\omega)|$ is the amplitude gain; the <complex argument> is the shift in <oscillation phase>. Thus evaluating a <transfer function> at $s=i\omega$ measures both how much of an oscillation passes through and how far it lags.
+
+For the <first-order low-pass filter>, with $K>0$, direct <complex number> arithmetic gives
+$$
+G(i\omega)=\frac{K}{1+i\omega\tau},\qquad
+|G(i\omega)|=\frac{K}{\sqrt{1+(\omega\tau)^2}},\qquad
+\arg G(i\omega)=-\arctan(\omega\tau).
+$$
+The phase uses the <inverse tangent> branch between $-\pi/2$ and $\pi/2$. Low <angular frequencies> have gain close to $K$ and little lag. High <angular frequencies> have gain approximately $K/(\omega\tau)$ and lag approaching $\pi/2$. This is why the model is a <first-order low-pass filter>: it suppresses fast variation compared with slow variation. Rowell relates <frequency response> gain and phase to <poles> and then introduces <Bode plots> in \a[https://www.ocw.mit.edu/courses/2-004-dynamics-and-control-ii-spring-2008/2a0a97261561177bf1a91b07202bb09a_lecture_32.pdf][MIT 2.004, lecture 32, sections 1 and 2]{ref}.
+
+At the corner <angular frequency>,
+$$
+\omega_c=\frac1\tau,\qquad |G(i\omega_c)|=\frac K{\sqrt2},\qquad
+\arg G(i\omega_c)=-\frac\pi4.
+$$
+For $K=2$ and $\tau=3\,\mathrm{s}$, $\omega_c=1/3\,\mathrm{rad}\,\mathrm{s}^{-1}$, the gain is $\sqrt2\approx1.4142$, and the lag is $45$ degrees. The <angular frequency> $\omega$ is measured in <radians> per second; ordinary <frequency> $f$ is measured in hertz (cycles per second), with $\omega=2\pi f$. Consequently the same corner is $f_c=1/(2\pi\tau)\approx0.0531\,\mathrm{Hz}$, not $1/3\,\mathrm{Hz}$.
+
+\Image[first-order-transfer-frequency-response.png]
+{title=<Bode plot> of the <first-order low-pass filter> with $K=2$ and $\tau=3\,\mathrm{s}$}
+{description=Gain and <oscillation phase> are plotted against <angular frequency> on a logarithmic horizontal axis. The vertical line marks $\omega_c=1/3\,\mathrm{rad}\,\mathrm{s}^{-1}$, where the gain is $\sqrt2$ and the phase is $-45$ degrees. The gain panel shows $20\log_{10}|G(i\omega)|$; its corner is $3.01$ decibels below the low-frequency gain.}
+
+= Bode plot
+{parent=Continuous-time frequency response}
+{c}
+
+A <Bode plot> displays the gain and <oscillation phase> of a <frequency response> against a logarithmic <frequency> axis. Gain is often shown as $20\log_{10}|G(i\omega)|$ in decibels; phase can use degrees or <radians>. The <first-order low-pass filter> loses approximately $20$ decibels per factor of ten in <angular frequency> well above its corner. \a[https://www.ocw.mit.edu/courses/2-004-dynamics-and-control-ii-spring-2008/2a0a97261561177bf1a91b07202bb09a_lecture_32.pdf][Rowell, lecture 32, section 2: logarithmic plots]{ref}
+
+= Proper rational transfer function
+{parent=Transfer function}
+{title2=$G(s)=N(s)/D(s),\quad\deg N\le\deg D$}
+
+A <proper rational transfer function> is a <rational function> whose numerator <polynomial> has <polynomial degree> no greater than its denominator <polynomial>, after common factors are canceled. Every finite-dimensional continuous-time <linear time-invariant system> of the form $\dot x=Ax+Bu$, $y=Cx+Du$ has such a <transfer function> $G(s)=C(sI-A)^{-1}B+D$. \a[https://ocw.mit.edu/courses/6-241j-dynamic-systems-and-control-spring-2011/996025f6db0d90b00f11c44fc49b85f9_MIT6_241JS11_textbook.pdf][Dahleh, Dahleh and Verghese, Lectures on Dynamic Systems and Control, section 15.3.1]{ref}
+
+= Bounded-input bounded-output stability
+{parent=Transfer function}
+
+= BIBO stability
+{c}
+{synonym}
+
+= BIBO stable
+{c}
+{synonym}
+
+<Bounded-input bounded-output stability> means that every bounded <plant input> produces a bounded <plant output> from zero initial state. For a causal continuous-time <linear time-invariant system> with a <proper rational transfer function>, <BIBO stability> is equivalent to every <pole> of the reduced <transfer function> having strictly negative <real part>. Cancel common factors first: an apparent denominator root may be absent from the reduced <transfer function>. For $K/(\tau s+1)$ with $\tau>0$, the only <pole> is $-1/\tau$, so the <first-order low-pass filter> is <BIBO stable>. \a[https://ocw.mit.edu/courses/6-241j-dynamic-systems-and-control-spring-2011/996025f6db0d90b00f11c44fc49b85f9_MIT6_241JS11_textbook.pdf][Dahleh, Dahleh and Verghese, section 15.3.1 and example 15.5: input/output versus internal stability]{ref}
+
+Internal <asymptotic stability> also requires every unforced internal state to decay. A canceled factor can hide a growing internal state. For example, consider the <linear system of ordinary differential equations>
+$$
+\dot x_1=-x_1+u,\qquad \dot x_2=x_2+u,\qquad y=x_1.
+$$
+Its zero-state <transfer function> can be written $(s-1)/((s+1)(s-1))=1/(s+1)$ and has <BIBO stability>. Yet from zero <initial conditions> and a unit-step <plant input>, $x_2(t)=e^t-1$ grows without bound while the <plant output> remains bounded. The reduced <transfer function> conceals that second state. Even a <transfer function> with no visible cancellations can be implemented with additional hidden states; its <poles> alone do not establish internal <asymptotic stability> of an arbitrary implementation.
 
 = Nyquist stability criterion
 {parent=Transfer function}

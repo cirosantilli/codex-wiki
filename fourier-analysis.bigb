@@ -261,13 +261,35 @@ Indeed, expand each square and use $\int_0^1e(jt)\,dt=0$ for every nonzero <inte
 {parent=Fourier analysis}
 {wiki}
 
-A wavelet is a localized function whose translates and dilates analyze different positions and scales.
+A wavelet is a localized analyzing <function> whose shifted and scaled copies examine a <signal> at different positions and resolutions. Its usefulness is to separate **where a change occurs** from **how large a region that change spans**. A brief feature can contribute to a few nearby <wavelet> coefficients instead of being described entirely through global oscillations.
+
+The <Haar wavelet> is the simplest example: compare the first half of an <interval> with the second. A constant value contributes nothing to this contrast, while a difference between the halves survives. Moving the <function> changes which part of the <signal> is examined; shrinking it compares smaller neighbouring regions. In an <orthonormal wavelet> construction, these comparisons fit together without duplicating squared-norm contributions.
+
+A <scaling function> retains the coarse information that such contrasts omit. The <discrete wavelet transform> computes both coarse values and details, and the <wavelet series> recombines them. This gives <signal processing> a representation that can expose local structure and support <image compression>. The transform itself is reversible in the complete orthonormal representation; discarding coefficients introduces approximation error. \a[https://arxiv.org/pdf/math/9304214][Gilbert Strang, Wavelet Transforms versus Fourier Transforms (1993): localized bases and reconstruction]{ref}
 
 = Discrete wavelet transform
 {parent=Wavelet}
 {title2=$(a,b)=((u+v)/\sqrt2,(u-v)/\sqrt2)$}
 
-A discrete wavelet transform computes multiscale approximation and detail coefficients from sampled data. In the <Haar wavelet> construction, apply the displayed orthogonal sum/difference transformation to each adjacent pair and repeat on the approximation coefficients. The detail coefficients at each stage and the last approximation coefficient preserve the squared <Euclidean norm>, because the two-by-two transform is orthogonal. For dyadic sample size, multiplying the resulting coefficients by $n^{-1/2}$ gives the normalized coefficients of the <wavelet regression estimator> on $[0,1]$. Under independent Gaussian noise, orthogonality preserves the common coefficient noise variance and independence.
+A discrete wavelet transform computes multiscale approximation and detail coefficients from sampled data. For the <Haar wavelet>, replace each adjacent pair $(u,v)$ by
+$$
+a=\frac{u+v}{\sqrt2},\qquad d=\frac{u-v}{\sqrt2}.
+$$
+The approximation coefficient $a$ is $\sqrt2$ times the pair's <arithmetic mean>; it is not the ordinary mean. The detail coefficient $d$ records their signed contrast. Repeat on the approximation coefficients until only one remains, keeping every detail coefficient.
+
+For a worked example, start with the vector $(2,4,6,8)$. The first pass gives approximation coefficients $(3\sqrt2,7\sqrt2)$ and detail coefficients $(-\sqrt2,-\sqrt2)$. Transforming the remaining pair gives the coarse coefficient $10$ and the half-to-half detail $-4$. In the order coarse value, coarse detail, then fine details, the transform is
+$$
+\boxed{(2,4,6,8)\longmapsto(10,-4,-\sqrt2,-\sqrt2).}
+$$
+This is an <orthogonal matrix> transformation. Each pair preserves $u^2+v^2=a^2+d^2$, so the full transform preserves the squared <Euclidean norm>:
+$$
+2^2+4^2+6^2+8^2=120=10^2+(-4)^2+(-\sqrt2)^2+(-\sqrt2)^2.
+$$
+The <inverse function> for each pair is $u=(a+d)/\sqrt2$, $v=(a-d)/\sqrt2$. Reversing the passes therefore recovers every original value. This squared-norm bookkeeping is often called signal energy; it need not represent physical <energy>. \a[https://www.mathworks.com/help/wavelet/ug/haar-transforms-for-time-series-data-and-images.html][MathWorks: Haar transforms, approximation/detail coefficients and squared-norm conservation]{ref}
+
+Continuous and discrete normalizations differ. If $n=2^J$ data values are interpreted as the heights of a <step function> on $n$ equal cells of $[0,1]$, its normalized <L2 inner product> coefficients are the discrete coefficients divided by $\sqrt n$. For our four values they are $(5,-2,-1/\sqrt2,-1/\sqrt2)$, as the <Haar projection> example shows. The same normalization is used by the <wavelet regression estimator> on $[0,1]$.
+
+Under <independent> <Gaussian noise> with a common <variance>, <orthogonality> preserves that coefficient noise <variance> and independence. It does not make every arbitrary correlated <signal> independent: this statistical conclusion uses the Gaussian model and its equal-variance independent inputs.
 
 = Wavelet series
 {parent=Wavelet}
@@ -325,8 +347,15 @@ Assume the <scaling function> <Fourier transform> and the <MRA low-pass filter> 
 = Orthonormal wavelet
 {parent=Wavelet}
 {wiki}
+{title2=$\psi_{j,k}(x)=2^{j/2}\psi(2^jx-k)$}
 
-An orthonormal wavelet $\psi$ generates $\{2^{j/2}\psi(2^jx-k)\}_{j,k\in\mathbb Z}$ as an orthonormal basis of $L^2(\mathbb R)$.
+An orthonormal wavelet $\psi$ generates an <orthonormal basis> of $L^2(\mathbb R)$ through
+$$
+\psi_{j,k}(x)=2^{j/2}\psi(2^jx-k),\qquad j,k\in\mathbb Z.
+$$
+The factor $2^{j/2}$ compensates for the shrinking <support of a function>, keeping the <L2 norm> equal to one. <Orthogonality> makes different coefficients separate squared-norm contributions, and completeness allows the <wavelet series> to recover any <square-integrable function> in the <L2 norm>.
+
+For the <Haar wavelet>, wavelets at one scale have disjoint <supports>. At different scales their <dyadic intervals> are either disjoint or nested. On the support of the finer wavelet, the coarser one is constant, while the finer one has zero <integral>, so their <L2 inner product> is zero. Together with the unit <L2 norm>, this explains <orthonormality>. On the bounded <interval> $[0,1]$, add the constant <Haar scaling function> and use $j\geq0$, $0\leq k<2^j$; the constant function is not an $L^2(\mathbb R)$ basis element on the whole line.
 
 = Daubechies wavelet
 {c}
@@ -341,7 +370,27 @@ A Daubechies wavelet of order $q$ is a <compact support> <orthonormal wavelet> w
 {wiki}
 {title2=$\psi=\chi_{[0,1/2)}-\chi_{[1/2,1)}$}
 
-The Haar wavelet has one <vanishing moment> and <compact support> of unit length. Its <scaling function> is $\chi_{[0,1)}$, and its refinement coefficients are $h_0=h_1=1/\sqrt2$. The approximation spaces consist of functions constant on dyadic cells. Its discontinuity makes it effective for jump localization but limits smooth-function approximation.
+The Haar wavelet is a signed contrast between two adjacent half-intervals:
+$$
+\psi(x)=
+\begin{cases}
+1,&0\leq x<1/2,\\
+-1,&1/2\leq x<1,\\
+0,&\text{otherwise}.
+\end{cases}
+$$
+It has <compact support>, zero <integral>, and unit <L2 norm>: $\int\psi=1/2-1/2=0$ and $\int|\psi|^2=1$. The zero integral is its one <vanishing moment>. Its <Haar scaling function> is $\phi=\mathbf1_{[0,1)}$, which records a coarse value rather than a contrast. Endpoint conventions do not alter the <L2 inner products>.
+
+The normalized copies $\psi_{j,k}(x)=2^{j/2}\psi(2^jx-k)$ compare the halves of the <dyadic interval> $[k2^{-j},(k+1)2^{-j})$. Narrower copies are taller so that their <L2 norms> stay one. Thus a coefficient identifies both a location, through $k$, and a scale, through $j$.
+
+\Image[haar-wavelet-localized-contrasts.png]
+{title=The Haar wavelet and two finer localized contrasts have zero integral and unit L2 norm}
+
+For a simple <step function> $f$ equal to $2$ on $[0,1/2)$ and $6$ on $[1/2,1)$, its coarse coefficient is $\langle f,\phi\rangle=4$, while its first contrast is $\langle f,\psi\rangle=-2$. Thus **$f=4\phi-2\psi$**. The negative coefficient raises the second half and lowers the first. Finer contrasts vanish because $f$ is constant on each half. A jump aligned with this <dyadic interval> boundary therefore needs only two nonzero coefficients; jumps at other positions can require details at many scales.
+
+Its <jump discontinuities> make the <Haar wavelet> particularly transparent for changes between neighbouring regions, while limiting approximation of smooth variation. A <Daubechies wavelet> uses a more elaborate pattern to obtain additional <vanishing moments> and, at sufficiently high order, smoother basis functions. The elementary <Haar refinement identity> has coefficients $h_0=h_1=1/\sqrt2$ and explains how the coarse and fine descriptions fit together.
+
+The historical source is Alfred Haar's \a[https://history-of-approximation-theory.com/fpapers/haar1910.pdf][Zur Theorie der orthogonalen Funktionensysteme, Mathematische Annalen 69 (1910), pp. 331–371]{ref}. Chapter III, beginning on page 361, constructs the constant function and these localized piecewise-constant orthogonal functions. Its original endpoint assignments differ from the half-open convention used here, without changing <L2 inner products>.
 
 = Uniform hard-threshold convergence of normalized Haar expansions
 {parent=Haar wavelet}
@@ -380,7 +429,25 @@ This orthogonal two-by-two transformation gives the <multiresolution analysis> d
 {synonym}
 {c}
 
-The <Haar projection> at level $J$ is the <orthogonal projection> onto the <functions> constant on level-$J$ <dyadic intervals>. It replaces a <function> by its mean on each cell. It can be expressed using level-$J$ <Haar scaling functions>, or using the constant <function> and <Haar wavelets> at levels below $J$.
+The <Haar projection> at level $J$ is the <orthogonal projection> onto the <functions> constant on level-$J$ <dyadic intervals>. On each cell it replaces $f$ by its <cell average>. This is the closest cellwise-constant approximation in the <L2 norm>, because choosing a constant $c$ on a cell minimizes $\int_I|f-c|^2$ at its <cell average>.
+
+On $[0,1]$, take the <step function> with values $2,4,6,8$ on successive quarter-intervals. At level zero, its <Haar projection> is the constant $5$. At level one, it has values $3$ and $7$ on the two halves. At level two, it recovers the four original values exactly. With normalized <Haar wavelets>, these approximations are
+$$
+P_0f=5\phi,\qquad
+P_1f=5\phi-2\psi,\qquad
+P_2f=5\phi-2\psi-\frac1{\sqrt2}\psi_{1,0}-\frac1{\sqrt2}\psi_{1,1}.
+$$
+The coefficients are <L2 inner products>, so they differ from the discrete vector coefficients by the factor $1/\sqrt4=1/2$. Their squared sum also has a direct meaning:
+$$
+\|f\|_2^2=\frac{2^2+4^2+6^2+8^2}{4}
+=30=5^2+(-2)^2+\left(-\frac1{\sqrt2}\right)^2+\left(-\frac1{\sqrt2}\right)^2.
+$$
+The approximation errors in squared <L2 norm> of $P_0f,P_1f,P_2f$ are respectively $5,1,0$: each added detail removes exactly its own squared coefficient from the error.
+
+\Image[haar-wavelet-multiscale-reconstruction.png]
+{title=Coarse mean, half-interval contrasts and quarter-interval details reconstruct the same four-step function}
+
+The <Haar projection> can be expressed using level-$J$ <Haar scaling functions>, or through a coarse scaling family and the <Haar wavelets> at intermediate levels. On $[0,1]$ with lowest level zero, that coarse family is the single constant function $\phi$. On the whole <real line>, use the integer translates of a coarse <Haar scaling function> instead; one global constant is not <square-integrable>. Refinement improves the representation while retaining the earlier coefficients.
 
 = Haar projection error for a Lipschitz function
 {c}
@@ -422,13 +489,31 @@ The cellwise error of the <Haar projection estimator in Gaussian white noise> is
 {synonym}
 {c}
 
-At level $J$, a <Haar scaling function> is the normalized <indicator function> $2^{J/2}\mathbf1_{I_{J,k}}$ of a <dyadic interval>. The <functions> at that level form an <orthonormal basis> of the cellwise-constant subspace. Their normalization is what turns white-noise coefficient variances into $1/n$ and cellwise variances into $2^J/n$.
+At level $J$, a <Haar scaling function> is the normalized <indicator function> $\phi_{J,k}=2^{J/2}\mathbf1_{I_{J,k}}$ of the <dyadic interval> $I_{J,k}=[k2^{-J},(k+1)2^{-J})$. Its <L2 norm> is one because its squared height is $2^J$ and its support length is $2^{-J}$.
+
+For a real <square-integrable function> $f$, its coefficient is
+$$
+\langle f,\phi_{J,k}\rangle
+=2^{J/2}\int_{I_{J,k}}f(x)\,dx
+=2^{-J/2}\overline f_{I_{J,k}}.
+$$
+Multiplying the coefficient by the <Haar scaling function> restores the <cell average> on that interval. The disjoint <supports> make the functions at one level an <orthonormal basis> of the cellwise-constant subspace. This normalization is also what turns coefficient <variances> in the <Gaussian white noise model> into $1/n$ and cellwise variances into $2^J/n$ in the <Haar projection estimator in Gaussian white noise>.
 
 = Multiresolution analysis
 {parent=Wavelet}
 {wiki}
 
-A multiresolution analysis is a nested sequence of approximation spaces related by dyadic dilation and generated at one scale by translates of a scaling function.
+A multiresolution analysis organizes a <function> into successively finer approximation spaces. In the usual orthonormal construction on $L^2(\mathbb R)$, these are <closed> <linear subspaces> $(V_j)_{j\in\mathbb Z}$ with
+$$
+V_j\subseteq V_{j+1},\qquad
+\overline{\bigcup_jV_j}=L^2(\mathbb R),\qquad
+\bigcap_jV_j=\{0\}.
+$$
+Rescaling relates the levels: $f(x)\in V_j$ if and only if $f(2x)\in V_{j+1}$. Integer translates of a <scaling function> form an <orthonormal basis> of $V_0$. The detail space is the <orthogonal complement> of $V_j$ inside $V_{j+1}$, giving $V_{j+1}=V_j\oplus W_j$. Coarse information and new details therefore fit together without overlap in squared <L2 norm>.
+
+For the <Haar wavelet>, $V_j$ consists of <square-integrable functions> constant on cells of length $2^{-j}$. Splitting every cell into two halves creates one new contrast per old cell, the <Haar refinement identity>. On the bounded example $[0,1]$, the first three spaces have dimensions $1,2,4$: a whole-interval mean, two half-interval means, and four quarter-interval means. The <Haar projection> diagram displays those three resolutions. This bounded construction starts at level zero; the displayed intersection condition refers to the full family on the <real line>.
+
+The usefulness is a controlled way to increase resolution. Earlier coarse information remains available while new <wavelet> coefficients identify what the finer description adds. The <wavelet approximation complexity> connects this extra resolution to both approximation error and the number of coefficients being estimated. \a[https://arxiv.org/pdf/math/9304214][Gilbert Strang (1993), sections 1 and 3: Haar spaces, refinement and multiresolution]{ref}
 
 = Wavelet approximation complexity
 {parent=Multiresolution analysis}

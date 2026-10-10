@@ -1046,13 +1046,47 @@ Order source symbols by decreasing probability and assign the $i$th symbol a bin
 {parent=Information theory}
 {wiki}
 
-Huffman's algorithm repeatedly combines the $D$ least weights for a $D$-ary prefix code and yields an optimal expected length.
+Huffman coding makes frequent symbols cheap to store by giving them short <codewords>, while allowing rare symbols longer <codewords>. For a known <probability distribution> on a finite <alphabet> with at least two positive-probability symbols, binary Huffman coding constructs a <prefix code> minimizing <expected codeword length> among binary <prefix codes> that encode one source symbol at a time. The objective is an average under that <probability distribution>; it does not promise to shorten every message. Encoder and decoder must agree on the resulting <Huffman code>. \a[https://xenon.stanford.edu/~blynn/pr/symbol.html][Ben Lynn, Symbol Codes: expected length and Huffman construction]{ref}
+
+The construction grows a <binary tree> from its leaves towards its <root of a tree>. Start with one leaf per symbol, weighted by its <probability>. Repeatedly join the two currently smallest weights beneath a new <parent in a rooted tree>, whose weight is their sum, and replace the pair by that <subtree>. Include newly formed <subtrees> when choosing the next pair. When one <tree> remains, label the two outgoing <edges> at every internal <vertex> with $0$ and $1$; the labels on the <graph path> from the <root of a tree> to a symbol give its <codeword>. This is a <greedy algorithm>: each step makes a locally cheapest merge, yet the result is an <optimal prefix code>.
+
+For a concrete example, use <probabilities> $p_A=0.4$, $p_B=0.3$, $p_C=0.2$, $p_D=0.1$. First join $D$ and $C$, creating weight $0.3$. The remaining weights are $0.3$ for $B$, $0.3$ for the $CD$ <subtree>, and $0.4$ for $A$. Join the two $0.3$ weights to make $0.6$, then join $A$ with that $0.6$ <subtree> to make $1$. The merge weights are therefore $0.3,0.6,1$. Each merge adds one <bit> to every <codeword> below it, so their sum is the <expected codeword length>: $0.3+0.6+1=1.9$ <bits> per source symbol. The diagram fixes the <edge> labels to produce the <Huffman code> used below.
+
+\Image[huffman-merge-tree-example.png]
+{title=Huffman merges for probabilities 0.4, 0.3, 0.2, 0.1 and their binary codewords}
+
+The useful insight is that choosing short <codewords> is a resource allocation problem: the <prefix code> condition constrains the available <codeword lengths> through the <Kraft inequality>. Huffman coding solves this one-symbol problem exactly for the supplied <probability distribution>. For repeated emissions of a <memoryless classical information source>, the same <Huffman code> can be applied symbol by symbol. More general compression can exploit dependencies or encode groups of symbols; the one-symbol optimality statement does not compare all such methods.
 
 = Huffman code
 {c}
 {parent=Huffman coding}
 
-A Huffman code is a <prefix code> produced by repeatedly merging the two least probable symbols or subtrees. Reversing the merges builds a <binary tree> whose leaf depths are the codeword lengths. It minimizes expected length among binary prefix codes.
+A Huffman code is the <prefix code> returned by <Huffman coding>; the <algorithm> chooses a <code tree>, while the code specifies the actual symbol-to-<codeword> assignment. For the <probability distribution> $(0.4,0.3,0.2,0.1)$ in symbol order $A,B,C,D$, the illustrated <binary tree> gives
+$$
+c(A)=0,\qquad c(B)=10,\qquad c(C)=110,\qquad c(D)=111.
+$$
+The <codeword lengths> are $1,2,3,3$. This is a <prefix code> because no complete <codeword> is an initial segment of another complete <codeword>. Thus a decoder can start at the <root of a tree>, follow one <edge> per <bit>, emit a symbol on reaching its leaf, then restart at the <root of a tree>. In particular, `011010111` splits as `0 | 110 | 10 | 111` and decodes to $A,C,B,D$. No separators are transmitted: the leaf tells the decoder where a <codeword> ends.
+
+The <expected codeword length> is
+$$
+L(c)=\sum_xp_x\,|c(x)|=0.4\cdot1+0.3\cdot2+0.2\cdot3+0.1\cdot3=1.9
+$$
+<bits> per source symbol. Four symbols would require $2$ <bits> each if all <codewords> had the same length, so this <Huffman code> saves $0.1$ <bit> per symbol on average, or $5\%$ of that fixed-length payload. A particular message can grow: $A,C,B,D$ uses nine <bits> here instead of eight. These lengths count the encoded symbols only; transmitting a code description or message framing can add further cost.
+
+The <Kraft inequality> is saturated by this <Huffman code>:
+$$
+2^{-1}+2^{-2}+2^{-3}+2^{-3}=1.
+$$
+Its <Shannon entropy> is
+$$
+H(X)=-\sum_xp_x\log_2p_x\approx1.846439
+$$
+<bits> per symbol, slightly below the <expected codeword length> $1.9$. The <entropy lower bound for prefix codes> applies to every binary <prefix code> for this <probability distribution>. It need not be attainable with integer <codeword lengths> for individual symbols; <Huffman coding> reaches the best mean within that class. \a[https://web.iitd.ac.in/~sumeet/mackay.pdf][David J. C. MacKay, Information Theory, Inference, and Learning Algorithms, chapter 5, section 5.4: symbol-code bounds]{ref}
+
+\Image[huffman-code-length-and-entropy.png]
+{title=Probability-weighted codeword lengths sum to 1.9 bits per symbol, between entropy and fixed length}
+
+A <Huffman code> need not be unique. In the first example, the tied $B$ and $CD$ weights can exchange their $0/1$ <edge> labels, changing <codewords> but preserving their <codeword lengths>. Ties can also change the lengths themselves. For a second <probability distribution> $(0.4,0.2,0.2,0.2)$, first merge $C,D$ to weight $0.4$. The next merge can join $B$ with either $A$ or the $CD$ <subtree>, since both have weight $0.4$. Joining $B$ with $A$ permits $A\mapsto00,B\mapsto01,C\mapsto10,D\mapsto11$, with all lengths $2$. Joining $B$ with the $CD$ <subtree> permits $A\mapsto0,B\mapsto10,C\mapsto110,D\mapsto111$, with lengths $1,2,3,3$. Both are <optimal prefix codes> with <expected codeword length> $2$: for the latter, $0.4\cdot1+0.2\cdot2+0.2\cdot3+0.2\cdot3=2$. Tie choices can change the <code tree> without changing the minimum mean.
 
 // Target: algebra.bigb
 

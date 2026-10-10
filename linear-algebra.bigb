@@ -587,12 +587,106 @@ An integral square matrix is unimodular when its determinant is $1$ or $-1$. Its
 {c}
 {parent=Linear algebra}
 {wiki}
+{title2=$H=I-2uu^T$}
 
 = Householder reflection
 {c}
 {synonym}
 
-For unit $v$, $I-2vv^T$ is an orthogonal reflection. Successive Householder similarities reduce a symmetric matrix while preserving symmetry.
+A <Householder transformation> is a <reflection> that leaves every direction in a chosen <hyperplane> fixed and reverses its normal direction. For a real <unit vector> $u$, its <matrix> is
+$$
+\boxed{H=I-2uu^T.}
+$$
+To understand the formula, decompose any <vector> into its <orthogonal projection> onto the normal and a perpendicular component:
+$$
+x=x_\parallel+x_\perp,\qquad
+x_\parallel=(u^Tx)u,\qquad u^Tx_\perp=0.
+$$
+Then $Hx=x_\perp-x_\parallel$. Subtracting twice the normal component changes its sign while retaining everything parallel to the mirror. A nonzero normal $v$ gives the equivalent formula $H=I-2vv^T/(v^Tv)$, so normalization can be deferred.
+
+For example, take $u=(2,1)^T/\sqrt5$. Its mirror is the <straight line> $2x_1+x_2=0$, and
+$$
+H=\begin{pmatrix}-3/5&-4/5\\-4/5&3/5\end{pmatrix},
+\qquad
+H\begin{pmatrix}3\\4\end{pmatrix}=\begin{pmatrix}-5\\0\end{pmatrix}.
+$$
+The midpoint of these two <vectors> is $(-1,2)^T$, which lies on the mirror; their connecting segment is parallel to its normal. Both <vectors> have <Euclidean norm> five.
+
+\Image[householder-reflection-geometry.png]
+{title=A Householder reflection reverses the normal component and preserves the mirror component}
+{description=The mirror is $2x_1+x_2=0$. The <vector> $(3,4)^T$ becomes $(-5,0)^T$; their midpoint $(-1,2)^T$ is the <orthogonal projection> onto the mirror.}
+
+Several useful properties follow from this decomposition. The <Householder reflection> is a <symmetric matrix> and an <orthogonal matrix>:
+$$
+H^T=H,\qquad H^2=I,\qquad H^TH=I.
+$$
+Reflecting twice restores the original <vector>; <Euclidean norms> and <inner products> are preserved. The <eigenvalue> is $-1$ along $u$ and $+1$ on $u^\perp$, so $\det H=-1$. A reflection reverses <orientation> even though it preserves lengths.
+
+The computational payoff is that the mirror can be chosen to send a whole <vector> onto one coordinate axis, eliminating several entries at once. <Householder QR decomposition> repeats this operation on the remaining parts of successive columns. For a real <symmetric matrix>, applying the same <Householder reflection> on both sides gives a <matrix similarity> $HAH$ that preserves symmetry and <eigenvalues>; this is the basis of <Householder tridiagonalization>.
+
+Alston S. Householder's 1958 paper \i[Unitary Triangularization of a Nonsymmetric Matrix] develops this elimination method. Its motivation includes reducing the arithmetic needed for triangularization while retaining the conditioning advantages of <orthogonal transformations>. \a[https://web.stanford.edu/class/cme324/classics/householder.pdf][Householder (1958), Journal of the ACM 5(4), pp. 339–342: original paper]{ref} Over the <complex numbers>, $I-2uu^*$ for a unit $u$ is <Hermitian> and <unitary>, with the star denoting the <conjugate transpose>; the coordinate-axis construction below is stated for real <vectors>.
+
+= Householder reflection sending a vector to a coordinate axis
+{c}
+{parent=Householder transformation}
+{title2=$Hx=\alpha e_1,\quad |\alpha|=\|x\|_2$}
+
+For a nonzero real <vector> $x\in\mathbb R^n$, choose $\alpha$ with $|\alpha|=\|x\|_2$ and put $v=x-\alpha e_1$. When $v\ne0$, the <Householder reflection>
+$$
+H=I-\frac{2vv^T}{v^Tv}
+$$
+satisfies $Hx=\alpha e_1$: every component except the first becomes zero. Here $e_1$ is the first <Cartesian basis> <vector>. The calculation is short:
+$$
+v^Tv=2(\|x\|_2^2-\alpha x_1),
+\qquad
+v^Tx=\|x\|_2^2-\alpha x_1,
+\qquad
+Hx=x-v=\alpha e_1.
+$$
+If $v=0$, the <vector> is already at the selected target, so the <identity matrix> suffices.
+
+In <floating-point arithmetic>, a customary choice is
+$$
+\alpha=
+\begin{cases}
+-\|x\|_2,&x_1\ge0,\\
+\|x\|_2,&x_1<0.
+\end{cases}
+$$
+Then $|v_1|=|x_1|+\|x\|_2$, avoiding subtraction of nearly equal positive quantities in the first component. Either sign can be valid in exact arithmetic; the numerical choice protects the construction from <catastrophic cancellation>. \a[https://math.mit.edu/classes/18.085/summer2016/handouts/qr.pdf][Olver, Orthogonal Bases and the QR Algorithm: Householder factorization and sign selection]{ref}
+
+For $x=(3,4)^T$, this choice gives $\alpha=-5$ and $v=(8,4)^T$. Dividing $v$ by its <Euclidean norm> gives $u=(2,1)^T/\sqrt5$, exactly the normal in the geometric example.
+
+= Householder QR example in two dimensions
+{c}
+{parent=Householder transformation}
+{title2=$A=QR$}
+
+Apply the preceding <Householder reflection> to the columns of
+$$
+A=\begin{pmatrix}3&1\\4&2\end{pmatrix}.
+$$
+The first column becomes $(-5,0)^T$ and the second becomes $(-11/5,2/5)^T$:
+$$
+R=HA=\begin{pmatrix}-5&-11/5\\0&2/5\end{pmatrix},
+\qquad
+A=HR.
+$$
+Thus an <orthogonal matrix> multiplying an <upper triangular matrix> reconstructs $A$. The zero below the diagonal came from a geometric operation that preserves <Euclidean norms> and <inner products>.
+
+\Image[householder-qr-column-elimination.png]
+{title=A single Householder reflection makes a two-column matrix upper triangular}
+{description=Both columns are reflected by the same <orthogonal transformation>. The first lands on the first coordinate axis; the second retains a nonzero second component. The intermediate triangular factor has a negative first diagonal entry.}
+
+Our positive-diagonal convention for <QR decomposition> is obtained by a sign adjustment. With $D=\operatorname{diag}(-1,1)$, put
+$$
+Q=HD=\begin{pmatrix}3/5&-4/5\\4/5&3/5\end{pmatrix},
+\qquad
+R_+=DR=\begin{pmatrix}5&11/5\\0&2/5\end{pmatrix}.
+$$
+Then $Q^TQ=I$ and $\boxed{A=QR_+}$. The intermediate sign chooses an <orientation> for a <basis vector>; the adjustment makes the diagonal positive.
+
+For a larger <matrix>, the next <Householder reflection> acts only on the lower rows of the remaining columns, retaining the zeros already created. Store its defining <vector> and apply $z\mapsto z-2u(u^Tz)$ instead of forming a dense reflection <matrix>. This links a simple mirror operation to efficient <QR decomposition>, including <least-squares solutions>.
 
 = Change of basis
 {parent=Linear algebra}
@@ -640,6 +734,120 @@ The output represents $2u+2v=(4,0)$, just as $A_{\rm old}(2,0)^T=(4,0)^T$. The <
 = Circulant matrix
 {parent=Linear algebra}
 {wiki}
+{title2=$C_{nj}=c_{(n-j)\bmod N}$}
+
+A circulant <matrix> applies the same rule at every position of a finite ring: moving both the input and output indices one step leaves its entries unchanged. Its first column determines the whole <matrix>. For a length-$N$ <vector> $c$, index rows and columns by $0,\ldots,N-1$ and define
+$$
+C_{nj}=c_{(n-j)\bmod N}.
+$$
+The indices use <modular arithmetic>. Thus each column is the previous column shifted down one place, with the last entry wrapping around to the top. Multiplication is exactly <circular convolution>:
+$$
+(Cx)_n=\sum_{j=0}^{N-1}c_{(n-j)\bmod N}x_j
+=\sum_{\ell=0}^{N-1}c_\ell x_{(n-\ell)\bmod N}.
+$$
+This makes a circulant <matrix> a natural model for a periodic <finite difference> rule or a filter acting on a periodic record. Strang's MIT lecture develops this connection between circulant <matrices>, <circular convolution> and the <discrete Fourier transform>.\a[https://ocw.mit.edu/courses/18-065-matrix-methods-in-data-analysis-signal-processing-and-machine-learning-spring-2018/resources/lecture-31-eigenvectors-of-circulant-matrices-fourier-matrix/][Strang, MIT 18.065 Lecture 31: eigenvectors of circulant matrices]{ref}
+
+For example, the first column $c=(2,-1,0,-1)^T$ gives
+$$
+L=\begin{pmatrix}
+2&-1&0&-1\\
+-1&2&-1&0\\
+0&-1&2&-1\\
+-1&0&-1&2
+\end{pmatrix},
+\qquad (Lx)_n=2x_n-x_{n-1}-x_{n+1}.
+$$
+Here the indices wrap around modulo four. Each output compares a value with its two neighbors; this is the <Graph Laplacian> of a four-vertex <cycle graph>. A constant input gives zero, while an alternating input gives a large response. The <Fourier diagonalization of a circulant matrix> makes this distinction exact: its four <eigenvalues> are $0,2,4,2$.
+
+\Image[circulant-fourier-modes.png]
+{title=Fourier eigenvectors of the four-point cycle Laplacian}
+
+The plotted <discrete Fourier modes> are complex <vectors>, shown through their real and imaginary parts. Each entry has <modulus> one; the <Euclidean norm> of each length-four <vector> is two. In particular, modes $k=1$ and $k=3$ have the same real part but opposite imaginary parts, so they are distinct <eigenvectors> with the same <eigenvalue>.
+
+The useful surprise is that every length-$N$ circulant <matrix> shares the same <basis> of <eigenvectors>, whatever its first column. One <change of basis> therefore simplifies an entire family of <linear maps>, instead of requiring a separate <eigenvalue> computation for each one. Bamieh's tutorial develops the <discrete Fourier transform> from precisely this simultaneous <diagonalization> problem.\a[https://arxiv.org/abs/1805.05533][Bamieh, Discovering Transforms: A Tutorial on Circulant Matrices, Circular Convolution, and the Discrete Fourier Transform (2018; revised 2022)]{ref}
+
+= Fourier diagonalization of a circulant matrix
+{c}
+{parent=Circulant matrix}
+{title2=$C=F^{-1}\operatorname{diag}(Fc)F$}
+
+Use the negative-exponential forward <discrete Fourier transform> and the $1/N$-normalized <inverse discrete Fourier transform>:
+$$
+F_{kn}=e^{-2\pi ikn/N},
+\qquad
+(F^{-1})_{nk}=\frac1N e^{2\pi ink/N}.
+$$
+For the circulant <matrix> with first column $c$, the <discrete Fourier mode> $w^{(k)}_n=e^{2\pi ikn/N}$ is an <eigenvector> with <eigenvalue>
+$$
+\boxed{\lambda_k=\sum_{\ell=0}^{N-1}c_\ell e^{-2\pi ik\ell/N}=(Fc)_k.}
+$$
+Indeed, substitution into <circular convolution> gives
+$$
+(Cw^{(k)})_n
+=\sum_{\ell=0}^{N-1}c_\ell e^{2\pi ik(n-\ell)/N}
+=w^{(k)}_n\lambda_k.
+$$
+The columns of $F^{-1}$ are $w^{(k)}/N$, so the <diagonalization of a matrix> takes the form
+$$
+C=F^{-1}\operatorname{diag}(\lambda_0,\ldots,\lambda_{N-1})F.
+$$
+The <roots of unity> give <orthogonality> of these <eigenvectors>; dividing each $w^{(k)}$ by $\sqrt N$ makes the <basis> <orthonormal>. Consequently, every complex circulant <matrix> is a <normal matrix>, including ones that are not <Hermitian matrices>.
+
+The sign convention matters. For $c=(1,2,0,0)^T$, the circulant <matrix> is
+$$
+C=\begin{pmatrix}
+1&0&0&2\\
+2&1&0&0\\
+0&2&1&0\\
+0&0&2&1
+\end{pmatrix},
+\qquad
+(\lambda_0,\lambda_1,\lambda_2,\lambda_3)=(3,1-2i,-1,1+2i).
+$$
+Changing the direction of the shift or the sign in the <discrete Fourier transform> changes which complex <eigenvalue> goes with which <discrete Fourier mode>. A real symmetric example alone would conceal that distinction.
+
+For a <linear system> $Cx=b$, put $\widehat x=Fx$ and $\widehat b=Fb$. The equation becomes $N$ independent scalar equations
+$$
+\lambda_k\widehat x_k=\widehat b_k.
+$$
+If every $\lambda_k$ is nonzero, divide to find the unique <vector> $x$ and apply the <inverse discrete Fourier transform>. If some $\lambda_k=0$, a <vector> $x$ satisfying the <linear system> exists exactly when $\widehat b_k=0$ at every such index; the corresponding $\widehat x_k$ remain free. This is a concrete version of the <Fredholm alternative> in a finite-dimensional setting.
+
+With an appropriate <fast Fourier transform>, multiplication or a compatible solve takes $O(N\log N)$ arithmetic operations, instead of forming a dense <matrix> and applying general <Gaussian elimination>. The gain comes from the periodic structure; an arbitrary <matrix> does not have this shared <basis> of <discrete Fourier modes>.\a[https://ocw.mit.edu/courses/18-065-matrix-methods-in-data-analysis-signal-processing-and-machine-learning-spring-2018/resources/lecture-31-eigenvectors-of-circulant-matrices-fourier-matrix/][Strang, MIT 18.065 Lecture 31: Fourier eigenvectors and fast computation]{ref}
+
+= Periodic Poisson equation on a four-point cycle
+{parent=Circulant matrix}
+{title2=$2x_n-x_{n-1}-x_{n+1}=b_n$}
+
+Consider the discrete <linear system> $Lx=b$ with
+$$
+L=\begin{pmatrix}
+2&-1&0&-1\\
+-1&2&-1&0\\
+0&-1&2&-1\\
+-1&0&-1&2
+\end{pmatrix},
+\qquad b=(1,0,-1,0)^T.
+$$
+This is a finite periodic analogue of the <Poisson equation>, using the negative second <finite difference> with unit grid spacing. It is also a <Graph Laplacian> equation on a <cycle graph>; no continuum approximation is being claimed here.
+
+\Image[periodic-circulant-poisson-solution.png]
+{title=Balanced forcing and the mean-zero solution on a four-node ring}
+
+Summing the four equations gives zero on the left, since each value occurs twice positively and twice negatively. A necessary condition is therefore $\sum_n b_n=0$. The <Fourier diagonalization of a circulant matrix> shows that this is also sufficient: the only zero <eigenvalue> of $L$ is the constant mode $k=0$, and $\widehat b_0=\sum_n b_n$.
+
+For the displayed forcing, the <discrete Fourier transform> gives
+$$
+\widehat b=(0,2,0,2)^T,
+\qquad
+(\lambda_0,\lambda_1,\lambda_2,\lambda_3)=(0,2,4,2).
+$$
+Divide only at the three nonzero <eigenvalues>, and choose $\widehat x_0=0$ to impose zero <arithmetic mean>:
+$$
+\widehat x=(0,1,0,1)^T,
+\qquad
+\boxed{x=(1/2,0,-1/2,0)^T.}
+$$
+Direct substitution gives $Lx=(1,0,-1,0)^T$. All other <vectors> satisfying the <linear system> are $x+a(1,1,1,1)^T$, because the <kernel> is the space of constant <vectors>. Thus balanced forcing determines the differences between values, while a reference level is an extra choice. This small model explains why a periodic <Poisson equation> needs both a compatibility condition and a normalization.
 
 = Invertible matrix
 {parent=Linear algebra}
@@ -701,12 +909,35 @@ A linear map has trivial kernel when its kernel is $\{0\}$. This is equivalent t
 = Rank-nullity theorem
 {parent=Kernel of a linear map}
 {wiki}
+{title2=$\dim V=\dim\ker T+\dim\operatorname{im}T$}
 
-For a linear map $T:V\to W$ with finite-dimensional domain,
+The <rank-nullity theorem> accounts for the input dimensions of a <linear map>: the number of independent invisible input directions plus the number of independent reachable output directions equals the input <dimension>. For $T:V\to W$ over a <field>, with finite-dimensional <domain of a function> $V$,
 $$
-\dim V=\dim\ker T+\dim\operatorname{im}T.
+\boxed{\dim V=\dim\ker T+\dim\operatorname{im}T.}
 $$
-If a basis of $\ker T$ is extended to a basis of $V$, the images of the added basis vectors form a basis of $\operatorname{im}T$. Counting the two parts proves the formula.
+Here $\dim\ker T$ is the <nullity>, and $\dim\operatorname{im}T$ is the <rank of a linear map>. The <kernel> lives in the input <vector space>, while the <image of a linear map> lives in the output <vector space>. For an $m$-by-$n$ <matrix> of <matrix rank> $r$, the formula is $n=(n-r)+r$: the number of columns counts input coordinates. \a[https://linear.axler.net/LADR4e.pdf][Sheldon Axler, Linear Algebra Done Right, fourth edition, §3B: fundamental theorem of linear maps]{ref}
+
+For a computed example over the <real numbers>, take
+$$
+A=\begin{pmatrix}1&2\\0&0\end{pmatrix},\qquad
+T(x,y)=A\begin{pmatrix}x\\y\end{pmatrix}=(x+2y,0).
+$$
+The <kernel> is $\operatorname{span}\{(-2,1)\}$ and the <image of a linear map> is $\operatorname{span}\{(1,0)\}$. Each has <dimension> one, so the two input dimensions split as $2=1+1$. The <vector> $(3,1)$ can be written
+$$
+(3,1)=(1,2)+(2,-1),\qquad
+T(1,2)=(5,0),\qquad T(2,-1)=(0,0).
+$$
+The second summand is undetectable: $T(3,1)=T(1,2)$. The picture uses the standard <dot product> to choose a visible direction perpendicular to the <kernel>; this is a convenient geometric choice, not an extra hypothesis of the <rank-nullity theorem>.
+
+\Image[rank-nullity-domain-decomposition.png]
+{title=Two input dimensions split into one visible direction and one kernel direction}
+{description=For $T(x,y)=(x+2y,0)$, the input $(3,1)$ splits into $(1,2)$ and $(2,-1)$. Both $(3,1)$ and $(1,2)$ map to $(5,0)$, while the <kernel> component maps to zero. The horizontal output line is the entire <image of a linear map>.}
+
+This explains a practical tradeoff in a <linear system>. If $T(x_0)=b$, every other input with output $b$ is $x_0+k$ for $k\in\ker T$. The <nullity> therefore counts independent freedom in an existing solution; the <rank> counts independent reachable output directions. In the example, $T(x,y)=(3,0)$ has all solutions $(x,y)=(3-2t,t)$, while $T(x,y)=(3,1)$ has none. The <cokernel> records this failure of reachability.
+
+For an $m$-by-$n$ <matrix>, <injectivity> requires <matrix rank> $n$, and <surjectivity> requires <matrix rank> $m$. When $m\ne n$, these conditions differ. For example, $B:\mathbb R^3\to\mathbb R^2$ with $B(x,y,z)=(x+2y,0)$ has <rank> one and <nullity> two, because $\ker B=\operatorname{span}\{(-2,1,0),(0,0,1)\}$. The input accounting is $3=2+1$, although only one of two output directions is reached.
+
+Proof outline: extend a <basis> $k_1,\ldots,k_q$ of the <kernel> to a <basis> $k_1,\ldots,k_q,v_1,\ldots,v_r$ of $V$. Every output is a <linear combination> of $T(v_1),\ldots,T(v_r)$ because the $k_i$ vanish under $T$. If a <linear combination> of the $T(v_j)$ is zero, the corresponding combination of the $v_j$ lies in the <kernel>; <linear independence> of the full <basis> forces all its coefficients to vanish. Thus the added <basis vectors> give a <basis> of the <image of a linear map>. Counting them proves the formula.
 
 = Equality in the rank-sum and nullity-product inequalities
 {parent=Rank-nullity theorem}
@@ -721,8 +952,45 @@ For a matrix whose entries depend on a parameter, a nonzero maximal minor certif
 = Cokernel
 {parent=Linear algebra}
 {wiki}
+{title2=$\operatorname{coker}T=W/\operatorname{im}T$}
 
-For a linear map $T:V\to W$, the cokernel is the quotient $\operatorname{coker}T=W/\operatorname{im}T$. The same definition applies to a homomorphism of <abelian groups>.
+The <cokernel> records output information that a <linear map> cannot produce. For $T:V\to W$, it is the <quotient vector space>
+$$
+\operatorname{coker}T=W/\operatorname{im}T.
+$$
+Its elements are <cosets> $[b]=b+\operatorname{im}T$. Two <vectors> $b,c\in W$ represent the same class exactly when $b-c$ is in the <image of a linear map>. The zero class is the whole <image of a linear map>, so
+$$
+\boxed{T(x)=b\text{ is solvable}\iff[b]=0\text{ in }\operatorname{coker}T.}
+$$
+Changing $b$ by an attainable output does not change its obstruction. This is useful because one can test compatibility before trying to find an input. The <quotient vector space> construction is described in Axler's §3E. \a[https://linear.axler.net/LADR4e.pdf][Sheldon Axler, Linear Algebra Done Right, fourth edition, §3E: quotient spaces]{ref}
+
+For the <linear map> $T:\mathbb R^2\to\mathbb R^2$ given by $T(x,y)=(x+2y,0)$, the <image of a linear map> is the horizontal line. All outputs $(b_1,b_2)$ with the same second coordinate have the same <cokernel> class, because their difference is horizontal. Thus this <cokernel> is <isomorphic> to $\mathbb R$ via $[(b_1,b_2)]\mapsto b_2$. In particular, $(3,0)$ has zero class and is attainable, while $(3,1)$ has nonzero class and is unattainable.
+
+\Image[cokernel-solvability-obstruction.png]
+{title=The second output coordinate is a cokernel obstruction to solving $T(x,y)=b$}
+{description=The horizontal axis is the <image of a linear map> $T(x,y)=(x+2y,0)$. The class of $b=(3,1)$ is the parallel line $b+\operatorname{im}T$, which never meets the image. The projection $(3,0)$ is attainable but has a different <cokernel> class.}
+
+If $W$ is finite-dimensional, the dimension rule for a <quotient vector space> gives
+$$
+\dim W=\operatorname{rank}T+\dim\operatorname{coker}T.
+$$
+Compare this with the <rank-nullity theorem>, $\dim V=\operatorname{rank}T+\dim\ker T$. The <kernel> counts invisible inputs; the <cokernel> counts missing output directions. They need not have the same <dimension>: $B(x,y,z)=(x+2y,0)$ has a two-dimensional <kernel> and a one-dimensional <cokernel>. A <linear map> is <surjective> exactly when its <cokernel> is zero.
+
+The <cokernel> is a quotient, rather than a chosen perpendicular <vector subspace>. With a finite-dimensional <inner product space> as output, one may represent each class by its unique component in the <orthogonal complement> of the <image of a linear map>. That representation depends on the chosen <inner product>. For <matrices> over the <complex numbers>, this complement is $\ker A^*$, leading to the <cokernel compatibility equations>.
+
+The same quotient definition applies to a <group homomorphism> of <abelian groups>. For $T:\mathbb Z\to\mathbb Z$ given by $T(n)=2n$, the <cokernel> is $\mathbb Z/2\mathbb Z$. The equation $2n=b$ is solvable exactly when $b$ is an <even integer>; the two <cosets> record <integer parity>. A quotient captures the obstruction here just as it captures a missing output coordinate for a <linear map>.
+
+= Cokernel compatibility equations
+{parent=Cokernel}
+{title2=$Ax=b\text{ solvable}\iff y^*b=0\ \forall y\in\ker A^*$}
+
+For a <matrix> $A$ over the <complex numbers> with the standard <Hermitian inner product>, the <linear system> $Ax=b$ is solvable exactly when
+$$
+y^*b=0\qquad\text{for every }y\in\ker A^*.
+$$
+The star is the <conjugate transpose>; for <matrices> over the <real numbers>, use the <transpose>. Necessity follows from $y^*Ax=(A^*y)^*x=0$. For sufficiency, $(\operatorname{im}A)^\perp=\ker A^*$, and taking the <orthogonal complement> again recovers $\operatorname{im}A$ in finite <dimension>. This is the <cokernel> obstruction expressed as scalar equations. \a[https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/resources/lecture-10-the-four-fundamental-subspaces/][Gilbert Strang, MIT 18.06, Lecture 10: the four fundamental subspaces]{ref}
+
+For $A=\begin{pmatrix}1&2\\0&0\end{pmatrix}$, $\ker A^T=\operatorname{span}\{(0,1)\}$, so the single compatibility equation is $b_2=0$. If it holds, the <kernel> supplies the remaining input freedom; if it fails, changing the input cannot remove the obstruction.
 
 = Dual space
 {parent=Linear algebra}
@@ -981,9 +1249,51 @@ A polynomial moment functional evaluates a polynomial through a weighted integra
 
 If the $j$th column of a matrix is $v+c_j\mathbf1$, then its image lies in $\operatorname{span}\{v,\mathbf1\}$. If $v$ is not constant and at least two $c_j$ differ, the rank is exactly two; for $m$ columns the nullity is $m-2$.
 
+= Rank-one matrix update
+{parent=Linear algebra}
+{title2=$B=A+uv^T$}
+
+A <rank-one matrix update> changes a <matrix> $A$ by an <outer product> $uv^T$. For real <vectors> $u,v\in\mathbb R^n$, its action on an input <vector> $x$ is
+$$
+(A+uv^T)x=Ax+u(v^Tx).
+$$
+The <dot product> $v^Tx$ reads one <scalar> from the input, and the correction moves the output along $u$. All correction outputs therefore lie in one <linear span>. If either <vector> is zero, the update is zero; otherwise the correction is a <rank-one matrix>. The full updated <matrix> need not have rank one.
+
+For example, choose
+$$
+u=\begin{pmatrix}1\\2\end{pmatrix},\qquad
+v=\begin{pmatrix}3\\-1\end{pmatrix},\qquad
+uv^T=\begin{pmatrix}3&-1\\6&-2\end{pmatrix}.
+$$
+The update sends $x=(x_1,x_2)^T$ to the correction $(3x_1-x_2)(1,2)^T$. Although all four entries change, there is only one direction of correction. Adding it to the <identity matrix> gives $B=\begin{pmatrix}4&-1\\6&-1\end{pmatrix}$.
+
+This special structure allows existing work to be reused. The <matrix determinant lemma> updates the <determinant> using one <scalar>, and the <Sherman–Morrison formula> updates the <matrix inverse> using an <outer product>. Such formulas are useful when a <linear system> changes slightly after a new observation or a parameter adjustment: the unchanged part can retain its <LU decomposition>. The term rank-one describes the rank of the *correction*, not the size of the entry changes. \a[https://ocw.mit.edu/courses/18-065-matrix-methods-in-data-analysis-signal-processing-and-machine-learning-spring-2018/988b4c05680f40a5a4b3be7004a32500_XhSk_Lw2X_U.pdf][Gilbert Strang, MIT 18.065, Lecture 14: Low Rank Changes in A and Its Inverse]{ref}.
+
 = Matrix determinant lemma
 {parent=Linear algebra}
 {wiki}
+{title2=$\det(A+uv^T)=\det(A)(1+v^TA^{-1}u)$}
+
+For an <invertible matrix> $A\in\mathbb R^{n\times n}$ and real <vectors> $u,v\in\mathbb R^n$, the <matrix determinant lemma> states
+$$
+\det(A+uv^T)=\det(A)\left(1+v^TA^{-1}u\right).
+$$
+The expression $v^TA^{-1}u$ is a <scalar>, so a <rank-one matrix update> changes the <determinant> by a single multiplicative factor. One need not expand the updated <determinant> entry by entry.
+
+For the preceding example with $A=I$, the <dot product> is $v^Tu=3-2=1$. Hence the updated <determinant> is $1+1=2$. Direct evaluation confirms
+$$
+\det\begin{pmatrix}4&-1\\6&-1\end{pmatrix}
+=4(-1)-(-1)6=2.
+$$
+More generally, let $B(t)=I+tuv^T$ for a real <scalar> $t$. The same calculation gives $\det B(t)=1+t$. The <determinant> is one at $t=0$, two at $t=1$, and zero at $t=-1$.
+
+\Image[rank-one-matrix-update-geometry.png]
+{title=A rank-one correction can preserve, stretch, or collapse the area of a square}
+{description=Each panel maps the unit <square> by $B(t)=I+tuv^T$ with $u=(1,2)^T$ and $v=(3,-1)^T$. Blue and orange arrows are the images of the two <standard basis> <vectors>. At $t=1$, the <parallelogram> has <area> two, despite its strong skew. At $t=-1$, the images are <linearly dependent> and the full <square> collapses onto a <line>. Panel scales differ; the stated areas come from the <determinant>, rather than from comparing pixel areas.}
+
+A compact proof explains the scalar reduction. Put $w=A^{-1}u$ and factor $A+uv^T=A(I+wv^T)$. If $w\ne0$, choose a <basis> starting with $w$. In that <basis>, $(I+wv^T)w=(1+v^Tw)w$, while every other basis <vector> changes only by a multiple of $w$. Its <matrix> is triangular with diagonal $1+v^Tw,1,\ldots,1$, giving the required <determinant>. If $w=0$, the correction vanishes. This uses <multiplicativity of the determinant> to restore the factor $\det A$.
+
+The denominator in the <Sherman–Morrison formula> is exactly this factor. The <rank-one update singularity criterion> therefore identifies when the updated <matrix inverse> ceases to exist. Batson, Spielman and Srivastava use both identities for the symmetric update $A+vv^T$ in \a[https://people.eecs.berkeley.edu/~brecht/cs294docs/week4/09.Batson.sparsification.pdf][Twice-Ramanujan Sparsifiers, section 2.3, Lemmas 2.1–2.2]{ref}.
 
 = Permanent
 {disambiguate=mathematics}
@@ -994,11 +1304,59 @@ If the $j$th column of a matrix is $v+c_j\mathbf1$, then its image lies in $\ope
 = Permanent of a matrix
 {synonym}
 
-For an $n\times n$ matrix $A=(a_{ij})$, its permanent is
+The <permanent of a matrix> adds the products obtained by choosing one entry in each row and one in each column. For an $n\times n$ <matrix> $A=(a_{ij})$ with entries in the <real numbers> or <complex numbers>,
 $$
 \operatorname{perm}A=\sum_{\sigma\in S_n}\prod_{i=1}^n a_{i,\sigma(i)}.
 $$
-It resembles the <determinant> without the signs of the permutations.
+Here each <permutation> $\sigma$ chooses column $\sigma(i)$ in row $i$, and the <symmetric group> $S_n$ lists every such <bijection>. The formula resembles the <Leibniz formula for determinants>, but omits the <sign of a permutation>. For a two-by-two <matrix>,
+$$
+\operatorname{perm}\begin{pmatrix}a&b\\c&d\end{pmatrix}=ad+bc,
+\qquad
+\det\begin{pmatrix}a&b\\c&d\end{pmatrix}=ad-bc.
+$$
+The absence of alternating signs makes the <permanent of a matrix> particularly useful for counting allowed assignments.
+
+For a zero-one <matrix>, let rows represent people, columns represent jobs, and $a_{ij}=1$ mean that person $i$ can do job $j$. This is the <biadjacency matrix> of a <bipartite graph>. A product in the permanent is one exactly when all the selected assignments are allowed; otherwise it is zero. Each surviving <permutation> assigns every person a different job, which is a <perfect matching>. Thus the permanent counts <perfect matchings>. This interpretation and the definition are given in \a[https://ocw.mit.edu/courses/18-226-probabilistic-methods-in-combinatorics-fall-2022/mit18_226_f22_lec_full.pdf][Yufei Zhao, Probabilistic Methods in Combinatorics, §10.2, pp. 178–179]{ref}.
+
+For a fully enumerated example, take
+$$
+A=\begin{pmatrix}1&1&0\\1&1&1\\0&1&1\end{pmatrix}.
+$$
+Among the six <permutations> of three columns, exactly three give nonzero products: $(1,2,3)$, $(1,3,2)$ and $(2,1,3)$. These tuples list the chosen column in each successive row. Each product is one, so $\operatorname{perm}A=3$. Their <permutation signs> are $+1,-1,-1$, giving $\det A=-1$. The diagram displays all three allowed assignments.
+
+\Image[permanent-perfect-matching-assignments.png]
+{title=Three allowed one-to-one assignments contribute positively to the permanent, while their permutation signs give a determinant of minus one}
+
+A zero <determinant> need not mean that no assignment exists. The two-by-two all-ones <matrix> has permanent $2$ and <determinant> $0$: its two assignments cancel in the determinant. The <nonzero determinant criterion for a perfect matching> is sufficient for existence, but the converse fails for a fixed zero-one <matrix>.
+
+For nonnegative entries, the permanent instead sums assignment weights, with each assignment weighted by the product of its selected entries. It is then a total weight rather than necessarily an <integer> count. With arbitrary entries in the <real numbers> or <complex numbers>, even the permanent can have cancellation; the counting interpretation specifically uses zero-one entries. The <permanent as probability of distinct independent choices> gives another useful nonnegative interpretation.
+
+There are $n!$ terms in the defining sum, linking direct evaluation to the <factorial>. For the all-ones $n\times n$ <matrix>, every term is one and the permanent is exactly $n!$; the <identity matrix> has permanent one. Finding one allowed assignment and counting all allowed assignments are different questions. Their relationship to <computational complexity theory> was studied in \a[https://www.sciencedirect.com/science/article/pii/0304397579900446][L. G. Valiant, The complexity of computing the permanent, Theoretical Computer Science 8(2), 189–201, 1979]{ref}. The elementary sum is useful for small examples, while the existing <dense permanent approximation> describes a more specialized way of estimating large counts.
+
+= Permanent as probability of distinct independent choices
+{parent=Permanent (mathematics)}
+{title2=$\mathbb P(X_1,\ldots,X_n\text{ all distinct})=\operatorname{perm}P$}
+
+Let $X_1,\ldots,X_n$ be <independent random variables>, each choosing a label from $\{1,\ldots,n\}$. Put their <probabilities> in the <matrix> $P=(p_{ij})$, where $p_{ij}=\mathbb P(X_i=j)$. Each row sums to one. All choices are distinct precisely when their ordered list is one of the <permutations> of the $n$ labels. These are mutually exclusive <events>, and <independence> makes the <probability> of one list $\sigma$ equal to $\prod_i p_{i,\sigma(i)}$. Adding the list probabilities gives the <permanent of a matrix>:
+$$
+\mathbb P(X_1,\ldots,X_n\text{ all distinct})=\operatorname{perm}P.
+$$
+In particular, this permanent lies between zero and one.
+
+For a two-person example,
+$$
+P=\begin{pmatrix}3/4&1/4\\1/5&4/5\end{pmatrix}.
+$$
+The distinct outcomes $(1,2)$ and $(2,1)$ have <probabilities> $3/5$ and $1/20$. Therefore
+$$
+\operatorname{perm}P=\frac35+\frac1{20}=\frac{13}{20}=0.65.
+$$
+The colliding outcomes $(1,1)$ and $(2,2)$ have <probabilities> $3/20$ and $1/5$, totaling $0.35$. All four outcomes are shown below; their <probabilities> sum to one.
+
+\Image[permanent-independent-choice-probability.png]
+{title=The permanent adds the probabilities of distinct choices: two successful outcomes have total probability 0.65}
+
+If every choice has the <uniform distribution on a finite set> of $n$ labels, then $p_{ij}=1/n$ and the distinct-choice <probability> is $n!/n^n$. For three choices and three labels it is $6/27=2/9$. This counts a subset of all $n^n$ ordered outcomes, not independent pairwise collision events. <Independence> of the original choices is essential: without it, the individual rows of $P$ do not determine the joint <probabilities>.
 
 = Dense permanent approximation
 {parent=Permanent (mathematics)}
@@ -1084,12 +1442,59 @@ The inverse of a block matrix can be expressed through the inverse of one diagon
 {c}
 {parent=Matrix inverse}
 {wiki}
+{title2=$(A+uv^T)^{-1}=A^{-1}-A^{-1}uv^TA^{-1}/(1+v^TA^{-1}u)$}
 
-If $A$ is invertible and $1+v^TA^{-1}u\ne0$, then
+The <Sherman–Morrison formula> computes the <matrix inverse> after a <rank-one matrix update>. If $A$ is an <invertible matrix> and $\delta=1+v^TA^{-1}u\ne0$, then
 $$
 (A+uv^T)^{-1}
 =A^{-1}-\frac{A^{-1}uv^TA^{-1}}{1+v^TA^{-1}u}.
 $$
+The inverse correction is itself an <outer product>, divided by the <scalar> $\delta$. The <matrix determinant lemma> shows that the nonzero-denominator condition is exactly the condition that the updated <matrix> remains an <invertible matrix>.
+
+For $A=I$, $u=(1,2)^T$, and $v=(3,-1)^T$, we have $\delta=2$. Thus the computed inverse is
+$$
+\boxed{
+\begin{pmatrix}4&-1\\6&-1\end{pmatrix}^{-1}
+=I-\frac12\begin{pmatrix}3&-1\\6&-2\end{pmatrix}
+=\begin{pmatrix}-1/2&1/2\\-3&2\end{pmatrix}
+}.
+$$
+Multiplication in either order gives the <identity matrix>. The result reuses the original inverse $I$ and the same correction <vectors>, rather than solving independently for all four inverse entries.
+
+Often only the solution of an updated <linear system> is needed. If $Ax_0=b$ and $Az=u$, then
+$$
+(A+uv^T)x=b
+\quad\Longrightarrow\quad
+x=x_0-z\,\frac{v^Tx_0}{1+v^Tz},
+$$
+provided $1+v^Tz\ne0$. The two solves use the same <LU decomposition> of $A$. This expresses the computational benefit without requiring an explicitly stored <matrix inverse>. Strang's \a[https://ocw.mit.edu/courses/18-065-matrix-methods-in-data-analysis-signal-processing-and-machine-learning-spring-2018/988b4c05680f40a5a4b3be7004a32500_XhSk_Lw2X_U.pdf][Lecture 14, transcript pp. 9–10]{ref} explains this reuse of the original factorization.
+
+To see why the inverse correction works, first consider $A=I$ and put $s=v^Tu$. The <rank-one matrix> $R=uv^T$ satisfies $R^2=sR$. Expanding
+$$
+(I+R)\left(I-\frac{R}{1+s}\right)
+=I+R-\frac{R}{1+s}-\frac{sR}{1+s}=I
+$$
+also works in the reverse order. The general case follows by factoring out $A$ and replacing $u$ by $A^{-1}u$. A matrix identity has reduced to cancellation of scalar coefficients.
+
+Historically, Jack Sherman and Winifred J. Morrison studied updating an inverse when a single matrix entry changes in their \a[https://doi.org/10.1214/aoms/1177729893][1950 paper, Adjustment of an Inverse Matrix Corresponding to a Change in One Element of a Given Matrix]{ref}. Such an entry change is the special <rank-one matrix update> $\alpha e_ie_j^T$, with <standard basis> <vectors> $e_i,e_j$. The reference and the earlier 1949 abstract on row or column changes are recorded in \a[https://epubs.siam.org/doi/10.1137/1023004][Henderson and Searle, On Deriving the Inverse of a Sum of Matrices (1981), references 40–41]{ref}. This distinguishes the specific original setting from the more general $uv^T$ formula used here.
+
+= Rank-one update singularity criterion
+{parent=Sherman–Morrison formula}
+{title2=$A+uv^T\text{ singular}\iff1+v^TA^{-1}u=0$}
+
+For an <invertible matrix> $A$, the <rank-one matrix update> $B=A+uv^T$ is a <singular matrix> exactly when $1+v^TA^{-1}u=0$. This follows directly from the <matrix determinant lemma>. At that value, $u\ne0$ and the nonzero <vector> $w=A^{-1}u$ satisfies
+$$
+Bw=u+u(v^TA^{-1}u)=0.
+$$
+Every <vector> in the <kernel> is a multiple of $w$, since $Bx=0$ implies $x=-A^{-1}u(v^Tx)$. The <matrix rank> therefore drops by exactly one.
+
+For $B(t)=I+tuv^T$ with $u=(1,2)^T$ and $v=(3,-1)^T$, the update becomes a <singular matrix> at $t=-1$, and $B(t)u=(1+t)u$. At $t=-0.99$, this direction is compressed by a factor $0.01$ and the inverse amplifies it by a factor 100. The actual <spectral norm> of the <matrix inverse>, which maximizes amplification over every direction, is about $700.17853409$.
+
+\Image[sherman-morrison-near-singularity.png]
+{title=An inverse grows large as the rank-one update approaches its singular denominator}
+{description=Here $\delta=1+t>0$ and $B(t)=I+tuv^T$ uses the same example <vectors>. The left panel shows $\|B(t)^{-1}\|_2$ and its lower bound $1/\delta$, obtained from the direction $u$. The right panel shows the <condition number> $\kappa_2(B)=\|B\|_2\|B^{-1}\|_2$. Both are computed from <singular values>; the missing point $\delta=0$ has no <matrix inverse>.}
+
+The exact formula can expose a large <condition number> in the updated <linear system> even when the original one had a small <condition number>. It does not guarantee <numerical stability> merely because its evaluation uses fewer arithmetic operations. The denominator condition certifies existence; the <condition number> and floating-point behavior address different questions about using the resulting answer.
 
 = Moore-Penrose inverse
 {title2=$A^+$}
@@ -1104,7 +1509,111 @@ $$
 = Pseudoinverse
 {synonym}
 
-The Moore-Penrose inverse is the unique matrix $A^+$ satisfying $AA^+A=A$, $A^+AA^+=A^+$, and symmetry of $AA^+$ and $A^+A$. If $A=UDV^T$ is a singular value decomposition, then $A^+=VD^+U^T$.
+The <Moore-Penrose inverse> extends the useful part of a <matrix inverse> to rectangular and singular <matrices>. A <linear system> $Ax=b$ may have no exact solution, or may have many. The <pseudoinverse> resolves both ambiguities: $x_*=A^+b$ is the <minimum-norm least-squares solution>. First minimize the <Euclidean norm> $\|Ax-b\|_2$; among all <vectors> attaining that minimum, choose the one with smallest <Euclidean norm> $\|x\|_2$. It does not pretend that inconsistent equations can all be satisfied.
+
+For $A\in\mathbb C^{m\times n}$, its <Moore-Penrose inverse> is the unique $n\times m$ <matrix> satisfying the four <Penrose equations>. The <singular value decomposition> gives a direct construction:
+$$
+A=U\Sigma V^*,
+\qquad
+\boxed{A^+=V\Sigma^+U^*.}
+$$
+Here $U,V$ are <unitary matrices>, the star is the <conjugate transpose>, and $\Sigma^+$ is the $n\times m$ rectangular <diagonal matrix> obtained by replacing each nonzero <singular value> $\sigma_j$ by $1/\sigma_j$ and leaving zeros at zero. Over the <real numbers>, use <orthogonal matrices> and <transposes>. The <pseudoinverse> reverses the stretches that can be reversed; it discards output components the original <linear map> cannot produce and does not invent an input component in its <kernel>. \a[https://ocw.mit.edu/courses/18-06sc-linear-algebra-fall-2011/resources/mit18_06scf11_ses3-8sum/][Strang, MIT 18.06SC: Left and Right Inverses; Pseudoinverse]{ref}
+
+The two products have especially clear meanings:
+$$
+AA^+=P_{\operatorname{ran}A},
+\qquad
+A^+A=P_{(\ker A)^\perp}.
+$$
+They are <orthogonal projection matrices>: $AA^+$ selects the producible part of an output, while $A^+A$ selects the detectable part of an input. They are generally not <identity matrices>. For an <invertible matrix>, both are identities and $A^+=A^{-1}$.
+
+This gives a useful order of operations for <least-squares solutions>: project the requested output onto the <column space>, then invert the restriction of $A$ from $(\ker A)^\perp$ to its <column space>. Adding a <kernel> <vector> leaves the residual unchanged but increases the squared <Euclidean norm> by the <Pythagorean theorem in an inner-product space>, because $A^+b$ is <orthogonal> to that <kernel>. The <pseudoinverse> therefore provides one canonical answer without hiding either lost information or irreconcilable data.
+
+The name records a history with several contributors. E. H. Moore gave an earlier generalization in 1920; M. H. Pearl's 1966 paper records that work, Arne Bjerhammar's 1951 rediscovery for maximal-rank rectangular <matrices>, and Roger Penrose's independent 1955 treatment. \a[https://www.cambridge.org/core/journals/mathematical-proceedings-of-the-cambridge-philosophical-society/article/abs/on-generalized-inverses-of-matrices/9CD637F604C76ECD8D03AC029212D56E][Pearl, On generalized inverses of matrices (1966), introduction and references 6–9]{ref} Penrose's original paper proves existence and uniqueness from the four <Penrose equations> for arbitrary complex <matrices>, including rectangular ones. \a[https://faculty.kfupm.edu.sa/math/jaafarm/lec-notes/Moore-Pinrose.pdf][Penrose, A generalized inverse for matrices (1955), Theorem 1, pp. 406–408]{ref}
+
+= Overdetermined least-squares example
+{parent=Moore-Penrose inverse}
+{title2=$x_*=(2,3)^T$}
+
+Suppose three measurements constrain two unknowns:
+$$
+A=\begin{pmatrix}1&0\\0&1\\1&1\end{pmatrix},
+\qquad
+b=\begin{pmatrix}1\\2\\6\end{pmatrix}.
+$$
+The <linear system> asks for $x_1=1$, $x_2=2$, and $x_1+x_2=6$, which are incompatible. A <least-squares solution> makes a balanced compromise. The <matrix> has <full column rank>, so
+$$
+A^+=(A^TA)^{-1}A^T
+=\frac13\begin{pmatrix}2&-1&1\\-1&2&1\end{pmatrix},
+\qquad
+\boxed{x_*=A^+b=(2,3)^T.}
+$$
+The fitted output and residual are
+$$
+Ax_*=(2,3,5)^T,
+\qquad
+r=b-Ax_*=(-1,-1,1)^T,
+\qquad
+A^Tr=0.
+$$
+Thus the two direct measurements are each overshot by one, and the measured sum is undershot by one. The residual has <Euclidean norm> $\sqrt3$ and is <orthogonal> to the <column space>, the <plane> $z=y_1+y_2$ in output coordinates $(y_1,y_2,z)$.
+
+\Image[pseudoinverse-least-squares-projection.png]
+{title=The pseudoinverse projects inconsistent data onto the attainable output plane}
+{description=For $b=(1,2,6)^T$, the closest attainable output is $Ax_*=(2,3,5)^T$. The segment between them is the residual $(-1,-1,1)^T$, perpendicular to the <column space>. The drawing is an orthonormal two-dimensional slice of output space; the attainable <plane> intersects this slice in the blue <straight line>.}
+
+For any perturbation $h\in\mathbb R^2$, the <orthogonality> of $r$ to $Ah$ gives
+$$
+\|b-A(x_*+h)\|_2^2=\|r\|_2^2+\|Ah\|_2^2
+=3+\|Ah\|_2^2.
+$$
+Since the <kernel> of $A$ is trivial, every nonzero $h$ increases the residual. The <least-squares solution> is unique in this example. The formula using $A^TA$ is convenient for these small exact calculations; an actual numerical computation can use a <QR decomposition> or <singular value decomposition> to avoid the extra conditioning cost of the <least-squares normal equations>. For <full column rank>, the squared <singular values> of $A$ are the <eigenvalues> of $A^TA$, so its <condition number> in the <Euclidean norm> is $\kappa_2(A^TA)=\kappa_2(A)^2$. \a[https://ocw.mit.edu/courses/18-065-matrix-methods-in-data-analysis-signal-processing-and-machine-learning-spring-2018/resources/lecture-9-four-ways-to-solve-least-squares-problems/][Strang, MIT 18.065 Lecture 9: four ways to solve least-squares problems]{ref}
+
+= Underdetermined minimum-norm example
+{parent=Moore-Penrose inverse}
+{title2=$x_*=(3/5,6/5)^T$}
+
+Now take one equation for two unknowns:
+$$
+A=\begin{pmatrix}1&2\end{pmatrix},
+\qquad b=3.
+$$
+The <linear system> $x_1+2x_2=3$ has an entire <affine line> of exact solutions. Since $A$ has <full row rank>, its <Moore-Penrose inverse> is
+$$
+A^+=A^T(AA^T)^{-1}
+=\frac15\begin{pmatrix}1\\2\end{pmatrix},
+\qquad
+\boxed{x_*=A^+b=(3/5,6/5)^T.}
+$$
+The <kernel> is $\operatorname{span}\{(-2,1)^T\}$, and all exact solutions are
+$$
+x=x_*+t(-2,1)^T,\qquad t\in\mathbb R.
+$$
+Because $x_*$ is <orthogonal> to $(-2,1)^T$,
+$$
+\|x\|_2^2=\frac95+5t^2.
+$$
+The <Euclidean norm> is therefore smallest exactly at $t=0$. The zero residual alone cannot select a solution; the minimum-norm rule supplies the additional criterion.
+
+\Image[pseudoinverse-minimum-norm-line.png]
+{title=The minimum-norm solution is the closest point of the solution line to the origin}
+{description=The <affine line> $x_1+2x_2=3$ is perpendicular to $x_*=(3/5,6/5)^T$. Moving along the line changes only a <kernel> component and increases $\|x\|_2^2$ by $5t^2$.}
+
+This selection depends on the specified <inner product>. Rescaling one unknown changes what counts as a small <Euclidean norm>, so units and weighting matter in an application. A minimum-norm answer is mathematically canonical for the chosen geometry, rather than an automatic guarantee of physical plausibility.
+
+= Small singular values in the Moore-Penrose inverse
+{parent=Moore-Penrose inverse}
+{title2=$\|A^+\|_2=1/\sigma_{\min,+}$}
+
+For a nonzero <matrix> $A$, the <operator norm> induced by the <Euclidean norm> satisfies $\|A^+\|_2=1/\sigma_{\min,+}$, where $\sigma_{\min,+}$ is its smallest positive <singular value>. The <singular value decomposition> makes the danger visible: a small nonzero stretch becomes a large amplification of errors when inverted.
+
+For instance, when $\varepsilon>0$,
+$$
+A_\varepsilon=\begin{pmatrix}1&0\\0&\varepsilon\end{pmatrix},
+\qquad
+A_\varepsilon^+=\begin{pmatrix}1&0\\0&1/\varepsilon\end{pmatrix}.
+$$
+A data perturbation $(0,\eta)^T$ changes the reconstructed input by $(0,\eta/\varepsilon)^T$. At $\varepsilon=0$, however, the <pseudoinverse> is $\operatorname{diag}(1,0)$: exactly zero and merely small are different cases. Thus the <pseudoinverse> need not be <continuous> across a change of <matrix rank>. With uncertain data, <truncated singular value decomposition> or <Tikhonov regularization> can trade exact inversion of weak directions for stability; the cutoff or penalty adds a modelling choice.
 
 = Moore--Penrose inverse of a Hilbert-space operator
 {c}
@@ -1126,6 +1635,12 @@ A^\dagger AA^\dagger=A^\dagger,
 \quad
 (A^\dagger A)^*=A^\dagger A.
 $$
+
+Here $A^\dagger=A^+$ denotes the <Moore-Penrose inverse>, while the star denotes the <conjugate transpose>. The first two identities express consistency when applying and reversing the <linear map>; the last two make the resulting <orthogonal projection matrices> <Hermitian>. They must hold together. For example, $A=(1\ \ 2)$ and $B=(1\ \ 0)^T$ satisfy $ABA=A$ and $BAB=B$, but
+$$
+BA=\begin{pmatrix}1&2\\0&0\end{pmatrix}
+$$
+is not <Hermitian>. This $B$ is a <right inverse>, yet $Bb=(3,0)^T$ is not the <minimum-norm least-squares solution> for $b=3$. The last two <Penrose equations> impose the <orthogonality> that selects the <pseudoinverse>.
 
 = Reverse-order law for the Moore--Penrose inverse
 {c}
@@ -2705,6 +3220,28 @@ The discrete L2 inner product is the cell-volume-weighted <Hermitian inner produ
 
 For a positive weight $w$, the weighted inner product of <functions> is $\langle f,g\rangle_w=\int\overline f g w$. It is the usual <inner product> in the <L2 space> for the measure $w(x)dx$. A <Sturm-Liouville eigenfunction expansion> uses this weight to make its <eigenfunctions> <orthogonal>.
 
+The weight specifies how different locations contribute to a squared error: $\|f-g\|_w^2=\int|f-g|^2w$. More weight makes an error in that region more costly. The <weighted Euclidean inner product> makes the same choice for a finite list of coordinates.
+
+For an explicit real-function example on $[0,1]$, let $w(x)=1+x$ and approximate $f(x)=x$ by a <constant function>. The <orthogonal projection onto a finite-dimensional subspace> spanned by the function $1$ gives
+$$
+c=\frac{\langle x,1\rangle_w}{\langle1,1\rangle_w}
+=\frac{\int_0^1x(1+x)\,dx}{\int_0^1(1+x)\,dx}
+=\frac{5/6}{3/2}=\frac59.
+$$
+The best unweighted constant is $1/2$. Giving greater weight to larger $x$ moves the best constant upward, so a weighting choice changes the approximation even though the allowed family of <functions> is unchanged.
+
+= Weighted Euclidean inner product
+{parent=Weighted inner product}
+{title2=$\langle u,v\rangle_M=u^TMv$}
+
+A <symmetric positive definite matrix> $M$ defines an <inner product> on real coordinate <vectors> by
+$$
+\langle u,v\rangle_M=u^TMv,\qquad \|u\|_M^2=u^TMu.
+$$
+For diagonal $M$, positive diagonal entries weight the squared coordinate errors. This is the finite-coordinate version of a <weighted inner product>; the positive-definite matrix example appears in \a[https://people.tamu.edu/~f-narcowich/m641/m641_notes/inner_products.html][Francis Narcowich, Inner Products and Norms, standard inner products, example 8]{ref}.
+
+For $M=\operatorname{diag}(4,1)$, the squared <norm> of $(a,b)^T$ is $4a^2+b^2$. A first-coordinate error of one costs as much as a second-coordinate error of two. The <unit sphere> is the <ellipse> $4a^2+b^2=1$, and <orthogonality> means $4u_1v_1+u_2v_2=0$. Thus “closest” and “perpendicular” depend on the chosen <inner product>. The <orthogonal projection residual> example shows how this changes a best approximation.
+
 = Dot product
 {title2=$\mathbf a\cdot\mathbf b$}
 {parent=Inner product}
@@ -2874,11 +3411,33 @@ $$
 = Orthogonal projection onto a finite-dimensional subspace
 {parent=Inner product}
 
-If $e_0,\ldots,e_n$ is an orthogonal basis of a finite-dimensional subspace $W$, the unique closest point in $W$ to $f$ is
+A finite-dimensional <linear subspace> $W$ of an <inner product space> has a unique closest <vector> to any given <vector> $x$. This is its <orthogonal projection> $P_Wx$. If $e_1,\ldots,e_d$ is an <orthogonal basis> of $W$, compute it one direction at a time:
 $$
-P_Wf=\sum_{k=0}^n\frac{\langle f,e_k\rangle}{\langle e_k,e_k\rangle}e_k.
+P_Wx=\sum_{j=1}^d\frac{\langle x,e_j\rangle}{\langle e_j,e_j\rangle}e_j.
 $$
-The residual $f-P_Wf$ is orthogonal to $W$.
+The <inner product> convention here is linear in its first argument, including over the <complex numbers>. For an <orthonormal basis>, each denominator is one. When $W$ consists only of the <zero vector>, the empty sum gives $P_Wx=0$. The finite-dimensional formula is described in \a[https://people.tamu.edu/~f-narcowich/m641/m641_notes/inner_products.html][Francis Narcowich, Inner Products and Norms: minimization problems]{ref}.
+
+Take $W=\operatorname{span}\{(1,2)^T\}$ and $x=(3,1)^T$, using the <dot product>. With $e=(1,2)^T$,
+$$
+\frac{x\cdot e}{e\cdot e}=\frac{3+2}{1+4}=1,\qquad
+P_Wx=(1,2)^T,\qquad r=x-P_Wx=(2,-1)^T.
+$$
+The <orthogonal projection residual> has $r\cdot e=2-2=0$. To verify the best approximation directly, every candidate in the line is $te$, and
+$$
+\|x-te\|_2^2=(3-t)^2+(1-2t)^2=5(t-1)^2+5.
+$$
+The smallest squared <Euclidean norm> error is therefore $5$, attained only at $t=1$. The diagram connects the perpendicular residual to this one-variable <quadratic polynomial>.
+
+\Image[orthogonal-projection-closest-point.png]
+{title=The perpendicular residual identifies the closest point on a line and the unique minimum of the squared error}
+
+The general mechanism is the <Pythagorean theorem in an inner-product space>. For any $w\in W$, the <vectors> $r=x-P_Wx$ and $P_Wx-w$ are <orthogonal>, so
+$$
+\|x-w\|^2=\|x-P_Wx\|^2+\|P_Wx-w\|^2.
+$$
+Moving away from $P_Wx$ inside $W$ adds a nonnegative squared <norm>, which is zero only when $w=P_Wx$. This proves both optimality and uniqueness.
+
+The useful feature is separation of preparation from evaluation. Construct an <orthonormal basis> once with the <Gram-Schmidt process>, then obtain each new best approximation using <inner products> instead of a fresh <optimization> problem. When $W$ is the <column space> of a <matrix>, this gives <linear least squares>; when $W$ is spanned by <orthogonal polynomials>, it gives a <least-squares polynomial in an orthogonal-polynomial basis>. The ambient <inner product space> need not be a <Hilbert space> for this finite-dimensional construction. In an infinite-dimensional target <linear subspace>, existence requires additional hypotheses, supplied by <orthogonal decomposition by a closed subspace>.
 
 = Orthogonal projection residual
 {parent=Orthogonal projection onto a finite-dimensional subspace}
@@ -2886,14 +3445,56 @@ The residual $f-P_Wf$ is orthogonal to $W$.
 
 An <orthogonal projection residual> is the difference $r=x-P_Wx$ between a <vector> and its <orthogonal projection> onto a <linear subspace> $W$. It is <orthogonal> to every <vector> in $W$, so $\langle r,w\rangle=0$ for all $w\in W$. The <Gram-Schmidt process> uses such residuals to remove directions already represented by earlier basis <vectors>.
 
+This is an optimality condition as well as a geometric description. No permitted change within $W$ can remove a further <orthogonal> component of $r$. In the preceding <dot product> example, $r=(2,-1)^T$ is perpendicular to the line spanned by $(1,2)^T$.
+
+The selected <inner product> matters. Keep $x=(3,1)^T$ and the same line, but use the <weighted Euclidean inner product> with $M=\operatorname{diag}(4,1)$. The projection coefficient and residual become
+$$
+t_M=\frac{\langle x,e\rangle_M}{\langle e,e\rangle_M}
+=\frac{14}{8}=\frac74,\qquad
+P_W^{(M)}x=\left(\frac74,\frac72\right)^T,\qquad
+r_M=\left(\frac54,-\frac52\right)^T.
+$$
+Now $4(r_M)_1e_1+(r_M)_2e_2=5-5=0$, although $r_M\cdot e=-15/4\ne0$. The <orthogonality> is with respect to $M$, so it need not look perpendicular in the ordinary drawing. The squared weighted error is
+$$
+\|x-te\|_M^2=4(3-t)^2+(1-2t)^2
+=8\left(t-\frac74\right)^2+\frac{25}{2}.
+$$
+The weighted optimum reduces the first-coordinate error from $2$ to $5/4$, at the cost of increasing the magnitude of the second-coordinate error from $1$ to $5/2$. The weights express which errors are more costly.
+
+\Image[orthogonal-projection-metric-comparison.png]
+{title=Changing the inner product changes the closest point: a circle and a weighted error ellipse touch the same permitted line at different points}
+
+In <linear least squares>, residual <orthogonality> to the <column space> is expressed by the <normal equations for linear least squares>. With a <weighted Euclidean inner product>, the corresponding real-matrix equation is $A^TM(x-Ac)=0$. This makes the choice of error measurement part of the mathematical model, rather than merely a plotting convention.
+
 = Orthogonal projection matrix
 {parent=Orthogonal projection onto a finite-dimensional subspace}
 
-A complex matrix $P$ represents an <orthogonal projection> exactly when
+A <matrix> represents a <linear projection> when applying it twice has the same effect as applying it once. For an <orthogonal projection> with the standard <Hermitian inner product> on $\mathbb C^m$, the additional condition is that the <conjugate transpose> equals the original <matrix>:
 $$
 P^2=P=P^\dagger.
 $$
-Its image and kernel are orthogonal complements.
+Thus $P$ is both <idempotent> and a <Hermitian matrix>. Over the <real numbers> this says $P^2=P=P^T$. Its <image of a linear map> is the retained <linear subspace>, while its <kernel of a linear map> is the <orthogonal complement>: <vectors> in the image are unchanged, and <vectors> in the kernel become zero.
+
+For a <matrix> $A$ with <full column rank>, projecting onto its <column space> gives
+$$
+P=A(A^\dagger A)^{-1}A^\dagger.
+$$
+The invertibility of $A^\dagger A$ follows from <linear independence> of the columns. If those columns are an <orthonormal set>, $A^\dagger A=I$ and $P=AA^\dagger$. These formulas and the conditions $P^2=P=P^T$ in the real case are developed in \a[https://www.ocw.mit.edu/courses/18-06sc-linear-algebra-fall-2011/00e9c8f0eafedeab21a3d079a17ed3d8_MIT18_06SCF11_Ses2.2sum.pdf][MIT 18.06SC, Projections onto Subspaces, pp. 1–3]{ref}.
+
+For the line spanned by $e=(1,2)^T$,
+$$
+P=\frac{ee^T}{e^Te}
+=\frac15\begin{pmatrix}1&2\\2&4\end{pmatrix},
+\qquad
+P(3,1)^T=(1,2)^T.
+$$
+In particular, $Pe=e$ and $P(2,-1)^T=0$. The <eigenvalues> are $1$ on the retained direction and $0$ on the removed direction. This exposes the meaning of an <orthogonal projection> as retaining selected components, rather than stretching them.
+
+Symmetry refers to the specified <inner product>. In the real weighted setting, the formula becomes $P_M=A(A^TMA)^{-1}A^TM$ and satisfies $P_M^2=P_M$ and $P_M^TM=MP_M$. For the preceding weighted line example,
+$$
+P_M=\frac18\begin{pmatrix}4&2\\8&4\end{pmatrix}.
+$$
+It is not symmetric under the ordinary <transpose>, but it is an <orthogonal projection> for the <weighted Euclidean inner product>. The matrix criterion $P=P^\dagger$ should therefore be used with the standard <Hermitian inner product>, not silently transferred to a different geometry.
 
 = Transverse projection operator
 {parent=Orthogonal projection matrix}

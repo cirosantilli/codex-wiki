@@ -45,7 +45,50 @@ The product $xy$ is neither a <convex function> nor a <concave function> on the 
 = Project scheduling
 {parent=Mathematical optimization}
 
-With unlimited parallel processing, a project is described by task durations and precedence constraints. A task can start only after its predecessors finish. For an acyclic precedence graph, minimizing total completion time amounts to finding a longest start-to-finish path.
+<Project scheduling> asks how quickly a collection of dependent activities can finish. Adding their durations usually overestimates the answer, because independent activities can run together; taking only the longest single activity usually underestimates it, because some activities must wait. The <critical path method> identifies the chain of dependencies that determines the finish time. Its simplest model assumes known, fixed durations, unlimited parallel processing, and precedence requirements saying that each predecessor must finish before its successor starts. These are the assumptions of the basic model in \a[https://www.cmu.edu/cee/projects/PMbook/10_Fundamental_Scheduling_Procedures.html#10.2][Hendrickson, Project Management for Construction, §10.2]{ref}.
+
+Represent each activity by a <vertex> of a finite <directed acyclic graph>; an <edge> $i\to j$ means that activity $j$ waits for activity $i$. Activity $i$ runs without interruption for duration $\tau_i\geq0$, starting at $t_i\geq0$. The <optimization constraints> and project finish time are
+$$
+t_j\geq t_i+\tau_i\quad(i\to j),\qquad T=\max_i(t_i+\tau_i).
+$$
+The <objective function> is to minimize $T$. All durations and start times use the same time unit, and the project starts at time zero. The <directed acyclic graph> assumption allows a <topological order> in which every predecessor is processed first.
+
+Consider this small, abstract project:
+
+|| Activity
+|| Duration
+|| Immediate predecessors
+
+| A
+| 3
+| None
+
+| B
+| 2
+| A
+
+| C
+| 4
+| A
+
+| D
+| 2
+| B and C
+
+| E
+| 3
+| None
+
+| F
+| 1
+| D and E
+
+Activities A and E may start together. After A finishes, B and C may run together, but D must wait for both. F must similarly wait for both D and E: a merge means all incoming requirements must hold. This activity-as-<vertex> convention keeps durations on the activities and uses arrows only to express precedence.
+
+\Image[critical-path-precedence-network.png]
+{title=Six-activity <project scheduling> network: the critical <graph path> A-C-D-F takes 10 time units}
+
+Unlimited parallel processing is essential to the equality between the longest <graph path> duration and the optimal finish time. For example, two independent chains, each containing two activities of duration 3, have longest <graph path> duration 6. Two processors can finish both chains in 6, but one processor needs 12 because all four activities must run sequentially. Thus with limited resources the longest <graph path> still gives a lower bound, but it need not be achievable. Such resource requirements belong to the broader subject of <scheduling>.
 
 // Target: mathematical-optimization.bigb
 
@@ -53,7 +96,103 @@ With unlimited parallel processing, a project is described by task durations and
 {parent=Project scheduling}
 {wiki}
 
-Add a dummy source before the initial tasks and a dummy sink after the terminal tasks. Give every arc leaving task $i$ length $\tau_i$, its duration, with zero duration at the source. The longest path length is the minimum possible project duration. Earliest starts are obtained in <topological order> by $t_j=\max_{i\to j}(t_i+\tau_i)$. A longest path is a critical path.
+The <critical path method> calculates an earliest schedule, a latest schedule for a chosen finish time, and each activity's <task float>. A critical path is a start-to-finish <graph path> whose total duration is greatest. There can be several such <graph paths>, and every one constrains completion. In the six-activity <project scheduling> example, the critical <graph path> is A-C-D-F, of duration $3+4+2+1=10$.
+
+Add a zero-duration source $s$ before every initial activity and a zero-duration sink $z$ after every terminal activity. Give each <edge> $i\to j$ weight $\tau_i$, including zero weight on <edges> leaving $s$. This produces a <weighted graph> in which a <graph path>'s weight counts every activity on it exactly once. The possible source-to-sink <graph paths> in our example, omitting the dummy endpoints, are A-B-D-F with weight 8, A-C-D-F with weight 10, and E-F with weight 4.
+
+Every feasible schedule must accommodate each of these sequential chains. Consequently,
+$$
+T\geq\max_{P:s\leadsto z}\sum_{i\in P\setminus\{z\}}\tau_i.
+$$
+This bound applies to all source-to-sink <graph paths>, not just the one we happen to inspect. The <critical path method> attains the bound by setting each activity's earliest start $E_i$ to the <maximum> of its predecessors' earliest finish times:
+$$
+E_s=0,\qquad E_j=\max_{i\to j}(E_i+\tau_i),\qquad T_*=E_z.
+$$
+Evaluate this recurrence in a <topological order>, obtained by <topological sorting>. Each $E_j$ satisfies every incoming <optimization constraint>, so these times form a <feasible solution>. The same recurrence calculates the greatest weight of a <graph path> from $s$ to $j$; hence the feasible finish $E_z$ matches the lower bound. This is <dynamic programming> on a <directed acyclic graph>, rather than an enumeration of all <graph paths>. See \a[https://ptwiddle.github.io/MAS341-Graph-Theory-2017/lecturenotes/lecturex2.html][Paul Johnson, Scheduling and longest paths, longest-path algorithm]{ref}. The <linear programming> formulation and its certificate are developed in <project scheduling duality> and <unit-flow certificate for project duration>.
+
+For our <project scheduling> example, $E_A=E_E=0$, $E_B=E_C=3$, and the two merges give
+$$
+E_D=\max(3+2,3+4)=7,\qquad E_F=\max(7+2,0+3)=9.
+$$
+F finishes at 10. All six activities are completed, even though E is absent from the critical <graph path>. Recording which predecessor attains each <maximum> lets us trace a critical <graph path> backward from the sink; retaining tied choices exposes multiple critical <graph paths>.
+
+Now fix the project start at zero and the finish at $T_*=10$. The latest starts $L_i$ come from a backward pass in reverse <topological order>:
+$$
+L_z=T_*,\qquad L_i=\min_{i\to j}(L_j-\tau_i).
+$$
+Every activity must finish by the earliest of its successors' latest starts, explaining the <minimum> here. This gives $L_F=9$, $L_D=7$, $L_E=6$, $L_B=5$, $L_C=3$, and $L_A=\min(5-3,3-3)=0$. These latest times themselves form a <feasible solution> finishing at 10. The backward calculation depends on the chosen finish time; a later deadline would give different latest times and <task floats>. The forward and backward passes are described in \a[https://ocw.mit.edu/courses/esd-36-system-project-management-fall-2012/50d2b3499047b71baaa511aa809f6712_MITESD_36F12_Lec02.pdf#page=22][Olivier de Weck, MIT ESD.36 Lecture 2, slides 22–29]{ref}.
+
+|| Activity
+|| Earliest start $E_i$
+|| Earliest finish $E_i+\tau_i$
+|| Latest start $L_i$
+|| Latest finish $L_i+\tau_i$
+|| <Task float> $L_i-E_i$
+
+| A
+| 0
+| 3
+| 0
+| 3
+| 0
+
+| B
+| 3
+| 5
+| 5
+| 7
+| 2
+
+| C
+| 3
+| 7
+| 3
+| 7
+| 0
+
+| D
+| 7
+| 9
+| 7
+| 9
+| 0
+
+| E
+| 0
+| 3
+| 6
+| 9
+| 6
+
+| F
+| 9
+| 10
+| 9
+| 10
+| 0
+
+\Image[critical-path-earliest-latest-schedule.png]
+{title=Earliest solid and latest hollow activity bars for the <critical path method>, with <task floats> of 2 for B and 6 for E}
+
+Changing a duration can change which <graph paths> are critical. If B's duration becomes 4, A-B-D-F and A-C-D-F both take 10: there are two critical <graph paths>. Shortening C alone then cannot reduce the finish time, because the chain through B still takes 10. If B's duration instead becomes 5, the earliest starts of D and F become 8 and 10, and the finish becomes 11. A-B-D-F is now the unique critical <graph path>; C has <task float> 1 relative to that new optimal finish. These calculations show why the <critical path method> is useful for understanding where a duration change matters, even in a project containing many parallel activities.
+
+= Task float
+{parent=Critical path method}
+{title2=$\mathrm{TF}_i=L_i-E_i$}
+
+= Total float
+{synonym}
+
+= Task slack
+{synonym}
+
+<Task float>, also called <total float> or <task slack>, measures an activity's available start-time delay relative to its earliest start, while allowing a feasible schedule that meets the fixed project finish. For earliest start $E_i$, latest start $L_i$, and fixed duration $\tau_i$, it is
+$$
+\mathrm{TF}_i=L_i-E_i=(L_i+\tau_i)-(E_i+\tau_i).
+$$
+In the six-activity <project scheduling> example with start zero and finish 10, B has <task float> 2 and E has <task float> 6. B can move from the interval $[3,5]$ to $[5,7]$, and E from $[0,3]$ to $[6,9]$, without changing D's or F's earliest starts. A, C, D, and F have zero <task float>. With the finish fixed to the optimal duration and the basic <critical path method> assumptions, zero <task float> identifies exactly the activities lying on at least one critical <graph path>. See \a[https://www.cmu.edu/cee/projects/PMbook/10_Fundamental_Scheduling_Procedures.html#10.4][Hendrickson, §10.4, Activity Float and Schedules]{ref}.
+
+<Task float> is not generally an independent allowance that can be spent separately on every activity. For a small example, let two duration-1 activities X then Y form one chain, running in parallel with a separate duration-4 activity. The optimal finish is 4. X has earliest/latest starts 0/2 and Y has earliest/latest starts 1/3, so each has <task float> 2. Delaying X to 2 forces Y to start at 3, using Y's allowance too. Choosing X at its latest start 2 and Y at its earliest start 1 violates precedence, although both chosen times lie inside their individual ranges. The <optimization constraints> still couple the decisions. Here B and E can both use their full <task floats> together because they lie on separate branches; that freedom must be checked from the <directed acyclic graph>.
 
 // Target: mathematical-optimization.bigb
 
