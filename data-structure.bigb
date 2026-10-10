@@ -471,6 +471,12 @@ The useful combination is order plus direct indexed access: <binary search> elim
 
 An <integer> identifying a position in an <array>. With zero-based indexing and capacity $m$, valid <array indices> are $0,\ldots,m-1$. An <array index> identifies the slot rather than its stored value.
 
+= Dynamic array
+{parent=Array (data structure)}
+{wiki}
+
+A <dynamic array> is an <array> whose backing storage can grow as entries are appended. <Dynamic array doubling> is one growth policy with a deterministic <amortized analysis>.
+
 = Circular buffer
 {parent=Data structure}
 
@@ -718,3 +724,131 @@ A <linked list> whose links are held in <ML reference type> cells and may be cha
 A <linked list> whose future structure is obtained by calling a delayed computation. In <Standard ML>, `unit -> node` delays a computation until demand. Filtering may need to force arbitrarily many rejected elements to produce its next retained element; filtering an infinite list need not produce a result. Delay alone does not imply <memoization>.
 
 // Destination: computer-science.bigb
+
+= Disjoint-set data structure
+{parent=Data structure}
+{wiki}
+
+= Union-find
+{synonym}
+
+A <disjoint-set data structure> maintains a <partition of a set>. Its find operation returns a representative, equal for two elements exactly when they belong to the same block; its union operation merges two blocks. <Kruskal's algorithm> uses it to track <connected components of a graph>.
+
+Start with a <singleton set> for every stored <set element>. Each <disjoint-set find operation> returns a <disjoint-set representative>; a <disjoint-set union operation> merges the containing <blocks of a set partition>. The interface does not split a <block of a set partition> or delete a member.<Algorithms, 4th edition by Robert Sedgewick and others/UF.java>[Algorithms, 4th edition by Robert Sedgewick and others; UF.java, class documentation: initial singletons, representative equality and union interface]{ref}
+
+The <partition of a set> consists of nonempty disjoint <blocks of a set partition> covering the stored <set>; being in the same <block of a set partition> defines an <equivalence relation>. A <disjoint-set representative> names a whole <block of a set partition>, without requiring a list of its members.
+
+= Disjoint-set representative
+{parent=Disjoint-set data structure}
+{title2=$\operatorname{find}(x)$}
+
+A <disjoint-set representative> is a chosen member of a <block of a set partition>. It may be any member; it need not be the <minimum>, the first inserted member or a permanent identifier. A merge may change the <disjoint-set representative> of an existing member. At any one state, the required rule is
+$$
+\operatorname{find}(x)=\operatorname{find}(y)\quad\Longleftrightarrow\quad x,y\text{ belong to the same block}.
+$$
+If an application needs the <minimum> member, store it separately with the <disjoint-set representative> and update that extra information on merging.
+
+= Disjoint-set find operation
+{parent=Disjoint-set data structure}
+{title2=$\operatorname{find}(x)$}
+
+The <disjoint-set find operation> returns the <disjoint-set representative> of a stored <set element> $x$. It preserves the <partition of a set>. With <path compression>, it can change internal pointers while answering the same membership question. Inputs outside the stored <set> require a specified error policy; they are not silently inserted here.
+
+= Disjoint-set union operation
+{parent=Disjoint-set data structure}
+{title2=$\operatorname{unite}(x,y)$}
+
+The <disjoint-set union operation> first uses the <disjoint-set find operation> to locate the <blocks of a set partition> containing $x,y$. If they are different <blocks of a set partition> $A,B$, replace them by their <union> $A\cup B$; every other <block of a set partition> stays as it was. If the two <disjoint-set representatives> agree, no merge is needed. Here `unite` returns `True` exactly when it merges two different <blocks of a set partition>. A successful call decreases their count by one; a redundant call preserves it. The name `union` is also customary. Some interfaces instead accept already found <disjoint-set representatives>, making that linking step a separate operation.
+
+For an original example, initialize $X=\{1,2,3,4,5,6,7\}$ as seven <singleton sets>. Apply the calls in this order:
+$$
+\operatorname{unite}(2,1),\ \operatorname{unite}(4,3),\ \operatorname{unite}(2,4),\ \operatorname{unite}(6,5),\ \operatorname{unite}(2,6),\ \operatorname{unite}(1,2).
+$$
+The first five calls succeed. After the third, the <partition of a set> is $\{\{1,2,3,4\},\{5\},\{6\},\{7\}\}$; after the fifth it is $\{\{1,2,3,4,5,6\},\{7\}\}$. The sixth returns `False`: $1,2$ are already together. The <blocks of a set partition> number $7,6,5,4,3,2,2$, counting the initial state. A <disjoint-set find operation> on $7$ cannot merge it with any other member.
+
+\Image[disjoint-set-union-seven-element-partitions.png]
+{title=Five successful <disjoint-set union operations> and one redundant call on seven elements}
+{description=Each coloured enclosure is one <block of a set partition>. Columns identify the same seven members in every row; enclosures show membership rather than parent pointers.}
+
+This is exactly the kind of changing membership needed by <Kruskal component merging>: an accepted <edge> joins two current <connected components of a graph>, while an <edge> whose endpoints already have equal <disjoint-set representatives> is rejected. The existing <Kruskal's algorithm worked example> follows that application. A <disjoint-set forest> stores membership efficiently without repeatedly enumerating every <block of a set partition>.
+
+= Disjoint-set forest
+{parent=Disjoint-set data structure}
+
+A <disjoint-set forest> represents each <block of a set partition> by a <rooted tree>. Each <set element> stores a pointer to its <parent in a rooted tree>; the <root of a tree> stores a pointer to itself as a stopping convention. These self-pointers are sentinels, omitted from the <forest>'s <edges>. Following parent pointers reaches the <disjoint-set representative>, the <root of a tree>. An indexed <array> `parent` suffices when members are numbered consecutively. The <rooted trees> encode membership; their <edges> need not be <edges> of any input <graph>.
+
+To link different <blocks of a set partition>, point one <root of a tree> at the other <root of a tree>. Linking roots preserves every old membership and joins exactly the two <rooted trees>. Arbitrarily reparenting a nonroot could detach only part of a <block of a set partition>, so it would not implement the required <disjoint-set union operation>. The <disjoint-set find operation> terminates because each nonroot pointer moves towards the unique <root of a tree>; linking distinct roots cannot introduce a <graph cycle>.
+
+= Union by rank
+{parent=Disjoint-set forest}
+{title2=$\operatorname{rank}(r)$}
+
+<Union by rank> keeps a nonnegative <integer> rank, initially zero, for each member. For each input, obtain its <root of a tree> using the <disjoint-set find operation>, then compare the resulting ranks. Attach the lower-rank <root of a tree> below the higher-rank <root of a tree>, leaving both ranks unchanged. When the two <disjoint-set representatives> differ but their ranks are equal, choose either survivor and increase its rank by exactly one. A redundant <disjoint-set union operation> changes no ranks. <Path compression> also changes no ranks. The surviving root's rank bounds the height of its <rooted tree>, measured in <edges>; after <path compression> it need not equal that height.<COS 226 Bob’s Notes 1: Union-Find and Percolation (Version 2) by Robert Tarjan>[Robert Tarjan, COS 226 Bob’s Notes 1: Union-Find and Percolation, Version 2, Fall 2010, p. 4: rank linking, equal-rank increment and upper-bound interpretation after compression]{ref}
+
+In our example, let the first argument's <root of a tree> survive equal-rank ties. The first two merges create roots $2,4$, each of rank $1$. The third gives $\mathrm{parent}[4]=2$ and increases the rank of $2$ to $2$. The fourth creates root $6$ of rank $1$. The fifth attaches $6$ below $2$ without increasing any rank. Before any subsequent compression queries, the indexed <arrays> are
+$$
+\begin{array}{c|rrrrrrr}
+x&1&2&3&4&5&6&7\\\hline
+\mathrm{parent}[x]&2&2&4&2&6&2&7\\
+\mathrm{rank}[x]&0&2&0&1&0&1&0
+\end{array}
+$$
+The redundant call on $1,2$ leaves these <arrays> unchanged. In particular, the <disjoint-set representative> of $1$ is $2$, although $1$ is the <minimum> member of its <block of a set partition>.
+
+Two short arguments explain the rank invariant. First, a root of rank $r$ has at least $2^r$ members in its <block of a set partition>: rank zero starts with one, and increasing rank combines two disjoint <blocks of a set partition> with at least $2^r$ members each. Unequal-rank linking only adds members. Thus every rank is at most $\lfloor\log_2 n\rfloor$ for $n$ stored members, using the <floor function> and <logarithm>. Second, height is initially zero; unequal-rank linking adds at most one to the lower height, while equal-rank linking raises the available bound by one. <Path compression> only shortens routes. These arguments prove a height bound, not the stronger <amortized analysis> below.
+
+= Path compression
+{parent=Disjoint-set forest}
+
+<Path compression> changes parent pointers during a <disjoint-set find operation> so that future queries traverse fewer <edges>. Full <path compression> first follows the entire parent route to its <root of a tree>, then makes every member on that route point directly to that same <root of a tree>. No member changes its <block of a set partition> or its <disjoint-set representative>. Pointers outside the traversed route stay as they were. The following iterative Python implements full <path compression> and <union by rank>; `parent` and `rank` are initially indexed <arrays> with `parent[x] = x` and `rank[x] = 0` for every valid member.
+
+```
+def find(x):
+    root = x
+    while parent[root] != root:
+        root = parent[root]
+    while parent[x] != x:
+        following = parent[x]
+        parent[x] = root
+        x = following
+    return root
+
+def unite(x, y):
+    a, b = find(x), find(y)
+    if a == b:
+        return False
+    if rank[a] < rank[b]:
+        a, b = b, a
+    parent[b] = a
+    if rank[a] == rank[b]:
+        rank[a] += 1
+    return True
+```
+
+Starting from the displayed <disjoint-set forest>, `find(3)` traverses $3\to4\to2$, returns $2$ and changes only $\mathrm{parent}[3]$ from $4$ to $2$. The route $5\to6\to2$ still has two <edges>. Then `find(5)` changes only $\mathrm{parent}[5]$ from $6$ to $2$. The final parent <array> is $(2,2,2,2,2,2,7)$; every stored rank retains its displayed value. The <rooted tree> at $2$ now has height one although its root's rank is two. Root $7$ still represents a separate <singleton set>.
+
+\Image[disjoint-set-union-path-compression-rank.png]
+{title=Full <path compression> shortens two parent routes while <union by rank> metadata stays unchanged}
+{description=Arrows point towards the <parent in a rooted tree>; self-pointers at roots are omitted. The same <partition of a set> appears before and after `find(3)` followed by `find(5)`. Labels $r$ record stored ranks, including historical ranks at nonroots.}
+
+The two-pass <algorithm> first discovers the answer and then reuses it. During the second pass, saving `following` before overwriting the pointer preserves the remaining route. Every replacement pointer targets the original <root of a tree>, proving that the <partition of a set> is unchanged.
+
+Full <path compression> is one specific rule. The authored `UF.java` implementation instead uses path halving, redirecting a visited member to its parent's parent while advancing along the route. Its <union by rank> rule agrees with the one above.<Algorithms, 4th edition by Robert Sedgewick and others/UF.java>[Algorithms, 4th edition by Robert Sedgewick and others; UF.java, find and union methods: halving assignment versus the full-compression algorithm here; lower-rank linking and equal-rank increment]{ref}
+
+= Union-find operation bounds
+{parent=Disjoint-set data structure}
+{title2=$O(n+m\alpha(n))$}
+
+Assume identifiers, pointers and ranks fit into constant-size <machine words>, with constant-cost indexed <array> access, comparison and assignment. Initializing $n\geq1$ members costs $O(n)$ time and <machine words>. With <union by rank> and full <path compression>, any <sequence> of $m$ <disjoint-set find operations> and <disjoint-set union operations> then has total <time complexity>, in <Big O notation>,
+$$
+O\bigl(n+m\alpha(n)\bigr).
+$$
+Here $\alpha(n)\geq1$ is a conventionally normalized <inverse Ackermann function>. The documented path-halving implementation has the same <amortized analysis> bound.<Algorithms, 4th edition by Robert Sedgewick and others/UF.java>[Algorithms, 4th edition by Robert Sedgewick and others; UF.java, class documentation: linear constructor, logarithmic worst-case operations and inverse-Ackermann sequence bound for rank with halving]{ref}
+
+A <disjoint-set union operation> includes two <disjoint-set find operations> and a constant amount of additional linking work. Including $n$ in the bound accounts for initialization even if no queries follow.
+
+This is a bound on an entire <sequence>. It is not a worst-case constant bound for each call: a <disjoint-set find operation> can still encounter a previously uncompressed route of logarithmic length. The <inverse Ackermann function> grows extraordinarily slowly but is unbounded, so it cannot be replaced by a mathematical constant in this asymptotic statement. The general distinction between a per-operation maximum and a whole-<sequence> guarantee is explained in <amortized analysis>.
+
+<Robert Tarjan>'s 1975 paper established an <inverse Ackermann function> bound for set union. Its abstract states the sharper two-parameter form for $m\geq n$ representative queries and $n-1$ intermixed merges: the worst total cost is bounded above and below by positive constant multiples of $m\alpha(m,n)$. Those variables count different operations from the convenient $n+m\alpha(n)$ formulation above; the abstract's matching lower bound is about its analyzed method, rather than a claim that every conceivable representation obeys the same lower bound.<Efficiency of a Good But Not Linear Set Union Algorithm by Robert Endre Tarjan>[Efficiency of a Good But Not Linear Set Union Algorithm, Journal of the ACM 22(2), April 1975, pp. 215–225, DOI 10.1145/321879.321884; abstract reproduced in Princeton's publication record]{ref}
+
+The intuition is that <union by rank> limits how parent routes grow, while <path compression> makes an expensive traversal improve later queries. The rank argument alone proves only a logarithmic bound. Establishing the <inverse Ackermann function> bound requires a finer accounting of traversals across rank ranges; it does not follow merely from drawing a flatter <rooted tree>. The useful result is that repeated merging and membership queries can share the work of maintaining a changing <partition of a set>.

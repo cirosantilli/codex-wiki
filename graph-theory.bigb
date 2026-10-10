@@ -48,13 +48,74 @@ The <graph kernel> of a <bicyclic graph> satisfies $\sum_v(\deg v-2)=2$, with al
 = 2-core
 {synonym}
 
-The 2-core is the unique largest induced <subgraph> with <minimum degree> at least two. It is obtained by repeatedly deleting vertices of degree zero or one. Every subgraph with <minimum degree> two survives each deletion, which proves maximality and order independence. In a connected graph with a nonempty 2-core, the deleted vertices form rooted trees attached individually to the core vertices.
+The <2-core> is what remains of a finite <simple graph> after repeatedly removing every <vertex> with fewer than two surviving <graph neighbours>. It strips away dangling <trees> while keeping the part that can support itself under this local rule. Precisely, for an <undirected graph> $G=(V,E)$, its <2-core> is the unique maximum by <set inclusion> <induced subgraph> $G[S]$ such that
+$$
+\deg_{G[S]}(v)\geq2\qquad\text{for every }v\in S.
+$$
+The empty <vertex set> is allowed: the condition is then vacuous, without needing to define the <minimum degree> of the empty <graph>. "Maximum by inclusion" means that $S$ contains every other <vertex set> satisfying the condition. It is stronger than merely saying that one chosen set cannot be enlarged: the <2-core> simultaneously contains all possible qualifying <induced subgraphs>. In this particular family, every inclusion-maximal qualifying set does equal that unique maximum; the <union> argument in <why the 2-core is unique> explains why. <An O(m) Algorithm for Cores Decomposition of Networks by Vladimir Batagelj and Matjaž Zaveršnik>[Batagelj and Zaveršnik, An O(m) Algorithm for Cores Decomposition of Networks, §2, definition of a core]{ref}
+
+For a complete worked example, let $ab$ denote the <edge> $\{a,b\}$ and take
+$$
+V=\{a,b,c,d,e,f,g,z\},\qquad E=\{ab,bc,ca,cd,de,ef,dg\}.
+$$
+The <triangle in a graph> $abc$ has a branching tail attached at $c$, and $z$ is an <isolated vertex>. In alphabetical order the initial <degrees of vertices> are $(2,2,3,3,2,1,1,0)$. Deleting $f$ turns $e$ into a <leaf of a graph>; deleting $g$ leaves $d$ with <degree of a vertex> two; deleting $z$ changes no other <degree of a vertex>. Now delete $e$, which makes $d$ a <leaf of a graph>, and finally delete $d$. Exactly the three <edges> of $abc$ remain: $C_2(G)=G[\{a,b,c\}]$.
+
+\Image[graph-two-core-leaf-pruning-trace.png]
+{title=The complete <leaf pruning for the 2-core> trace: each panel recomputes the displayed <degrees of vertices> from the surviving <induced subgraph>, while the <FIFO queue> determines the next deletion}
+
+A <forest> has empty <2-core>: every nonempty finite <forest> has an <isolated vertex> or a <leaf of a graph>, so deletion cannot stop at a nonempty remainder. In particular, an isolated <edge>, an <isolated vertex>, a <path graph>, and the empty <graph> all have empty <2-core>. Every <cycle graph> is its own <2-core>. Two disjoint <triangles in a graph> also form their own <2-core>, so a <2-core> need not be a <connected graph>; attaching a <tree> to either triangle changes neither surviving triangle.
+
+= Leaf pruning for the 2-core
+{parent=2-core of a graph}
+
+Use <adjacency lists> and a <FIFO queue> to implement the deletion rule in <time complexity> $O(|V|+|E|)$. Compute each initial <degree of a vertex> once, mark every <vertex> alive, and put all <vertices> of <degree of a vertex> zero or one in the <FIFO queue>. Each <vertex> is inserted at most once. Repeatedly remove the front <vertex> $v$, mark it dead, and traverse its original <adjacency list>. For each still-alive <graph neighbour> $u$, decrease the stored <degree of a vertex> of $u$ by one; if it has just become one, append $u$. A <vertex> already queued can drop from one to zero before its turn, but it stays queued and requires no second insertion. Stop when the <FIFO queue> is empty; the alive <vertices> induce $C_2(G)$.
+
+For the displayed example, initially enqueue $(f,g,z)$ in that order. The successive <FIFO queues>, after each deletion and all its updates, are
+$$
+(f,g,z)\xrightarrow{-f}(g,z,e)\xrightarrow{-g}(z,e)\xrightarrow{-z}(e)\xrightarrow{-e}(d)\xrightarrow{-d}().
+$$
+This explains the delayed deletion of $d$: its initial <degree of a vertex> was three, but the relevant <degree of a vertex> is always its current one in the surviving <induced subgraph>. Removing only the original <vertices> of <degree of a vertex> one would give the wrong answer.
+
+Initialization inspects every <vertex> and every <adjacency list> entry once. During deletion each original <adjacency list> is traversed at most once, so at most $2|E|$ entries are inspected in an <undirected graph>. All insertions, removals and stored-degree updates cost constant time each. Thus total <time complexity> is $O(|V|+|E|)$ and additional storage, beyond the <adjacency lists>, is $O(|V|)$. The cost includes <isolated vertices>; repeatedly rescanning the whole surviving <graph> after each deletion would lose this bound. The single-threshold <FIFO queue> method is enough for the <2-core>; the full <k-core of a graph> decomposition computes all thresholds.
+
+= Why the 2-core is unique
+{parent=2-core of a graph}
+
+Suppose $T$ is any <vertex set> whose <induced subgraph> has every <degree of a vertex> at least two. No <vertex> of $T$ can be the first one deleted from $T$: before such a deletion it still has its two <graph neighbours> within $T$, contradicting eligibility for deletion. Consequently every qualifying $T$ survives every legal deletion sequence. Once deletion stops, its remainder $R$ itself qualifies, because every surviving <vertex> has at least two surviving <graph neighbours>. Therefore $T\subseteq R$ for every qualifying $T$: $G[R]$ is the unique maximum and the final remainder is independent of deletion order. The intermediate <FIFO queues> and deletion orders can differ.
+
+There is also a direct existence argument. If $A$ and $B$ qualify, then $A\cup B$ qualifies: each <vertex> retains at least the two <graph neighbours> it already had in $A$ or in $B$. Taking the <union> of all qualifying <vertex sets> produces the maximum. This rules out a collection of competing, incomparable inclusion-maximal answers. It also explains why restricting the search to connected <subgraphs> would change the question.
+
+= Bridges and connectivity in the 2-core
+{parent=2-core of a graph}
+
+A <2-core> can contain <bridges in a graph>, and even <vertices> that lie on no <cycle in a graph>. Consider the <dumbbell graph>, also called a barbell in this example, made of two disjoint <triangles in a graph> joined by a <graph path> with two internal <vertices>:
+$$
+V=\{a,b,c,x,y,d,e,f\},\qquad E=\{ab,bc,ca,cx,xy,yd,de,ef,fd\}.
+$$
+Here $c,d$ have <degree of a vertex> three, and every other <vertex> has <degree of a vertex> two. No deletion is possible, so the whole <graph> is its <2-core>. Yet $cx,xy,yd$ are <bridges in a graph>: deleting any one separates the two triangles. None belongs to a <cycle in a graph>, and $x,y$ belong to no <cycle in a graph> either. Keeping only <edges> on <graph cycles> would incorrectly discard the entire joining <graph path>.
+
+\Image[graph-two-core-barbell-bridges.png]
+{title=Every <vertex> of this <dumbbell graph> survives in the <2-core>, including the joining <graph path> whose three <edges> are <bridges in a graph>}
+
+Every <cycle in a graph> does survive pruning, because each of its <vertices> keeps its two cycle <graph neighbours>. The barbell shows that the converse fails: the <2-core> can be larger than the <union> of all <graph cycles>. Its condition is local <minimum degree>, not protection against a single connection failing.
+
+A <biconnected component> is a different object: a maximal connected <subgraph> with no <cut vertex> of its own. Under the block convention used here, the barbell has five <biconnected components>: its two triangles and its three individual joining <edges>, each with its endpoints. Its <cut vertices> are $c,x,y,d$. A 2-connected component with at least three <vertices> must remain connected after any single <vertex> is deleted; the whole barbell fails that test. An informal phrase such as "biconnected core" therefore needs its own definition and must not be substituted for <2-core>. Even an isolated <edge> is a block under this convention, although its <2-core> is empty.
+
+The usefulness of the <2-core> is this precise separation of local persistence from global robustness. In a <connected graph> with nonempty <2-core>, the deleted <vertices> form a <forest>, with each of its <connected components of a graph> attached by exactly one <edge> to the <2-core>. Otherwise a deleted <graph cycle>, or a <graph path> joining two surviving attachment points, would itself have survived. Stripping these attached <trees> exposes a smaller structure for studying <graph cycles>, <graph excess> and the <graph kernel>, while preserving the joining <bridges in a graph> that organize that structure.
 
 = Graph kernel
 {parent=2-core of a graph}
 {title2=$K(G)$}
 
-For a connected graph whose <2-core> contains a vertex of degree at least three, suppress each maximal path with degree-two internal vertices to a single edge, allowing its two endpoints to coincide. The resulting <multigraph>, retaining loops and parallel edges, is its kernel. Suppression preserves <graph excess> and leaves <minimum degree> at least three. A purely cyclic core is a separate unicyclic case; it has no branching vertex to anchor this construction.
+For a <connected graph> whose <2-core> contains a <vertex> of <degree of a vertex> at least three, suppress each maximal <graph path> with degree-two internal <vertices> to a single <edge>, allowing its two endpoints to coincide. Here suppression is the reverse of <graph subdivision>. The resulting <multigraph>, retaining <self-loops> and parallel <edges>, is its <graph kernel>. Each suppressed internal <vertex> removes one <vertex> and one <edge>, preserving <graph excess>; counting a <self-loop> twice toward <degree of a vertex>, every remaining <vertex> has <degree of a vertex> at least three. A purely cyclic <2-core> is a separate unicyclic case: it has no branching <vertex> to anchor this construction.
+
+For the barbell in <bridges and connectivity in the 2-core>, the <graph kernel> has two <vertices> $c,d$, one <self-loop> at each, and a single joining <edge> $cd$. Suppressing $x,y$ contracts the joining <graph path> to that <bridge in a graph>; suppressing the two other <vertices> on each triangle turns the triangle into a <self-loop>. The <graph excess> stays $9-8=3-2=1$. Thus forming a <graph kernel> compresses degree-two chains rather than deleting everything outside <graph cycles>.
+
+= k-core of a graph
+{parent=Graph theory}
+{title2=$C_k(G)$}
+
+For a nonnegative <integer> $k$, the <k-core of a graph> is the unique maximum by <set inclusion> <induced subgraph> in which every <degree of a vertex> is at least $k$, allowing the empty <graph>. Repeatedly delete <vertices> whose current <degree of a vertex> is less than $k$. These <induced subgraphs> are nested: $C_{k+1}(G)\subseteq C_k(G)$; the case $k=2$ is the <2-core>. In their 2003 preprint, <Vladimir Batagelj> and <Matjaž Zaveršnik> give an <algorithm> for the entire core decomposition, using degree buckets and constant-time position updates. Their general bound is $O(|V|+|E|)$; the title's $O(m)$ form applies to <connected graphs> with at least two <vertices>, where $m=|E|\geq|V|-1$. <An O(m) Algorithm for Cores Decomposition of Networks by Vladimir Batagelj and Matjaž Zaveršnik>[Batagelj and Zaveršnik, An O(m) Algorithm for Cores Decomposition of Networks, §§2–4.1, especially Algorithm 1 and the general O(max(m,n)) bound]{ref}
 
 = Chordal graph
 {parent=Graph theory}
@@ -163,161 +224,7 @@ The maximum degree of a finite <graph> is the largest number of edges incident t
 
 For a simple <graph>, let $r_{ij}$ count the common neighbours of vertices $i,j$. Choosing two such neighbours makes a four-cycle, and each cycle is counted twice through its opposite pairs. The displayed identity follows even when extra edges are present, since cycles are counted as subgraphs rather than induced subgraphs. Also $\sum_{i<j}r_{ij}=\sum_v\binom{d(v)}2$. Applying <Cauchy-Schwarz inequality> to degrees and <Jensen inequality> to common-neighbour counts gives extremal edge and cycle bounds.
 
-= Shortest path problem
-{parent=Graph theory}
-{title2=$\min_{p:s\leadsto t}\sum_{e\in p}w_e$}
-
-The <shortest path problem> asks for a <graph path> from a source <vertex> $s$ to a destination <vertex> $t$ minimizing its total <edge> weight. Here $w_e$ is the cost of traversing <edge> $e$, and costs add along the <graph path>. If no route exists, its shortest-path distance is $\infty$. With nonnegative <edge> weights, deleting <cycles in a graph> from a <walk> never increases its cost, so repetitions cannot improve the optimum.
-
-Consider the <undirected graph> with <vertex set> $V=\{A,B,C,D\}$ and the six <edge> weights
-$$
-w_{AB}=4,\quad w_{AC}=1,\quad w_{CB}=2,\quad w_{BD}=1,\quad w_{CD}=5,\quad w_{AD}=10.
-$$
-Each <edge> can be traversed in either direction at the same cost. The direct <graph path> $A,D$ costs $10$; $A,B,D$ costs $4+1=5$; $A,C,D$ costs $1+5=6$. The cheapest <graph path> is $A,C,B,D$, costing $1+2+1=4$. The remaining <graph path> $A,B,C,D$ costs $11$, exhausting the possibilities without repeated <vertices>.
-
-\Image[shortest-path-weights.png]
-{title=The <shortest path problem>: three highlighted <edges> cost less than the direct connection}
-
-Thus fewest <edges> and least total cost are different objectives. <Breadth-first search> minimizes the number of <edges>, which suffices when every <edge> has the same positive cost. Unequal nonnegative costs call for the <Dijkstra algorithm>. On a map, weights might be minutes rather than kilometres: a longer-looking route can arrive sooner. This is why a <weighted graph> separates the network's connections from what a particular journey costs.
-
-= Label-setting shortest-path algorithm
-{parent=Shortest path problem}
-
-An algorithm that makes each vertex's distance permanent once it is selected. With nonnegative <directed edge> lengths, the <Dijkstra algorithm> selects the unfinalized vertex with least tentative distance; a shorter route through another unfinalized vertex is impossible because its remaining route has at least that next tentative distance. For an all-to-one problem, incoming <directed edges> to the selected vertex are relaxed. Negative lengths can invalidate this finalization argument.
-
-= Bellman inequalities
-{c}
-{parent=Shortest path problem}
-{title2=$d_i\le c_{ij}+d_j$}
-
-The Bellman inequalities turn local <directed edge> checks into a global certificate for the <shortest path problem>. Here the convention is \i[all-to-one]: every journey ends at a fixed <vertex> $r$, and $c_{ij}$ is the cost of the original <directed edge> $i\to j$. Work in a finite <directed graph> with finite real costs. Write $L_i$ for candidate labels, normalized by $L_r=0$, on the <vertices> that can reach $r$. A feasible potential means precisely that these finite labels satisfy
-$$
-L_i\le c_{ij}+L_j
-$$
-for every <directed edge> within that set. These labels give <lower bounds> on costs \i[to] $r$. A discovered <directed path> of cost $U_i$ instead gives an <upper bound>. The following constructed <graph> shows both bounds and the exact distances between them; its weights are illustrative costs, not measured travel data.
-
-\Image[edge-relaxation-certificate.png]
-{title=<Bellman inequalities> and explicit <directed paths> certify distances to $r$ from opposite sides}
-
-The arrows in the picture point toward the destination, whereas <edge relaxation> propagates an improved label in the opposite direction: an improved $d_j$ can lower $d_i$. In the pictured <graph>, the <directed paths> from $a$ to $r$ cost $7$, $2+3=5$, and $2-2+4=4$. Thus $\delta(a,r)=4$. The candidate $L=(3,1,3,0)$ in <vertex> order $(a,b,c,r)$ is feasible, but underestimates the exact distances $(4,2,4,0)$. Merely satisfying the <Bellman inequalities> does not make a candidate exact.
-
-Why do they give <lower bounds>? Along any <directed path> $i=v_0\to v_1\to\cdots\to v_k=r$, successive substitution gives
-$$
-L_i\le\sum_{\ell=0}^{k-1}c_{v_\ell v_{\ell+1}}+L_r=\sum_{\ell=0}^{k-1}c_{v_\ell v_{\ell+1}}.
-$$
-The same calculation works for a <directed walk>, with repeated <vertices> allowed. Taking the <infimum> of route costs gives $L_i\le\delta(i,r)$. A discovered route gives $\delta(i,r)\le U_i$. If the bounds meet, $L_i=U_i$, they certify an optimum without enumerating routes. Equivalently, check the <Bellman inequalities> for the proposed distances and exhibit <directed paths> realizing them. The authored <Bellman-Ford algorithm> implementation checks the corresponding single-source inequalities and equality on recorded route <edges>; reversing every <directed edge> gives this all-to-one convention.https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/BellmanFordSP.java[Sedgewick and Wayne, BellmanFordSP.java, optimality checks]{ref}
-
-For the exact labels in the picture, the slack $c_{ij}+d_j-d_i$ is respectively $0,3,1,0,0$ on $a\to b$, $a\to r$, $b\to r$, $b\to c$, $c\to r$. Zero slack means equality; the zero-slack <directed path> $a\to b\to c\to r$ realizes the cost $4$. This is the useful beauty of the certificate: a few local <inequalities> rule out every cheaper journey, while one explicit journey attains the bound.
-
-Keep unreachable <vertices> separate: $\delta(i,r)=\infty$ when no <directed path> to $r$ exists, and a finite <lower bound> alone cannot certify that fact. Extended labels can use $\infty+c=\infty$ for finite $c$, but never compute a slack as $\infty-\infty$. If $i$ can reach a negative-cost <directed cycle> and then reach $r$, repeatedly traversing the <directed cycle> makes route costs unbounded below: their <infimum> is $-\infty$, with no finite shortest <directed walk>. A finite feasible potential on such a <directed cycle> is impossible, since summing its <Bellman inequalities> would give $0\le\sum c_{ij}<0$. A negative-cost <directed cycle> that cannot reach $r$ does not affect distances to $r$. These are statements about unrestricted <directed walks>; requiring a <directed path> with no repeated <vertices> is a different optimization problem when negative-cost <directed cycles> exist.https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/5edb13fb34cbe7f4cdccc13d131772e7_MIT6_006F11_lec17.pdf[MIT 6.006, Lecture 17, pp. 1 and 5: relevant negative cycles and simple paths]{ref}
-
-For the single-source convention, the same original <directed edge> $u\to v$ instead gives $L(v)\le L(u)+w_{uv}$ with $L(s)=0$, a <lower bound> on distance \i[from] $s$. The endpoint carrying the label on the left therefore changes with the direction of the problem.
-
-= Label-correcting shortest-path algorithm
-{parent=Shortest path problem}
-
-An algorithm whose tentative distance labels may be revised repeatedly until all relevant <Bellman inequalities> hold. <Bellman-Ford algorithm> uses this approach: a label is an upper bound supplied by a discovered <directed path>, and relaxing an <directed edge> can replace it with a shorter discovered <directed path>. A finite label is not declared permanent merely because it has been processed.
-
-= Bellman-Ford algorithm
-{c}
-{parent=Shortest path problem}
-
-For an all-to-one <shortest path problem> with root $r$, initialize $d_r^{(0)}=0$ and all other labels to infinity. Set $d_i^{(k)}=\min(d_i^{(k-1)},\min_{(i,j)\in A}\{c_{ij}+d_j^{(k-1)}\})$, keeping the root at zero. Induction identifies the labels with the shortest <directed paths> using at most $k$ <directed edges>. Without a reachable negative <directed cycle>, $|V|-1$ rounds suffice after removing <directed cycles> from a shortest walk. In-place or queue variants repeatedly relax incoming <directed edges> to an improved label. Labels may decrease multiple times, so this is a <label-correcting shortest-path algorithm>.
-
-= Dijkstra algorithm
-{c}
-{parent=Shortest path problem}
-{wiki=Dijkstra's_algorithm}
-{title2=$d(v)=\operatorname{dist}(s,v)$}
-
-= Dijkstra's algorithm
-{c}
-{synonym}
-
-The <Dijkstra algorithm> solves the single-source <shortest path problem> in a finite <graph> with nonnegative <edge> weights, finding distances to all reachable <vertices>. Start with <tentative distance> $d(A)=0$ and $d(v)=\infty$ elsewhere. Repeatedly choose the unfinalized <vertex> with least <tentative distance>, declare that label permanent, and perform <edge relaxation> on its outgoing <edges>. For an <undirected graph>, inspect both directions. A finite <tentative distance> always records the cost of a discovered <graph path>, but can improve before finalization.
-
-In our example, finalizing $A$ discovers $C$ at $1$, $B$ at $4$, and $D$ at $10$. Choose $C$ next: <edge relaxation> through $C$ lowers $B$ to $1+2=3$ and $D$ to $1+5=6$. Choose $B$: <edge relaxation> through $B$ lowers $D$ to $3+1=4$. Finally choose $D$. The permanent distances are therefore $A:0$, $C:1$, $B:3$, $D:4$; the evolving <tentative distances> were $B:4\to3$ and $D:10\to6\to4$.
-
-\Image[dijkstra-distance-frontier.png]
-{title=<Tentative distances> fall until the <Dijkstra algorithm> makes each label permanent}
-
-Store a <shortest-path predecessor> whenever <edge relaxation> improves a label. The final table contains enough information to reconstruct routes, rather than merely their costs:
-
-|| <Vertex>
-|| Distance from $A$
-|| <Shortest-path predecessor>
-|| Finalization order
-
-| $A$
-| $0$
-| None: source
-| $1$
-
-| $C$
-| $1$
-| $A$
-| $2$
-
-| $B$
-| $3$
-| $C$
-| $3$
-
-| $D$
-| $4$
-| $B$
-| $4$
-
-Following <shortest-path predecessors> backwards gives $D,B,C,A$; reversing the order gives $A,C,B,D$. If only this destination matters, stop when $D$ is finalized. Stopping when $D$ is first discovered would incorrectly return $10$. If the smallest remaining <tentative distance> is $\infty$, all remaining <vertices> are unreachable.
-
-Why is the permanent choice safe? Suppose the selected <vertex> $u$ had a cheaper <graph path>. Let $y$ be the first unfinalized <vertex> on that <graph path>. Its preceding <vertex> was finalized, so <edge relaxation> has already offered $y$ a label no larger than that prefix's cost. Nonnegative remaining <edge> weights make the whole cost at least this prefix's cost; selection gives $d(u)\le d(y)$. A cheaper <graph path> would contradict these comparisons. Zero weights are allowed; ties can be resolved arbitrarily. This is the reason the <label-setting shortest-path algorithm> works, rather than a lucky feature of the drawing.
-
-Negative weights break that reasoning. In a <directed graph> with $s\to u$ costing $2$, $s\to v$ costing $5$, and $v\to u$ costing $-4$, the <Dijkstra algorithm> would finalize $u$ at $2$ before discovering the cheaper cost $1$. The <Bellman-Ford algorithm> handles negative <edge> weights when no relevant negative <directed cycle> exists.
-
-With an <adjacency list> and an indexed <binary heap> implementing a <priority queue>, the <time complexity> is $O((|V|+|E|)\log |V|)$ for $|V|\ge2$, using <Big O notation>. Each <vertex> is extracted at most once, each <edge> is inspected once per direction, and each successful <edge relaxation> decreases a heap key in $O(\log |V|)$ time. This assumes constant-cost arithmetic and comparisons; exact computation with very large weights adds their representation cost. The queue uses $O(|V|)$ space beyond the <graph>. Simply scanning all remaining <vertices> gives $O(|V|^2+|E|)$ instead.https://algs4.cs.princeton.edu/44sp/DijkstraSP.java.html[Princeton, DijkstraSP implementation]{ref}https://algs4.cs.princeton.edu/code/javadoc/edu/princeton/cs/algs4/IndexMinPQ.html[Princeton, indexed binary heap operations]{ref}
-
-The 1959 paper presents the <shortest path problem> as its second problem, after the <minimum spanning tree> problem, and grows known shortest routes in increasing distance order.https://www.cs.yale.edu/homes/lans/readings/routing/dijkstra-routing-1959.pdf[Dijkstra, A note on two problems in connexion with graphs, pp. 269–271]{ref} In his later recollection, Dijkstra dated the shortest-route discovery to 1956: a demonstration for the ARMAC computer used a simplified Dutch railway map and printed the route between towns. A practical request became an enduring <algorithm> because the same distance rule applies to any suitable <graph>.https://garfield.library.upenn.edu/classics1983/A1983QA19900001.pdf[Dijkstra's recollection, published in 1983]{ref}
-
-= Tentative distance
-{parent=Dijkstra algorithm}
-{title2=$d(v)$}
-
-A tentative distance $d(v)$ is the cheapest cost so far recorded by a <shortest path problem> <algorithm>. For the single-source convention, initialize $d(s)=0$ and $d(v)=\infty$ elsewhere. Every finite label is the cost of a discovered route from $s$ to $v$, so
-$$
-\delta(s,v)\le d(v).
-$$
-It is an <upper bound> supplied by an actual route, not a guess that might be too low. The <loop invariant> follows directly from <edge relaxation>: extending a discovered route to $u$ by $u\to v$ supplies another discovered route. The usual label initialization and this safety property are stated and proved in the authored MIT notes.https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/6277a1f06100c26a7ff21031af6757b5_MIT6_006F11_lec16.pdf[MIT 6.006, Lecture 16, p. 1: relaxation safety]{ref}
-
-In the trace under <edge relaxation>, $d(t)=10$ first records the direct <directed path> $s\to t$. Later $d(t)=8$ records $s\to a\to t$, and finally $d(t)=3$ records $s\to b\to a\to t$. Each label is a usable route cost, but the first two are not shortest. An infinite <tentative distance> means no route has yet been discovered; only a completed search establishes unreachability. The isolated <vertex> $z$ in that example remains at $\infty$.
-
-In a <directed graph>, the discovered route is formally a <directed walk>, which may repeat <vertices>; in the pictured acyclic <graph> it is always a <directed path>. Negative-cost <directed cycles> can keep supplying cheaper <directed walks> without a finite optimum. In the all-to-one convention, the same meaning applies to discovered routes \i[from] $i$ \i[to] $r$. Do not confuse either version with the <lower bounds> supplied by feasible potentials in the <Bellman inequalities>: one records something achievable, the other rules out anything cheaper.
-
-= Edge relaxation
-{parent=Dijkstra algorithm}
-{title2=$d(v)\gets\min\{d(v),d(u)+w_{uv}\}$}
-
-Edge relaxation tests whether extending a recorded route by one <directed edge> improves a <tentative distance>. For a single source $s$ and an original <directed edge> $u\to v$ of weight $w_{uv}$, form the candidate $q=d(u)+w_{uv}$. If $d(u)$ is finite and $q<d(v)$, replace $d(v)$ by $q$ and record the <shortest-path predecessor> $\pi(v)=u$. Otherwise leave both unchanged. The <minimum> formula in the header gives the resulting label in either case. The authored implementation uses this strict comparison and records the incoming <directed edge>.https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/DijkstraSP.java[Sedgewick and Wayne, DijkstraSP.java, relax method]{ref}
-
-\Image[edge-relaxation-trace.png]
-{title=<Edge relaxation> lowers discovered-route costs, including across a negative-weight <directed edge>}
-
-The table lists labels \i[after] each specified operation, keeping $d(s)=0$ throughout this constructed acyclic <graph>. Relaxing $a\to t$ first offers $6+2=8$. Relaxing $b\to a$ then offers $2-1=1$, lowering $a$ from $6$ to $1$; revisiting $a\to t$ now offers $1+2=3$. Finally $b\to t$ offers $2+7=9$, so the label $3$ stays. Changing a label can make a previously checked outgoing <directed edge> worth checking again. This trace illustrates the operation itself, with a deliberately specified order, rather than a run of the <Dijkstra algorithm>.
-
-A single <edge relaxation> does not require nonnegative weights: its candidate is the cost of a real extended <directed walk>, even when the last <directed edge> has negative weight. Nonnegative weights are needed by the <Dijkstra algorithm> to make its selected minimum <tentative distance> permanent. The <Bellman-Ford algorithm> permits negative weights and revisits labels; its authored implementation also checks for reachable negative-cost <directed cycles>.https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/DijkstraSP.java[Sedgewick and Wayne, DijkstraSP.java, nonnegative-weight precondition]{ref}https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/BellmanFordSP.java[Sedgewick and Wayne, BellmanFordSP.java, signed weights and cycle detection]{ref}
-
-For the all-to-one convention of the <Bellman inequalities>, relax the same original <directed edge> $i\to j$ by $d_i\gets\min\{d_i,c_{ij}+d_j\}$. This prepends $i\to j$ to a discovered route from $j$ to $r$, and improves the tail label $d_i$, not the head label $d_j$. Skip the operation when $d_j=\infty$. In exact arithmetic, a full pass over all relevant <directed edges> with no improvement establishes all their <Bellman inequalities>; combined with the discovered-route <upper bounds>, this certifies finite distances. One unsuccessful operation establishes only that this particular candidate did not improve its label at that moment.
-
-= Shortest-path predecessor
-{parent=Dijkstra algorithm}
-{title2=$\pi(v)$}
-
-A shortest-path predecessor $\pi(v)$ records the previous <vertex> on a chosen route from source $s$ to $v$. When <edge relaxation> strictly improves $d(v)$ through $u\to v$, set $\pi(v)=u$. For a <multigraph>, store the actual <directed edge>, since two <edges> with the same endpoints can have different weights. Initialize all <vertices>, including the source, without a <shortest-path predecessor>. The authored implementation reconstructs a route by following these incoming <edges> backwards, then reversing their order.https://raw.githubusercontent.com/kevin-wayne/algs4/master/src/main/java/edu/princeton/cs/algs4/DijkstraSP.java[Sedgewick and Wayne, DijkstraSP.java, edgeTo and pathTo]{ref}
-
-At the end of the <edge relaxation> trace, $\pi(t)=a$, $\pi(a)=b$, and $\pi(b)=s$. Following them gives $t,a,b,s$, so the forward <directed path> is $s\to b\to a\to t$, of cost $2-1+2=3$. This makes the distance useful: a number tells us the best cost, whereas the <shortest-path predecessors> tell us which connections to take. In the <Dijkstra algorithm>, reconstruct a destination's shortest route after its label becomes permanent. In a <label-correcting shortest-path algorithm>, wait for convergence and the appropriate negative-cost <directed cycle> check. During correction, a predecessor's label may have changed since its child's last update: immediately after $b\to a$ in the trace, the current chain to $t$ costs $3$ although $d(t)$ still records the earlier discovered route of cost $8$.
-
-Strict improvement is a useful guard against <directed cycles> in the recorded pointers. Consider $s\to a$ and $s\to b$ of cost zero, followed by $a\to b$ and $b\to a$, also of cost zero. After the first two <edge relaxations>, both labels are zero and both <shortest-path predecessors> are $s$. If equality also allows pointer replacement, the last two operations can set $\pi(b)=a$ and $\pi(a)=b$: following pointers loops forever despite correct distance labels. Keeping the old pointer on ties prevents this example; choosing among equal-cost routes requires a separate rule that preserves a route to the source. Strict improvement alone does not protect against reachable negative-cost <directed cycles>, which can force endless decreases. Equality on recorded <edges> plus the <Bellman inequalities> certifies route costs only when the pointer chains actually terminate at the source.
-
-For all-to-one distances to $r$, record a next <vertex> $j$ whenever relaxing $i\to j$ improves $d_i$. Follow these successors forward in the original <directed graph> to reach $r$. They are <shortest-path predecessors> when viewed in the reversed <directed graph>; keeping the direction convention explicit prevents returning a route whose arrows point the wrong way.
+\Include[shortest-path-problem]{parent=Graph theory}
 
 = Graph property
 {parent=Graph theory}
@@ -1594,260 +1501,7 @@ The network simplex algorithm specializes the <simplex algorithm> to network flo
 
 For a connected capacitated <minimum-cost flow> network, a <spanning tree> supplies basic flow variables. Every non-tree edge is fixed at its lower or upper bound. <Flow balance> determines the tree flows; these must also obey <capacity constraints>. An entering edge creates one cycle, and adjusting flow on that cycle preserves balance until a bound is hit and an edge leaves the tree.
 
-= Extremal graph theory
-{parent=Graph theory}
-{wiki}
-
-= Supersaturation
-{parent=Extremal graph theory}
-
-Supersaturation strengthens an extremal existence theorem by forcing many copies of a forbidden graph when the edge count exceeds its extremal threshold by a fixed density. For a fixed clique, the <Erdős-Stone theorem> and averaging over bounded-size random vertex subsets give a positive multiple of $n^{|V(F)|}$ copies.
-
-= Clique supersaturation by sampling
-{parent=Supersaturation}
-{title2=$e(G)\ge(1-1/r+\epsilon)\binom n2\Longrightarrow k_{r+1}(G)\ge\eta n^{r+1}$}
-
-Choose a fixed sample size $m$ for which the normalized <Turan theorem> bound lies below the given density by a positive margin. The expected <edge> count in a random $m$-vertex subset then forces a positive proportion of subsets to contain a forbidden-size <clique>. Each <clique> belongs to a known number of subsets, so double counting gives a positive constant times $n^{r+1}$ <cliques>.
-
-= Extremal number
-{title2=$\operatorname{ex}(n,H)$}
-{parent=Extremal graph theory}
-
-The extremal number $\operatorname{ex}(n,H)$ is the largest number of edges in an $n$-vertex graph containing no subgraph isomorphic to $H$.
-
-= Extremal graph for disjoint cliques
-{parent=Extremal number}
-
-For fixed positive integers $r,s$ and sufficiently large $n$, the unique extremal <graph> forbidding $s$ vertex-disjoint copies of the <complete graph> $K_{r+1}$ is the <join of graphs> $K_{s-1}+T_r(n-s+1)$, up to <isomorphic graphs>. Each forbidden <clique> would require a distinct <vertex> of $K_{s-1}$.
-
-= Monotonicity of the normalized extremal number
-{parent=Extremal number}
-
-For every fixed graph $H$, the sequence
-$$
-\frac{\operatorname{ex}(n,H)}{\binom n2}
-$$
-is nonincreasing once $n\geq2$. Indeed, choose a uniformly random $m$-vertex <induced subgraph> of an extremal $H$-free graph on $n$ vertices. It remains $H$-free and has expected edge count
-$$
-\operatorname{ex}(n,H)\frac{\binom m2}{\binom n2},
-$$
-which cannot exceed $\operatorname{ex}(m,H)$.
-
-= Mantel theorem
-{c}
-{parent=Extremal number}
-{title2=$\operatorname{ex}(n,K_3)=\lfloor n^2/4\rfloor$}
-
-The <complete bipartite graph> $K_{3,3}$ has <vertex sets> $A=\{a_1,a_2,a_3\}$ and $B=\{b_1,b_2,b_3\}$, with every <edge> between $A$ and $B$ and none inside either part. Its six <vertices> support $3\cdot3=9$ <edges> and no <triangles in a graph>: among any three <vertices>, two belong to the same <independent set> and have no joining <edge>.
-
-\Image[mantel-bipartite-bound-and-extra-edge.png]
-{title=The sharp nine-<edge> <triangle-free graph> $K_{3,3}$ and the three <triangles in a graph> created by adding $a_1a_2$}
-
-Add the single <edge> $a_1a_2$. Each $b_j$ is a <common neighbour> of its endpoints, producing the <triangle in a graph> $a_1a_2b_j$. These are exactly the three new <triangles in a graph>, because every <triangle in a graph> must use the only <edge> inside a part. The new count is ten <edges>; nine was the last possible count without a <triangle in a graph> on six <vertices>.
-
-In general, every <simple graph> with a <finite set> of $n\geq0$ <vertices> that is <triangle-free> has at most
-$$
-m\leq\left\lfloor\frac{n^2}{4}\right\rfloor
-$$
-<edges>. This is the $r=2$ case of <Turán's theorem>, with forbidden <clique> $K_3$. Equality holds exactly for the balanced <complete bipartite graph> $K_{\lfloor n/2\rfloor,\lceil n/2\rceil}$, up to <graph isomorphism>; empty parts are allowed for $n<2$.<Graph Theory by Reinhard Diestel>[third electronic edition (2005), §7.1, printed p. 165, Theorem 7.1.1 and the definition of Turán graphs, specialized to the forbidden graph K3]{ref}
-
-The <floor function> gives the exact <integer> bound. Splitting $n$ <vertices> into two <independent sets> of sizes $a$ and $n-a$, and putting in every cross <edge>, gives
-$$
-a(n-a)=\frac{n^2}{4}-\left(a-\frac n2\right)^2.
-$$
-The count is largest when $a$ is an <integer> nearest $n/2$. For $n=2k$ it is $k^2$; for $n=2k+1$ it is $k(k+1)$. Both equal $\lfloor n^2/4\rfloor$. This proves attainability for every $n$, including the empty <graph>.
-
-A short proof of the upper bound uses <degrees of vertices>. In a <triangle-free graph>, the endpoints $u,v$ of an <edge> have disjoint <vertex neighbourhoods>: a <common neighbour> would complete a <triangle in a graph>. Thus $d(u)+d(v)\leq n$. Summing over <edges> counts $d(v)$ once for each of the $d(v)$ <edges> incident to $v$, giving
-$$
-\sum_{v\in V}d(v)^2=\sum_{uv\in E}(d(u)+d(v))\leq nm.
-$$
-For $n>0$, the <Cauchy-Schwarz inequality> and <handshaking lemma> yield
-$$
-4m^2=\left(\sum_{v\in V}d(v)\right)^2\leq n\sum_{v\in V}d(v)^2\leq n^2m.
-$$
-If $m>0$, division gives $m\leq n^2/4$; $m=0$ is immediate. Since $m$ is an <integer>, apply the <floor function>. The case $n=0$ is immediate too. This proves the bound; the full equality characterization follows from <Turán's theorem>.
-
-The useful reversal is that more than $\lfloor n^2/4\rfloor$ <edges> force a <triangle in a graph>, whatever their placement. A global count certifies a local pattern. The extremizer is <bipartite>, but a <triangle-free graph> need not be <bipartite>: a five-<vertex> <graph cycle> has five <edges>, below the bound of six. Historically, <Willem Mantel> posed the triangle-exclusion question in 1907.<Wie weet wie Willem Wijthoff was? by Robbert Fokkink>[Robbert Fokkink, Wie weet wie Willem Wijthoff was?, Nieuw Archief voor Wiskunde 5/17(4), December 2016, printed p. 279, Wythoffs bewijs van de stelling van Mantel: attribution of problem 28 in 1907]{ref}
-
-= Triangle lower bound one edge above the Mantel threshold
-{parent=Mantel theorem}
-{c}
-
-Every graph on $2n$ vertices with at least $n^2+1$ edges contains at least $n$ triangles. An induction deletes the endpoints of an edge lying in no triangle; if every edge lies in a triangle, the <edge-triangle incidence bound> is already sufficient.
-
-= Turán's theorem
-{c}
-{parent=Extremal graph theory}
-{wiki}
-{title2=$\operatorname{ex}(n,K_{r+1})=t_r(n)$}
-
-= Turan theorem
-{c}
-{synonym}
-
-How many <edges> can we retain while excluding a prescribed <clique>? For <integers> $r\geq1$ and $n\geq0$, every <simple graph> on $n$ <vertices> containing no <complete subgraph> $K_{r+1}$ satisfies
-$$
-e(G)\leq t_r(n):=e(T_r(n)).
-$$
-Equality holds exactly for the <Turán graph> $T_r(n)$, up to <graph isomorphism>. Thus the <extremal number> is $\operatorname{ex}(n,K_{r+1})=t_r(n)$.<Graph Theory by Reinhard Diestel>[third electronic edition (2005), §7.1, printed p. 165, Theorem 7.1.1; replace the source's forbidden-clique parameter r by r+1]{ref}
-
-For example, $T_3(8)$ has <independent sets> of sizes $3,3,2$ and $21$ <edges>, as counted in <Turán graph>. It contains <triangles in a graph>, but no four-<vertex> <clique>. Consequently any <simple graph> on eight <vertices> with $22$ <edges> contains $K_4$, while $21$ <edges> alone do not force one. Excluding larger <cliques> permits denser <graphs>; <Mantel theorem> is precisely the first nontrivial case.
-
-A short proof outline uses <Zykov symmetrization>. If an extremizer is not a <complete multipartite graph>, it has <vertices> $x,y,z$ with $xy,xz$ absent and $yz$ present. If either $y$ or $z$ has larger <vertex degree> than $x$, clone that <vertex> in place of $x$. Otherwise replace both $y,z$ by nonadjacent clones of $x$, gaining $2d(x)-d(y)-d(z)+1>0$ <edges>. Both contradict extremality; balancing the resulting at most $r$ parts gives $T_r(n)$.<Graph Theory by Reinhard Diestel>[third electronic edition (2005), §7.1, printed pp. 166–167, vertex duplication and second proof of Theorem 7.1.1]{ref}
-
-The <vertex cloning in a graph> step preserves <clique> exclusion because any <clique> using a clone can substitute its original <vertex>; nonadjacent clones cannot occur together in a <clique>. At most $r$ parts can be nonempty, since selecting one <vertex> from each gives a <clique>. If fewer than $r$ parts are nonempty and one has at least two <vertices>, splitting it creates more <edges>, so it cannot be extremal. For $r=1$ the bound is zero. For $r\geq n$, the <Turán graph> is $K_n$, and the bound is the total $\binom n2$ possible <edges>.
-
-= Edit-distance stability for clique-free graphs
-{parent=Turán's theorem}
-{title2=$e(G)\ge t_r(n)-k\Longrightarrow |E(G)\triangle E(H)|\le3k$}
-
-A clique-free <graph> near the <Turan theorem> <edge> bound is close to a complete multipartite <graph>. Choose a maximum-degree <vertex>, split its neighbourhood from the remaining <vertices>, and apply induction inside the neighbourhood. The degree bound implies that missing cross <edges> are at least twice the number of <edges> inside the remaining class. This inequality controls all three types of edits and gives the constant three.
-
-= Bipartite stability from few odd cycles
-{parent=Edit-distance stability for clique-free graphs}
-{title2=$|E(G)\triangle E(H)|\le11\epsilon\binom n2$}
-
-Fix an odd cycle length. If the <graph> has <edge> density at least $1/2-\epsilon$ and sufficiently few copies of that cycle, <odd-cycle copies from positive triangle density> forces few <triangles in a graph>. The <triangle removal lemma> deletes at most $\epsilon\binom n2$ <edges>, after which the clique-free edit bound applies with two parts. Absorbing its linear rounding error into the density margin gives the displayed bound for large order.
-
-= Turán graph
-{title2=$T_r(n)$}
-{c}
-{parent=Turán's theorem}
-{wiki}
-
-The Turán graph $T_r(n)$ is a <complete multipartite graph> with $r$ <independent sets> of sizes differing by at most one, with every cross <edge> present. Empty parts are allowed when $r>n$.<Graph Theory by Reinhard Diestel>[third electronic edition (2005), §7.1, printed p. 165, definition of Turán graphs and convention for empty partition sets]{ref}
-
-\Image[turan-balanced-tripartite-edge-count.png]
-{title=The <Turán graph> $T_3(8)$ has three <independent sets> of sizes $3,3,2$, giving $21$ <edges> and no four-<vertex> <clique>}
-
-In this example, the <independent sets> are $A=\{a_1,a_2,a_3\}$, $B=\{b_1,b_2,b_3\}$ and $C=\{c_1,c_2\}$. Count the <edges> between each pair of parts:
-$$
-t_3(8)=3\cdot3+3\cdot2+3\cdot2=9+6+6=21.
-$$
-Any four <vertices> put at least two in the same <independent set>, by the <pigeonhole principle>, so they cannot form $K_4$. Conversely, every choice of one <vertex> from each part is a <triangle in a graph>, giving $3\cdot3\cdot2=18$ <triangles in a graph>. <Clique> exclusion here does not mean <triangle-free>.
-
-For the exact count, <Euclidean division> writes $n=rq+s$, where $q=\lfloor n/r\rfloor$ uses the <floor function> and $s=n\bmod r$ is the <remainder>, with $0\leq s<r$. There are $s$ parts of size $q+1$ and $r-s$ of size $q$. For any part sizes $a_1,\ldots,a_r$ summing to $n$, count cross <edges> by expanding the square:
-$$
-e(K_{a_1,\ldots,a_r})=\sum_{i<j}a_i a_j=\frac12\left(n^2-\sum_{i=1}^r a_i^2\right).
-$$
-Therefore
-$$
-t_r(n)=\frac12\left[n^2-s(q+1)^2-(r-s)q^2\right]
-=\left(1-\frac1r\right)\frac{n^2}{2}-\frac{s(r-s)}{2r}.
-$$
-For $n=8,r=3$, we have $q=2,s=2$, giving $(64-2\cdot9-1\cdot4)/2=21$. The <quadratic Turan edge bound> gives $64/3$ instead: the exact correction subtracts $1/3$.
-
-Balancing is an <integer> optimization with a simple reason. If two part sizes satisfy $a\geq b+2$, moving one <vertex> from the larger part to the smaller decreases their contribution to the <sum of squares> by
-$$
-a^2+b^2-(a-1)^2-(b+1)^2=2(a-b-1)>0,
-$$
-so it increases the <edge> count by $a-b-1$. For eight <vertices>, parts $4,2,2$ give $20$ <edges>; moving one <vertex> produces $3,3,2$ and $21$ <edges>. The most symmetric permitted sizes pack the most cross <edges>, which explains the sharp construction in <Turán's theorem>.
-
-= Triangle support line between bipartite and tripartite Turan graphs
-{parent=Turán graph}
-
-For $n\geq3$, put $e_i=e(T_i(n))$, $t_3=k_3(T_3(n))$, and $c_n=(e_3-e_2)/t_3$. Every <graph> on $n$ <vertices> satisfies
-$$
-e(G)-c_n k_3(G)\leq e_2.
-$$
-Thus an <edge> count $e_2+\theta(e_3-e_2)$ forces at least $\theta t_3$ <triangles in a graph>. This is an exact finite bound, with the rounding in the <Turan graph> retained. To prove it, use <edge-triangle symmetrization>. The inequality $c_n\geq2/n$ allows merging the two smallest classes when there are at least four classes. With three classes, fixing the middle class makes the objective affine in the product of the other two sizes; either merge them or balance them. Only $T_2(n)$ and $T_3(n)$ need remain.
-
-= Zykov symmetrization
-{c}
-{parent=Turán's theorem}
-
-Zykov symmetrization replaces one of two nonadjacent vertices by a clone of the other. Cloning the vertex of larger degree does not decrease the edge count and does not create a larger clique. Iteration reduces the extremal problem for clique-free graphs to complete multipartite graphs.
-
-= Edge-triangle symmetrization
-{parent=Zykov symmetrization}
-
-For each real $c$, some maximizer of $e(G)-c k_3(G)$ among <graphs> on $n$ <vertices> is <complete multipartite graph>. Among maximizers maximize $\sum_v d(v)^2$. Cloning either of two nonadjacent <vertices> preserves the objective, since maximality forces their local contributions $d(v)-c e(G[N(v)])$ to agree. If their <vertex neighbourhoods> differ, the sum of the two changes in the squared-<degree of a vertex> objective is twice the size of their symmetric difference, a contradiction. Nonadjacency therefore partitions the <vertices> into classes with identical <vertex neighbourhoods>.
-
-= Quadratic Turan edge bound
-{parent=Turán's theorem}
-{c}
-
-Every $n$-vertex graph containing no $K_{r+1}$ satisfies
-$$
-e(G)\leq\left(1-\frac1r\right)\frac{n^2}{2}.
-$$
-
-= Rhombus-free edge bound
-{parent=Turán's theorem}
-
-A graph-theoretic rhombus is two triangles sharing an edge. Every rhombus-free graph on $n\geq4$ vertices has at most
-$$
-e(T_2(n))=\left\lfloor\frac{n^2}{4}\right\rfloor
-$$
-edges. If the graph is triangle-free this is Turán's theorem. Otherwise remove a triangle: every remaining vertex has at most one neighbor in it, and induction bounds the edge count by
-$\lfloor(n-3)^2/4\rfloor+n\leq\lfloor n^2/4\rfloor$.
-
-= Triangular prism graph
-{parent=Rhombus-free edge bound}
-
-The triangular prism has six vertices and nine edges. Each edge lies in at most one triangle, so it has no rhombus; its two triangles show that it is not $K_{3,3}=T_2(6)$.
-
-This is the <prism graph> built from two triangles.
-
-= Erdős-Stone theorem
-{c}
-{parent=Extremal graph theory}
-{wiki}
-
-For every graph $H$ with chromatic number $r+1$,
-$$
-\operatorname{ex}(n,H)=\left(1-\frac1r+o(1)\right)\binom n2.
-$$
-
-= Logarithmic Erdős-Stone theorem
-{parent=Erdős-Stone theorem}
-{title2=$t\ge\lfloor d(r,\epsilon)\log n\rfloor$}
-
-= Erdős-Stone-Bollobás theorem
-{c}
-{synonym}
-
-An <edge> density exceeding the <Turan theorem> threshold for $K_{r+1}$ by a fixed positive amount forces a balanced $K_{r+1}(t)$ subgraph with logarithmic part size. Combine <clique supersaturation by sampling> with the <dense clique family blow-up lemma>. Dense binomial random <graphs> show that the logarithmic order is optimal for a uniform density guarantee.
-
-= Logarithmic clique blow-up from minimum degree
-{parent=Logarithmic Erdős-Stone theorem}
-{title2=$\delta(G)\ge(1-1/r+\varepsilon)n\Longrightarrow K_{r+1}(\lfloor d\log n\rfloor)\subseteq G$}
-
-A fixed positive excess over the <Turan theorem> threshold forces logarithmic balanced <complete multipartite graphs>. There is an elementary induction using <common neighbourhood from bipartite density>: first obtain a logarithmic $r$-partite subgraph from the induction hypothesis, and select disjoint transversal $r$-cliques in it. Each such clique has at least $r\varepsilon n$ <common neighbours>, by the <union bound> on non-neighbour sets. Apply the bipartite common-neighbour count to these cliques as left-side objects. Their selected union and a large common neighbourhood form the extra part.
-
-= Random obstruction to larger clique blow-ups
-{parent=Logarithmic Erdős-Stone theorem}
-{title2=$\mathbb E\#K_s(t)\le n^{st}p^{\binom s2t^2}$}
-
-In a <binomial random graph> with fixed <edge> probability below one, the displayed first-moment bound tends to zero for $t=C\log n$ and sufficiently large fixed $C$. At the same time the <edge> density concentrates near $p$. Thus a positive fixed density cannot force balanced complete multipartite subgraphs whose part size grows faster than logarithmically.
-
-= High-minimum-degree multipartite stability subgraph
-{parent=Erdős-Stone theorem}
-
-For fixed positive integers $r,t$, a <graph> $G$ on $n$ <vertices> with $e(G)=(1-1/r+o(1))n^2/2$ and no <balanced complete multipartite blow-up> $K_{r+1}(t)$ contains an $r$-partite <subgraph> $H$ with $n-o(n)$ <vertices>, balanced classes of size $n/r+o(n)$, and <minimum degree of a graph> $\delta(H)=(1-1/r+o(1))n$.
-
-One proof first removes a vanishing fraction of <vertices> of low <degree of a vertex>, finds a slowly growing $K_r(L)$ by the <Erdős-Stone theorem>, and assigns almost every remaining <vertex> to a root class in which it has fewer than $t$ <neighbours of a vertex>. After discarding a further vanishing fraction, a $K_{t,t}$ inside an assigned class would extend to $K_{r+1}(t)$ using the root classes. Thus internal <edges> and missing cross-class <edges> both number $o(n^2)$. Removing the <vertices> with unusually many missing cross-class <edges> gives the stated <minimum degree of a graph>.
-
-= Minimum degree of an extremal forbidden-subgraph graph
-{parent=High-minimum-degree multipartite stability subgraph}
-
-If a fixed <graph> $F$ has <chromatic number> $r+1$, every extremal $F$-free <graph> $G$ on $n$ <vertices> has <minimum degree of a graph> $(1-1/r+o(1))n$. Use a <high-minimum-degree multipartite stability subgraph> $H$: replacing any <vertex> by one adjacent to all but one class of $H$ preserves $F$-freeness. Any supposed new copy of $F$ can replace the new <vertex> by an unused <common neighbour> in the omitted class. Extremality therefore gives the lower bound on every <degree of a vertex>; the <Erdős-Stone theorem> gives the upper bound on the average <degree of a vertex>.
-
-= Kővári–Sós–Turán theorem
-{c}
-{parent=Extremal graph theory}
-{wiki}
-
-For each fixed positive integer $t$,
-$$
-\operatorname{ex}(n,K_{t,t})=O\left(n^{2-1/t}\right).
-$$
-The standard proof counts $t$-element subsets of <graph neighbourhood>[graph neighbourhoods] in a bipartite subgraph. If one side has degrees $d_y$, the absence of $K_{t,t}$ gives
-$$
-\sum_y\binom{d_y}{t}\leq(t-1)\binom nt.
-$$
-<convexity> then bounds the number of edges.
-
+\Include[extremal-graph-theory]{parent=Graph theory}
 \Include[flow-network]{parent=Graph theory}
 
 = Eulerian graph
@@ -1950,226 +1604,7 @@ If $G$ is connected and $r$-regular, then $L(G)$ is connected and every one of i
 
 A <graph drawing> represents <vertices> by distinct points in the <Euclidean plane> and <edges> by curves joining their endpoints. A crossing of <edges> is not an extra <vertex> unless we explicitly change the <graph> to make it one. Curves may bend: the <graph> records connections, not coordinates.
 
-= Planar graph
-{parent=Graph theory}
-{wiki}
-
-A <planar graph> admits at least one <graph drawing> in which <edges> meet only at common endpoints. This is a property of the abstract <graph>, not a requirement on every <graph drawing>. A <plane graph> specifies one such drawing.<Planar Graphs; Bipartite Matching by Albert R. Meyer (6.042J lecture 5f)>[Planar Graphs; Bipartite Matching, slides lec 5f.3 and 5f.12]{ref}
-
-For example, the <complete graph> $K_4$ joins every pair of four <vertices>, giving six <edges>. Put its <vertices> at the corners of a square and its diagonals cross. Instead put $A,B,C$ at the corners of a <triangle> and $D$ inside it: the same six <edges> $AB,AC,BC,AD,BD,CD$ now meet only at their endpoints. The first <graph drawing> obscures planarity; the second proves it. In particular, its <crossing number> is zero.
-
-\Image[complete-four-vertex-graph-crossing-and-plane-drawings.png]
-{id=complete-four-vertex-graph-crossing-and-plane-drawings}
-{title=The same complete graph on four vertices drawn with a crossing and with four faces}
-
-The distinction matters whenever connections must fit on one surface without intersecting. A failed <graph drawing> may only need rearrangement, whereas <nonplanarity by edge counts> proves that every rearrangement fails.
-
-= Kuratowski's theorem
-{parent=Planar graph}
-{c}
-{wiki}
-
-A finite <simple graph> is a <planar graph> if and only if it contains no <graph subdivision> of the <complete graph> $K_5$ or the <complete bipartite graph> $K_{3,3}$ as a <subgraph>; equivalently, neither is a <topological minor>. The easy direction follows by tracing each replacement <graph path> as one drawn <edge>. The converse asserts that every failure of planarity contains one of these two patterns.<Graph Theory by Reinhard Diestel/Planar Graphs (author-hosted chapter preview)>[§4.4, Theorem 4.4.6(iii), printed p. 111]{ref}
-
-<Graph Theory by Reinhard Diestel> (Planar Graphs preview, §4.4, Theorem 4.4.6, printed p. 111) dates <Kuratowski's theorem> to 1930 and the equivalent <graph minor> characterization to 1937. These dates are that textbook's historical attribution.
-
-= Plane graph
-{parent=Planar graph}
-
-A <plane graph> is a <planar graph> with a specified <graph drawing> whose <edges> meet only at common endpoints, also called an embedding in the <Euclidean plane>. Its <faces of a plane graph> and <facial boundary walks> refer to that embedding. This geometric use of embedding differs from a <graph embedding>, which maps one abstract <graph> into another.
-
-= Face of a plane graph
-{parent=Plane graph}
-
-= Faces of a plane graph
-{synonym}
-
-A <face of a plane graph> is a <connected component> of the <Euclidean plane> after removing the drawn <vertices> and <edges>. Count the <outer face> too. This is the plane counterpart of a <face of a planar map> on the <sphere>.<Planar Graphs; Bipartite Matching by Albert R. Meyer (6.042J lecture 5f)>[Planar Graphs; Bipartite Matching, slide lec 5f.6, including the outer face]{ref}
-
-= Outer face
-{parent=Face of a plane graph}
-
-The <outer face> is the unique unbounded <face of a plane graph> for a finite <plane graph>. It counts once even though it surrounds the whole <graph drawing>. A <tree> has only this <face of a plane graph>.
-
-= Facial boundary walk
-{parent=Face of a plane graph}
-
-For a finite <connected graph> embedded as a <plane graph>, follow the <edges> around a <face of a plane graph> to obtain a <closed walk>. Count traversals, not distinct <edges>: a <bridge in a graph> occurs twice along one <facial boundary walk>. Each <edge> contributes two sides in total.<Mathematics for Computer Science by Eric Lehman and others>[Mathematics for Computer Science, §12.4, Lemma 12.4.1, printed p. 485]{ref}
-
-For the three-<vertex> <graph path> $A-B-C$, the only <facial boundary walk> is $A,B,C,B,A$, of length four. Both <edges> are <bridges in a graph>; neither is a <graph cycle>. Thus a <facial boundary walk> need not be a <graph cycle>.
-
-= Honeycomb lattice
-{parent=Planar graph}
-
-The honeycomb lattice is the periodic degree-three <planar graph> consisting of the vertices and edges of a regular hexagonal tiling. It has two vertex classes; every edge joins opposite classes. Its <planar dual graph> is the <triangular lattice>.
-
-= Martini lattice
-{parent=Honeycomb lattice}
-
-The martini lattice is obtained from the <honeycomb lattice> by replacing every vertex in one of its two vertex classes by a triangle, attaching its three former incident bonds to the triangle's three vertices. It is a periodic degree-three <planar graph>, with triangular faces and nine-sided faces. Each decorated vertex and its incident bonds is a three-terminal cell with three internal triangle bonds and three terminal spokes. Its independent <bond percolation> threshold is $1/\sqrt2$, as follows from <three-terminal cell partition duality>.
-
-= Four color theorem
-{parent=Planar graph}
-{wiki}
-
-= Four colour theorem
-{synonym}
-
-Every finite <planar graph> has <chromatic number> at most four. This stronger theorem is distinct from the elementary <five colour theorem>; the latter's <Kempe chain> proof does not prove this assertion.
-
-= Five color theorem
-{parent=Planar graph}
-{wiki}
-
-= Five colour theorem
-{synonym}
-
-Every finite <planar graph> admits a proper vertex coloring with at most five colors. <Euler formula for a connected planar graph> supplies a vertex of degree at most five. Inductively color its deletion. The only obstruction is five differently colored neighbours in cyclic order. If opposite neighbours 1 and 3 are in different two-color components, interchange one component. If they are connected, planarity prevents opposite neighbours 2 and 4 from being connected in their two-color subgraph, and that interchange frees a color instead. This is a <Kempe chain> proof.
-
-= Planar map
-{parent=Planar graph}
-{wiki}
-
-A planar map is a <planar graph> together with a fixed embedding in the <sphere>, considered up to orientation-preserving homeomorphism. A rooted planar map has a distinguished oriented edge, which removes most embedding symmetries.
-
-= Face of a planar map
-{parent=Planar map}
-
-A face of a planar map is a connected component of the complement of its embedded graph. Its degree is the number of edge incidences around its boundary, counted with multiplicity, and the sum of all face degrees is twice the number of edges.
-
-= Rooted planar map
-{parent=Planar map}
-
-A rooted planar map is a <planar map> with a distinguished oriented edge called its root edge. Its tail is the root vertex, and the face on a chosen side of the edge may be designated as the root face.
-
-= Planar quadrangulation
-{parent=Planar map}
-
-A planar quadrangulation is a <planar map> in which every face has degree four, with incidences counted with multiplicity. A pointed quadrangulation additionally has a distinguished vertex.
-
-A <squaregraph> has separate conditions on bounded faces and interior vertex degrees; its outer face need not be quadrilateral.
-
-= Trivial bijection between planar maps and quadrangulations
-{parent=Planar quadrangulation}
-
-The trivial bijection sends a rooted <planar map> with $n$ edges to a rooted <planar quadrangulation> with $n$ faces. Put one new vertex in each face and, in each corner, connect that face vertex to the incident original vertex. Each original edge then lies inside one quadrangular face; deleting the original edges gives the quadrangulation. The face bipartition recovers the original vertices and hence the inverse map.
-
-= Planar dual graph
-{parent=Planar graph}
-
-A planar dual graph has one vertex in each face of a fixed planar embedding and one dual edge crossing each primal edge.
-
-This is the planar-embedding case of a <dual graph>.
-
-= Planar cluster-count identity
-{parent=Planar dual graph}
-{title2=$k(\bar\omega^*)=o(\omega)-|V|+k(\omega)+1$}
-
-For a fixed finite plane graph, the complementary dual configuration opens a dual edge exactly when its primal edge is closed. Its components correspond to faces of the spanning open primal graph. The componentwise <Euler formula for a connected planar graph> gives the displayed identity. The outer face and isolated primal vertices are included; the identity also handles disconnected graphs, bridges and loops.
-
-= Dual bond percolation
-{parent=Planar dual graph}
-
-In planar <bond percolation>, declare a dual edge open exactly when the primal edge it crosses is closed. Independent primal parameter $p$ then gives independent dual parameter $1-p$.
-
-= Three-terminal cell partition duality
-{parent=Dual bond percolation}
-
-A planar finite network with three boundary terminals induces one of five connection partitions: all three connected, all three separate, or one connected pair and an isolated third terminal. Put three dual terminals on the intervening boundary arcs. Passing to the <planar dual graph> interchanges the all-connected and all-separate partitions and permutes the three pair partitions. If the network is symmetric under all terminal permutations, equality $P_3=P_0$ of the first two probabilities makes its whole partition law dual-invariant. Independent cells on a self-dual triangular terminal arrangement then give identical primal and dual coarse connection laws. Infinite connectivity is preserved because cells are uniformly finite. For a <martini lattice> cell with six independent bonds of common parameter $p$, $P_3=3p^5-2p^6$ and $P_3-P_0=(2p^2-1)(p^4-3p^3+2p^2+1)$. The unique zero in $[0,1]$ is $1/\sqrt2$.
-
-= Dual contour bound for a finite planar cluster
-{parent=Dual bond percolation}
-
-In <bond percolation> on the square lattice, the outer boundary of a finite <percolation cluster>, after filling its holes, consists of closed bonds. Their crossing edges in the <planar dual graph> form a connected enclosing contour, and hence belong to a single <dual bond percolation> cluster $K$. If $|K|=m$, both its coordinate widths are at most $m-1$, so the enclosed primal cluster contains at most $m^2$ vertices. A contour enclosing the origin also places every vertex of $K$ within distance $m+1$ of the origin. An exponential volume tail for the subcritical <dual bond percolation> clusters thus gives a bound $Ce^{-c\sqrt n}$ for a finite primal cluster of size at least $n$.
-
-= Planar duality for rectangle crossings
-{parent=Planar dual graph}
-
-For a rectangle in a planar lattice, exactly one of an open primal left-to-right crossing and a closed dual top-to-bottom crossing occurs.
-
-= Exact self-dual rectangle crossing probability
-{parent=Planar duality for rectangle crossings}
-{title2=$\mathbb P_{1/2}(H_n)=1/2$}
-
-For the lattice rectangle with <graph vertices> $\{0,\ldots,n\}\times\{0,\ldots,n-1\}$, let $H_n$ be an open left-to-right crossing. Its complementary event is a closed dual top-to-bottom crossing. The dual crossing rectangle has width $n-1$ and height $n$, so rotation and translation identify it with the original rectangle. Boundary <edges> along the starting and ending sides do not affect the crossing event. At $p=1/2$ the primal and dual <edge> states have identical laws, hence
-$$
-\mathbb P_{1/2}(H_n)=1-\mathbb P_{1/2}(H_n)=\frac12.
-$$
-The one-unit adjustment in the side lengths makes the symmetry exact rather than an informal assertion about a finite <graph vertex> square.
-
-= Euler formula for a connected planar graph
-{parent=Planar graph}
-{c}
-{title2=$n-m+f=2$}
-
-For a finite <connected graph> with at least one <vertex>, embedded as a <plane graph>, let $n$ count <vertices>, $m$ count <edges>, and $f$ count <faces of a plane graph>, including the <outer face>. Then
-$$
-n-m+f=2.
-$$
-The hypotheses refer to an actual embedding; regions in a crossing-filled <graph drawing> do not supply its $f$.<Planar Graphs; Bipartite Matching by Albert R. Meyer (6.042J lecture 5f)>[Planar Graphs; Bipartite Matching, slides lec 5f.14–5f.15]{ref}
-
-In the <plane graph> $K_4$ pictured above, three bounded <faces of a plane graph> and the <outer face> give $4-6+4=2$. A square <cycle graph> gives $4-4+2=2$, while the <graph path> $A-B-C$ gives $3-2+1=2$. Changing a crossing into a new <vertex> changes the <graph>: the square-and-diagonals drawing then has five <vertices>, eight <edges>, and five <faces of a plane graph>, giving $5-8+5=2$.
-
-A proof outline deletes <edges> on <graph cycles>. Each deletion preserves the <connected graph> and merges two <faces of a plane graph>, leaving $n-m+f$ unchanged. Eventually a <tree> remains, with $m=n-1$ and $f=1$. Adding the point at infinity identifies the plane picture with a <sphere>; the value two agrees with its <Euler characteristic> and the <cell-count formula for Euler characteristic>.
-
-= Small faces of a spherical polyhedral graph
-{parent=Euler formula for a connected planar graph}
-{title2=$F_3+F_4+F_5\ge4$}
-
-For a connected cellular spherical <planar graph> with vertex degrees at least three and face sizes at least three, degree/face double counting and the <Euler formula for a connected planar graph> give $\sum_n(6-n)F_n=12+\sum_m(2m-6)V_m\ge12$. The left side is at most $3(F_3+F_4+F_5)$, proving the displayed bound. In particular a convex polyhedron has at least four faces of size at most five.
-
-= Planar graph edge bound
-{parent=Euler formula for a connected planar graph}
-{title2=$m\leq3n-6$}
-
-A finite <simple graph> that is a <connected graph> and a <planar graph>, with $n\geq3$ <vertices> and $m$ <edges>, satisfies $m\leq3n-6$. Choose a <plane graph>: each <facial boundary walk> has length at least three, so $3f\leq2m$. Substitute $f=2-n+m$ from the <Euler formula for a connected planar graph>.<Mathematics for Computer Science by Eric Lehman and others>[Mathematics for Computer Science, §12.4, Lemma 12.4.2 and Theorem 12.4.3, printed pp. 485–486]{ref}
-
-The <complete graph> $K_4$ attains equality: $6=3\cdot4-6$. The bound also holds for a disconnected finite <simple graph> that is a <planar graph> with $n\geq3$: place its <connected components of a graph> in disjoint regions and join them with new <bridges in a graph>, then apply the connected bound.
-
-= Bipartite planar graph edge bound
-{parent=Planar graph edge bound}
-{title2=$m\leq2n-4$}
-
-If a finite <simple graph> is a <connected graph>, a <bipartite graph>, and a <planar graph>, with $n\geq3$ <vertices>, then $m\leq2n-4$. Every <facial boundary walk> has even length and length at least three, hence at least four. Thus $4f\leq2m$; substitute the <Euler formula for a connected planar graph>.<Mathematics for Computer Science by Eric Lehman and others>[Mathematics for Computer Science, §12.5, Lemma 12.5.2 and Theorem 12.5.3, printed pp. 486–487]{ref}
-
-The square <cycle graph> attains equality: $4=2\cdot4-4$. The three-<vertex> <graph path> also attains equality: $2=2\cdot3-4$. Its repeated <bridges in a graph> illustrate why counting <facial boundary walk> length correctly matters. Neither bound applies unchanged to a <multigraph>: two <vertices> may support arbitrarily many parallel <edges> in a <plane graph>.
-
-= Nonplanarity by edge counts
-{parent=Planar graph edge bound}
-
-The <complete graph> $K_5$ has $n=5$ and $m=\binom52=10$, exceeding the <planar graph edge bound> $3\cdot5-6=9$. Therefore it is not a <planar graph>. The <complete bipartite graph> $K_{3,3}$ has $n=6$ and $m=3\cdot3=9$. The general bound allows twelve <edges>, but the <bipartite planar graph edge bound> allows only eight, proving nonplanarity.
-
-\Image[plane-graph-face-counts-and-edge-obstructions.png]
-{id=plane-graph-face-counts-and-edge-obstructions}
-{title=Actual plane-graph face counts compared with impossible face counts for the two complete-graph obstructions}
-
-These are necessary bounds, not a complete planarity test. For an original counterexample, subdivide every <edge> of $K_{3,3}$ once. The resulting <simple graph> is a <connected graph> with $n=15$, $m=18$, and is <bipartite>: put all original <vertices> in one part and all nine new <vertices> in the other. Both inequalities hold, $18\leq39$ and $18\leq26$. Nevertheless, a crossing-free <graph drawing> would let us trace each two-<edge> <graph path> as one curve, producing an impossible embedding of $K_{3,3}$. The <graph subdivision> preserves this obstruction. <Kuratowski's theorem> supplies a stronger characterization than these counts.
-
-= Planar girth edge bound
-{parent=Euler formula for a connected planar graph}
-
-If every face of a connected planar graph has size at least $g>2$, double-counting edge-face incidences and using Euler's formula gives
-$$
-e\leq\frac{g(n-2)}{g-2}.
-$$
-
-= Triangle-pentagon planar edge bound
-{parent=Euler formula for a connected planar graph}
-
-Let a connected bridgeless planar graph have $n\ge4$ vertices, $e$ edges, no four-cycle, and $t$ triangular faces. If no edge borders two triangular faces, then
-$$
-2e\ge3t+5(f-t),
-\qquad e\ge3t,
-$$
-so $f\le8e/15$. The <Euler formula for a connected planar graph> then gives
-$$
-e\le\frac{15(n-2)}7.
-$$
-
-= Icosidodecahedral graph
-{parent=Triangle-pentagon planar edge bound}
-
-The icosidodecahedral graph is the skeleton of the <icosidodecahedron>. It has 30 vertices, 60 edges, 20 triangular faces, and 12 pentagonal faces. Every edge separates a triangle from a pentagon, so it attains equality in the <triangle-pentagon planar edge bound>.
+\Include[planar-graph]{parent=Graph theory}
 
 = Crossing number
 {parent=Graph theory}
@@ -2418,149 +1853,7 @@ Take unfriendly partitions of an exhaustion by finite induced subgraphs and use 
 
 Independently colour the vertices of a countable graph red or blue with equal probabilities. If every vertex has infinite degree, then each fixed vertex has infinitely many neighbours of each colour almost surely. A countable union of the exceptional null events is null, so such a colouring exists.
 
-= Bipartite graph
-{parent=Graph theory}
-{wiki}
-
-= Bipartite
-{synonym}
-
-A <bipartite graph> separates its <vertices> into two <independent sets>: every <edge> goes from one part to the other. Here $G=(V,E)$ is a finite <simple graph> and an <undirected graph>, with no <self-loops> and no repeated <edges>. The two parts $X,Y\subseteq V$ satisfy
-$$
-X\cap Y=\varnothing,\qquad X\cup Y=V,\qquad \{u,v\}\in E\Longrightarrow (u\in X,\ v\in Y)\ \text{or}\ (u\in Y,\ v\in X).
-$$
-Thus neither part contains an <edge>. The parts need not have equal sizes, and some pairs across them may have no <edge>; requiring every cross pair gives a <complete bipartite graph>. The <independent set> and cross-<edge> definitions are equivalent.<Graph Theory by Reinhard Diestel/The Basics (author-hosted chapter preview)>[Section 1.1, printed p. 3, independent vertices; Section 1.6, printed p. 17, bipartite and complete multipartite graphs]{ref}
-
-For example, the six-<vertex> <cycle graph> $C_6$ with <edges> $12,23,34,45,56,61$ has parts $X=\{1,3,5\}$ and $Y=\{2,4,6\}$. Drawing the same <graph> as a hexagon or in two columns changes neither its <edges> nor its <bipartite> property. An extra <isolated vertex> $z$ can go in either part.
-
-\Image[bipartite-graph-independent-parts.png]
-{id=bipartite-graph-independent-parts}
-{title=The same six-cycle and isolated vertex drawn as a cycle and as two independent parts}
-
-We allow either part to be empty. Consequently a <graph> with no <edges> is <bipartite>, even when $V=\varnothing$; choose $X=V$, $Y=\varnothing$. Here "two colours" means two colours are available, with no requirement to use both. This convention explicitly includes the empty case, whereas definitions requiring two nonempty classes need an exception. For several <connected components of a graph>, choose the two parts separately in each <graph component> and take their <unions>. In a nonempty <connected graph> that is <bipartite>, fixing one <vertex>'s colour forces all others along <graph paths>, so its two-colour assignment is unique up to swapping the colours. Each <graph component>, including an <isolated vertex>, can be swapped independently.
-
-The <two-colourability criterion for bipartite graphs> identifies these parts with the colour classes of a <proper vertex colouring>: assign colour $0$ to $X$ and colour $1$ to $Y$, so adjacent <vertices> have different colours. More surprisingly, the <odd-cycle characterization of bipartite graphs> turns a global requirement into one precise obstruction:
-$$
-G\text{ is bipartite}\quad\Longleftrightarrow\quad G\text{ contains no odd cycle}.
-$$
-This statement is for the finite <undirected graph> and <simple graph> model above; a <graph cycle> has distinct <vertices> except for the repeated starting <vertex>. Along a <graph cycle> in a <bipartite graph>, colours alternate, so returning to the starting colour takes an <even number> of <edges>. Therefore any <odd cycle>, whether or not other <edges> join its <vertices>, prevents a <bipartite> split.<Graph Theory by Reinhard Diestel/The Basics (author-hosted chapter preview)>[Section 1.6, Proposition 1.6.1 and proof, printed pp. 17–18]{ref}
-
-<Breadth-first search> supplies the converse constructively. Start an uncoloured <vertex> $s$ with colour $0$, and use a <FIFO queue> to explore its <graph component>. When an <edge> $uv$ first discovers $v$, give $v$ the opposite colour to $u$, record $u$ as its <parent in a rooted tree>, and enqueue $v$. If both endpoints of any scanned <edge> already have the same colour, stop with a conflict. Restart from an uncoloured <vertex> until every <graph component> has been examined. If no conflict occurs, all <edges> cross the two colour classes, which are the required <independent sets>.<Algorithms, 4th edition by Robert Sedgewick and others/BipartiteX.java>{ref}
-
-A conflict also explains the failure. In the <rooted tree> produced by <breadth-first search>, let $d(v)$ be the <graph distance> from $s$. The colour of $v$ is its distance's <integer parity>. An <edge> $uv$ in an <undirected graph> satisfies $|d(u)-d(v)|\leq1$, so equal colours force $d(u)=d(v)$. Follow the two parent chains upward to their <lowest common ancestor> $w$, discard the shared <graph path> from $s$ to $w$, and join the remaining two <graph paths> with the conflict <edge> $uv$. The result is a genuine <graph cycle> with
-$$
-\bigl(d(u)-d(w)\bigr)+\bigl(d(v)-d(w)\bigr)+1=2\bigl(d(u)-d(w)\bigr)+1
-$$
-<edges>, an <odd integer>. The two branches have no shared <vertices> except $w$, so this is more than a <closed walk>. This <odd cycle> is a certificate that anyone can check directly, using only its listed <vertices> and <edges>.
-
-\Image[bipartite-graph-odd-cycle-certificate.png]
-{id=bipartite-graph-odd-cycle-certificate}
-{title=A BFS colour conflict closes a five-cycle; the shared root path is excluded from the certificate}
-
-In the example, <breadth-first search> from $s$ gives $d(w)=1$, $d(a)=d(b)=2$, and $d(u)=d(v)=3$. The conflict <edge> $uv$ closes the <odd cycle> $w,a,u,v,b,w$, with five <edges>. The common <edge> $sw$ is excluded. Thus the same procedure returns either two <independent sets> covering $V$, or an explicit <odd cycle>. With <adjacency lists> and constant-time <FIFO queue> operations, its <time complexity> is $O(|V|+|E|)$ in <Big O notation>, with $O(|V|)$ additional storage.<Algorithms, 4th edition by Robert Sedgewick and others/BipartiteX.java>{ref}
-
-The two parts often have a practical meaning: workers and jobs, with an <edge> exactly when a worker can perform a job. A <matching in a graph> chooses compatible worker–job pairs with no reused endpoint; merely being <bipartite> does not guarantee enough compatible pairs. <Hall's marriage theorem> characterizes when every worker can be matched, and the <assignment problem> adds costs to seek an optimal assignment. These connections make the <bipartite> structure useful after recognition, as the starting point for selecting <edges> under constraints.
-
-= Crown graph
-{parent=Bipartite graph}
-{wiki}
-{title2=$K_{n,n}\setminus\{a_ib_i:1\leq i\leq n\}$}
-
-A crown graph is a <complete bipartite graph> with a perfect matching removed. For $n\geq2$ it has <chromatic number> two, but <greedy coloring> in the order $a_1,b_1,a_2,b_2,\ldots,a_n,b_n$ uses $n$ colors: the matched pair gets the same new color, and every subsequent pair sees all earlier colors.
-
-= Biadjacency matrix
-{parent=Bipartite graph}
-{title2=$M_{xy}=\mathbf1_{\{xy\in E\}}$}
-
-For a <bipartite graph> with ordered parts $X,Y$, its biadjacency matrix has rows indexed by $X$ and columns indexed by $Y$, with entry one for an <edge> and zero otherwise. It has size $|X|$ by $|Y|$, rather than the square full <bipartite adjacency matrix> on $X\sqcup Y$, which is the block <matrix> $\left(\begin{smallmatrix}0&M\\M^{\mathsf T}&0\end{smallmatrix}\right)$. Its <singular values> describe the <normalized adjacency operator of a bipartite graph> after division by $\sqrt{|X||Y|}$.
-
-= Normalized adjacency operator of a bipartite graph
-{parent=Bipartite graph}
-{title2=$(\theta_Gv)(x)=\mathbb E_yG(x,y)v(y)$}
-
-Equip the function spaces of the two nonempty parts of a <bipartite graph> with uniform <inner products>. Its normalized adjacency operator is $(\theta_Gv)(x)=\mathbb E_yG(x,y)v(y)$. In orthonormal coordinate <bases>, its matrix is $G/\sqrt{|X||Y|}$, not the unscaled adjacency matrix. For a <biregular graph> of <edge density of a bipartite graph> $\gamma$, constant functions give a largest <singular value> $\gamma$, and the remaining <singular values> belong to the centered kernel $G-\gamma$.
-
-= Biregular graph
-{parent=Bipartite graph}
-
-= Semiregular bipartite graph
-{synonym}
-
-A biregular graph is a <bipartite graph> whose vertices have constant degree on each part separately. The two degree constants can differ. If its parts are $X,Y$ and its <edge density of a bipartite graph> is $\gamma$, the two degrees are $\gamma|Y|$ and $\gamma|X|$. Thus its adjacency function has constant row and column averages $\gamma$.
-
-= Independent-set bound for biregular graphs
-{parent=Biregular graph}
-{title2=$i(G)\leq(2^r+2^s-1)^{m/s}$}
-
-For a <biregular graph> with $m$ left vertices of degree $r$ and $n$ right vertices of degree $s$, let $X$ be the indicator vector of a uniformly selected <independent set>. Use base-two <information entropy>. <Shearer inequality> gives $H(X_U)\leq r^{-1}\sum_{w\in W}H(X_{N(w)})$. Conditional on $X_U$, each right vertex with an empty selected neighbourhood is an independent fair binary choice, and the other right vertices are forbidden. Writing $q_w=\mathbb P(X_{N(w)}=0)$ gives $H(X)\leq r^{-1}\sum_w[H(X_{N(w)})+rq_w]$. For the $2^s$ neighbourhood patterns, assign weight $2^r$ to the zero pattern and weight one to all others. <Jensen's inequality> implies $H(Y)+rq_w\leq\log_2(2^r+2^s-1)$. Since $n/r=m/s$, the bound follows from $H(X)=\log_2i(G)$. If $s$ divides $m$, the disjoint union of $m/s$ copies of the <complete bipartite graph> $K_{s,r}$ attains equality: each component has $2^s+2^r-1$ <independent sets>.
-
-= Quasirandom bipartite graph
-{parent=Biregular graph}
-
-For a <biregular graph> of <edge density of a bipartite graph> $\gamma$, small rectangular discrepancy, a <box norm> fourth power close to $\gamma^4$, and a small second <singular value> of the <normalized adjacency operator of a bipartite graph> are equivalent notions of quasirandomness, with quantitative bounds independent of the part sizes. Centering the adjacency function removes the constant singular component.
-
-= Spectral discrepancy bound for a biregular graph
-{parent=Quasirandom bipartite graph}
-{title2=$|e(A,B)-\delta|A||B||\leq s\sqrt{|A||B|}$}
-
-Let $H=M-\delta J$ be the centered <biadjacency matrix> of an equal-part <biregular graph>, and put $s=\|H\|_{\mathrm{op}}$. For subsets $A,B$ of the two parts, their edge discrepancy is $\mathbf1_A^{\mathsf T}H\mathbf1_B$. The <Cauchy-Schwarz inequality> proves the displayed bound. If the part size is $n$, centering the two <indicator vectors> improves it to $s n\sqrt{\alpha(1-\alpha)\beta(1-\beta)}$. The <centered four-cycle identity for a biregular graph> shows that $t_4(G)\leq\delta^4(1+c^4)$ implies $s\leq c\delta n$ for $c\geq0$.
-
-= Centered four-cycle identity for a biregular graph
-{parent=Quasirandom bipartite graph}
-{title2=$t_4(G)=\delta^4+n^{-4}\operatorname{tr}((HH^{\mathsf T})^2)$}
-
-For an equal-part <biregular graph> with part size $n$ and degree $\delta n$, let $M$ be its <biadjacency matrix> and $H=M-\delta J$, where $J$ is the all-ones <matrix>. The constant row and column sums make $H$ annihilate constants on both sides. Since $MM^{\mathsf T}=\delta^2nJ+HH^{\mathsf T}$ and the two summands have zero products, their squared <matrix trace> splits as displayed. The <bipartite four-cycle density> counts the squared <matrix trace> of $MM^{\mathsf T}$ divided by $n^4$.
-
-= Half graph
-{parent=Bipartite graph}
-{wiki}
-
-A half graph has two <vertex> classes $X=\{x_1,\ldots,x_n\}$ and $Y=\{y_1,\ldots,y_n\}$, with $x_i$ adjacent to $y_j$ exactly when $i\leq j$. Its nested <vertex neighbourhoods> give a useful obstruction to partitions in which every pair is a <regular pair of vertex sets>.
-
-= Boundary rank obstruction in a half graph
-{parent=Half graph}
-
-Partition both sides of a <half graph> into classes of size at least $100$. A class of size $s$ has at most $2\lceil s/10\rceil$ elements with fewer than $s/10$ class elements on one side in the underlying order. If there are $k_X$ and $k_Y$ classes, the union of these boundary elements has size at most $2n/5+2(k_X+k_Y)\leq11n/25$. Some index $m$ is therefore away from both boundaries. The class containing $m$ on each side has at least one tenth of its points strictly above $m$ and strictly below $m$. Choosing lower $X$ points with upper $Y$ points, or upper $X$ points with lower $Y$ points, yields <edge density of a bipartite graph> values one and zero. Both cannot be within $1/10$ of the same class-pair <edge density of a bipartite graph>, so that pair is not a $1/10$-<regular pair of vertex sets>.
-
-= Odd-cycle characterization of bipartite graphs
-{parent=Bipartite graph}
-
-A graph is <bipartite> if and only if it contains no <odd cycle>. One direction follows because every cycle alternates between the two vertex classes. For the converse, in each <connected component of a graph> choose a root and partition the vertices according to the parity of their <graph distance> from it. An edge joining equal parities would close an odd cycle, so every edge crosses the partition.
-
-= Complete bipartite graph
-{parent=Bipartite graph}
-{wiki}
-
-The complete bipartite graph $K_{r,s}$ has vertex classes of sizes $r$ and $s$ and contains all $rs$ edges between the classes.
-
-= Common neighbourhood from bipartite density
-{parent=Complete bipartite graph}
-{title2=$|N(S)|\ge N(\beta/2)^s$}
-
-If a <bipartite graph> with class sizes $m,N$ has at least $\beta mN$ <edges>, double count pairs consisting of an $s$-set in the first class and a common neighbour in the second. Convexity of binomial coefficients gives some $S$ with $|N(S)|\ge N\binom{\lfloor\beta m\rfloor}s/\binom ms$. When $s\le\beta m/2$, the quotient is at least $(\beta/2)^s$. This turns density into a large complete bipartite subgraph.
-
-= Star
-{disambiguate=graph theory}
-{parent=Complete bipartite graph}
-{title2=$K_{1,m}$}
-{wiki}
-
-= Star graph
-{synonym}
-
-= Graph star
-{synonym}
-
-A star graph is the <complete bipartite graph> with one centre and $m$ leaves. Any pair of its <edges> meet at the centre.
-
-= Two-colourability criterion for bipartite graphs
-{parent=Bipartite graph}
-
-A finite graph is <bipartite graph>[bipartite] exactly when it has a proper colouring with two colours. Equivalently,
-$$
-P_G(2)>0
-$$
-for its <chromatic polynomial>.
+\Include[bipartite-graph]{parent=Graph theory}
 
 = Graph homomorphism
 {parent=Graph theory}

@@ -40,7 +40,50 @@ A <matching in a graph> saturates a specified <vertex set> $X$ when every <verte
 = Stable matching
 {synonym}
 
-Give each <vertex> a strict ordering of its <neighbours of a vertex>, all preferred to being unmatched. A <matching in a graph> is stable if no unused <edge> has both endpoints preferring each other to their current partners, with an unmatched endpoint willing to accept any neighbour. The <Gale-Shapley algorithm> produces a stable matching even when the two parts have unequal sizes and some pairs are unacceptable.
+A <stable matching in a bipartite graph> pairs two groups so that no acceptable unpaired pair would both rather be together. Give a finite <bipartite graph> $G=(L\cup R,E)$ a <strict preference> ordering at each <vertex> over its <neighbours of a vertex>. An <edge> means that both endpoints regard the pair as acceptable; every acceptable partner ranks above being unmatched. Lists may be incomplete, and $L$ and $R$ may have unequal <cardinalities>. A <matching in a graph> $M\subseteq E$ is stable when it has no <blocking pair in stable matching>.
+
+Write $M(v)$ for the partner of a <vertex> $v$, or $\bot$ if $v$ is an <unmatched vertex in a matching>. An unused <edge> $(\ell,r)$ is a <blocking pair in stable matching> precisely when
+$$
+r\succ_\ell M(\ell)\quad\text{and}\quad \ell\succ_r M(r),
+$$
+where $\succ_v$ denotes the <strict preference> at $v$ and $\bot$ ranks below every <neighbour of a vertex>. Both inequalities matter: wanting a different partner alone cannot upset a <stable matching>. A <stable matching> need not be a <perfect matching>; the <Gale-Shapley algorithm> still finds one with incomplete lists and unequal sides.
+
+Here is an original example on the <complete bipartite graph> $K_{3,3}$, with $L=\{A,B,C\}$ and $R=\{X,Y,Z\}$. Read each row from best to worst:
+$$
+\begin{array}{c|ccc|c|ccc}
+\text{left}&1&2&3&\text{right}&1&2&3\\\hline
+A&X&Y&Z&X&C&A&B\\
+B&X&Y&Z&Y&A&B&C\\
+C&Y&Z&X&Z&A&B&C
+\end{array}
+$$
+There are two <stable matchings>,
+$$
+M_L=\{(A,X),(B,Y),(C,Z)\},\qquad
+M_R=\{(A,Y),(B,Z),(C,X)\}.
+$$
+For $M_L$, the only unpaired partners preferred by left <vertices> are $B$ wanting $X$ and $C$ wanting $Y$. But $X$ prefers its partner $A$ to $B$, and $Y$ prefers its partner $B$ to $C$. Hence neither is a <blocking pair in stable matching>. For $M_R$, the left <vertices> want $A$ with $X$, $B$ with $X$ or $Y$, and $C$ with $Y$ or $Z$. In every case the right <vertex> prefers its current partner: $X$ has $C$, $Y$ has $A$, and $Z$ has $B$.
+
+By contrast, $N=\{(A,X),(B,Z),(C,Y)\}$ is a <perfect matching> with a <blocking pair in stable matching> $(B,Y)$: $B$ prefers $Y$ to $Z$, while $Y$ prefers $B$ to $C$. The abandoned partners need not agree to the change; stability tests the incentives of the two endpoints of the unused <edge>.
+
+\Image[stable-matching-blocking-pair-comparison.png]
+{title=One <blocking pair in stable matching> and two <stable matchings> for the same strict preference lists}
+
+There are $3!=6$ <permutations> of right partners. The following table lists every <blocking pair in stable matching> for each <perfect matching>; the middle column gives the partners of $A,B,C$ in that order:
+$$
+\begin{array}{c|c|l}
+& (M(A),M(B),M(C))&\text{blocking pairs}\\\hline
+M_L&(X,Y,Z)&\text{none}\\
+N&(X,Z,Y)&(B,Y)\\
+&(Y,X,Z)&(A,X)\\
+M_R&(Y,Z,X)&\text{none}\\
+&(Z,X,Y)&(A,X),\ (A,Y)\\
+&(Z,Y,X)&(A,Y)
+\end{array}
+$$
+This exhausts the <stable matchings>: any nonperfect <matching in a graph> here leaves an unmatched <vertex> on each side, and those two form a <blocking pair in stable matching> because every cross-pair is acceptable. Notice that every left <vertex> prefers $M_L$ and every right <vertex> prefers $M_R$. Stability can accommodate opposing interests without selecting a single universally preferred outcome.
+
+A <stable matching> addresses the possibility of mutually beneficial departures. Its definition contains no numerical total social benefit or <maximum-weight matching> objective. For example, assigning benefit $100$ to each <edge> of $N$ and zero to every other <edge> makes $N$ the unique <maximum-weight matching>, yet $(B,Y)$ still blocks it under the displayed <preference relations>. Such external benefits need not represent participants' rankings.
 
 = Mutual-worst edge in stable matchings
 {parent=Stable matching in a bipartite graph}
@@ -51,7 +94,51 @@ If the endpoints of an <edge> rank one another last and one <stable matching in 
 {c}
 {parent=Stable matching in a bipartite graph}
 
-An unmatched vertex in the proposing part proposes to its best untried neighbour. The receiving vertex keeps its preferred proposal, rejecting any other. There are at most as many proposals as <edges>, so this terminates. A rejected proposer can never become preferable to the receiver's final partner, since the receiver's held partner only improves. An edge never proposed along cannot block either: its proposer finishes with a better partner or has exhausted all choices. Thus the final <matching in a graph> is stable.
+= Deferred acceptance algorithm
+{synonym}
+
+The <Gale-Shapley algorithm> constructs a <stable matching> by letting one side propose and the other hold its best offer so far. The word "deferred" is essential: a held proposal is tentative and can be replaced. <David Gale> and <Lloyd Shapley> presented this construction in their 1962 paper, https://iqua.ece.toronto.edu/baochun/ece1771f/papers/Gale-Shapley-1962.pdf[College Admissions and the Stability of Marriage], §3, printed pp. 12–13; §4 extends it to college quotas and unacceptable pairs.
+
+For the one-partner <bipartite graph> model, designate $L$ as proposers and $R$ as receivers:
+* Start with the empty <matching in a graph>. Each proposer keeps a pointer to its first untried acceptable partner.
+* Choose an <unmatched vertex in a matching> $\ell\in L$ whose list is not exhausted. It proposes to its highest-ranked untried <neighbour of a vertex> $r$ and advances its pointer permanently.
+* If $r$ holds nobody, it holds $\ell$. Otherwise $r$ compares $\ell$ with its currently held proposer, keeps the one it prefers, and rejects the other. A displaced proposer becomes unmatched and may propose again later.
+* Stop when every unmatched proposer has exhausted its list. The held pairs are the output <matching in a graph>.
+
+Held proposers wait; only unmatched proposers act. A receiver can replace its held partner, whereas a proposer never tries the same <edge> twice. Isolated <vertices> simply remain unmatched. These rules also describe incomplete acceptable lists and unequal sides without adding fictitious acceptable partners.
+
+For the preference lists under <stable matching>, choose available proposers in <queue data structure> order, initially $A,B,C$, adding rejected proposers at the end. The proposals are $A\to X$, $B\to X$, $C\to Y$, $B\to Y$, $C\to Z$. At the fourth proposal, $Y$ replaces its held $C$ by $B$ because $B\succ_Y C$. This frees $C$ to try $Z$, producing $M_L$.
+
+\Image[stable-matching-deferred-acceptance-trace.png]
+{title=Five proposals in the <Gale-Shapley algorithm>: Y replaces a tentative partner before the final <stable matching>}
+
+Reverse the proposing side. Starting in the order $X,Y,Z$, the proposals are $X\to C$, $Y\to A$, $Z\to A$, $Z\to B$. Now $A$ rejects $Z$ because it already holds $Y$. The result is $M_R$. Thus the choice of proposing side can change the output even with <strict preferences> and complete lists.
+
+Why does the procedure work? Each <edge> receives at most one proposal, so at most $|E|$ proposals occur. At all times, the held <edges> form a <matching in a graph>, and each receiver holds its favourite proposer among all proposals received. A receiver's held partner can only improve according to its <strict preference>. If a proposer prefers $r$ to its final partner, or ends unmatched while $r$ is acceptable, it must already have proposed to $r$. A rejection means $r$ then held someone better, and its final partner is at least as good. Such an <edge> cannot be a <blocking pair in stable matching>. This covers every possible <blocking pair in stable matching>, proving stability at termination.
+
+With a <queue data structure> of unmatched proposers, a next-choice pointer for each list, and constant-time receiver-rank lookups, each proposal takes constant work. Using <Big O notation>, the <time complexity> is $O(|E|+|V|)$ including initialization, provided list construction and rank preprocessing also take $O(|E|+|V|)$. Edge-indexed ranks with cross-referenced list entries, or expected constant-time hash lookups, allow sparse storage proportional to $|E|+|V|$. Repeatedly scanning a receiver's preference list to compare offers would lose this bound. For complete lists with $n$ <vertices> per side, $|E|=n^2$ and the bound is $O(n^2)$. Initializing full $n\times n$ rank tables itself costs $\Theta(n^2)$ time and space, even when only a sparse <set> of pairs is acceptable.
+
+The <Gale-Shapley algorithm> does more than establish existence: with <strict preferences>, its output is a <proposer-optimal stable matching>.<College Admissions and the Stability of Marriage by David Gale and Lloyd Shapley>[§5, printed p. 14, Theorem 2: applicant optimality and the rejection induction]{ref} It is also a <receiver-pessimal stable matching>, as proved below. Both qualifications compare partners across <stable matchings>.
+
+= Proposer-optimal stable matching
+{parent=Gale-Shapley algorithm}
+
+For fixed <strict preferences>, a <proposer-optimal stable matching> gives each proposer its best partner obtainable in any <stable matching>, with unmatched ranked last. The <Gale-Shapley algorithm> achieves all these individual optima simultaneously. In the worked example, $M_L$ gives $A,B,C$ partners ranked $1,2,2$, respectively; the alternative $M_R$ gives them ranks $2,3,3$.
+
+Suppose a first rejection of a pair belonging to some <stable matching> $S$ occurs when $r$ rejects $\ell$ for $\ell'$. Every partner $\ell'$ prefers to $r$ has already rejected it, so none can be its partner in $S$. If $S(r)=\ell$, then $\ell'$ prefers $r$ to $S(\ell')$, while $r$ prefers $\ell'$ to $\ell$: a <blocking pair in stable matching>, a contradiction. Hence no rejected pair is stable, and each proposer receives its best stable partner. Under <strict preferences> this also makes the outcome independent of proposal order.
+
+= Receiver-pessimal stable matching
+{parent=Proposer-optimal stable matching}
+
+For fixed <strict preferences>, the same output of the <Gale-Shapley algorithm> gives each receiver its worst partner obtainable in any <stable matching>, treating unmatched as last. "Worst" is restricted to stable possibilities: a receiver might still receive its favourite acceptable partner if every <stable matching> assigns it that partner. Reversing the proposing side gives receivers their best stable partners instead.
+
+For a short proof, let $M$ be a <proposer-optimal stable matching> and $S$ any other <stable matching>. If a receiver $r$ preferred $M(r)=\ell$ to $S(r)$, then proposer optimality would make $\ell$ prefer $r=M(\ell)$ to $S(\ell)$, since the partners differ and <preferences> are strict. The pair $(\ell,r)$ would block $S$. Therefore no receiver prefers its partner in $M$ to its partner in $S$. In the worked example, right-side ranks in $M_L$ are $2,2,3$ for $X,Y,Z$, whereas $M_R$ gives them $1,1,2$. Neither outcome is universally best for both sides.
+
+= Blocking pair in stable matching
+{parent=Stable matching in a bipartite graph}
+{title2=$r\succ_\ell M(\ell),\ \ell\succ_r M(r)$}
+
+An acceptable unused <edge> whose endpoints both prefer each other to their partners in a <matching in a graph>, treating every acceptable partner as preferable to being unmatched. A <stable matching> has no such <edge>. In the worked example, $(B,Y)$ blocks $N$ even though $A$ already has its first choice.
 
 = Near-perfect matching
 {parent=Matching (graph theory)}

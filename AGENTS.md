@@ -28,6 +28,8 @@ As such, when creating such solutions, interlink heavily as usual, and create at
 
 Do not add model-attribution lines to solutions.
 
+If we determine that an exam already has solutions available to the students, either public or behind paywall, let's just not it down and skip those to start with. Yes there is a case for producing hyperlinked solutions even more amazing than the original ones, but fine, no one is ever going to Google into use for that.
+
 ## OurBigBook primer
 
 Newlines render as `<br>`, so don't indent code, keep long lines. You almost never want a newline, unless it is followed by a block construct. This is fine though:
@@ -320,9 +322,9 @@ When documenting a generally useful STEM concepts, we want to aim try to have th
 * examples
 * image, maybe even video generation when it makes sense
 * why the concept is useful and beautiful/interesting
-* discovery history.
-* in the case of the natural sciences, it is extremely important to cover motivating experiments in detail when this applies, early motivating experiments as well as simpler modern versions can both be of interest. When possible, describe even specifics of the experimental apparatus used, though this is unfortunately often lost to time.
-
+* discovery history. Create headers for the main people involved in discoveries. Feel free to give some color to their biographies in addition to listing main contributions.
+* in the case of the natural sciences, it is extremely important to cover motivating experiments in detail when this applies, early motivating experiments as well as simpler modern versions can both be of interest. When possible, describe even specifics of the experimental apparatus used, though this is unfortunately often lost to time. It is a good idea to create a separate header for notable experiments.
+u
 When you are doing another big job, it is OK to just create stubs for concepts without going into all this detail. But when it gets closer to the matter, this is the ideal we should strive for. To one day make the one book to rule them all.
 
 For now, we are STEM focused. It is OK to create stubs for any reusable non-STEM concepts, but don't expand those beyond stubs for now. You can add STEM specific aspects of non-STEM subjects, but don't steer off too far away from STEM otherwise beyond these stubs.

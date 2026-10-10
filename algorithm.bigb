@@ -99,66 +99,92 @@ Read $s[1,4]=3$, which separates $ABC$ from $D$. Then $s[1,3]=1$ separates $A$ f
 {parent=Algorithm}
 {wiki}
 
-A <greedy algorithm> commits to a locally preferred next choice without revisiting earlier choices. Its rule needs a justification to guarantee a globally optimal result: the largest-individual-value rule in the <0-1 knapsack problem> example fails, whereas <Dijkstra's algorithm> correctly settles the smallest tentative distance under its nonnegative-edge assumptions.
+A <greedy algorithm> builds a <feasible solution> by repeatedly committing to a locally preferred next choice. Each commitment is final: the <algorithm> does not revisit it when later choices become available. In <mathematical optimization>, the important question is whether those commitments can still attain the best <objective function> value.
 
-<Interval scheduling> makes the <greedy-choice property> concrete: an <exchange argument> justifies choosing the earliest finish. The rule maximizes job count.
+For example, a shared telescope can accept several observation requests with fixed time slots. In <interval scheduling>, every completed request counts equally, and overlapping requests cannot both be accepted. Choosing the request that finishes earliest leaves the resource available sooner. The example below turns that intuition into a precise rule, then shows why choosing the earliest start or shortest duration can lose jobs.
+
+<Greedy algorithms> are attractive because a single pass can replace a search through many candidate <subsets>. However, "locally best" is only a design proposal. A problem-specific <greedy-choice property>, often established by an <exchange argument>, must connect the local decision to the actual <objective function>. The largest-individual-value rule in the <0-1 knapsack problem> fails; <Dijkstra's algorithm> needs its nonnegative-edge assumptions. A rule's success in one <optimization> task does not justify it in another.
 
 = Greedy-choice property
 {parent=Greedy algorithm}
 
-A <greedy-choice property> says that some optimal <feasible solution> contains the locally selected choice. With <optimal substructure> in the remaining problem, this permits repeated commitments. An <exchange argument> can establish the property.<Algorithms by Jeff Erickson/Greedy Algorithms>[Algorithms by Jeff Erickson, §4.3 General Pattern, printed pp. 164–165: exchange without worsening an optimum]{ref}
+A <greedy-choice property> says that some optimal <feasible solution> contains the locally selected choice. Together with <optimal substructure> in the remaining instance, it allows repeated commitments. An <exchange argument> often establishes this property.<Algorithms by Jeff Erickson/Greedy Algorithms>[Algorithms by Jeff Erickson; §4.3 General Pattern, printed pp. 164–165: exchange without worsening an optimum]{ref}
+
+For <interval scheduling>, a safe first choice need not belong to every optimal <feasible solution>. When several optima exist, a commitment may exclude one while retaining another. The useful <loop invariant> is that the accepted prefix can still be extended to an optimum. Merely keeping the accepted <intervals> compatible proves feasibility, which is a weaker claim.
 
 = Exchange argument
 {parent=Greedy-choice property}
 
-An <exchange argument> transforms an optimal <feasible solution> to include a desired choice while preserving feasibility and its <objective function> value. For <interval scheduling>, replace the first accepted job; later jobs remain compatible because the replacement finishes no later.<Algorithms by Jeff Erickson/Greedy Algorithms>[Algorithms by Jeff Erickson, §4.2 Scheduling Classes, Lemma 4.3 and Theorem 4.4, printed pp. 163–164]{ref}
+An <exchange argument> modifies an optimal <feasible solution> to include a desired choice while preserving feasibility and not worsening its <objective function> value. The modification need not strictly improve the optimum; equality suffices.<Algorithms by Jeff Erickson/Greedy Algorithms>[Algorithms by Jeff Erickson; §4.3 General Pattern, printed pp. 164–165: exchange at the first disagreement]{ref}
+
+For <interval scheduling>, the exchange replaces the first selected job with an earliest-finishing job. Its safety comes from the finish-time inequality below. Replacing a job with a shorter one has no such guarantee: it might move the occupied <interval> into the middle of two useful jobs, as the <shortest-duration interval scheduling counterexample> shows.
 
 = Interval scheduling
 {parent=Greedy algorithm}
 {wiki}
 {title2=$\max |S|$}
 
-Given a <finite set> of jobs with fixed half-open <intervals> $[s_i,f_i)$, where $s_i<f_i$, select a <subset> $S$ of <maximum> <cardinality>. A <feasible solution> has pairwise <disjoint> <intervals>: for distinct selected jobs $i,j$, either $f_i\leq s_j$ or $f_j\leq s_i$. Adjacent endpoints are allowed. Each job uses one shared resource throughout its <interval>.<6.046J Design and Analysis of Algorithms, Spring 2015/Lecture 1: Introduction>[6.046J Design and Analysis of Algorithms, Spring 2015, Lecture 1: Introduction, printed p. 2, Interval Scheduling: compatibility and maximum size]{ref}
+Given a <finite set> of jobs with fixed half-open <intervals> $[s_i,f_i)$, where $s_i<f_i$, choose a <subset> $S$ of <maximum> <cardinality>. Each job occupies one shared resource throughout its <interval>. A <feasible solution> has pairwise <disjoint> <intervals>: for distinct selected jobs $i,j$, either $f_i\leq s_j$ or $f_j\leq s_i$. Thus a finish and the next start may coincide. Every job has value one; occupied time is not the <objective function>.<6.046J Design and Analysis of Algorithms, Spring 2015/Lecture 1: Introduction>[6.046J Design and Analysis of Algorithms, Spring 2015; Printed p. 2, Interval Scheduling: fixed requests, one resource, compatibility with endpoint equality, maximum size]{ref}
 
-Use a <sorting algorithm> to order jobs by <nondecreasing> finish time. Scan that order, accepting a job if its start is at least the last accepted finish; accept the first job unconditionally. Equal finish times may be ordered arbitrarily. The scan is linear; comparison <sorting algorithm> gives <time complexity> $O(n\log n)$ for $n\geq2$, in <Big O notation>, assuming constant-cost endpoint comparisons.<Algorithms by Jeff Erickson/Greedy Algorithms>[Algorithms by Jeff Erickson, §4.2 Scheduling Classes, printed p. 162: finish-time scan and sorting cost; endpoint equality is allowed by the convention here]{ref}
-
-Consider these seven original jobs:
+Consider these six original jobs, with arbitrary time units:
 $$
-\begin{array}{c|rrrrrrr}
-\text{job}&A&B&C&D&E&F&G\\\hline
-s_i&0&1&2&4&5&6&7\\
-f_i&6&2&4&6&8&7&9
+\begin{array}{c|rrrrrr}
+\text{job}&A&B&C&D&E&F\\\hline
+s_i&0&1&3&5&6&8\\
+f_i&6&3&5&7&9&10
 \end{array}.
 $$
-The finish order is $B,C,A,D,F,E,G$, using alphabetical order for the tie at six. Accept $B=[1,2)$ and $C=[2,4)$. Reject $A=[0,6)$ because it starts before four, then accept $D=[4,6)$ and $F=[6,7)$. Reject $E=[5,8)$ because it starts before seven, and accept $G=[7,9)$. The resulting <feasible solution> is $S=\{B,C,D,F,G\}$, with <cardinality> five. Ordering $D$ before $A$ in their tie gives the same selection.
+Job $B=[1,3)$ can be followed immediately by $C=[3,5)$ and $D=[5,7)$. Job $A=[0,6)$ conflicts with all three. Starting the resource earlier is therefore not automatically beneficial: one long commitment can displace several shorter requests.
 
-The earliest-start rule instead accepts $A=[0,6)$ first. It then rejects $B,C,D,E$, whose starts are before six, and accepts $F=[6,7)$ and $G=[7,9)$. Its <feasible solution> $\{A,F,G\}$ has <cardinality> three. Both rules return <disjoint> <intervals>; their different <objective function> values show why feasibility alone cannot establish optimality. The finish-time rule also permits idle time: leaving $[0,1)$ unused helps fit five jobs.
+The earliest-finish <greedy algorithm> uses a <sorting algorithm> to put jobs in <nondecreasing> finish time. Scan that order, accepting the first job and then each job whose start is at least the last accepted finish. Break finish-time ties arbitrarily; an empty <input> returns the <empty set>. For these jobs, the order and decisions are
+$$
+\begin{array}{c|rrrrrr}
+\text{finish order}&B&C&A&D&E&F\\\hline
+\text{decision}&\text{take}&\text{take}&\text{skip}&\text{take}&\text{skip}&\text{take}
+\end{array}.
+$$
+After $B,C$, job $A$ starts before the current finish five and is rejected. Accept $D$; then reject $E=[6,9)$ because six is before seven. Finally accept $F=[8,10)$. The result is $S=\{B,C,D,F\}$, with <cardinality> four. Leaving $[0,1)$ idle makes room for more jobs.
 
-\Image[interval-scheduling-finish-versus-start.png]
-{title=The same seven jobs give five acceptances by earliest finish and three by earliest start}
-{description=Colored <intervals> are accepted; gray <intervals> are rejected. Filled left endpoints and hollow right endpoints denote $[s_i,f_i)$, so a finish and the next start may coincide. All times and jobs belong to the constructed example.}
+By contrast, the earliest-start rule scans $A,B,C,D,E,F$. It accepts $A$, skips $B,C,D$, accepts $E$, and skips $F$. Its <feasible solution> $\{A,E\}$ contains only two jobs. Here $A$ and $E$ meet at time six and are compatible; $E$ and $F$ overlap on $[8,9)$.
 
-There is a short certificate that five is the <maximum>. The five <subsets> $\{A,B\}$, $\{C\}$, $\{D,E\}$, $\{F\}$, $\{G\}$ form a <partition of a set> of the seven jobs. Jobs $A,B$ overlap on $[1,2)$, and jobs $D,E$ overlap on $[5,6)$; a <feasible solution> takes at most one job from each of these pairs. The <singleton> <subsets> each contribute at most one. Thus every <feasible solution> has <cardinality> at most five, and $\{B,C,D,F,G\}$ attains that <upper bound>. This certificate explains this example without relying on the general <algorithm> proof.
+\Image[interval-scheduling-six-jobs-finish-versus-start.png]
+{title=Earliest finish accepts four jobs; earliest start accepts two}
+{description=The same six original <intervals> appear in both panels. Colored jobs are accepted and gray jobs rejected. A filled start and hollow finish depict a half-open <interval>; jobs meeting at an endpoint are compatible.}
 
-For the general <exchange argument>, let $q$ be the first job of an optimal <feasible solution> and $g$ an earliest-finishing job. Every later selected job $j$ satisfies
+There is also an elementary optimality certificate for this example. The four <subsets> $\{A,B\}$, $\{C\}$, $\{D,E\}$ and $\{F\}$ form a <partition of a set> of the jobs. A <feasible solution> takes at most one job from each group: $A,B$ overlap, as do $D,E$, and each other group is a <singleton>. Hence four is an <upper bound>, attained by $\{B,C,D,F\}$. Checking all $2^6=64$ <subsets> gives a unique optimum of size four: $\{B,C,D,F\}$.
+
+The earliest-finish theorem states that this <greedy algorithm> maximizes job count for every finite instance of <interval scheduling>. For the <exchange argument>, let $q$ be the first job in an optimal <feasible solution> and $g$ an earliest-finishing job. Every later selected job $j$ satisfies
 $$
 f_g\leq f_q\leq s_j.
 $$
-Replacing $q$ by $g$ preserves compatibility and <cardinality>. The remainder must be optimal among jobs starting at or after $f_g$, or a better remainder would improve the whole selection. <Induction> on the number of remaining jobs, with the <empty set> as base case, proves the finish-time <greedy algorithm> optimal.<6.046J Design and Analysis of Algorithms, Spring 2015/Lecture 1: Introduction>[6.046J Design and Analysis of Algorithms, Spring 2015, Lecture 1: Introduction, printed pp. 3–4, Claim 2: first-job exchange and residual optimality]{ref}
+Replace $q$ by $g$; compatibility and <cardinality> survive. The remainder must be optimal among jobs starting at or after $f_g$, or improving it would improve the whole selection. <Mathematical induction> on the smaller remaining instance, starting with the <empty set>, completes the outline.<Algorithms by Jeff Erickson/Greedy Algorithms>[Algorithms by Jeff Erickson; §4.2 Scheduling Classes, Lemma 4.3 and Theorem 4.4, printed pp. 163–164; endpoint equality is allowed by our half-open convention]{ref}
 
-\Image[interval-scheduling-exchange-certificate.png]
-{title=A safe first-job exchange and a five-group optimality certificate}
-{description=Upper panel: in a separate constructed example with jobs $q=[0,4)$, $g=[1,2)$, $u=[4,6)$ and $v=[6,7)$, replacing $q$ by $g$ keeps the two later jobs and <cardinality> three. Lower panel: five groups of mutually conflicting jobs give an <upper bound> of five for the seven-job example; selecting $B,C,D,F,G$ meets it.}
+Why is the <algorithm> fast? Once sorted, each job is examined once, using only the last accepted finish to decide compatibility. The scan takes $O(n)$ time; comparison <sorting algorithms> give total <time complexity> $O(n\log n)$ for $n\geq2$, in <Big O notation>, assuming constant-cost endpoint comparisons. Already sorted <input> needs only the $O(n)$ scan.<6.046J Design and Analysis of Algorithms, Spring 2015/Lecture 1: Introduction>[6.046J Design and Analysis of Algorithms, Spring 2015; Printed pp. 2–4, earliest-finish rule, compatibility and first-job exchange; scan cost follows by counting one comparison per subsequent request]{ref}
 
-The useful shortcut in <interval scheduling> is to avoid examining all $2^n$ <subsets> of the <input>. One local inequality preserves an optimal continuation: the <greedy-choice property> requires agreement with some optimum, rather than every optimum.
+The reason the shortcut is correct is stronger than "finishing sooner looks good": the <exchange argument> preserves every later job of a suitable optimum. This is the problem-specific fact that permits final decisions without exploring all <subsets>.
+
+= Shortest-duration interval scheduling counterexample
+{parent=Interval scheduling}
+
+In this separate three-job example, labels $A,B,C$ denote new jobs:
+$$
+A=[0,5),\qquad B=[5,10),\qquad C=[4,6).
+$$
+Their durations are five, five and two. Consider the rule "accept a shortest remaining job, discard all jobs conflicting with it, and repeat". It selects $C$ first. But $C$ overlaps $A$ on $[4,5)$ and $B$ on $[5,6)$, so both are discarded. The rule returns one job, while the compatible <subset> $\{A,B\}$ contains two. The common endpoint five is allowed, and no <feasible solution> contains all three jobs, so two is the <maximum>.
+
+\Image[interval-scheduling-shortest-duration-trap.png]
+{title=A two-unit job blocks two compatible five-unit jobs}
+{description=A separate three-job <counterexample> to choosing shortest duration. The left panel accepts only $C=[4,6)$; the right panel accepts $A=[0,5)$ and $B=[5,10)$. Shaded bands mark the two positive-length overlaps with $C$.}
+
+Duration alone ignores where a job sits. Here the shortest job straddles the useful handover time. Earliest finish instead chooses $A$, then $B$, and attains two. A <counterexample> can refute a proposed <greedy-choice property> even when the rule succeeds on many other <inputs>.
 
 = Weighted interval scheduling
 {parent=Interval scheduling}
 {title2=$\max\sum_{i\in S}w_i$}
 
-<Weighted interval scheduling> maximizes total reward over compatible jobs. An earliest-finish <greedy algorithm> can fail; <dynamic programming> compares alternative choices.<6.046J Design and Analysis of Algorithms, Spring 2015/Lecture 1: Introduction>[6.046J Design and Analysis of Algorithms, Spring 2015, Lecture 1: Introduction, printed pp. 4–5, Weighted Interval Scheduling and Dynamic Programming]{ref}
+<Weighted interval scheduling> assigns each job a reward $w_i$ and maximizes their sum over compatible jobs. Earliest finish can fail for this different <objective function>; <dynamic programming> can compare alternatives.<6.046J Design and Analysis of Algorithms, Spring 2015/Lecture 1: Introduction>[6.046J Design and Analysis of Algorithms, Spring 2015; Printed pp. 4–5, Weighted Interval Scheduling and Dynamic Programming]{ref}
 
-Keep the seven <intervals> above, assign reward $w_A=10$, and give each other job reward one. The finish-time selection $\{B,C,D,F,G\}$ earns five, whereas the compatible <subset> $\{A,F,G\}$ earns twelve. Any <subset> omitting $A$ earns at most six even before imposing compatibility; including $A$ leaves only $F,G$ available. Hence twelve is the optimal value. The <exchange argument> still preserves job count when replacing $A$ by $B$, but loses nine reward units. A safe exchange must preserve the actual <objective function>.
+For a separate two-job example, let $X=[0,2)$ have reward one and $Y=[1,3)$ reward ten. Earliest finish accepts $X$ and rejects $Y$, earning one; the optimum accepts $Y$, earning ten. Replacing $Y$ by $X$ preserves job count but loses reward. Thus the <interval scheduling> <exchange argument> proves the unit-value theorem only: its preserved quantity must match the intended <objective function>.
 
 = Algorithm correctness
 {parent=Algorithm}
@@ -172,11 +198,40 @@ Correctness is relative to a <formal specification>. Returning the first entry o
 = Partial correctness
 {parent=Algorithm correctness}
 
+<Partial correctness> means that every terminating execution begun in a <program state> satisfying the <precondition> $P$ finishes in a <program state> satisfying the <postcondition> $Q$. For a sequential program $C$, the usual <Hoare triple> notation is
+$$
+\{P\}\ C\ \{Q\}.
+$$
+Here the notation expresses <partial correctness>; it makes no promise that $C$ finishes. The <precondition> and <postcondition> describe permitted starting circumstances and required final circumstances, rather than tests performed automatically by the program.<An Axiomatic Basis for Computer Programming by Tony Hoare>[Hoare, 1969, §3 Program Execution, p. 577, and §4 General Reservations, pp. 578–579; the paper instead labels the precondition P, program Q and result R]{ref}
+
+For a sharp example, take the <precondition> $n=4$ and the following sequential program over mathematical <integers>:
+``
+i = 0
+s = 0
+while i < n:
+    i = i
+``
+The condition remains true, so execution never reaches the instruction after the loop. Consequently its <partial correctness> claim holds for the <postcondition> $2s=n(n+1)$, and even for the impossible <postcondition> $0=1$: there is no terminating execution with a wrong final result. This is <vacuous truth>, not evidence that the loop computes a <sum>. The same program fails <total correctness> for this permitted <input>.
+
+The distinction is useful in a proof: first show that an answer, whenever produced, is right; then establish <algorithm termination>. The <summation loop verification> supplies both arguments for a loop that actually progresses. Its finite trace illustrates one execution, while its <loop invariant> covers every permitted <input>.
+
 = Total correctness
 {parent=Algorithm correctness}
 
+<Total correctness> requires <partial correctness> and <algorithm termination> for every <program state> allowed by the <precondition>. For a deterministic sequential program, every permitted start must reach a final <program state> satisfying the <postcondition> after finitely many steps. Thus an infinite execution can satisfy <partial correctness>, but refutes <total correctness> for a permitted start.
+
+In the <summation loop verification>, the <loop invariant> establishes the answer conditional on exit, and the <loop variant> establishes exit. Both parts matter: replacing the body by a step that never returns would defeat <total correctness> even if every completed iteration preserved the <loop invariant>. Likewise, a terminating loop with the wrong <sum> fails <partial correctness> and therefore fails <total correctness>.
+
+These obligations depend on the <formal specification>. A program that rejects every <input> might correctly implement a rejection service, but does not meet a contract promising a <sum> for every nonnegative <integer>. A proof of <total correctness> also gives no particular physical response-time guarantee: <time complexity> and the execution environment require their own assumptions.
+
 = Algorithm termination
 {parent=Total correctness}
+
+<Algorithm termination> means that execution finishes after finitely many steps on the <inputs> under consideration. Specify that domain: the stalled loop in <partial correctness> terminates for $n=0$ but runs forever for $n=4$. A successful run on one <input> does not establish termination on another.
+
+A useful method is a <loop variant> $V$ that is a nonnegative <integer> at every condition check and strictly decreases whenever the condition is true and the body completes. Also prove that condition evaluation and each body execution terminate. An infinite run would then give an infinite strictly decreasing <sequence> of nonnegative <integers>, contradicting their <well-founded relation>. This establishes <algorithm termination> without enumerating all executions.
+
+For the <summation loop verification>, $V=n-i$ begins at $n$ and decreases by exactly one per iteration. The body executes exactly $n$ times, including zero times for $n=0$. Merely bounding a decreasing measure below is insufficient for <real numbers>: $1,1/2,1/4,\ldots$ decreases forever while staying positive. The choice of a <well-founded relation> supplies the essential progress argument; <well-founded progress in recursion> applies the same idea to <recursive calls>.
 
 = Prefix maximum correctness example
 {parent=Algorithm correctness}
@@ -228,16 +283,78 @@ Starting $\mathrm{best}$ at zero instead of $a_0$ fails on the original negative
 
 Establishing specified properties of a system using <formal proofs> about a precise model. <Formal verification> connects an implementation to a <formal specification>; correctness of the model and its assumptions still matters when applying the result to a physical system.
 
+For a small example, the <summation loop verification> below starts with executable steps and asks two separate questions: does any returned value satisfy the <postcondition>, and does execution reach that return? A <loop invariant> answers the first; a <loop variant> answers the second. This turns an unbounded family of permitted <inputs> into a few reusable proof obligations.
+
+The model must specify <programming language semantics>, including the meaning of <variable assignments>, comparisons and <integer arithmetic>. A proof about exact mathematical <integers> need not describe a machine that wraps on <integer overflow>. Similarly, a correct <formal proof> of a weak or mistaken <formal specification> does not establish the intended behavior. Choosing the right <formal specification> and relating the model to the implemented system remain substantive tasks.
+
+<Software testing> examines chosen executions and can expose a <counterexample>. A <formal proof> instead justifies a statement throughout its stated model; it does not require executing every permitted <input>. This makes <formal verification> valuable when rare boundary cases matter, while <software testing> can still reveal an incorrect model or misunderstood requirement.
+
+In 1969, <Tony Hoare> presented rules for <variable assignment>, composition and iteration in a small <programming language>. His paper explicitly says those rules do not prove successful termination, and discusses the dependence of arithmetic reasoning on the chosen overflow behavior. These reservations already make the model's scope part of the argument.<An Axiomatic Basis for Computer Programming by Tony Hoare>[Hoare, An Axiomatic Basis for Computer Programming, §2 Computer Arithmetic, pp. 576–577; §§3.1–3.4, pp. 577–578; §4 General Reservations, pp. 578–579]{ref}
+
+= Summation loop verification
+{parent=Formal verification}
+{title2=$2s=n(n+1)$}
+
+Compute $1+2+\cdots+n$, the <triangular number> $T_n$, for a nonnegative <integer> $n$. The <empty sum> gives zero when $n=0$. Use exact mathematical <integers> and keep the <input> $n$ unchanged; every comparison and <variable assignment> is a terminating operation. The original sequential procedure is
+``
+require n is an integer and n >= 0
+i = 0
+s = 0
+while i < n:
+    i = i + 1
+    s = s + i
+return s
+``
+The order of the two <variable assignments> matters: the <addition> uses the newly incremented $i$. For $n=4$, the pairs $(i,s)$ at successive condition checks are $(0,0),(1,1),(2,3),(3,6),(4,10)$. At the last check, $i<n$ is false, and the returned <sum> is $10$.
+
+The <precondition> is $n\in\mathbb Z$ with $n\geq0$, under the exact-arithmetic model just stated. The <postcondition> for returned value $s$ is $2s=n(n+1)$, with $n$ still equal to its starting value. At each condition check use the <loop invariant>
+$$
+I:\qquad i,s\in\mathbb Z,\qquad 0\leq i\leq n,\qquad 2s=i(i+1),
+$$
+and the <loop variant> $V=n-i$. The equation says that the accumulator is the <triangular number> for precisely the processed prefix $1,\ldots,i$; the inequalities connect that prefix to the loop's condition.
+
+\Image[summation-loop-contract-control-flow.png]
+{title=The summation loop restores its invariant before each condition check}
+{description=Original sequential control flow for the <summation loop verification>. The blue loop head carries the <loop invariant>; the orange body increments $i$ before adding it to $s$. A false condition leads to the <postcondition>. The <loop variant> decreases on the return arrow. All values are mathematical <integers> and $n$ remains unchanged.}
+
+Initialization gives $i=s=0$, so $I$ holds, including when $n=0$. For preservation, let the old values satisfy $I$ and $i<n$. Write $i'=i+1$ and $s'=s+i'$ for the values after both <variable assignments>. Since $i,n$ are <integers>, $i<n$ gives $i'\leq n$, and
+$$
+2s'=2s+2(i+1)=i(i+1)+2(i+1)=(i+1)(i+2)=i'(i'+1).
+$$
+Thus the completed body restores $I$. Between the two <variable assignments>, the equation can be false; the <loop invariant> is required at the loop head. This preservation step is <mathematical induction> on the number of completed iterations.
+
+At exit, the false condition gives $i\geq n$, while $I$ gives $i\leq n$. Hence $i=n$, so $2s=n(n+1)$: this proves <partial correctness>. For <algorithm termination>, $I$ gives the nonnegative <integer> $V=n-i$. When the condition is true, $V\geq1$; the terminating body gives $V'=n-i'=V-1$. Therefore the loop cannot repeat forever. Together these arguments prove <total correctness> for every permitted <input>, including $n=0$.
+
+\Image[summation-loop-trace-and-stalled-variant.png]
+{title=Four additions finish the sum; an unchanged index cannot make progress}
+{description=Original exact trace for $n=4$: five condition checks and four body executions give $s=10$, while the <loop variant> decreases from four to zero. The right panel shows the stalled loop from <partial correctness>: the same <program state> repeats and $V=4$ never decreases. Its equation $2s=i(i+1)$ remains true, but it never reaches an exit.}
+
+Two changes expose what the proof checks. Swapping the two body instructions computes $0+1+\cdots+(n-1)$, returning $6$ rather than $10$ for $n=4$. Leaving $i$ unchanged can preserve an initial equation forever without producing any answer. The first change breaks the intended <postcondition>; the second breaks <algorithm termination>. A trace can reveal these failures, while the two proof obligations explain them.
+
+The exact-arithmetic assumption has a concrete boundary. In a stipulated unsigned eight-<bit> model where each <addition> wraps modulo $256$, $n=23$ fits in the <input> representation, but its intended <triangular number> is $276$. The stored accumulator instead finishes at $20$, so the mathematical <postcondition> fails. This is <integer overflow>, and the proof above does not apply to that altered model. Restricting the same implementation to $0\leq n\leq22$ prevents overflow in its stored loop values, since $T_{22}=253$; alternatively use a representation supporting the required exact <integer arithmetic>. The equations in the proof are mathematical statements, not instructions to evaluate products in eight <bits>.
+
 = Formal specification
 {parent=Formal verification}
 
 A mathematically precise description of permitted behaviour. A <formal specification> for the <microkernel file-read example>'s service could relate an authorized request to the exact returned <bytes>; a <formal specification> of its <microkernel>'s <IPC> need only describe the protected transport operation. They state different obligations.
 
+For the <summation loop verification>, require a nonnegative <integer> <input> $n$ and a returned value $s$ satisfying $2s=n(n+1)$. The <formal specification> describes what answer is acceptable without requiring this particular loop: another implementation may satisfy the same contract. State separately whether <partial correctness> or <total correctness> is required. A <Hoare triple> packages the <precondition>, the program and the <postcondition>; <Hoare logic> supplies rules for establishing such claims.
+
+Precision alone does not ensure a useful requirement. The <postcondition> $s\geq0$ permits returning zero for every nonnegative <integer> <input>; it does not specify the intended <triangular number>. Conversely, an impossible <precondition> permits no starts, making a universal correctness claim vacuous. Check both that intended <inputs> are admitted and that admitted <outputs> express the intended task.
+
 = Precondition
 {parent=Formal specification}
 
+The condition required of a starting <program state> for a stated correctness guarantee. In the <summation loop verification>, $n\in\mathbb Z$ and $n\geq0$ admit $n=0$ and $n=4$, but exclude $n=-1$. The accompanying model assumes exact <integer arithmetic> and terminating elementary operations. The initial values of $i,s$ need no restriction because initialization overwrites them before use.
+
+A <precondition> is a logical assumption, not automatically an executable check. Writing `require` in a procedure states its contract; an implementation that checks or rejects invalid <inputs> needs that behavior specified too. Weakening a <precondition> admits more starts and therefore demands more proof: dropping $n\geq0$ here makes $n=-2$ a terminating <counterexample> to $2s=n(n+1)$, since initialization returns zero while $n(n+1)=2$.
+
 = Postcondition
 {parent=Formal specification}
+
+The condition required of a final <program state> when a program finishes under its <precondition>. The <summation loop verification> requires returned value $s$ to satisfy $2s=n(n+1)$ and preserves the <input> $n$. Relating the answer to the original <input> matters: allowing the program to replace $n$ by zero would change the intended contract.
+
+A <postcondition> alone gives no promise of <algorithm termination>. It also need not specify a unique <output>: $s\geq0$ allows many answers, while the exact <triangular number> equation determines one <integer> answer for each permitted $n$. Stronger <postconditions> express more obligations; proving only a weaker consequence cannot justify the stronger requirement.
 
 = Binary correctness
 {parent=Formal verification}
@@ -588,6 +705,67 @@ An invocation made by a <recursive procedure> of itself, directly or through ano
 
 A <divide-and-conquer algorithm> divides a problem into smaller instances, solves them using <recursion>, and combines their answers. In <merge sort>, the division makes two contiguous halves, and the <merge algorithm> combines the resulting <sorted arrays>. The important design step is finding a combination rule cheaper than solving the whole problem afresh.
 
+Halving the <input> is only one part of the design. The number of <recursive calls> and the work outside those calls determine whether the smaller instances actually save time. <Divide-and-conquer combination cost> keeps these quantities separate; the <divide-and-conquer product ledger> shows how an algebraic identity changes the number of required calls in <Karatsuba multiplication>.
+
+For <algorithm correctness>, specify the meaning of each returned answer, prove the <base cases>, and show that combining correct smaller answers gives the required <output>. <Induction> then proves correctness, provided every <recursive call> progresses towards a <base case>. The combination rule must reconstruct everything the caller needs: two sorted halves alone are not a <sorted array>, and four digit blocks alone are not their <integer> product.
+
+= Divide-and-conquer combination cost
+{parent=Divide-and-conquer algorithm}
+{title2=$T(n)=aT(n/2)+g(n)$}
+
+The combination cost is the work needed to reconstruct an answer from the returned smaller answers. In a <time complexity> calculation, also count partitioning the <input>, preparing arguments, and other work outside <recursive calls>. Write their total as $g(n)$ for a size-$n$ call. For an ideal balanced <divide-and-conquer algorithm> making $a$ calls of size $n/2$, the <recurrence relation> is
+$$
+T(1)=c_0,\qquad T(n)=aT(n/2)+g(n)\quad(n>1),
+$$
+where $a$ is a fixed positive <integer> and $c_0>0$ is the <base case> cost. Take $n=2^k$, a <power of two>, so the size becomes one after exactly $k$ divisions. This is a model of total sequential work: all $a$ smaller calls contribute, even if a machine could run some simultaneously.
+
+At level $j$, there are $a^j$ calls, each of size $n/2^j$. Expanding the <recurrence relation> gives the exact identity
+$$
+T(n)=a^k c_0+\sum_{j=0}^{k-1}a^j g(n/2^j).
+$$
+The first term counts the <base cases>; the <sum> stops before their level because $g$ describes work in nonterminal calls. This separates depth, number of calls, and local work. <Merge sort> has two smaller calls and a linear <merge algorithm>, giving $T(n)=2T(n/2)+O(n)=O(n\log n)$ in <Big O notation>. The MIT notes derive this by summing equal work across levels, and contrast it with the same two-way split followed by quadratic local work.<6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff/Lecture 3: Insertion sort, merge sort>[6.006 Introduction to Algorithms, Fall 2011, Lecture 3: slides 32–44, recurrence and equal work per level; slide 46, quadratic local work]{ref}
+
+\Image[divide-and-conquer-combination-work-levels.png]
+{title=The same halving tree can have linear or quadratic work at each call}
+{description=Original exact cost models with $n=16$, two children per nonterminal call, and one unit per <base case>. For local work $g(s)=s$, every internal level costs 16 and the total is 80. For $g(s)=s^2$, internal levels cost 256, 128, 64, 32 and the total is 496. The tree shows instance sizes; the ledger counts work rather than execution order.}
+
+For the first constructed model, set $a=2$, $c_0=1$ and $g(s)=s$. Every internal level costs $2^j(n/2^j)=n$, while the leaves cost $n$. Thus $T(n)=n\log_2 n+n$, giving $T(16)=80$. If the same split instead has $g(s)=s^2$, then the <finite geometric series> gives
+$$
+T(n)=n+n^2\sum_{j=0}^{k-1}2^{-j}=2n^2-n,
+$$
+so $T(16)=496$. The root alone already costs $n^2$ in this second model. Smaller arguments do not eliminate expensive reconstruction. These are stipulated operation counts, rather than measured running times or exact <merge sort> instruction counts.
+
+<Binary search> has a different saving: after its comparison, only one half remains a candidate. With constant-cost indexed <array> access and comparisons, its worst-case <time complexity> satisfies an upper <recurrence relation> $T(n)\leq T(\lfloor n/2\rfloor)+C$ for $n\geq1$, with $T(0)=c_0$. There is one continuing branch, rather than two. At most $\lfloor\log_2 n\rfloor+1$ nonempty candidate ranges are inspected for $n\geq1$. Copying the retained half into a fresh <array> on every step would add linear work at that step and lose this logarithmic bound. The shrinking range and its representation both matter.
+
+= Divide-and-conquer product ledger
+{parent=Divide-and-conquer algorithm}
+
+Splitting two <integers> in <positional notation> gives $x=aq+b$ and $y=cq+d$, where $q=B^m$ shifts a block by $m$ <numeral digits> in fixed <radix> $B\geq2$. The <distributive property> gives
+$$
+xy=acq^2+(ad+bc)q+bd.
+$$
+Computing $ac,ad,bc,bd$ separately needs four block <multiplications>. Merely halving the operands therefore gives an ideal <recurrence relation> $F(n)=4F(n/2)+O(n)$, still with quadratic <time complexity>. The <Karatsuba three-product identity> instead computes $ac$, $bd$ and $(a+b)(c+d)$, recovering the middle <coefficient> by two <subtractions>. The MIT notes present precisely this four-product versus three-product distinction.<6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff/Lecture 11: Numerics I>[6.006 Introduction to Algorithms, Fall 2011, Lecture 11: Numerics I, printed pp. 4–5, High Precision Multiplication and Karatsuba's Method]{ref}
+
+For an original small example, multiply $47$ by $63$. Set $B=q=10$, $a=4$, $b=7$, $c=6$, $d=3$. Four separate block products would give $ac=24$, $ad=12$, $bc=42$, $bd=21$. The three-product calculation is
+$$
+\begin{aligned}
+u&=ac=24,&v&=bd=21,&w&=(a+b)(c+d)=11\cdot9=99,\\
+h&=w-u-v=99-24-21=54,\\
+47\cdot63&=100u+10h+v=2400+540+21=2961.
+\end{aligned}
+$$
+The crucial reuse is that $u$ and $v$ supply the outer <coefficients> and also remove the unwanted terms from $w$. There is no need to compute $ad$ and $bc$ separately. Expanding $w=ac+ad+bc+bd$ proves the identity. <Induction> extends it to <Karatsuba multiplication> once each smaller block product is correct and <Karatsuba recursion termination> supplies decreasing sizes and complete <base cases>.
+
+\Image[divide-and-conquer-four-versus-three-products.png]
+{title=Four block products or three: the exact ledger for $47\cdot63$}
+{description=The left ledger computes both cross products separately. The right ledger reuses $ac=24$ and $bd=21$ to recover their sum as $99-24-21=54$. Both reconstructions yield $2961$. Counts refer to block <multiplication> calls at this split; the extra <numeral digit> in $4+7=11$ prevents interpreting all three as single-digit products.}
+
+The operation model matters. Let $n$ count <numeral digits> in fixed <radix> $B$, and count single-digit <multiplication>, <addition>, <subtraction> and copying as constant-cost operations. The nonrecursive work on size-$n$ operands is $O(n)$: it includes forming sums, positional shifts and <Karatsuba carry handling>. Treating an arbitrarily large <integer> <multiplication> as one operation would hide the very saving being studied. The coefficients $24,54,21$ above must be shifted and added; concatenating them does not give $2961$.
+
+In the ideal equal-half model, <Karatsuba multiplication> has $K(n)=3K(n/2)+O(n)$. At depth $j$ its additional work is at most a constant times $n(3/2)^j$, and its leaf count is $3^k=n^{\log_2 3}$ for $n=2^k$. A <geometric series> gives $K(n)=O(n^{\log_2 3})$, where $\log_2 3\approx1.585$. Four recursive products would instead give $4^k=n^2$ leaves. Saving one block product repeatedly changes the exponent, even though the combination requires extra <addition> and <subtraction>.
+
+For the literal sum-based version, each operand sum can occupy one extra <numeral digit>. Its worst-case upper <recurrence relation> is $K(n)\leq3K(\lceil n/2\rceil+1)+Cn$ for a nondecreasing cost envelope, above a fixed <base case> threshold of at least three digits. <Karatsuba digit-operation cost> proves that this extra digit preserves the exponent; <Karatsuba operand splitting> handles odd lengths and leading zero padding. For signed <integers>, apply the nonnegative procedure to their <absolute values> and restore the sign. The small ledger establishes an exact identity, while <Karatsuba practical crossover> explains why it alone cannot predict a speedup for two-digit operands.
+
 = Sorting algorithm
 {parent=Algorithm}
 {wiki}
@@ -866,7 +1044,7 @@ the new <array> is ordered by $s_{p+1}$. Equal new suffixes have equal current <
 = Stable digit sort
 {parent=Radix sort}
 
-A <stable digit sort> applies <stable sorting> to complete <sorting records> using one specified <numerical digit> of their encoded <sort keys>. <Counting sort> can supply it; <stable record placement in counting sort> moves records without discarding their associated data. Stability concerns equal current <numerical digits>, even when the full <sort keys> differ. This is the information-preservation step in <least-significant-digit radix sort>.<Open Data Structures: An Introduction by Pat Morin/11.2 Counting Sort and Radix Sort>[§11.2.1, associated-data and stability paragraphs; §11.2.2, least-significant passes and correctness paragraph after Figure 11.8]{ref}
+A <stable digit sort> applies <stable sorting> to complete <sorting records> using one specified <numerical digit> of their encoded <sort keys>. <Counting sort> can supply it; <stable record placement in counting sort> moves records without discarding their associated data. Stability concerns equal current <numerical digits>, even when the full <sort keys> differ. This is the information-preservation step in <least-significant-digit radix sort>.<Open Data Structures: An Introduction by Pat Morin/11.2 Counting Sort and Radix Sort>[Open Data Structures: An Introduction by Pat Morin; §11.2.1, associated-data and stability paragraphs; §11.2.2, least-significant passes and correctness paragraph after Figure 11.8]{ref}
 
 An original two-record counterexample exposes the need for the tie rule. Start with $(42_A,41_B)$ at width three. A units pass gives $(041_B,042_A)$. Both tens <numerical digits> are four. A deliberately unstable tens pass may reverse their tie and return $(042_A,041_B)$: it is sorted by the tens <numerical digit>, yet its two-position suffixes $42,41$ are decreasing. The final stable hundreds pass sees two zeros and keeps this wrong order. <Sorting permutation preservation> still holds, but <sortedness> fails. Stability in the tens pass would have retained the units information.
 
@@ -901,7 +1079,7 @@ For variable-length <strings>, first specify the <alphabet> order and whether a 
 {wiki}
 {title2=$T(n)=O(n\log n)$}
 
-<Merge sort> is a <divide-and-conquer algorithm> that sorts a finite <array> by splitting it into contiguous halves, sorting each half using <recursion>, and combining the two <sorted arrays> with the <merge algorithm>. An empty or one-entry <array> is returned immediately. For length $n\geq2$, put the first $\lfloor n/2\rfloor$ entries on the left and the remaining $\lceil n/2\rceil$ on the right; the brackets are the <floor function> and <ceiling function>. Always choose the left head on equal keys to obtain <stable sorting>. This is the split, sort, combine structure taught in the MIT lecture notes.https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/90a37c49b07b105ea7a027abc67eddc6_MIT6_006F11_lec03.pdf[MIT 6.006 (2011), lecture 3: merge sort]{ref}
+<Merge sort> is a <divide-and-conquer algorithm> that sorts a finite <array> by splitting it into contiguous halves, sorting each half using <recursion>, and combining the two <sorted arrays> with the <merge algorithm>. An empty or one-entry <array> is returned immediately. For length $n\geq2$, put the first $\lfloor n/2\rfloor$ entries on the left and the remaining $\lceil n/2\rceil$ on the right; the brackets are the <floor function> and <ceiling function>. Always choose the left head on equal keys to obtain <stable sorting>. This is the split, sort, combine structure taught in the MIT lecture notes.<6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff/Lecture 3: Insertion sort, merge sort>[6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff; MIT 6.006 (2011), lecture 3: merge sort]{ref}
 
 Take the concrete <input> <array>
 $$
@@ -950,7 +1128,7 @@ For a short <algorithm correctness> outline, the empty and one-entry base cases 
 {wiki}
 {title2=$C(m,n)\leq m+n-1\quad(m,n\geq1)$}
 
-The <merge algorithm> combines two finite sorted <sequences> under the same <total order>, retaining every entry exactly once. Keep a position at the first unconsumed entry, or "head", of each <input>. While both heads exist, compare their keys, append the smaller head to the <output>, and advance only that head's position. On equality take the left head. Once either <sequence> is exhausted, append the other remainder without further key comparisons. Empty <inputs> therefore require no head comparisons. The MIT notes illustrate this two-head combination step.https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-fall-2011/90a37c49b07b105ea7a027abc67eddc6_MIT6_006F11_lec03.pdf[MIT 6.006 (2011), lecture 3: merging sorted arrays]{ref}
+The <merge algorithm> combines two finite sorted <sequences> under the same <total order>, retaining every entry exactly once. Keep a position at the first unconsumed entry, or "head", of each <input>. While both heads exist, compare their keys, append the smaller head to the <output>, and advance only that head's position. On equality take the left head. Once either <sequence> is exhausted, append the other remainder without further key comparisons. Empty <inputs> therefore require no head comparisons. The MIT notes illustrate this two-head combination step.<6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff/Lecture 3: Insertion sort, merge sort>[6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff; MIT 6.006 (2011), lecture 3: merging sorted arrays]{ref}
 
 For example, the <merge algorithm> applied to $(1,4,7)$ and $(2,3,8,9)$ returns $(1,2,3,4,7,8,9)$:
 
@@ -1157,7 +1335,159 @@ Derandomization converts a randomized construction or algorithm into a determini
 = Method of conditional expectations
 {synonym}
 
-For a random objective with an easily computable <conditional expectation>, reveal one random choice at a time and choose an outcome whose conditional expected objective is at least the current value. Such an outcome exists because the current value is an average of the child values. When all choices are fixed, the actual objective is at least the initial expectation. Biased as well as fair choices work. Efficient expectation updates make the resulting deterministic procedure a <polynomial-time algorithm>.
+The method of conditional probabilities turns an <expected value> guarantee into a deterministic construction. For a maximization <objective function>, fix one choice at a time, always keeping the <conditional expectation> of the final value at least as large as before. Once every choice is fixed, that <conditional expectation> is the actual value. The useful ingredient is a way to evaluate the <conditional expectations> efficiently.
+
+No actual random choices are needed during this construction. The <probability distribution> describes hypothetical completions used in the analysis; the algorithm compares their <conditional expectations> and commits deterministically. For <maximum cut>, this converts the <random cut lower bound> into a <cut of a graph> containing at least half the <edges>. A <maximum cut> can still be larger, as the <conditional expectations cut example> shows.
+
+= Conditional expectation choice invariant
+{parent=Method of conditional probabilities}
+{title2=$q_{i+1}\geq q_i$}
+
+Let $Z=Z(X_1,\ldots,X_n)$ be a real-valued <objective function> of finitely many choices, with finite <expected value>. Suppose a prefix $P=(X_1=x_1,\ldots,X_i=x_i)$ has positive <probability>. Write $q(P)=\mathbb E[Z\mid P]$. If the next choice is a fair <bit>, the <law of total expectation> gives
+$$
+q(P)=\frac{q(P,0)+q(P,1)}2.
+$$
+At least one child is at least this average. Choose a child with the larger value, using a fixed rule for ties. The resulting <loop invariant> is $q(P)\geq\mathbb E Z$. At a complete assignment $x$, there is only one completion left, so $q(x)=Z(x)$ and therefore $Z(x)\geq\mathbb E Z$.
+
+For a biased choice or more than two possibilities, use the corresponding weighted average:
+$$
+q(P)=\sum_{a:\,p_a>0}p_aq(P,a),\qquad p_a=\mathbb P(X_{i+1}=a\mid P).
+$$
+Some positive-<probability> child is at least the weighted average. For minimization, choose a child at most the current <conditional expectation> and reverse the invariant. The averaging identity is the same in both directions.<Discrete Probability by Jeff Erickson>[Jeff Erickson, Discrete Probability, §1.2.2, printed pp. 6–7: conditional expectation decomposition and linearity; authorship stated on the author's Algorithms notes page]{ref}
+
+The word "probabilities" in the method's name also covers an <indicator random variable> for an undesirable outcome: keeping its <conditional expectation>, which is its <conditional probability>, strictly below one eventually forces that indicator to be zero. Optimizing an ordinary numerical <objective function> is the <method of conditional expectations> formulation used below.
+
+= Conditional expectations for maximum cut
+{parent=Method of conditional probabilities}
+
+Let $G=(V,E)$ be a finite undirected <simple graph>, with $n=|V|$ <vertices> and $m=|E|$ <edges>. A <cut of a graph> assigns each <vertex> a label zero or one; an <edge> crosses precisely when its endpoints have different labels. Its size is the number of crossing <edges>. A <maximum cut> maximizes that size.
+
+For the analysis, assign <independent> fair <bits> $X_v$ to the <vertices>. For each <edge> $uv$, the <indicator random variable> $I_{uv}=\mathbf1_{\{X_u\ne X_v\}}$ has <expected value> $1/2$: exactly two of the four equally likely endpoint assignments cross. Thus <linearity of expectation> gives the <random cut lower bound>:
+$$
+C=\sum_{uv\in E}I_{uv},\qquad \mathbb E C=\sum_{uv\in E}\frac12=\frac m2.
+$$
+<Linearity of expectation> does not require the <indicator random variables> to be <independent>. What matters here is the stipulated distribution of the endpoint <bits>.
+
+= Conditional expectation cut formula
+{parent=Conditional expectations for maximum cut}
+{title2=$q(P)=f(P)+u(P)/2$}
+
+For any partial assignment $P$, let $f(P)$ count <edges> whose two endpoints are already fixed on opposite sides, and let $u(P)$ count <edges> with at least one unassigned endpoint. Under the remaining <independent> fair <bits>,
+$$
+q(P)=\mathbb E[C\mid P]=f(P)+\frac{u(P)}2.
+$$
+An <edge> with fixed equal labels contributes zero; fixed unequal labels contribute one. If one endpoint is unassigned, its fair <bit> disagrees with the fixed label with <probability> $1/2$. If both endpoints are unassigned, their <independent> fair <bits> disagree with <probability> $1/2$ as well. Count each unresolved <edge> once, even when both endpoints are unassigned.
+
+Process <vertices> in a fixed order. Evaluate the <conditional expectation cut formula> after setting the next label to zero and after setting it to one; retain the larger value, choosing zero on ties. The <conditional expectation choice invariant> ensures the final <cut of a graph> has size at least $m/2$. This is a deterministic <approximation algorithm> for <maximum cut>.<CS 4820: Algorithms, Spring 2011/Lecture notes on randomized approximation algorithms>[CS 4820: Algorithms, Spring 2011; Cornell CS 4820, Lecture notes on randomized approximation algorithms, 2 May 2011, §1.1.2, printed pp. 2–3: conditional expectations, Algorithms 1–2 and the half-total-edge-weight guarantee; no individual byline stated]{ref}
+
+= Conditional expectations cut example
+{parent=Conditional expectations for maximum cut}
+
+Consider the following original five-<vertex> <simple graph>, where $AB$ denotes the undirected <edge> $\{A,B\}$:
+$$
+V=\{A,B,C,D,E\},\qquad E=\{AB,BC,CD,DE,EA,AC,BD\}.
+$$
+Its seven <edges> give initial <expected value> $q(\varnothing)=7/2=3.5$. Use <vertex> order $A,B,C,D,E$ and choose zero whenever the two child <conditional expectations> tie.
+
+\Image[conditional-expectations-graph-cut.png]
+{title=A guaranteed five-edge cut and a six-edge maximum cut of the same graph}
+{description=The <conditional expectations cut example> uses the same original <simple graph> in both panels. Node colours and labels identify the two sides of each <cut of a graph>. Solid teal <edges> cross; dashed grey <edges> do not. The deterministic choices on the left give five crossing <edges>; the assignment on the right gives six. Crossings of drawn lines are not additional <vertices>.}
+
+The complete decision ledger is below. A prefix lists fixed labels in <vertex> order; all later labels remain hypothetically <independent> fair <bits>. Each candidate entry is the <conditional expectation> of the final <cut of a graph>, including the contribution of unresolved <edges>.
+
+|| Prefix before choice
+|| Next <vertex>
+|| Set to 0
+|| Set to 1
+|| Chosen label
+|| Retained <conditional expectation>
+
+| Empty
+| $A$
+| $3.5$
+| $3.5$
+| $0$
+| $3.5$
+
+| $0$
+| $B$
+| $3$
+| $4$
+| $1$
+| $4$
+
+| $01$
+| $C$
+| $4$
+| $4$
+| $0$
+| $4$
+
+| $010$
+| $D$
+| $4$
+| $4$
+| $0$
+| $4$
+
+| $0100$
+| $E$
+| $3$
+| $5$
+| $1$
+| $5$
+
+For example, after $A=0,B=1$, <edge> $AB$ is fixed crossing and the other six <edges> are unresolved, giving $1+6/2=4$. Setting $C=0$ fixes $BC$ crossing and $AC$ noncrossing, leaving four unresolved <edges>: $2+4/2=4$. Setting $C=1$ instead fixes $AC$ crossing and $BC$ noncrossing, giving the same <conditional expectation>.
+
+\Image[conditional-expectations-choice-ledger.png]
+{title=Conditional expected cut values along every chosen branch}
+{description=At each step, both candidate values are computed by the <conditional expectation cut formula>. The highlighted cell is chosen; ties choose zero. Below, the retained <conditional expectation> follows $3.5,3.5,4,4,4,5$, starting before any label is fixed. The last value is the actual size of the resulting <cut of a graph>, rather than an average over remaining choices.}
+
+The final labels are $(0,1,0,0,1)$, so the two sides are $\{A,C,D\}$ and $\{B,E\}$. The five crossing <edges> are $AB,BC,DE,EA,BD$; $AC,CD$ do not cross. This exceeds $m/2=3.5$, and hence also the rounded-up guarantee of four <edges>.
+
+It is not a <maximum cut>. Labels $(0,1,1,0,1)$ cross all <edges> except $BC$, giving six. Seven are impossible because the <triangle in a graph> $ABC$ cannot have all three <edges> crossing a two-sided <cut of a graph>. An independent enumeration of all $2^5=32$ complete label assignments gives the following distribution, counting an assignment and its label-swapped counterpart separately:
+
+|| Size of <cut of a graph>
+|| Number of label assignments
+
+| $0$
+| $2$
+
+| $1$
+| $0$
+
+| $2$
+| $2$
+
+| $3$
+| $12$
+
+| $4$
+| $10$
+
+| $5$
+| $4$
+
+| $6$
+| $2$
+
+| $7$
+| $0$
+
+The weighted sum is $112$, so the average is $112/32=3.5$, agreeing with <linearity of expectation>. Choosing $C=0$ in the earlier tie discards the remaining size-six completion while preserving the average of four. The method protects an <expected value> guarantee; it need not preserve the best possible completion.
+
+= Conditional expectations algorithm cost
+{parent=Conditional expectations for maximum cut}
+
+Directly scanning all $m$ <edges> to evaluate each child of each of $n$ choices takes $O(nm+n)$ elementary operations, in <Big O notation>. There is a faster implementation. When assigning <vertex> $v$, let $d_0$ and $d_1$ count its already assigned <graph neighbours> labelled zero and one. Contributions from <edges> not incident to $v$ are unchanged, and contributions from <edges> to unassigned <graph neighbours> stay $1/2$ for either choice. Therefore
+$$
+q(P,v=0)-q(P,v=1)=d_1-d_0.
+$$
+Choose zero if $d_1\geq d_0$, otherwise one: put $v$ on the side with fewer already assigned <graph neighbours>. With <adjacency lists>, scanning each <vertex>'s list once costs $O(n+m)$ operations overall and uses $O(n+m)$ storage including the <graph>. These bounds count operations on labels and counters that fit in machine words of $O(\log(n+m+2))$ <bits>. Multiplying the <conditional expectation cut formula> by two also permits exact integer comparisons without rounding.
+
+If $\operatorname{OPT}$ is the size of a <maximum cut>, then $\operatorname{OPT}\leq m$. The constructed <cut of a graph> thus has size at least $m/2\geq\operatorname{OPT}/2$, an <approximation ratio> of $1/2$ in the maximization convention. The five-versus-six example illustrates the gap between this guarantee and exact optimization.
+
+For a general <randomized algorithm>, the averaging proof alone does not establish efficient <derandomization>. One needs a polynomial number of commitments, an efficient way to find a suitable child at each step, and manageable representations and evaluation costs for the relevant <conditional expectations>. Those evaluations can themselves be hard. Enumerating all completions verifies this small example, but would take exponentially many assignments as $n$ grows. The <polynomial-time algorithm> here comes from the local <conditional expectation cut formula>, not from that enumeration.
 
 = Probabilistic Turing machine
 {parent=Randomized algorithm}

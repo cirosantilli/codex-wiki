@@ -390,7 +390,81 @@ For $i>k$, an <elimination multiplier> is the <scalar> $l_{ik}=a_{ik}^{(k-1)}/a_
 = Sparse Gaussian elimination
 {parent=Gaussian elimination}
 
-A sparse direct solver performs <Gaussian elimination> while storing and updating only the predicted nonzero entries. A symbolic phase predicts the factor pattern from an elimination ordering, and a numerical phase evaluates the factors. The ordering can greatly alter <fill-in> and arithmetic work. For symmetric positive-definite systems, <Cholesky decomposition> avoids numerical pivoting; general systems require a balance between sparsity and stable pivot selection.
+<Sparse Gaussian elimination> solves a <linear system> by <Gaussian elimination> while exploiting its <sparse matrix> structure to avoid storing zeros and performing unnecessary <arithmetic operations>. The catch is that zeros in the input need not remain zero: eliminating a shared unknown can couple two equations that previously had no direct coupling. These new positions are <fill-in>, and their number can depend strongly on the order of elimination.
+
+For a real <symmetric positive-definite matrix>, the usual direct method is a <Cholesky decomposition>. Choose an ordering, use <symbolic factorization> to allocate the predicted factor entries, compute their values, then solve two <triangular systems>. <Compressed sparse storage> makes the reduced storage useful. General <LU decomposition> may also need numerical <partial pivoting>, so an ordering chosen for sparsity can change during factorization.<Applications of Parallel Computers, CS267, Spring 1996/Lecture 27: Sparse Gaussian Elimination>[Applications of Parallel Computers, CS267, Spring 1996; CS267, Lecture 27, 23 April 1996, Cholesky versus LU Decomposition: distinction between numerical pivot selection and advance ordering, and phases 1–4; Sparse Matrix Storage Schemes]{ref}
+
+For a fixed ordering, let $P$ be the <permutation matrix> that puts the unknowns in that order. Permute both rows and columns:
+$$
+B=PAP^T=CC^T,\qquad Cy=Pb,\qquad C^Tz=y,\qquad x=P^Tz.
+$$
+Here $C$ is the <lower triangular matrix> in the <Cholesky decomposition> of $B$; $z=Px$. <Forward substitution> and <back substitution> give the original solution. The simultaneous permutation preserves the <symmetric positive-definite matrix> property because $v^TBv=(P^Tv)^TA(P^Tv)>0$ for every nonzero <vector> $v$. A row permutation alone generally loses the <symmetric matrix> structure.
+
+The local mechanism is a <Schur complement>. If the active <pivot element> is $a_{kk}$, then for remaining indices $i,j$,
+$$
+a_{ij}^{\mathrm{new}}=a_{ij}-\frac{a_{ik}a_{kj}}{a_{kk}}.
+$$
+Even when $a_{ij}=0$, two nonzero couplings through $k$ make the second term nonzero. Thus the <elimination graph> removes $k$ and joins its remaining neighbors into a <clique>. The <fill-path criterion for symmetric elimination> extends this local rule across several steps. The <elimination tree> organizes the resulting dependencies; the <minimum degree algorithm> and <nested dissection> choose orderings to control them.
+
+This connection between <graphs> and <linear systems> was already explicit in <Donald J. Rose>, <R. Endre Tarjan> and <George S. Lueker>'s 1976 study of <fill-in> and <perfect elimination orderings>.<Algorithmic Aspects of Vertex Elimination on Graphs by Donald J. Rose and others>[Abstract: symmetric positive-definite systems, fill calculation for a prescribed ordering, and algorithms for special orderings; publication information, June 1976]{ref}
+
+= Sparse elimination of a four-leaf star
+{parent=Sparse Gaussian elimination}
+{title2=$A=I+L_G$}
+
+Take a <star graph> $G$ with center $c$ and four leaves $1,2,3,4$. Let $L_G$ be its <Laplacian matrix> and $I$ the <identity matrix>. In the order $(c,1,2,3,4)$, the original example is
+$$
+A=I+L_G=\begin{pmatrix}
+5&-1&-1&-1&-1\\
+-1&2&0&0&0\\
+-1&0&2&0&0\\
+-1&0&0&2&0\\
+-1&0&0&0&2
+\end{pmatrix}.
+$$
+For a nonzero <vector> $u$, its <quadratic form> is
+$$
+u^TAu=u_c^2+\sum_{i=1}^4u_i^2+\sum_{i=1}^4(u_c-u_i)^2>0.
+$$
+Thus $A$ is a <symmetric positive-definite matrix> and either ordering below admits a <Cholesky decomposition>. Changing the ordering changes the work, rather than the mathematical solvability.
+
+**Center first.** Eliminating $c$ with <pivot element> $5$ leaves the <Schur complement>
+$$
+S=2I_4-\frac15\mathbf1\mathbf1^T
+=\frac15\begin{pmatrix}9&-1&-1&-1\\-1&9&-1&-1\\-1&-1&9&-1\\-1&-1&-1&9\end{pmatrix},
+\qquad \mathbf1=(1,1,1,1)^T.
+$$
+Every pair of leaves now has coupling $-1/5$: six new <edges>, hence six undirected <fill-in> positions. The four remaining <vertices> form a <clique>. In the <Cholesky decomposition>, the first column has $C_{cc}=\sqrt5$ and $C_{ic}=-1/\sqrt5$. The rest of the <lower triangular matrix> is dense. To check that later cancellation does not remove its entries, after $r$ leaves have also been eliminated, the active leaf block is
+$$
+2I_{4-r}-\alpha_r\mathbf1\mathbf1^T,\qquad
+\alpha_r=\frac{2}{10-r},\qquad 0\leq r\leq3.
+$$
+Indeed a leaf step sends $\alpha$ to $\alpha+\alpha^2/(2-\alpha)$. All active off-diagonal entries remain negative. The successive <pivot elements> in ordinary symmetric <Gaussian elimination>, equivalently the squared diagonals in the <Cholesky decomposition>, are
+$$
+5,\quad\frac95,\quad\frac{16}9,\quad\frac74,\quad\frac{12}7.
+$$
+The <Cholesky decomposition> therefore stores $5+4+3+2+1=15$ nonzero entries, including its diagonal.
+
+**Leaves first.** Permute to $(1,2,3,4,c)$. Each leaf has only one remaining neighbor, so its elimination changes only the center's diagonal, reducing it by $(-1)^2/2=1/2$. The successive <pivot elements> are $2,2,2,2,3$, and the exact <Cholesky decomposition> is
+$$
+PAP^T=CC^T,\qquad
+C=\begin{pmatrix}
+\sqrt2&0&0&0&0\\
+0&\sqrt2&0&0&0\\
+0&0&\sqrt2&0&0\\
+0&0&0&\sqrt2&0\\
+-1/\sqrt2&-1/\sqrt2&-1/\sqrt2&-1/\sqrt2&\sqrt3
+\end{pmatrix}.
+$$
+There is no <fill-in>, and only $5+4=9$ nonzero entries in $C$. This is a concrete instance of <leaf elimination of a tree-pattern positive-definite matrix>; its general proof explains why the same idea works on every <tree> pattern. The <minimum degree algorithm> also chooses a leaf at every nontrivial stage of this particular example, but that success gives no general optimality guarantee.
+
+\Image[sparse-star-elimination-graphs.png]
+{title=Eliminating the center of a four-leaf <star graph> creates a <clique>; eliminating leaves creates no <fill-in>}
+
+\Image[sparse-star-cholesky-patterns.png]
+{title=The same <symmetric positive-definite matrix> has 15 or nine nonzero <Cholesky decomposition> factor entries, depending on its ordering}
+
+The input has 13 nonzero <matrix elements> when both symmetric halves are counted, or nine in its lower triangle. The six added undirected <edges> correspond to six added positions in one triangular factor, or 12 positions if both symmetric halves of the filled pattern are displayed. Comparing all 13 input entries directly with the 15 entries of $C$ would mix counting conventions.
 
 = Leaf elimination of a tree-pattern positive-definite matrix
 {parent=Sparse Gaussian elimination}
@@ -421,7 +495,19 @@ At each step choose a remaining vertex of minimum degree in the current <elimina
 = Fill-in
 {parent=Sparse Gaussian elimination}
 
-<Fill-in> consists of factor entries that become nonzero despite being zero in the original <sparse matrix>. In symmetric elimination these are the added edges of the <elimination graph>. Removing a high-degree vertex can create many fill entries, whereas a <perfect elimination ordering> creates none. Symbolic fill predicts possible nonzeros before floating-point arithmetic; special cancellation can reduce the numerical pattern.
+<Fill-in> consists of new nonzero positions created by <Gaussian elimination>, absent from the original <sparse matrix> in the same ordering. For a <Cholesky decomposition> $PAP^T=CC^T$, compare $C$ with the lower triangle of $PAP^T$, not with the unpermuted input. Each new undirected <edge> of the <elimination graph> contributes one structural position in $C$. The <sparse elimination of a four-leaf star> gives six such positions when the center is eliminated first, and none when the leaves are eliminated first.
+
+<Symbolic factorization> predicts possible nonzeros from the pattern alone. An initially zero $a_{ij}$ becomes nonzero in a single scalar step if both $a_{ik}$ and $a_{kj}$ are nonzero; however, at later steps several contributions can cancel. For an exact example, let
+$$
+H=\begin{pmatrix}2&1&1&0\\1&2&0&1\\1&0&3&-1/3\\0&1&-1/3&3\end{pmatrix}.
+$$
+Eliminate indices $1,2$ in that order. The first <Schur complement>, in order $(2,3,4)$, is
+$$
+\begin{pmatrix}3/2&-1/2&1\\-1/2&5/2&-1/3\\1&-1/3&3\end{pmatrix}.
+$$
+The second <pivot element> updates the $(3,4)$ entry to $-1/3-(-1/2)(1)/(3/2)=0$. The remaining block is $\operatorname{diag}(7/3,7/3)$, so all four <pivot elements> are positive and $H$ is a <symmetric positive-definite matrix>. The <elimination graph> retains the structural <edge> $3-4$, but this exact choice of coefficients makes the numerical entry vanish. A small change to $H_{34}=H_{43}$ generally removes the cancellation.
+
+Such an exact zero is different from discarding a small value computed with <floating-point arithmetic>. The <symbolic factorization> deliberately reserves space for possible entries without depending on special numerical identities. A <perfect elimination ordering> creates no structural <fill-in> at all; an ordering with cancellations need not have that property.
 
 = Matrix graph
 {parent=Sparse Gaussian elimination}
@@ -509,13 +595,129 @@ A small <linear-system residual> controls solution error only in conjunction wit
 
 = Row echelon form
 {parent=Gaussian elimination}
+{wiki}
+{title2=REF}
 
-A <matrix> is in row echelon form if zero rows follow all nonzero rows, each nonzero row has a first nonzero entry (pivot) to the right of the pivot in the preceding row, and entries below each pivot vanish. <Elementary row operations> bring every <matrix> to this form: choose a nonzero entry in the earliest nonzero column, swap its row to the top, eliminate entries below it, and continue on the remaining submatrix. The nonzero rows are independent by their successively positioned pivots; the pivot columns are independent and span the <column space>. Thus the number of pivots equals both <row rank> and <column rank>.
+= REF
+{synonym}
+{c}
+
+A <matrix> over a <field> $\mathbb F$ is in <row echelon form> when all zero rows follow the nonzero rows, each nonzero row's first nonzero entry lies strictly to the right of the preceding row's first nonzero entry, and all entries below each such leading entry vanish. These leading entries are its <pivot elements>. They need not be one, and entries above them need not vanish.<Interactive Linear Algebra by Dan Margalit and others/Row Reduction>[Interactive Linear Algebra by Dan Margalit and others; §1.2.2, Echelon Forms: three echelon conditions and definition of a pivot]{ref}
+
+The staircase turns a <linear system> into a sequence of simpler equations. For example,
+$$
+U=\begin{pmatrix}1&2&-1\\0&1&3\\0&0&0\\0&0&0\end{pmatrix}
+$$
+is in <row echelon form>, with <pivot columns> 1 and 2. Its second equation determines $x_2$ once $x_3$ is chosen; its first then determines $x_1$ by <back substitution>. It is not in <reduced row echelon form>, because the second <pivot column> contains a nonzero entry above its <pivot element>. Neither being square nor having a nonzero entry in every row is required.
+
+<Elementary row operations> bring every <matrix> to <row echelon form>: choose a nonzero entry in the leftmost available nonzero column, interchange rows, clear entries below it, and repeat on the remaining rows and later columns. Skip columns with no remaining nonzero entry. Clearing above each <pivot element> and scaling it to one completes <reduced row echelon form>.<Interactive Linear Algebra by Dan Margalit and others/Row Reduction>[Interactive Linear Algebra by Dan Margalit and others; §1.2.3, The Row Reduction Algorithm, forward steps and Last Step]{ref}
+
+The nonzero rows of an <row echelon form> are <linearly independent>: in a vanishing <linear combination>, inspecting the first <pivot column> forces the first coefficient to be zero, then the next forces the second, and so on. They give a <basis> of the original <row space>. The number of <pivot elements> is both the <row rank> and the <column rank>. To recover a <basis> of the original <column space>, select the corresponding original <pivot columns>; the reduced column <vectors> generally belong to a different <column space>.
+
+Here the arithmetic is exact in the specified <field>. For <floating-point arithmetic>, deciding whether a computed entry counts as zero requires a numerical criterion; see <tiny-pivot roundoff in Gaussian elimination> and <condition number>. An exact <row echelon form> classification alone does not settle <numerical stability>.
+
+= Row-equivalent matrices
+{parent=Row echelon form}
+
+Two <matrices> of the same size over the same <field> are <row-equivalent matrices> if a sequence of <elementary row operations> transforms one into the other.<Interactive Linear Algebra by Dan Margalit and others/Row Reduction>[Interactive Linear Algebra by Dan Margalit and others; §1.2.1, definition of row equivalence]{ref} Every operation is reversible, so they have the same <row space> and the same column <linear relations>. Writing the entire sequence as multiplication by an <invertible matrix> gives $R=EA$ and
+$$
+Az=0\ \Longleftrightarrow\ Rz=0,\qquad
+Ax=b\ \Longleftrightarrow\ Rx=Eb.
+$$
+Thus the <kernel> is preserved. For a nonzero right-hand side, perform every operation on the whole <augmented matrix> $[A\mid b]$: changing the coefficients while keeping $b$ fixed generally changes the solutions. The <column space> instead transforms to $E\operatorname{col}A$, which need not equal $\operatorname{col}A$.
+
+= Row reduction with a parameterized right-hand side
+{parent=Row echelon form}
+{title2=$\tau=5$}
+
+Work over the <rational numbers>, allowing unknowns in the <real numbers> when interpreting the geometry. Consider four equations in three unknowns:
+$$
+A=\begin{pmatrix}1&2&-1\\2&5&1\\3&7&0\\1&3&2\end{pmatrix},\qquad
+b(\tau)=\begin{pmatrix}1\\4\\\tau\\3\end{pmatrix},\qquad Ax=b(\tau).
+$$
+The third row of $A$ is the sum of its first two rows, and the fourth is their difference, second minus first. The same relations must hold on the right: consistency requires $\tau=1+4=5$ and $3=4-1$. The latter condition already holds. <Gaussian elimination> makes this compatibility test explicit while exposing the remaining freedom.
+
+Apply the <elementary row operations> in this order, using each row's current value:
+$$
+R_2\leftarrow R_2-2R_1,\quad R_3\leftarrow R_3-3R_1,\quad R_4\leftarrow R_4-R_1,
+$$
+then $R_3\leftarrow R_3-R_2$ and $R_4\leftarrow R_4-R_2$. The resulting <augmented matrix> is in <row echelon form> for every $\tau$:
+$$
+\left[\begin{array}{rrr|r}1&2&-1&1\\0&1&3&2\\0&0&0&\tau-5\\0&0&0&0\end{array}\right].
+$$
+When $\tau\ne5$, the third row has its <pivot element> in the augmented column. It says $0=\tau-5$, so the <linear system> has no solution. When $\tau=5$, that entire row vanishes and only two <pivot elements> remain. More equations than unknowns therefore do not force a unique solution: some equations may repeat information.
+
+The final operation $R_1\leftarrow R_1-2R_2$ reduces the coefficient block to
+$$
+R=\begin{pmatrix}1&0&-7\\0&1&3\\0&0&0\\0&0&0\end{pmatrix},\qquad
+Eb(\tau)=\begin{pmatrix}-3\\2\\\tau-5\\0\end{pmatrix}.
+$$
+The product of all six <elementary matrices> is
+$$
+E=\begin{pmatrix}5&-2&0&0\\-2&1&0&0\\-1&-1&1&0\\1&-1&0&1\end{pmatrix},\qquad EA=R.
+$$
+Direct <matrix multiplication> verifies both displayed transformations. Its <determinant> is one, so this transformation is reversible. In particular, the third row of $E$ extracts the discrepancy between the third equation and the sum of the first two.
+
+\Image[row-echelon-parameter-pivots.png]
+{title=<Row echelon form> exposes compatibility; a right-hand-side <pivot element> distinguishes inconsistency from a <free variable in a linear system>}
+
+For $\tau=5$, $[R\mid Eb]$ is the <reduced row echelon form> of the full <augmented matrix>. For $\tau\ne5$, only its coefficient block is reduced: scale the third row by $1/(\tau-5)$ and clear the entries above its augmented <pivot element>. The full <reduced row echelon form> is then
+$$
+\left[\begin{array}{rrr|r}1&0&-7&0\\0&1&3&0\\0&0&0&1\\0&0&0&0\end{array}\right].
+$$
+The last column is part of the <matrix> when testing the echelon conditions. Calling $[R\mid Eb]$ fully reduced before clearing that column would miss this distinction.
 
 = Reduced row echelon form
 {parent=Row echelon form}
+{title2=RREF}
 
-A <row echelon form> whose pivots are one and whose pivot columns have zeros in every other row. Over a <field>, each <row space> has a unique such <matrix> after zero rows are removed. It describes a <vector subspace> independently of which initial <basis> was used; <Gaussian binomial coefficients> exploit this uniqueness to count <vector subspaces> over a <finite field>.
+= RREF
+{synonym}
+{c}
+
+A <row echelon form> is in <reduced row echelon form> when every <pivot element> is one and is the only nonzero entry in its column.<Interactive Linear Algebra by Dan Margalit and others/Row Reduction>[Interactive Linear Algebra by Dan Margalit and others; §1.2.2, reduced echelon conditions 4 and 5]{ref} This extra reduction displays each pivot unknown directly in terms of the <free variables in a linear system>. The zero <matrix> also satisfies the definition: it has no <pivot elements>.
+
+Every <matrix> has exactly one <reduced row echelon form> under <elementary row operations>, with its size and column order held fixed.<Interactive Linear Algebra by Dan Margalit and others/Row Reduction>[Interactive Linear Algebra by Dan Margalit and others; §1.2.3, theorem preceding the Row Reduction Algorithm]{ref} Ordinary <row echelon form> is not unique: multiplying a nonzero row by two over the <rational numbers> keeps the staircase but changes the <matrix>. The reduced conditions remove that freedom.
+
+For a fixed number of columns, each <row space> has a unique reduced <matrix> after zero rows are removed; at a fixed full size, the number of appended zero rows is also determined. Thus <reduced row echelon form> represents a <vector subspace> independently of the starting <basis>. This is the uniqueness used by <Gaussian binomial coefficients> to count <vector subspaces> over a <finite field>.
+
+The fixed column order matters. <Elementary column operations> can change the <row space>, the <kernel> and the resulting <reduced row echelon form>. For instance, swapping the columns of $(1\ \ 2)$ over the <rational numbers> gives $(2\ \ 1)$, whose <reduced row echelon form> is $(1\ \ 1/2)$ instead of $(1\ \ 2)$. When solving a <linear system>, a column interchange also requires tracking the corresponding interchange of unknowns.
+
+= Reading solutions from reduced row echelon form
+{parent=Reduced row echelon form}
+{title2=$x=(-3,2,0)^T+t(7,-3,1)^T$}
+
+For <row reduction with a parameterized right-hand side> at $\tau=5$, the nonzero reduced equations are
+$$
+x_1-7x_3=-3,\qquad x_2+3x_3=2.
+$$
+Column 3 has no <pivot element>, so $x_3$ is a <free variable in a linear system>. Taking $x_3=t$ gives every solution:
+$$
+x=x_0+tv,\qquad x_0=\begin{pmatrix}-3\\2\\0\end{pmatrix},\quad v=\begin{pmatrix}7\\-3\\1\end{pmatrix},\quad t\in\mathbb R.
+$$
+There is no further restriction on $t$. Independent substitution into the original <linear system> gives
+$$
+Ax_0=\begin{pmatrix}1\\4\\5\\3\end{pmatrix},\qquad Av=\begin{pmatrix}7-6-1\\14-15+1\\21-21\\7-9+2\end{pmatrix}=0.
+$$
+Conversely, the two reduced equations force exactly these coordinate formulas, so no solutions have been omitted. The same computation with zero right-hand side gives the <kernel> $\ker A=\operatorname{span}\{v\}$. Its <dimension> is one. The <rank-nullity theorem> appears here as $2+1=3$: two <pivot columns> and one freely chosen coordinate account for the three unknowns.<Interactive Linear Algebra by Dan Margalit and others/The Rank Theorem>[Interactive Linear Algebra by Dan Margalit and others; §2.9, Rank Theorem and preceding pivot-column/free-variable count]{ref}
+
+\Image[row-echelon-affine-solution-line.png]
+{title=One <free variable in a linear system> traces an <affine solution space of a linear equation> parallel to its <kernel>}
+
+In general a consistent <linear system> has solution set $x_0+\ker A$. Subtracting $Ax_0=b$ from $Ax=b$ proves this description in both directions. The particular solution places the <affine subspace>, and the <kernel> supplies its directions.<Interactive Linear Algebra by Dan Margalit and others/Solution Sets>[Interactive Linear Algebra by Dan Margalit and others; §2.4.2, Key Observation and its proof: translate homogeneous solutions by any particular solution]{ref} Over the <real numbers> this example is an entire line; over the <rational numbers> the same formula uses rational $t$. A <free variable in a linear system> over a <finite field> instead has only finitely many choices.
+
+The <pivot columns> identify a different object: the original <column space>. Here they select
+$$
+a_1=(1,2,3,1)^T,\qquad a_2=(2,5,7,3)^T,
+$$
+which form its <basis>, while $a_3=-7a_1+3a_2$. The corresponding reduced columns are $(1,0,0,0)^T$ and $(0,1,0,0)^T$; their <linear span> is a different <plane>. For example, every original output satisfies $y_3=y_1+y_2$, but $(1,0,0,0)^T$ does not. Since $E$ is an <invertible matrix>, column <linear relations> survive $EA=R$ even though the output <vectors> move. This is why choosing original columns at the reduced pivot positions works.
+
+= Uniqueness of reduced row echelon form
+{parent=Reduced row echelon form}
+
+Here is a short proof that uses only the <row space>. For a <vector subspace> $W\subseteq\mathbb F^n$, let $d_j$ be the <dimension> of its <projection map> onto the first $j$ coordinates, with $d_0=0$. In any <reduced row echelon form> with <row space> $W$, $d_j$ counts the <pivot columns> among those first $j$ columns: later-pivot rows project to zero, while earlier-pivot rows remain <linearly independent>. Thus the positions where $d_j-d_{j-1}=1$ determine all pivot positions from $W$ alone.
+
+If those positions are $p_1,\ldots,p_r$, the map sending $w\in W$ to $(w_{p_1},\ldots,w_{p_r})$ is an <isomorphism> $W\to\mathbb F^r$: the reduced nonzero rows map to the <standard basis>. Its $i$th row is therefore the unique <vector> of $W$ with pivot-coordinate values equal to the $i$th <standard basis> vector. Any other <reduced row echelon form> with that <row space> has identical nonzero rows in identical order. At a fixed <matrix> size, the remaining rows must be zero. Together with existence by <Gaussian elimination>, this proves uniqueness.
 
 = Elementary row operation
 {parent=Gaussian elimination}

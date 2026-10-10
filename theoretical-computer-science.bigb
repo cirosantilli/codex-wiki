@@ -670,7 +670,86 @@ An <algorithm> has <pseudo-polynomial time> when its running time is bounded by 
 {parent=Time complexity}
 {title2=$\widehat c_i=c_i+\Phi_i-\Phi_{i-1}$}
 
-Bounds the total cost of a sequence of operations, rather than a probability-weighted average. If a nonnegative potential $\Phi$ assigns stored credit to states, define $\widehat c_i=c_i+\Phi_i-\Phi_{i-1}$. Then $\sum c_i=\sum\widehat c_i+\Phi_0-\Phi_m$. Starting with zero potential, constant amortized costs imply linear total cost.
+<Amortized analysis> bounds the total cost of every permitted <sequence> of operations from a specified initial state. An amortized $O(1)$ bound means that some constants $a,b$ satisfy $\sum_{i=1}^m c_i\leq am+b$ for every such <sequence> of length $m$. The cost model and allowed operations are part of the claim; <Big O notation> alone does not specify them.
+
+* A worst-case bound for one operation limits its cost in any reachable state. Summing these separate maxima can overestimate the cost of a whole <sequence> because expensive states may take many cheap operations to rebuild.
+* An <amortized analysis> limits the total over every allowed <sequence>, including an unfavourably chosen one. Dividing that bound by the number of operations is a deterministic guarantee about the <sequence>.
+* A probabilistic average-case analysis bounds an <expected value> under a stated <probability distribution> on <inputs>. For a <randomized algorithm>, an <expected value> can instead average over its random choices. Neither interpretation is required by a deterministic <amortized analysis>.
+
+This distinction, and the credit and <potential method> viewpoints, are developed in <R. Endre Tarjan>'s 1985 paper https://epubs.siam.org/doi/10.1137/0606031[Amortized Computational Complexity], sections 1–2, pp. 306–308. The <dynamic array doubling> example below shows how an expensive operation can pay for itself through the cheap operations that precede it.
+
+= Dynamic array doubling
+{parent=Amortized analysis}
+{title2=$T(n)=n+C_n-1$}
+
+Consider a <dynamic array> holding fixed-size entries. Its size $n$ is the number of occupied slots and its capacity $C$ is the number of allocated slots. Start with $n=0$, $C=1$. The only operation is append: if $n=C$, allocate a new <array> of capacity $2C$, copy the $C$ existing entries, and release the old <array>; then write the new entry and increase $n$ by one. There is no reserve operation, deletion or shrinking in this model.
+
+Count one unit for writing the new entry and one unit per existing entry copied during resizing. Thus the $i$th append has actual cost $c_i=1$ without resizing and $c_i=C+1$ when the old capacity $C$ is full. Copying an entry, including its read and write, is one counted action. Allocation, deallocation, index <arithmetic operations> and the initial one-slot allocation are outside this exact count. If these add only a constant per ordinary append and a linear cost per resize, the <Big O notation> conclusions still hold, with different constants; costly entry copies require their own cost model.
+
+The first ten costs are $1,2,3,1,5,1,1,1,9,1$. For example, append $9$ copies eight entries and writes one, so $c_9=9$. At that point the capacity becomes $16$, but the total cost of all nine appends is only $24$.
+
+For $n\geq1$, the final capacity is $C_n=2^{\lceil\log_2 n\rceil}$. Every earlier capacity $1,2,4,\ldots,C_n/2$ was copied once. This <geometric series> sums to $C_n-1$, including the empty sum when $n=1$. Therefore <aggregate analysis> gives the exact total
+$$
+T(0)=0,\qquad T(n)=\sum_{i=1}^n c_i=n+C_n-1,\qquad n\leq C_n<2n\quad(n\geq1).
+$$
+Consequently $T(n)<3n$, so append has amortized $O(1)$ cost in <Big O notation> for every prefix from this empty initial state. The values being appended do not affect the count. In contrast, an append to a full <dynamic array> with $n$ entries costs $n+1$: its worst-case cost is $O(n)$, and actually grows linearly along full-capacity states. A bound on total work does not promise a constant response time for each call.
+
+\Image[amortized-analysis-doubling-costs.png]
+{title=Individual append costs and cumulative work under <dynamic array doubling>}
+{description=The spikes include every copied entry and the new write. At append 33 the actual cost is 33; at append 64 the total cost is 127. Every prefix lies below the line $3n$.}
+
+The same policy controls <computer memory>: after each completed append, $n\leq C_n<2n$ for $n\geq1$, so fewer than $n$ slots are unused. This is a bound on the retained backing <array>, with fixed-size slots. During a resize from full capacity $k$ to $2k$, a copying implementation can temporarily hold both <arrays>, totalling $3k$ allocated slots before releasing the old one. Thus the retained-capacity bound does not bound this temporary peak by twice the live size. Allocator metadata and separately allocated objects are additional <computer memory> costs.
+
+The <geometric series> is the source of the efficiency. If capacity instead increases by one each time, the same count becomes $n+1+2+\cdots+(n-1)=n(n+1)/2$, a quadratic total. <Dynamic array doubling> buys a linear total with bounded spare capacity, even when the final length is unknown.
+
+= Potential method
+{parent=Amortized analysis}
+{wiki}
+{title2=$\Phi(D)$}
+
+The <potential method> assigns a number $\Phi(D)$ to each state $D$ of a <data structure>. Let $D_i$ be the state after operation $i$, $\Phi_i=\Phi(D_i)$, and $c_i$ its actual cost. Its <amortized cost> is the actual cost plus the change in potential. Summing and cancelling adjacent potentials gives a <telescoping sum>:
+$$
+\widehat c_i=c_i+\Phi_i-\Phi_{i-1},\qquad
+\sum_{i=1}^m c_i=\sum_{i=1}^m\widehat c_i+\Phi_0-\Phi_m.
+$$
+If $\Phi_0=0$ and every reachable $\Phi_i\geq0$, the sum of <amortized costs> bounds the actual total for every prefix. A nonzero initial potential contributes the explicit additive term $\Phi_0$. Potential is proof bookkeeping; the <algorithm> need not store it.<CS 312 at Cornell University/Lecture 20: Hash tables and amortized analysis>[CS 312 at Cornell University; CS 312, lecture 20, “Amortized analysis”: definition of amortized time and cancellation of successive potential changes]{ref}
+
+For <dynamic array doubling>, choose
+$$
+\Phi(n,C)=\max(0,2n-C).
+$$
+The <potential method> now starts at $\Phi(0,1)=0$. After every nonempty reachable state, $C<2n$, so the maximum equals $2n-C$. There are just three cases for append:
+
+* First append: $(0,1)$ becomes $(1,1)$, so $c_1=1$ and $\widehat c_1=1+(1-0)=2$.
+* Later append without resizing: $C$ stays fixed and $n$ increases by one, so $\Delta\Phi=2$ and $\widehat c_i=1+2=3$.
+* Append to a full capacity $k$: $(k,k)$ becomes $(k+1,2k)$, so the potential changes from $k$ to $2$. Hence $\widehat c_i=(k+1)+(2-k)=3$, including the resize from capacity one to two.
+
+For every $n\geq1$, the total charge is $2+3(n-1)=3n-1$, and the <telescoping sum> proves
+$$
+T(n)=3n-1-\Phi(n,C_n)\leq3n-1.
+$$
+This agrees exactly with $T(n)=n+C_n-1$. The unmodified choice $2n-C$ has initial value $-1$, so calling it nonnegative at the empty state would be incorrect. It also works if that initial constant is retained in the identity; alternatively, $2n-C+1$ starts at zero and is nonnegative on these reachable states. The maximum above keeps a literal nonnegative credit balance from the beginning. The proof covers append alone; allowing reserve or arbitrary deletion changes the reachable states and requires a new argument.
+
+\Image[amortized-analysis-potential-ledger.png]
+{title=The <potential method> as a credit ledger for <dynamic array doubling>}
+{description=Each row satisfies $\widehat c_i=c_i+\Delta\Phi_i$. Before append 9 there are eight credits; its charge of three and actual cost of nine leave two. Credits pay for counted work and do not represent spare <computer memory> slots.}
+
+= Amortized cost
+{parent=Potential method}
+{title2=$\widehat c_i$}
+
+In the <potential method>, an operation's <amortized cost> is $\widehat c_i=c_i+\Phi_i-\Phi_{i-1}$. It can exceed or fall below its actual cost $c_i$. The endpoint potentials determine how the total charge compares with the total actual cost.
+
+= Aggregate analysis
+{parent=Amortized analysis}
+
+<Aggregate analysis> bounds the total cost of a whole <sequence> directly, then divides by its length to obtain an amortized bound. Summing the copied capacities as a <geometric series> in <dynamic array doubling> is an example.
+
+= Accounting method
+{parent=Amortized analysis}
+{wiki}
+
+The <accounting method> charges operations enough to pay for their work and save credits for later work. A nonnegative balance from an initially empty account makes every prefix's total charge an upper bound on its actual cost. Choosing the balance to be $\Phi$ gives the <potential method>; the ledger for <dynamic array doubling> illustrates this equivalence.https://www.math.u-szeged.hu/~hajnal/courses/MSc_AlgoBony/2021/Tarjan.pdf[Robert Endre Tarjan, Amortized Computational Complexity, section 2, pp. 307–308: banker's credits and equivalence with the potential viewpoint]{ref}
 
 // Destination: computer-science.bigb
 

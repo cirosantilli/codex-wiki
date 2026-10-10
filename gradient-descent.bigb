@@ -1,0 +1,278 @@
+= Gradient descent
+{wiki}
+{title2=$x_{k+1}=x_k-\eta\nabla f(x_k)$}
+
+= Steepest descent method
+{synonym}
+
+<Gradient descent> is an <iterative method> for minimizing a <differentiable function> $f$: choose an initial <vector> $x_0$ and repeatedly move opposite its <gradient>.<Convex Optimization by Stephen Boyd and Lieven Vandenberghe>[§9.3, p. 466, Algorithm 9.3: negative-gradient direction and a separately chosen step size]{ref}
+
+With a fixed positive <step size> $\eta$, the update is
+$$
+x_{k+1}=x_k-\eta\nabla f(x_k),\qquad k=0,1,2,\ldots.
+$$
+The direction and the <step size> play different roles: the <gradient> supplies local information about increase, while $\eta$ determines how far that information is trusted. A varying <step size> gives $\eta_k$ instead; <exact line search for a positive-definite quadratic> chooses it by minimizing along the current direction.
+
+Why is this the steepest direction? For a unit <vector> $v$ in the <Euclidean norm>, the <directional derivative> is $\langle\nabla f(x),v\rangle$. The <Cauchy-Schwarz inequality> bounds it below by $-\|\nabla f(x)\|_2$, attained by $v=-\nabla f(x)/\|\nabla f(x)\|_2$ when the <gradient> is nonzero. This is steepest descent relative to the <Euclidean norm>; changing the <norm> can change the steepest direction. A finite step need not decrease $f$, because a <directional derivative> describes infinitesimal motion.
+
+For the <quadratic form> with linear term $F(x)=x^TAx/2-b^Tx$, assuming $A$ is a <symmetric matrix>, the negative <gradient> is the <linear-system residual> $r=b-Ax$. Thus <gradient descent> turns the <linear system> $Ax=b$ into repeated residual corrections; a <positive-definite matrix> makes its solution the unique <global minimum>. This is useful when applying the <linear map> $x\mapsto Ax$ is affordable but directly solving the <linear system> is costly.
+
+The attraction is that a <gradient> evaluation gives an entire update without solving a new <linear system>. The difficulty is choosing a <step size> that progresses along gently curved directions without overshooting steep ones. <Fixed-step gradient descent on a positive-definite quadratic> makes this tension exact: every <eigenvector> direction has its own multiplier, determined by its <eigenvalue>. The resulting <condition number> dependence explains why a narrow valley can slow even an inexpensive <iterative method>.
+
+The simplicity of the <gradient> update and its sensitivity to the <condition number> of the <Hessian matrix> are central practical features.<Convex Optimization by Stephen Boyd and Lieven Vandenberghe>[§9.3.1, pp. 466–468, and §9.3.2, p. 475, Conclusions: convergence and conditioning]{ref}
+
+= Fixed-step gradient descent on a positive-definite quadratic
+{parent=Gradient descent}
+{title2=$e_{k+1}=(I-\eta A)e_k$}
+
+Consider the original two-dimensional example
+$$
+f(x_1,x_2)=\frac12(x_1^2+9x_2^2),\qquad x_0=(2,1)^T,\qquad \nabla f(x)=(x_1,9x_2)^T.
+$$
+The <Hessian matrix> is $A=\operatorname{diag}(1,9)$, a <symmetric matrix> and <positive-definite matrix>. Its <eigenvectors> are the coordinate directions, its <eigenvalues> are $1$ and $9$, and its <Euclidean norm> <condition number> is $9$. The unique <global minimum> is $x_*=0$, so the error $e_k=x_k-x_*$ equals $x_k$. The <linear map> $I-\eta A$, with $I$ the <identity matrix>, gives
+$$
+x_{1,k}=2(1-\eta)^k,\qquad x_{2,k}=(1-9\eta)^k.
+$$
+For $\eta=1/5=0.2$, the two coordinate error multipliers are $0.8$ and $-0.8$. Consequently $x_1=(1.6,-0.8)^T$, $x_2=(1.28,0.64)^T$, and the second coordinate changes sign at every step while both shrink. The <Euclidean norm> of the error contracts by $0.8$ each step. The objective gap, which we call the quadratic energy, contracts by its square:
+$$
+E_k=f(x_k)-f(x_*)=\frac{13}{2}\left(\frac{16}{25}\right)^k,\qquad E_0=6.5,\quad E_1=4.16,\quad E_2=2.6624.
+$$
+The <level sets> of $f$ are <ellipses>. Oscillation across their narrow direction is compatible with strictly decreasing energy.
+
+\Image[gradient-descent-quadratic-contour-iterates.png]
+{title=Original <gradient descent> iterates on $f=(x_1^2+9x_2^2)/2$: <step size> $0.2$ contracts both directions, whereas $0.25$ expands the second}
+
+For $\eta=1/4=0.25$, the coordinate error multipliers become $0.75$ and $-1.25$, giving $x_1=(1.5,-1.25)^T$. The first coordinate still tends to zero, but the second alternates and grows. Direct substitution gives
+$$
+E_k=2\left(\frac9{16}\right)^k+\frac92\left(\frac{25}{16}\right)^k,\qquad E_1=\frac{261}{32}=8.15625.
+$$
+Thus a larger positive <step size> can turn a strictly <convex function> into a divergent iteration. Energy and error are different quantities: coordinate errors carry signed multipliers, while each coordinate's contribution to energy carries the squared multiplier.
+
+\Image[gradient-descent-quadratic-energy-histories.png]
+{title=Exact constructed quadratic-energy histories from $(2,1)$: <step sizes> $0.1$ and $0.2$ converge, while $0.25$ diverges}
+
+For the general <quadratic form> with linear term
+$$
+f(x)=\frac12x^TAx-b^Tx,\qquad A=A^T>0,\qquad x_*=A^{-1}b,
+$$
+the error obeys the same <linear map> $e_{k+1}=(I-\eta A)e_k$. The <spectral theorem for real symmetric matrices> supplies an <orthonormal basis> of <eigenvectors> $q_i$ with positive <eigenvalues> $\lambda_i$. Writing $e_0=\sum_i c_iq_i$ gives the exact solution and energy identity
+$$
+e_k=\sum_i c_i(1-\eta\lambda_i)^kq_i,\qquad
+E_k=\frac12\sum_i\lambda_i c_i^2(1-\eta\lambda_i)^{2k}.
+$$
+Therefore convergence from every initial <vector> is equivalent to
+$$
+|1-\eta\lambda_i|<1\quad\text{for every }i,
+\qquad\text{or equivalently}\qquad 0<\eta<\frac2{\lambda_{\max}}.
+$$
+At $\eta=2/\lambda_{\max}$, a nonzero error component along a largest-<eigenvalue> <eigenvector> flips sign without shrinking. Above that threshold it grows. A particular start can still converge if it has zero components in every unstable direction; the interval is the condition for all starts. If $\rho=\max_i|1-\eta\lambda_i|<1$, then $\|e_k\|_2\leq\rho^k\|e_0\|_2$ and $E_k\leq\rho^{2k}E_0$. These bounds follow by summing the squared components in the <orthonormal basis>.
+
+= Optimal fixed step for quadratic gradient descent
+{parent=Fixed-step gradient descent on a positive-definite quadratic}
+{title2=$\eta_*=2/(\lambda_{\min}+\lambda_{\max})$}
+
+For a fixed <symmetric matrix> and <positive-definite matrix> $A$, what positive <step size> minimizes the largest coordinate error multiplier over all <eigenvector> directions? Let $m=\lambda_{\min}>0$ and $L=\lambda_{\max}$. Since $|1-\eta\lambda|$ is a <convex function> of $\lambda$, its maximum over the <eigenvalues> occurs at an endpoint:
+$$
+\rho(\eta)=\max\{|1-\eta m|,|1-\eta L|\}.
+$$
+Balance the two extremes by solving $1-\eta m=-(1-\eta L)$:
+$$
+\eta_* = \frac2{m+L},\qquad \rho_* = \frac{L-m}{L+m}=\frac{\kappa-1}{\kappa+1},\qquad \kappa=\frac Lm.
+$$
+Here $\kappa$ is the <Euclidean norm> <condition number> of $A$. This balance is optimal: for $\eta<\eta_*$ the endpoint $1-\eta m$ exceeds $\rho_*$, and for $\eta>\eta_*$ the endpoint $\eta L-1$ exceeds $\rho_*$. The optimal worst-case energy factor is $\rho_*^2$, rather than $\rho_*$. This optimizes a uniform one-step bound; a particular initial error supported on fewer <eigenvectors> can have a different best <step size>.
+
+In the example $m=1$, $L=9$, so $\eta_*=0.2$ and $\rho_*^2=0.64$. Both <eigenvalue> directions attain that energy factor, making the displayed history exact. The smaller <step size> $0.1$ instead gives
+$$
+E_k=2(0.81)^k+\frac92(0.01)^k.
+$$
+Its first step reaches $E_1=1.665$, below $4.16$ for $\eta=0.2$, but subsequent progress is limited by the first direction's energy factor $0.81$. By $k=5$, the energies are approximately $0.69736$ and $0.69793$, respectively; by $k=6$, the $0.2$ iteration is ahead. A better first step need not yield a faster long-run history.
+
+As the <condition number> grows, $\rho_*$ approaches one: stability in the direction of the largest <eigenvalue> forces small movement along the smallest-<eigenvalue> direction. This is a precise reason to improve scaling or use a method such as the <conjugate gradient method>, rather than merely increasing the <step size>. When $m=L$, choosing $\eta=1/m$ eliminates every error component in one step.
+
+= Gradient ascent
+{parent=Gradient descent}
+{title2=$x_{n+1}=x_n+\eta_n\nabla J(x_n)$}
+
+<Gradient ascent> seeks a maximum by stepping along the <gradient> of a differentiable objective. It is <gradient descent> applied to $-J$. Taylor expansion gives $J(x+\eta\nabla J)=J(x)+\eta\|\nabla J\|^2+O(\eta^2)$, so sufficiently small positive steps improve the objective when the <gradient> is nonzero. Line search, projection onto admissible controls, and noise-aware <gradient> estimates are common practical modifications; a local stationary result need not be globally optimal.
+
+= Stochastic gradient descent
+{parent=Gradient descent}
+{wiki}
+
+Stochastic gradient descent updates parameters using an unbiased or approximate gradient computed from one observation or a mini-batch rather than the complete data set.
+
+= Projected stochastic gradient descent
+{parent=Stochastic gradient descent}
+
+Projected stochastic gradient descent takes a stochastic-gradient step and then projects the result onto a closed feasible set. For a convex set $C$ it has the form $x_{s+1}=\Pi_C(x_s-\eta_sG_s)$.
+
+= Unbiased stochastic gradient
+{parent=Stochastic gradient descent}
+
+A random vector $G_s$ is an unbiased stochastic gradient at $x_s$ when $\mathbb E[G_s\mid x_s]=\nabla f(x_s)$.
+
+= Lipschitz gradient
+{parent=Gradient descent}
+{title2=$\|\nabla f(x)-\nabla f(y)\|_2\leq\beta\|x-y\|_2$}
+
+A <differentiable function> has a $\beta$-<Lipschitz gradient> on a set $D$ if its <gradient> satisfies <Lipschitz continuity> there:
+$$
+\|\nabla f(x)-\nabla f(y)\|_2\leq\beta\|x-y\|_2\qquad(x,y\in D),\quad \beta\geq0.
+$$
+All <norms> here are the <Euclidean norm>. The constant limits how fast the <gradient> changes; it is not a bound on the magnitude of the <gradient>. For $f(x)=(x_1^2+9x_2^2)/2$, the <gradient> is the <linear map> $x\mapsto\operatorname{diag}(1,9)x$. Its <operator norm> is $9$, so $\beta=9$ works globally and is sharp by taking $x-y=(0,1)^T$. The <gradient> itself is unbounded on the whole <Euclidean space>.
+
+If $f$ has a continuous <Hessian matrix> on an open <convex set> $D$ and $\|\nabla^2f(z)\|_2\leq\beta$ throughout $D$, integrate that <linear map> along the <line segment> from $x$ to $y$:
+$$
+\nabla f(y)-\nabla f(x)=\int_0^1\nabla^2f(x+t(y-x))(y-x)\,dt.
+$$
+The <operator norm> bound proves the displayed <Lipschitz continuity>. Convexity of the domain keeps the entire <line segment> inside it. Bounding the <Hessian matrix> only at the endpoints is insufficient.
+
+= Descent lemma
+{parent=Lipschitz gradient}
+{title2=$f(v)\leq f(u)+\langle\nabla f(u),v-u\rangle+\tfrac L2\|v-u\|^2$}
+
+Suppose $f$ is a <differentiable function> on an open <convex set> $D\subseteq\mathbb R^n$ and has an $L$-<Lipschitz gradient> there, in the <Euclidean norm>. For $u,v\in D$, the <descent lemma> states
+$$
+f(v)\leq f(u)+\langle\nabla f(u),v-u\rangle+\frac L2\|v-u\|_2^2.
+$$
+A bounded continuous <Hessian matrix> gives one sufficient route to this estimate.<Convex Optimization by Stephen Boyd and Lieven Vandenberghe>[§9.1.2, p. 461, equation (9.13): Hessian upper bound and quadratic upper estimate; §9.3.1, p. 466, equation (9.17): substitution of a negative-gradient step]{ref}
+
+For a short proof, put $d=v-u$. The <fundamental theorem of calculus> along the <line segment> gives
+$$
+f(v)-f(u)-\langle\nabla f(u),d\rangle
+=\int_0^1\langle\nabla f(u+td)-\nabla f(u),d\rangle\,dt.
+$$
+The <Cauchy-Schwarz inequality> and the <Lipschitz gradient> bound make the <integrand> at most $Lt\|d\|_2^2$; its <integral> is $L\|d\|_2^2/2$. This proof needs no assumption that $f$ is a <convex function>.
+
+For the <gradient descent> update $v=u-\eta\nabla f(u)$, provided $v\in D$, substitution yields
+$$
+f(v)\leq f(u)-\eta\left(1-\frac{L\eta}{2}\right)\|\nabla f(u)\|_2^2.
+$$
+For $L>0$ and $0<\eta<2/L$, this ensures strict decrease whenever the <gradient> is nonzero. At $\eta=2/L$ it guarantees only nonincrease; the quadratic example has a nonshrinking alternating component at this endpoint. At $\eta=1/L$ the guaranteed decrease is $\|\nabla f(u)\|_2^2/(2L)$. A bound valid only on $D$ cannot justify a step leaving $D$.
+
+If a fixed admissible <step size> is used forever, every iterate stays in $D$, and $f(x_k)$ has a finite lower bound, summing this inequality shows $\sum_k\|\nabla f(x_k)\|_2^2<\infty$, hence $\nabla f(x_k)\to0$. That conclusion alone gives neither convergence of the iterates nor a <global minimum>. For example, the smooth <polynomial> $f(x)=x^4-x^2$ has $f'(0)=0$ and $f''(0)=-2$: <gradient descent> started at zero never moves, although $f(1/\sqrt2)=-1/4<0$. On $D=(-1,1)$, $|f''(x)|\leq10$, so the <Lipschitz gradient> hypothesis holds on this domain. <Convex functions> and <strongly convex functions> provide additional structure; the exact quadratic convergence result above uses a <positive-definite matrix>.
+
+= Exact line search for a positive-definite quadratic
+{parent=Gradient descent}
+
+For $f(x)=x^TAx/2-b^Tx$ with $A$ positive definite and residual $r=b-Ax$, exact line search along $r$ uses
+$$
+t=\frac{r^Tr}{r^TAr}.
+$$
+The objective error contracts by
+$$
+1-\frac{(r^Tr)^2}{(r^TA^{-1}r)(r^TAr)}
+\leq 1-\frac{\lambda_{\min}(A)}{\lambda_{\max}(A)}.
+$$
+
+= Conjugate gradient method
+{c}
+{parent=Gradient descent}
+{wiki}
+
+For a <positive-definite matrix> $A$, the conjugate gradient method chooses mutually $A$-conjugate search directions. Starting with $r_0=b-Ax_0$ and $p_0=r_0$, it uses
+$$
+\alpha_k=\frac{r_k^Tr_k}{p_k^TAp_k},\quad
+x_{k+1}=x_k+\alpha_kp_k,\quad
+r_{k+1}=r_k-\alpha_kAp_k,
+$$
+and $p_{k+1}=r_{k+1}+\beta_kp_k$ with
+$\beta_k=r_{k+1}^Tr_{k+1}/(r_k^Tr_k)$.
+
+= Linear-system residual
+{parent=Conjugate gradient method}
+{title2=$r=b-Ax$}
+
+The residual of an approximate solution $x$ of $Ax=b$ is $r=b-Ax$. It is the unbalanced right-hand side, while the solution error is $x_*-x=A^{-1}r$. The <conjugate gradient method> makes residuals orthogonal to successive <Krylov subspaces>.
+
+= Conjugate-gradient residual orthogonality
+{parent=Conjugate gradient method}
+{c}
+
+At iteration $m$ of the conjugate gradient method,
+$$
+x_m-x_0\in\mathcal K_m(A,r_0),
+\qquad
+r_m\perp\mathcal K_m(A,r_0),
+$$
+and $r_m$ itself lies in $\mathcal K_{m+1}(A,r_0)$. These Galerkin conditions imply finite termination once the Krylov subspace becomes invariant under $A$.
+
+= Preconditioned conjugate gradient method
+{c}
+{parent=Conjugate gradient method}
+
+A symmetric preconditioner transforms $Ax=b$ into
+$$
+PAP^T\widehat x=Pb,\qquad x=P^T\widehat x.
+$$
+The aim is to make the transformed positive-definite matrix have clustered eigenvalues while keeping application of $P$ inexpensive.
+
+= Exact inverse-square-root preconditioner
+{parent=Preconditioned conjugate gradient method}
+
+For a positive-definite matrix $A$, choosing $P=A^{-1/2}$ gives $PAP^T=I$, so conjugate gradients terminates in one step. Constructing or applying the exact inverse square root is generally as expensive as solving the original system.
+
+= Krylov subspace
+{title2=$\mathcal K_k(A,b)$}
+{c}
+{parent=Conjugate gradient method}
+{wiki}
+
+The order-$k$ Krylov subspace generated by $A$ and $b$ is
+$$
+\mathcal K_k(A,b)=\operatorname{span}\{b,Ab,\ldots,A^{k-1}b\}.
+$$
+
+= Krylov dimension from spectral components
+{parent=Krylov subspace}
+{c}
+{title2=$\dim\mathcal K_\infty(A,v)=\#\{\lambda:P_\lambda v\ne0\}$}
+
+For a <diagonalizable> finite-dimensional operator, write $v=\sum_j u_j$ with nonzero $u_j$ in distinct <eigenspaces> of eigenvalues $\lambda_j$. Then $A^rv=\sum_j\lambda_j^ru_j$. The <Vandermonde matrix> of the first $k$ powers is invertible for $k$ distinct eigenvalues, so these powers span exactly the $k$ independent components $u_j$. Thus the stabilized <Krylov subspace> dimension is $k$. It counts distinct spectral components, not the number of nonzero coefficients in an arbitrary eigenbasis: $A=I$, $v=e_1+e_2$ has Krylov dimension one. Equivalently it is the minimum number of eigenvectors needed when those vectors may be chosen freely.
+
+= Finite termination of the conjugate gradient method
+{parent=Conjugate gradient method}
+
+In exact arithmetic, conjugate gradients reaches the exact solution in at most the number of distinct eigenvalues of $A$, and therefore in at most $n$ steps for an $n$-dimensional system.
+
+= Heavy-ball method
+{c}
+{parent=Gradient descent}
+
+The heavy-ball iteration adds momentum to gradient descent:
+$$
+x_{k+1}=x_k-\alpha\nabla F(x_k)+\beta(x_k-x_{k-1}).
+$$
+
+= Heavy-ball residual recurrence
+{parent=Heavy-ball method}
+
+For $F(x)=x^TAx/2-b^Tx$ and $r_k=b-Ax_k$,
+$$
+r_{k+1}=((1+\beta)I-\alpha A)r_k-\beta r_{k-1}.
+$$
+Thus $r_k$ is a polynomial in $A$ applied to the initial residual and lies in the corresponding <Krylov subspace>.
+
+= Heavy-ball error propagation matrix
+{title2=$M$}
+{parent=Heavy-ball method}
+
+For $e_k=x^*-x_k$,
+$$
+\binom{e_{k+1}}{e_k}
+=
+\begin{pmatrix}
+(1+\beta)I-\alpha A&-\beta I\\
+I&0
+\end{pmatrix}
+\binom{e_k}{e_{k-1}}.
+$$
+If $A$ is diagonal with entries $\lambda_i$, a coordinate permutation turns this matrix into blocks
+$$
+\begin{pmatrix}1+\beta-\alpha\lambda_i&-\beta\\1&0\end{pmatrix}.
+$$
+
+= Heavy-ball rate for a two-eigenvalue diagonal quadratic
+{parent=Heavy-ball error propagation matrix}
+
+For $A=\operatorname{diag}(1,\gamma)$, $\alpha=1/\gamma$, and $\beta=(1-\gamma^{-1/2})^2$, every error-propagation block has spectral radius at most $1-\gamma^{-1/2}$, and equality occurs.

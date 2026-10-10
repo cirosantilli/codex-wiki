@@ -189,6 +189,11 @@ Deleting $13$ in our example gives $n=7$, $c=2$, and five <edges>: the two <tree
 
 A <two-component spanning forest> of a finite connected <graph> is an acyclic spanning subgraph with exactly two <connected components of a graph>. It has $|V|-2$ <edges>. For distinct terminals $a,z$, a separating two-component forest places them in different components. Deleting an <edge> of the $a$-to-$z$ <graph path> of a <spanning tree> produces such a forest; adjoining any original <edge> across its cut reverses this operation. This is the counting correspondence behind the <mean spanning-tree path current>.
 
+= Minimum spanning forest
+{parent=Forest}
+
+A <forest> containing one <minimum spanning tree> of each <connected component of a graph> of a finite undirected <weighted graph>, including isolated <vertices>. For disconnected input, <Kruskal's algorithm> returns a <minimum spanning forest>.
+
 = Spanning tree
 {parent=Tree (graph theory)}
 {wiki}
@@ -236,7 +241,60 @@ Process <edges> in decreasing weight and delete an <edge> whenever the remaining
 {c}
 {synonym}
 
-Process <edges> in increasing weight, accepting an <edge> exactly when its endpoints lie in different current <connected components of a graph>. A rejected <edge> can never cross a later component's boundary, since components only merge. Thus each accepted <edge> is lightest across the <cut of a graph> given by one current component. The <minimum spanning tree cut property> proves that the final <spanning tree> is minimum.
+<Kruskal's algorithm> constructs a <minimum spanning tree> of a finite <connected graph> with undirected <edges> and real <edge> weights. Start with all <vertices> and no <edges>, a <forest> of isolated <vertices>. Sort the <edges> by nondecreasing weight, then accept an <edge> exactly when its endpoints belong to different current <connected components of a graph>. Otherwise reject it: the existing <graph path> between its endpoints would close a <graph cycle>. Each acceptance merges two <connected components of a graph>. Stop after $|V|-1$ acceptances, when the <forest> has become one <spanning tree>.
+
+This is a <greedy algorithm> for economical network connection: only the next affordable connection and the current <connected components of a graph> matter. Unlike <Prim's algorithm>, which grows one reached <tree>, <Kruskal's algorithm> can grow several separate <trees> before joining them. The essential safeguard is avoiding a <graph cycle>, rather than simply buying the cheapest fixed number of <edges>.
+
+<Joseph Bernard Kruskal> described this rule as Construction A on page 49 of his February 1956 paper, https://www.ams.org/journals/proc/1956-007-01/S0002-9939-1956-0078686-7/S0002-9939-1956-0078686-7.pdf[On the shortest spanning subtree of a graph and the traveling salesman problem]; page 50 gives an exchange argument for distinct weights.https://langevin.univ-tln.fr/cours/graphe/bonus/Krukskal.pdf[Joseph B. Kruskal, Jr., Proceedings of the American Mathematical Society 7(1), February 1956, pp. 48–50; inspected scan, Construction A and final exchange argument]{ref}
+
+= Kruskal's algorithm worked example
+{c}
+{parent=Kruskal's algorithm}
+
+Consider this original <connected graph> on <vertices> $A,B,C,D,E$. Its undirected <edges>, already in increasing weight order, are
+$$
+\begin{array}{c|rrrrrrr}
+\text{edge}&AB&BC&AC&CD&DE&CE&BE\\\hline
+\text{weight}&1&2&3&4&5&6&7.
+\end{array}
+$$
+Here $AB$ means the unordered pair $\{A,B\}$; the weights are dimensionless costs. Accept $AB$ and $BC$, with total $3$. Reject $AC$: its endpoints already have the <graph path> $A,B,C$, so it would close the <graph cycle> $A,B,C,A$. Accept $CD$ and $DE$, reaching all five <vertices> with four <edges>. The resulting <minimum spanning tree> is
+$$
+T=\{AB,BC,CD,DE\},\qquad w(T)=1+2+4+5=12.
+$$
+Stop here: $CE$ and $BE$ need not be examined. If processing continued, both would be rejected because their endpoints are already in the same <connected component of a graph>.
+
+\Image[kruskal-chosen-and-rejected-edges.png]
+{title=Five sorted <edge> decisions produce a <minimum spanning tree> of cost 12}
+{description=Original five-<vertex> example. Green <edges> are accepted, the red dashed <edge> is rejected, and grey <edges> are unexamined. The third decision rejects $AC$ without changing the accepted <forest>.}
+
+Taking the three cheapest <edges> $AB,BC,AC$ instead gives a <graph cycle> on $A,B,C$, leaving $D,E$ isolated: it is neither a <forest> nor a <spanning tree>. Even taking the four cheapest <edges> adds only $CD$ and leaves $E$ isolated. A cheap infeasible selection cannot compete with a <minimum spanning tree>. For this small <graph>, checking all $\binom{7}{4}=35$ four-<edge> subsets gives a direct certificate: among those that are <spanning trees>, exactly one has minimum cost $12$, namely $T$. The general <algorithm> avoids this exhaustive search.
+
+= Kruskal safe edge
+{c}
+{parent=Kruskal's algorithm}
+
+An <edge> is safe for the current accepted <forest> $F$ if some <minimum spanning tree> contains both $F$ and that <edge>. The <loop invariant> is that some <minimum spanning tree> contains every accepted <edge>. It holds initially for the empty <edge> set. Suppose the next accepted <edge> $e$ joins a current <connected component of a graph> $S$ to its complement. No earlier rejected <edge> crosses this <cut of a graph>: once its endpoints are in one <connected component of a graph>, subsequent merges never separate them. Thus $e$ is a lightest <edge> across that <cut of a graph>.
+
+For the short exchange argument, take a <minimum spanning tree> $T$ containing $F$. If $e$ is absent, adding it creates a <fundamental cycle>. This <graph cycle> contains another <edge> $f$ crossing the same <cut of a graph>. No <edge> of $F$ crosses the <cut of a graph>, so $f$ is not in $F$. Replace $f$ by $e$: the result is a <spanning tree> containing $F$ and $e$, with no greater total weight because $w(e)\leq w(f)$. It is therefore also a <minimum spanning tree>. This is the <minimum spanning tree cut property> in the form needed for tied weights.
+
+In the example, $CD$ is safe after rejecting $AC$: the current <connected component of a graph> $\{A,B,C\}$ has crossing <edges> $CD,CE,BE$ of weights $4,6,7$. Its cheapest connection is $CD$. The rejected $AC$ is also the unique heaviest <edge> of the <graph cycle> $A,B,C,A$, so the <minimum spanning tree cycle property> excludes it from every optimum.
+
+Negative and zero <edge> weights are allowed: the comparisons and exchange argument still apply. Ties can give several <minimum spanning trees>, though they need not; any order among equal-weight <edges> remains valid. Distinct <edge> weights guarantee a unique <minimum spanning tree>. To see why, take the lightest <edge> $e$ belonging to exactly one of two proposed optima, say $T$. Deleting $e$ from $T$ gives a <cut of a graph>; the other optimum has a <graph path> across it, containing an <edge> $f$ absent from $T$. Hence $w(e)<w(f)$, and replacing $f$ by $e$ improves that other optimum, a contradiction. For disconnected input, process all <edges> to obtain a <minimum spanning forest>, one <minimum spanning tree> per original <connected component of a graph>; no <spanning tree> of the whole <graph> exists.<Algorithms, 4th edition by Robert Sedgewick and others/KruskalMST.java>[Robert Sedgewick and Kevin Wayne, Algorithms, 4th edition, companion KruskalMST.java, class documentation and constructor: arbitrary signed weights, ties, disconnected input and sorted processing]{ref}
+
+= Kruskal component merging
+{c}
+{parent=Kruskal's algorithm}
+
+A <disjoint-set data structure> stores the current <partition of a set> of <vertices> into <connected components of a graph>. The operation $\operatorname{find}(v)$ returns a representative of the block containing $v$. Two <vertices> are in the same block exactly when their representatives agree. For each candidate <edge> $uv$, compare $\operatorname{find}(u)$ and $\operatorname{find}(v)$. Equal representatives mean reject; different representatives mean accept and perform $\operatorname{union}(u,v)$, merging the two blocks. The representatives are bookkeeping choices, not preferred <vertices> of the <minimum spanning tree>.
+
+\Image[kruskal-component-merge-ledger.png]
+{title=<Connected components of a graph> merge only when an <edge> is accepted}
+{description=The same example as a <disjoint-set data structure> ledger. Each coloured band is one block of the current <partition of a set>. The rejection of $AC$ leaves both the <partition of a set> and the running cost unchanged. Bands show membership, not internal representative pointers.}
+
+Every acceptance reduces the <connected component of a graph> count by one and increases the accepted <edge> count by one, preserving $|F|=|V|-c$. Thus the ledger reaches $c=1$ exactly when $|F|=4$. Only ten representative queries and four merges are needed for the five examined <edges>, counting two queries per examination and using the already found representatives for each merge. Neither <breadth-first search> nor reconstruction of a <graph path> is needed for these connectivity queries.
+
+For $n=|V|$ and $m=|E|$, comparison <sorting algorithm> takes $O(m\log m)$ time for $m\geq2$, using <Big O notation>. One simple <disjoint-set data structure> implementation stores each block as a <rooted tree> and attaches the smaller block's root below the larger block's root. Whenever a <vertex>'s depth increases, its block size at least doubles, so its depth is at most $\lfloor\log_2 n\rfloor$. Consequently each representative query or merge takes $O(\log n)$ time. Initialization plus the scan costs $O(n+m\log n)$; including <sorting algorithm> gives $O(n+m\log m+m\log n)$, hence $O(m\log m)$ for a connected input with $n\geq2$. These are operation bounds, not measured timings.<Algorithms, 4th edition by Robert Sedgewick and others/WeightedQuickUnionUF.java>[Robert Sedgewick and Kevin Wayne, Algorithms, 4th edition, companion WeightedQuickUnionUF.java: class documentation and union method; union by size without path compression, linear initialization and logarithmic operations]{ref}
 
 = Prim's algorithm
 {c}
