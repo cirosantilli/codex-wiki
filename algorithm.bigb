@@ -14,16 +14,214 @@ A particularly useful design question is: what knowledge survives each step? In 
 
 Given a fixed <sequence> of compatible <matrices> $A_1,\ldots,A_m$, choose a binary parenthesization of $A_1\cdots A_m$ that minimizes the number of scalar multiplications in ordinary <matrix multiplication>. The order of the <matrices> is fixed: parenthesization changes the grouping, not the operand order. <Associativity> preserves the product while intermediate <matrix> dimensions change the cost. The possible binary groupings are counted by the <Catalan number> $C_{m-1}$ for $m\geq1$.
 
+= Matrix-chain cost model
+{parent=Matrix-chain multiplication}
+
+For <matrix dimensions> $r\times s$ and $s\times t$, ordinary <matrix multiplication> computes $rt$ <matrix entries>, each using $s$ <scalar multiplications>. Thus its cost is $rst$ <scalar multiplications>, with $rt(s-1)$ <additions> if each sum starts from its first term. Here we minimize only the <scalar multiplication> count, using this dense <matrix multiplication> rule throughout. The counts describe <arithmetic operations>, rather than measured elapsed time; <matrix multiplication> methods that exploit structure or use faster formulas require a different cost rule.
+
+Take <matrices> $A$, $B$, $C$ with <matrix dimensions> $12\times5$, $5\times40$, $40\times3$. Both groupings produce a $12\times3$ <matrix product>, but their intermediate <matrix dimensions> differ:
+$$
+\begin{aligned}
+(AB)C &: \quad 12\cdot5\cdot40+12\cdot40\cdot3=2400+1440=3840,\\
+A(BC) &: \quad 5\cdot40\cdot3+12\cdot5\cdot3=600+180=780.
+\end{aligned}
+$$
+The second grouping first compresses $BC$ into a $5\times3$ <matrix>, avoiding the $12\times40$ intermediate <matrix> $AB$. The saving is $3060$ <scalar multiplications>, although both groupings use exactly two <matrix multiplications>. This is why counting only <matrix multiplication> operations hides the interesting choice.
+
+\Image[matrix-chain-parenthesization-cost-trees.png]
+{title=The same matrix product can require 3840 or 780 scalar multiplications}
+{description=Original <binary trees> for the three-<matrix> example. Leaves keep $A,B,C$ in the same order. Each internal node gives its resulting <matrix dimensions> and the local <scalar multiplication> cost; adding those costs gives the total.}
+
+<Associativity> permits these regroupings in exact arithmetic; <commutativity> is neither assumed nor generally true for <matrix multiplication>. Swapping $A$ and $B$ here would even make their <matrix product> undefined. In <floating-point arithmetic>, <round-off error> can make the two groupings yield different computed <matrix entries>; the cost optimum alone does not guarantee the smallest numerical error.
+
+= Matrix-chain dynamic programming
+{parent=Matrix-chain multiplication}
+{title2=$m[i,j]$}
+
+Let $A_i$ have <matrix dimensions> $p_{i-1}\times p_i$, where $p_0,\ldots,p_n$ are positive <integers>. For $1\leq i\leq j\leq n$, define $m[i,j]$ as the minimum <scalar multiplication> cost of the contiguous <matrix product> $A_i\cdots A_j$. The endpoints $(i,j)$ of an <integer interval> identify a <dynamic programming state>. A single <matrix> needs no <matrix multiplication>, giving the <base case> $m[i,i]=0$. At the final <matrix multiplication>, split after $A_k$:
+$$
+m[i,j]=\min_{i\leq k<j}\bigl(m[i,k]+m[k+1,j]+p_{i-1}p_kp_j\bigr),\qquad i<j.
+$$
+The two subproducts have <matrix dimensions> $p_{i-1}\times p_k$ and $p_k\times p_j$, regardless of their internal grouping. The <recurrence relation> adds their optimal costs and the final <scalar multiplication> cost.<6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff/Lecture 21: Dynamic Programming III>[6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff; Lecture 21: Dynamic Programming III, printed p. 2, Parenthesization: final split, recurrence and zero one-matrix base case; notes use half-open indices]{ref}
+
+Why is this <optimal substructure>? For a chosen final split $k$, replacing either subproduct's grouping by a cheaper one leaves its <matrix dimensions> and exact <matrix product> unchanged, so it decreases the whole cost by the same amount. Therefore an optimal grouping can use optimal groupings on both sides. Conversely, each candidate in the <recurrence relation> joins two achievable groupings. <Mathematical induction> on $j-i+1$, starting with the single-<matrix> <base case>, proves that the minimum is achievable and no grouping is cheaper.
+
+There are also <overlapping subproblems>: while evaluating the different final splits of $ABCD$, the cases $A(BCD)$ and $(ABC)D$ both request the cost of $BC$. <Recursion> without reuse recomputes this answer; <memoization> or a <dynamic programming> table stores it once. Fill the table by increasing length $j-i+1$, so both dependencies are ready. Record an attaining split $s[i,j]$ alongside each cost.<6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff/Lecture 21: Dynamic Programming III>[6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff; Lecture 21: Dynamic Programming III, printed p. 2, Parenthesization: increasing substring size, cubic time and parent pointers]{ref}
+
+The <dynamic programming> table has $n(n+1)/2$ cost entries. For length $\ell$, there are $n-\ell+1$ entries and $\ell-1$ possible splits, so the exact number of candidate evaluations is
+$$
+\sum_{\ell=2}^{n}(n-\ell+1)(\ell-1)=\frac{n(n-1)(n+1)}{6}.
+$$
+Under the unit-cost assumption that <arithmetic operations>, comparisons and access to stored costs each take constant time, this gives <time complexity> $O(n^3)$ and <space complexity> $O(n^2)$, using <Big O notation>. These bounds concern choosing a grouping from the <matrix dimensions>; they exclude the subsequent <matrix multiplication> work. If the dimensions or costs require arbitrarily long <integers>, their arithmetic and storage costs must also be counted.
+
+= Matrix-chain split reconstruction
+{parent=Matrix-chain multiplication}
+{title2=$s[i,j]$}
+
+Extend the original example by a <matrix> $D$ with <matrix dimensions> $3\times15$, so $(p_0,p_1,p_2,p_3,p_4)=(12,5,40,3,15)$. The <Catalan number> $C_3=5$ counts all possible groupings. Their <scalar multiplication> costs are
+$$
+\begin{array}{c|r}
+\text{grouping}&\text{cost}\\\hline
+((AB)C)D&2400+1440+540=4380\\
+(A(BC))D&600+180+540=1320\\
+(AB)(CD)&2400+1800+7200=11400\\
+A((BC)D)&600+225+900=1725\\
+A(B(CD))&1800+3000+900=5700
+\end{array}
+$$
+The optimum is $(A(BC))D$, with cost $1320$. Enumeration makes a useful check here, but <dynamic programming> reaches the same answer by solving ten <integer intervals>, including the four single-<matrix> <base cases>:
+$$
+\begin{array}{c|rrrr}
+i\backslash j&1&2&3&4\\\hline
+1&0&2400&780&1320\\
+2&&0&600&825\\
+3&&&0&1800\\
+4&&&&0
+\end{array}
+$$
+For example, $m[2,4]=\min\{1800+5\cdot40\cdot15,\ 600+5\cdot3\cdot15\}=\min\{4800,825\}=825$. The three final-split candidates for the full <matrix product> supply a compact certificate:
+$$
+\begin{aligned}
+k=1 &: \quad 0+825+12\cdot5\cdot15=1725,\\
+k=2 &: \quad 2400+1800+12\cdot40\cdot15=11400,\\
+k=3 &: \quad 780+0+12\cdot3\cdot15=1320.
+\end{aligned}
+$$
+The first candidate already uses the better grouping of $BCD$; the worse $A(B(CD))$ need not be reconsidered at the top level. This is how <optimal substructure> lets the table represent all five possibilities with only three final candidates.
+
+\Image[matrix-chain-dynamic-programming-certificate.png]
+{title=A four-matrix cost table and the splits certifying the optimum}
+{description=Original <dynamic programming> calculation for $(12,5,40,3,15)$. Orange entries are the nonsingleton <integer intervals> used in the recovered optimum. The <binary tree> follows stored splits down both children to the single-<matrix> <base cases>; the final candidates certify the cost $1320$.}
+
+Read $s[1,4]=3$, which separates $ABC$ from $D$. Then $s[1,3]=1$ separates $A$ from $BC$, and $s[2,3]=2$ separates $B$ from $C$. This <recursion> stops at every $i=j$, returning the corresponding <matrix> name. Combining the returned expressions recovers $(A(BC))D$, rather than only its cost. Every <recursive call> uses a shorter <integer interval>, establishing <algorithm termination>; a tied minimum may choose any attaining split. The recovered <binary tree> has $n$ leaves and $n-1$ internal nodes, so reconstruction takes $O(n)$ steps. Its attraction is the separation between an enormous family of groupings and a small set of reusable <dynamic programming states>.
+
 = Greedy algorithm
 {parent=Algorithm}
 {wiki}
 
 A <greedy algorithm> commits to a locally preferred next choice without revisiting earlier choices. Its rule needs a justification to guarantee a globally optimal result: the largest-individual-value rule in the <0-1 knapsack problem> example fails, whereas <Dijkstra's algorithm> correctly settles the smallest tentative distance under its nonnegative-edge assumptions.
 
+<Interval scheduling> makes the <greedy-choice property> concrete: an <exchange argument> justifies choosing the earliest finish. The rule maximizes job count.
+
+= Greedy-choice property
+{parent=Greedy algorithm}
+
+A <greedy-choice property> says that some optimal <feasible solution> contains the locally selected choice. With <optimal substructure> in the remaining problem, this permits repeated commitments. An <exchange argument> can establish the property.<Algorithms by Jeff Erickson/Greedy Algorithms>[Algorithms by Jeff Erickson, §4.3 General Pattern, printed pp. 164–165: exchange without worsening an optimum]{ref}
+
+= Exchange argument
+{parent=Greedy-choice property}
+
+An <exchange argument> transforms an optimal <feasible solution> to include a desired choice while preserving feasibility and its <objective function> value. For <interval scheduling>, replace the first accepted job; later jobs remain compatible because the replacement finishes no later.<Algorithms by Jeff Erickson/Greedy Algorithms>[Algorithms by Jeff Erickson, §4.2 Scheduling Classes, Lemma 4.3 and Theorem 4.4, printed pp. 163–164]{ref}
+
+= Interval scheduling
+{parent=Greedy algorithm}
+{wiki}
+{title2=$\max |S|$}
+
+Given a <finite set> of jobs with fixed half-open <intervals> $[s_i,f_i)$, where $s_i<f_i$, select a <subset> $S$ of <maximum> <cardinality>. A <feasible solution> has pairwise <disjoint> <intervals>: for distinct selected jobs $i,j$, either $f_i\leq s_j$ or $f_j\leq s_i$. Adjacent endpoints are allowed. Each job uses one shared resource throughout its <interval>.<6.046J Design and Analysis of Algorithms, Spring 2015/Lecture 1: Introduction>[6.046J Design and Analysis of Algorithms, Spring 2015, Lecture 1: Introduction, printed p. 2, Interval Scheduling: compatibility and maximum size]{ref}
+
+Use a <sorting algorithm> to order jobs by <nondecreasing> finish time. Scan that order, accepting a job if its start is at least the last accepted finish; accept the first job unconditionally. Equal finish times may be ordered arbitrarily. The scan is linear; comparison <sorting algorithm> gives <time complexity> $O(n\log n)$ for $n\geq2$, in <Big O notation>, assuming constant-cost endpoint comparisons.<Algorithms by Jeff Erickson/Greedy Algorithms>[Algorithms by Jeff Erickson, §4.2 Scheduling Classes, printed p. 162: finish-time scan and sorting cost; endpoint equality is allowed by the convention here]{ref}
+
+Consider these seven original jobs:
+$$
+\begin{array}{c|rrrrrrr}
+\text{job}&A&B&C&D&E&F&G\\\hline
+s_i&0&1&2&4&5&6&7\\
+f_i&6&2&4&6&8&7&9
+\end{array}.
+$$
+The finish order is $B,C,A,D,F,E,G$, using alphabetical order for the tie at six. Accept $B=[1,2)$ and $C=[2,4)$. Reject $A=[0,6)$ because it starts before four, then accept $D=[4,6)$ and $F=[6,7)$. Reject $E=[5,8)$ because it starts before seven, and accept $G=[7,9)$. The resulting <feasible solution> is $S=\{B,C,D,F,G\}$, with <cardinality> five. Ordering $D$ before $A$ in their tie gives the same selection.
+
+The earliest-start rule instead accepts $A=[0,6)$ first. It then rejects $B,C,D,E$, whose starts are before six, and accepts $F=[6,7)$ and $G=[7,9)$. Its <feasible solution> $\{A,F,G\}$ has <cardinality> three. Both rules return <disjoint> <intervals>; their different <objective function> values show why feasibility alone cannot establish optimality. The finish-time rule also permits idle time: leaving $[0,1)$ unused helps fit five jobs.
+
+\Image[interval-scheduling-finish-versus-start.png]
+{title=The same seven jobs give five acceptances by earliest finish and three by earliest start}
+{description=Colored <intervals> are accepted; gray <intervals> are rejected. Filled left endpoints and hollow right endpoints denote $[s_i,f_i)$, so a finish and the next start may coincide. All times and jobs belong to the constructed example.}
+
+There is a short certificate that five is the <maximum>. The five <subsets> $\{A,B\}$, $\{C\}$, $\{D,E\}$, $\{F\}$, $\{G\}$ form a <partition of a set> of the seven jobs. Jobs $A,B$ overlap on $[1,2)$, and jobs $D,E$ overlap on $[5,6)$; a <feasible solution> takes at most one job from each of these pairs. The <singleton> <subsets> each contribute at most one. Thus every <feasible solution> has <cardinality> at most five, and $\{B,C,D,F,G\}$ attains that <upper bound>. This certificate explains this example without relying on the general <algorithm> proof.
+
+For the general <exchange argument>, let $q$ be the first job of an optimal <feasible solution> and $g$ an earliest-finishing job. Every later selected job $j$ satisfies
+$$
+f_g\leq f_q\leq s_j.
+$$
+Replacing $q$ by $g$ preserves compatibility and <cardinality>. The remainder must be optimal among jobs starting at or after $f_g$, or a better remainder would improve the whole selection. <Induction> on the number of remaining jobs, with the <empty set> as base case, proves the finish-time <greedy algorithm> optimal.<6.046J Design and Analysis of Algorithms, Spring 2015/Lecture 1: Introduction>[6.046J Design and Analysis of Algorithms, Spring 2015, Lecture 1: Introduction, printed pp. 3–4, Claim 2: first-job exchange and residual optimality]{ref}
+
+\Image[interval-scheduling-exchange-certificate.png]
+{title=A safe first-job exchange and a five-group optimality certificate}
+{description=Upper panel: in a separate constructed example with jobs $q=[0,4)$, $g=[1,2)$, $u=[4,6)$ and $v=[6,7)$, replacing $q$ by $g$ keeps the two later jobs and <cardinality> three. Lower panel: five groups of mutually conflicting jobs give an <upper bound> of five for the seven-job example; selecting $B,C,D,F,G$ meets it.}
+
+The useful shortcut in <interval scheduling> is to avoid examining all $2^n$ <subsets> of the <input>. One local inequality preserves an optimal continuation: the <greedy-choice property> requires agreement with some optimum, rather than every optimum.
+
+= Weighted interval scheduling
+{parent=Interval scheduling}
+{title2=$\max\sum_{i\in S}w_i$}
+
+<Weighted interval scheduling> maximizes total reward over compatible jobs. An earliest-finish <greedy algorithm> can fail; <dynamic programming> compares alternative choices.<6.046J Design and Analysis of Algorithms, Spring 2015/Lecture 1: Introduction>[6.046J Design and Analysis of Algorithms, Spring 2015, Lecture 1: Introduction, printed pp. 4–5, Weighted Interval Scheduling and Dynamic Programming]{ref}
+
+Keep the seven <intervals> above, assign reward $w_A=10$, and give each other job reward one. The finish-time selection $\{B,C,D,F,G\}$ earns five, whereas the compatible <subset> $\{A,F,G\}$ earns twelve. Any <subset> omitting $A$ earns at most six even before imposing compatibility; including $A$ leaves only $F,G$ available. Hence twelve is the optimal value. The <exchange argument> still preserves job count when replacing $A$ by $B$, but loses nine reward units. A safe exchange must preserve the actual <objective function>.
+
 = Algorithm correctness
 {parent=Algorithm}
 
-Partial correctness means that, if the <algorithm> terminates on a permitted <input>, its <output> meets the specification. Total correctness additionally requires termination on every permitted <input>.
+<Partial correctness> means that, if the <algorithm> terminates on a permitted <input>, its <output> meets the <formal specification>. <Total correctness> additionally requires <algorithm termination> on every permitted <input>.
+
+A <precondition> $P$ describes permitted starting circumstances; a <postcondition> $Q$ describes the required result. <Partial correctness> says that starting with $P$ and finishing implies $Q$. <Total correctness> also guarantees finishing. A <loop invariant> supplies the connection between these conditions during repeated steps.<CS 2112 Fall 2019/Loop invariants>[CS 2112 Fall 2019; Loop invariants, Using loop invariants to show code is correct: Establishment, Preservation, Postcondition, and Termination]{ref}
+
+Correctness is relative to a <formal specification>. Returning the first entry of an <array> correctly implements "return the first entry", but fails "return the <maximum>" on $[3,1,4,4,2]$. A fast wrong answer does not acquire <algorithm correctness> from its <time complexity>. Numerical closeness matters only when the <formal specification> allows an approximation. <Software testing> and <test coverage> provide evidence about selected executions; they do not by themselves establish <algorithm correctness> for every permitted <input>.
+
+= Partial correctness
+{parent=Algorithm correctness}
+
+= Total correctness
+{parent=Algorithm correctness}
+
+= Algorithm termination
+{parent=Total correctness}
+
+= Prefix maximum correctness example
+{parent=Algorithm correctness}
+
+Given a nonempty finite <sequence> $a=(a_0,\ldots,a_{n-1})$ of <integers>, return its <maximum> value. Represent the <sequence> by an <array> whose contents remain unchanged during execution. The <precondition> requires an <integer> length $n\geq1$ and exact, terminating <integer> comparisons and <variable assignments>. The <postcondition> for returned value $r$ is
+$$
+r\in\{a_i:0\leq i<n\}\quad\text{and}\quad a_i\leq r\ \text{for every }0\leq i<n.
+$$
+Thus the <output> belongs to the <finite set> of entries and is at least every entry. The contract permits ties and negative <integers>; it asks for a value, not the position of a particular occurrence. There is no <maximum> of an empty <set> of <integers>, so empty <input> is deliberately outside this <precondition>. A service accepting empty <inputs> needs a different <formal specification>, such as a separate absent result.
+
+This <Python> implementation makes the <variable assignments> explicit. Its index arithmetic models exact <integer> arithmetic; fixed-width implementations additionally need enough index range for $n$:
+``
+def find_max(a):
+    n = len(a)
+    best = a[0]
+    k = 1
+    while k < n:
+        if a[k] > best:
+            best = a[k]
+        k = k + 1
+    return best
+``
+For the original <input> $[3,1,4,4,2]$, initialization gives $k=1$ and $\mathrm{best}=3$. Reading $a_1=1$ keeps $3$; reading $a_2=4$ changes it to $4$; reading $a_3=4$ and $a_4=2$ keeps $4$. At successive condition checks, the pairs $(k,\mathrm{best})$ are $(1,3),(2,3),(3,4),(4,4),(5,4)$. The returned <maximum> is $4$.
+
+\Image[prefix-maximum-invariant-trace.png]
+{title=<Maximum> values of successive prefixes in the original <integer> <array>}
+{description=Each row shows the processed prefix of $[3,1,4,4,2]$ immediately before checking $k<n$. Blue cells have been processed; grey cells have not. The <loop invariant> records the <maximum> of the blue entries, while the <loop variant> $n-k$ counts remaining entries. These are exact constructed execution states.}
+
+At each condition check, use the <loop invariant>
+$$
+I:\qquad 1\leq k\leq n,\qquad \mathrm{best}=\max\{a_i:0\leq i<k\},
+$$
+together with the fact that the <input> <array> is unchanged. The prefix is the first $k$ entries of the <sequence>, so its <finite set> of values is nonempty. The <maximum> need not be unique as an occurrence: the invariant concerns its value.
+
+Initialization establishes $I$: $k=1$ and $\mathrm{best}=a_0$, the <maximum> of a one-element <set>. For preservation, suppose $I$ and $k<n$ hold. Then $a_k$ is a valid <array> entry. Either the comparison replaces $\mathrm{best}$ with the larger value $a_k$, or it keeps a value at least $a_k$. Before increasing $k$, the resulting value is
+$$
+\max\bigl(\max\{a_i:0\leq i<k\},a_k\bigr)=\max\{a_i:0\leq i<k+1\}.
+$$
+The <variable assignment> $k\gets k+1$ restores the complete <loop invariant>. Between the two <variable assignments>, the old prefix formula may temporarily be false; the <loop invariant> is required at condition checks, not at every instruction.
+
+At exit, $k\geq n$, while $I$ gives $k\leq n$. Hence $k=n$, and $I$ gives exactly the required <postcondition>. This establishes <partial correctness>. The preservation argument is <mathematical induction> on the number of completed iterations, covering every permitted <integer> <sequence>, rather than just the pictured <input>.
+
+For <algorithm termination>, the <loop variant> $V=n-k$ is a nonnegative <integer> whenever $I$ holds. If $k<n$, then $V\geq1$. Every body terminates under the <precondition> and changes $V$ to $V-1$. Starting at $n-1$, it reaches zero after exactly $n-1$ iterations. For $n=1$, the initial value is already zero and the body is never entered. Together with <partial correctness>, this proves <total correctness>.
+
+Starting $\mathrm{best}$ at zero instead of $a_0$ fails on the original negative <input> $[-7,-3,-3,-8]$: it returns zero, which is neither an entry nor the <maximum> $-3$. Keeping $k=1$ forever preserves the correct initial prefix claim but loops forever when $n>1$; a <loop invariant> alone does not ensure <algorithm termination>. Using `>=` instead of `>` still returns the same <maximum> value when entries tie, although a version returning a position would need an explicit tie rule.
 
 = Formal verification
 {parent=Algorithm correctness}
@@ -34,6 +232,12 @@ Establishing specified properties of a system using <formal proofs> about a prec
 {parent=Formal verification}
 
 A mathematically precise description of permitted behaviour. A <formal specification> for the <microkernel file-read example>'s service could relate an authorized request to the exact returned <bytes>; a <formal specification> of its <microkernel>'s <IPC> need only describe the protected transport operation. They state different obligations.
+
+= Precondition
+{parent=Formal specification}
+
+= Postcondition
+{parent=Formal specification}
 
 = Binary correctness
 {parent=Formal verification}
@@ -49,7 +253,25 @@ Conformance of an implementation's behaviour to its specified functional require
 {parent=Algorithm correctness}
 {wiki}
 
-A statement true whenever execution reaches a chosen point in a loop, usually immediately before its condition is tested. Establish it initially, preserve it through each iteration, and combine it with the exit condition to establish <algorithm correctness>. Termination needs a separate argument.https://www.cs.cornell.edu/courses/cs2112/2019fa/lectures/loopinv/[Cornell CS 2112: loop invariants]{ref}
+A statement true whenever execution reaches a chosen point in a loop, usually immediately before its condition is tested. Establish it initially, preserve it through each iteration, and combine it with the exit condition to establish <algorithm correctness>. Termination needs a separate argument.<CS 2112 Fall 2019/Loop invariants>[CS 2112 Fall 2019; Loop invariants, Using loop invariants to show code is correct: the three partial-correctness obligations and separate Termination step]{ref}
+
+Write $I$ for the <loop invariant>, $B$ for the condition, $P$ for the <precondition>, and $Q$ for the <postcondition>. Prove that initialization under $P$ establishes $I$, that a completed body starting with $I$ and $B$ restores $I$, and that $I$ with false $B$ implies $Q$.<CS 2112 Fall 2019/Loop invariants>[CS 2112 Fall 2019; Loop invariants, Using loop invariants to show code is correct: Establishment, Preservation, and Postcondition]{ref}
+
+In the <prefix maximum correctness example>, the <loop invariant> remembers exactly the <maximum> of the processed prefix and the valid index bounds. The weaker statement $\mathrm{best}\geq a_0$ survives every iteration, but does not imply the <postcondition>: for $[3,1,4,4,2]$, the wrong value $3$ satisfies it. A useful <loop invariant> retains enough information to recover the answer when the condition becomes false.
+
+= Loop variant
+{parent=Loop invariant}
+{title2=$V$}
+
+A decreasing measure used to prove <algorithm termination>. A nonnegative <integer> <loop variant> must strictly decrease after every completed body whose condition was true; the body itself must terminate.<CS 2112 Fall 2019/Loop invariants>[CS 2112 Fall 2019; Loop invariants, Using loop invariants to show code is correct: Termination and the decrementing function]{ref}
+
+The <prefix maximum correctness example> uses $V=n-k$. It counts unread entries and is independent of whether the new entry changes the <maximum>. Ties therefore cannot stall progress: $k$ increases even when $\mathrm{best}$ stays the same. An <integer> bounded below cannot strictly decrease indefinitely, which supplies the missing <algorithm termination> argument.
+
+\Image[prefix-maximum-proof-obligations.png]
+{title=Control flow and four proof obligations for the <prefix maximum correctness example>}
+{description=Initialization, preservation, and exit establish <partial correctness>; the <loop variant> establishes <algorithm termination> and hence <total correctness>. The <loop invariant> is restored after both <variable assignments>. The <input> <array> stays unchanged throughout.}
+
+Strict decrease and a lower bound are insufficient for arbitrary <real numbers>. The positive <sequence> $1,1/2,1/4,\ldots$ strictly decreases and is bounded below by zero, but never reaches zero. Choosing an <integer> measure avoids this failure.
 
 = Linear search
 {parent=Algorithm}
@@ -271,6 +493,95 @@ Specify who owns the table, when context changes invalidate it, and how long key
 
 <Recursion> solves a problem by invoking the same procedure on smaller instances, with base cases answered directly. For <merge sort>, an empty or one-entry <array> is already sorted, and every larger <array> is split into two shorter parts. The decreasing lengths justify termination; a self-call without a progress rule would not suffice.
 
+A <recursive procedure> refers to itself, directly or through another procedure. A <recursive call> starts another invocation, with its own arguments and local <variables>; the caller can wait for its returned <output>. A <base case> supplies an answer without further <recursive calls>. To establish <algorithm termination>, also show that every <recursive call> progresses in a <well-founded relation>. “Smaller” means smaller in that chosen relation: argument values need not all decrease, and the arguments need not even be numbers.
+
+<Recursion> is especially expressive when a <data structure> already decomposes into smaller structures. A <binary tree> has two child <subtrees>, so <structural recursion> can follow its shape. A short rule for each case can describe an entire traversal or computation. The distinction between a <recursive procedure> and the <recursive process> it generates helps connect that compact description to its resource use.<Structure and Interpretation of Computer Programs by Harold Abelson and others>[Structure and Interpretation of Computer Programs, second edition, §1.2.1: procedure versus process; §1.2.2: closing discussion before Counting change, hierarchical data and straightforward definitions]{ref}
+
+= Recursive procedure
+{parent=Recursion (computer science)}
+
+A procedure whose definition invokes itself directly or indirectly. This is a property of its <programming language syntax>. It does not determine whether execution accumulates unfinished operations.<Structure and Interpretation of Computer Programs by Harold Abelson and others>[Structure and Interpretation of Computer Programs, second edition, §1.2.1: paragraph beginning “In contrasting iteration and recursion”]{ref}
+
+= Recursive process
+{parent=Recursion (computer science)}
+
+A computation that retains pending operations while further calls run, then completes those operations as results return. A <recursive procedure> can instead describe an iterative process: passing an updated accumulator onward may leave no arithmetic pending. Avoiding growing <call stack> storage in that case depends on the implementation. A fixed number of <variables> also does not imply fixed storage in <bits> when their <integer> values grow.<Structure and Interpretation of Computer Programs by Harold Abelson and others>[Structure and Interpretation of Computer Programs, second edition, §1.2.1: deferred operations, state variables, and implementation dependence of space use; bit-storage qualification added here]{ref}
+
+= Factorial recursion and returning frames
+{parent=Recursion (computer science)}
+{title2=$F(0)=1,\quad F(n)=nF(n-1)$}
+
+For a <natural number> $n$, the <factorial> satisfies $0!=1$ and $n!=n(n-1)!$ for $n\geq1$. The following description includes the zero <base case> explicitly; a negative or nonintegral <input> is outside its <precondition>:
+``
+F(n):
+    require n is an integer and n >= 0
+    if n == 0:
+        return 1
+    child_result = F(n - 1)
+    return n * child_result
+``
+For $n=4$, the arguments on descent are $4,3,2,1,0$. Each positive-argument invocation postpones one <multiplication> until its <recursive call> returns. At the deepest point, the <call stack> has five <stack frames>: four suspended callers and the active zero <base case>. The invocation at zero returns $1$ to the invocation at one, rather than finishing the entire computation. Returns then give
+$$
+F(0)=1,\quad F(1)=1\cdot1=1,\quad F(2)=2\cdot1=2,\quad F(3)=3\cdot2=6,\quad F(4)=4\cdot6=24.
+$$
+A <stack frame> retains the caller's argument and where to resume. When the invocation at three receives $2$, it uses its own $n=3$, obtains $6$, and returns that value to the invocation at four. The <recursive calls> share a definition, but their local <variables> belong to separate invocations.
+
+\Image[recursion-factorial-returning-frames.png]
+{title=Factorial descent builds pending work; returning frames complete it}
+{description=Original trace of $F(4)$ with <base case> $F(0)=1$. The central snapshot shows all five <stack frames> at maximum depth. Downward arrows create <recursive calls>; upward arrows carry completed answers to suspended callers. A return removes only the completed invocation's <stack frame>.}
+
+The <natural number> measure $n$ decreases by one on every <recursive call>, so <algorithm termination> follows. For <algorithm correctness>, use <mathematical induction>: the zero <base case> returns $0!=1$; assuming the child's answer is $(n-1)!$, the caller returns $n(n-1)!=n!$. This also explains why keeping the caller's $n$ matters.
+
+There are exactly $n+1$ invocations and $n$ <multiplications>, including one invocation and no <multiplications> when $n=0$. Ordinary execution of this <recursive process> uses at most $n+1$ active <stack frames>, hence $O(n)$ frames for $n\geq1$ in <Big O notation>. If each test, call, <subtraction> and <multiplication> is counted as constant cost, its <time complexity> is $O(n)$. That is an arithmetic-operation model: exact arbitrary-length <integer> <multiplication> has growing cost, and neither the <factorial> <output> nor every <stack frame>'s numeric contents occupies a universally fixed number of <bits>.
+
+= Binary array sum by recursion
+{parent=Recursion (computer science)}
+{title2=$S(A,l,r)=\sum_{i=l}^{r-1}A_i$}
+
+Keep an <array> $A$ unchanged, and sum entries in the half-open <integer interval> of <array indices> $[l,r)$. The <precondition> requires <integers> $0\leq l\leq r\leq\operatorname{length}(A)$ and exact, terminating <integer> <addition>. An empty range returns the <empty sum> zero; a one-entry range returns that entry. Every longer range splits at its middle <array index>:
+``
+S(A, l, r):
+    require integer indices with 0 <= l <= r <= length(A)
+    size = r - l
+    if size == 0:
+        return 0
+    if size == 1:
+        return A[l]
+    middle = l + floor(size / 2)
+    left_sum = S(A, l, middle)
+    right_sum = S(A, middle, r)
+    return left_sum + right_sum
+``
+For the original <array> $A=[6,-2,5,1]$, call $S(A,0,4)$. The left half returns $6+(-2)=4$, the right half returns $5+1=6$, and the original invocation returns $4+6=10$. The right half's left endpoint increases from zero to two: what decreases is range length $r-l$, not every argument. Negative entries affect the answer but do not affect <algorithm termination>.
+
+\Image[recursion-binary-array-sum-call-tree.png]
+{title=Seven calls compute an array sum with only three frames active at once}
+{description=Original <binary tree> of invocations for $A=[6,-2,5,1]$, with <integer intervals> labeling ranges and upward arrows labeling returned sums. Small numbers give the order in which invocations begin when the left child runs first. The highlighted <graph path> contains the three active <stack frames> while the entry $-2$ is read; the result $6$ from the completed left sibling is retained by its parent.}
+
+For range length $n=r-l\geq2$, the children have lengths $\lfloor n/2\rfloor$ and $\lceil n/2\rceil$, both positive and strictly less than $n$. The <floor function> chooses the split; the <ceiling function> gives the other length. <Algorithm termination> follows by this <natural number> measure. For <algorithm correctness>, apply <mathematical induction> on $n$: the two <base cases> return the specified <sum>; for a larger range, the two disjoint child ranges cover every original <array index> exactly once, so <addition> of their correct <sums> gives the required <sum>.
+
+For $n\geq1$, the invocation <tree> is a <full binary tree> with $n$ leaves, one per <array> entry. If $I$ is its number of nonleaf <vertices>, counting <edges> gives $2I=I+n-1$, so $I=n-1$. Thus the total invocation count is $2n-1$, and there are $n-1$ combining <additions>. Here $n=4$ gives seven calls and three combining <additions>. For $n=1$, there is one call and no combining <addition>; for $n=0$, there is also one call and no combining <addition>, but no entry leaf, so the $2n-1$ formula does not apply.
+
+The <call stack> holds the active branch, rather than the entire invocation <tree>. Execute the left child completely before the right child, retaining the left result in the parent <stack frame>. The maximum number of active <stack frames> is $1+\lceil\log_2 n\rceil$ for $n\geq1$, and one for $n=0$. Balanced splitting therefore needs $O(\log n)$ frames for $n\geq2$, compared with the $O(n)$ frames of the <factorial> <recursive process>. Assuming constant-cost <array> access, index operations and <addition>, its <time complexity> is $O(n)$ and its auxiliary <space complexity> is $O(\log n)$ <machine words> for $n\geq2$, excluding the stored <input>. Pass the same <array> with different endpoints, rather than copying slices. These bounds require all stored indices and partial sums to fit in a constant number of <machine words>; exact unbounded <integer> <addition> and storage require a separate <bit> cost analysis.
+
+= Well-founded progress in recursion
+{parent=Recursion (computer science)}
+{title2=$\mu(\text{child})<\mu(\text{parent})$}
+
+A <base case> and a decreasing <natural number> measure work together. Check that every invocation satisfies its <precondition>, each <base case> finishes with the correct <output>, and every other invocation makes finitely many <recursive calls> with strictly smaller measure. All local work must also terminate. By <well-founded induction>, the children finish, so their caller finishes; if their answers are correct and the combination rule preserves the <postcondition>, the caller is correct too. This proves <total correctness>, not just correctness conditional on return.
+
+Strict decrease without a lower bound is insufficient: subtracting one forever from a negative <integer> never reaches zero. Even a positive real-valued measure can decrease indefinitely, as $1,1/2,1/4,\ldots$ shows. A <well-founded relation> rules out that descent. In <structural recursion>, a proper child <subtree> of a finite <binary tree> supplies progress without numeric arguments. The proof obligation is the relation between parent and child instances, together with terminating local work and complete <base cases>.
+
+= Base case
+{parent=Recursion (computer science)}
+
+A case answered without further <recursive calls>. Complete <base cases> are one part of an <algorithm termination> argument; the other cases must progress in a <well-founded relation>.
+
+= Recursive call
+{parent=Recursion (computer science)}
+
+An invocation made by a <recursive procedure> of itself, directly or through another procedure. Each invocation has its own arguments and local <variables>; a returning invocation supplies an <output> to its caller.
+
 = Divide-and-conquer algorithm
 {parent=Algorithm}
 {wiki}
@@ -409,14 +720,176 @@ Distinct <sort keys> are essential to the $n!$ counting argument. Identical <sor
 {wiki}
 {title2=$T(n,K)=O(n+K)$}
 
-<Counting sort> uses <integer> <sort keys> in $\{0,\ldots,K-1\}$ directly as indices into an <array> of counts. Constant-cost counting and indexing give $O(n+K)$ <time complexity> in <Big O notation>. To retain complete <sorting records>, cumulative counts locate their <output> ranges; filling each range from its end while scanning the <input> backwards gives <stable sorting>. Emitting bare <sort keys> from counts would discard associated data. The $K$ term matters when the key range is large.<Open Data Structures: An Introduction by Pat Morin/11.2 Counting Sort and Radix Sort>[Theorem 11.7 and stability]{ref}
+<Counting sort> uses <integer> <sort keys> in $\{0,\ldots,K-1\}$ directly as indices into an <array> of counts. Constant-cost counting and indexing give $O(n+K)$ <time complexity> in <Big O notation>. To retain complete <sorting records>, cumulative counts locate their <output> ranges; filling each range from its end while scanning the <input> backwards gives <stable sorting>. Emitting bare <sort keys> from counts would discard associated data. The $K$ term matters when the key range is large.<Open Data Structures: An Introduction by Pat Morin/11.2 Counting Sort and Radix Sort>[Open Data Structures: An Introduction by Pat Morin; Theorem 11.7 and stability]{ref}
+
+For an original worked example, take $n=7$ complete <sorting records> and $K=4$ possible <integer> <sort keys>:
+$$
+A=\bigl((2,\mathrm A),(0,\mathrm B),(2,\mathrm C),(1,\mathrm D),(0,\mathrm E),(3,\mathrm F),(2,\mathrm G)\bigr).
+$$
+The letters label the associated data, and are never compared. Both <input> and <output> <array indices> start at zero, so their valid positions are $0,\ldots,6$; the count <array> has <array indices> $0,\ldots,3$. <Stable sorting> must produce
+$$
+B=\bigl((0,\mathrm B),(0,\mathrm E),(1,\mathrm D),(2,\mathrm A),(2,\mathrm C),(2,\mathrm G),(3,\mathrm F)\bigr).
+$$
+The equal-<sort key> groups retain $\mathrm B,\mathrm E$ and $\mathrm A,\mathrm C,\mathrm G$ in arrival order. <Counting sort prefix ranges> explain where those groups belong; <stable record placement in counting sort> explains how to fill them without losing that order or the complete <sorting records>.
+
+= Counting sort prefix ranges
+{parent=Counting sort}
+{title2=$[S_k,P_k)$}
+
+For $n\geq0$ <sorting records> with <integer> <sort keys> in $\{0,\ldots,K-1\}$, where $K\geq1$, let $c_k$ count the <input> occurrences of <sort key> $k$. Define two <prefix sums>:
+$$
+S_k=\sum_{h=0}^{k-1}c_h,\qquad P_k=\sum_{h=0}^{k}c_h=S_k+c_k.
+$$
+The <empty sum> gives $S_0=0$. Here $c_k,S_k,P_k$ are counts of <sorting records>. Exactly $S_k$ <sorting records> have smaller <sort keys>, so the <output> positions for <sort key> $k$ form the half-open <integer interval>
+$$
+\{j\in\mathbb Z:S_k\leq j<P_k\}=[S_k,P_k)\cap\mathbb Z.
+$$
+Its right endpoint $P_k$ is excluded: the last occupied <array index> is $P_k-1$ when $c_k>0$.<Open Data Structures: An Introduction by Pat Morin/11.2 Counting Sort and Radix Sort>[Open Data Structures: An Introduction by Pat Morin; §11.2.1 Counting Sort, paragraphs after Figure 11.7: running sums count keys at most k and determine the output block]{ref}
+
+For the seven-<sorting record> example, the frequency <array>, inclusive cumulative count <array>, and start <array> are
+$$
+c=(2,1,3,1),\qquad P=(2,3,6,7),\qquad S=(0,2,3,6).
+$$
+Thus <sort keys> zero, one, two and three occupy the <integer intervals> $[0,2)$, $[2,3)$, $[3,6)$ and $[6,7)$, respectively. In particular, the three <sorting records> with <sort key> two belong at <array indices> three, four and five. The inclusive cumulative count $P_2=6$ counts all six <sorting records> with <sort keys> at most two; six is the exclusive endpoint, not the final position of a <sorting record> with <sort key> two.
+
+\Image[counting-sort-frequency-prefix-ranges.png]
+{title=Frequencies and <prefix sums> reserve disjoint <counting sort> output ranges}
+{description=Original seven-<sorting record> example with $K=4$. The bar heights count <sorting records>. The table gives the start $S_k$ and exclusive endpoint $P_k$ for each <sort key>; the lower strip shows zero-based <output> <array indices>. The boundary seven lies just beyond the last slot six.}
+
+These <integer intervals> fit together because $P_k=S_{k+1}$ for $k<K-1$, and $P_{K-1}=n$. Their lengths $P_k-S_k=c_k$ add to $n$, so they partition all <output> positions without overlaps or gaps. An absent <sort key> contributes an empty <integer interval>: with frequencies $(0,2,0,1)$, the endpoints are $(0,2,2,3)$ and <sort key> two has range $[2,2)$. For empty <input>, every count and endpoint is zero; every reserved <integer interval> is empty. This makes the same formulas cover missing <sort keys> and the empty case.
+
+= Stable record placement in counting sort
+{parent=Counting sort}
+{title2=$E_k\gets E_k-1,\quad B_{E_k}\gets A_i$}
+
+Initialize a mutable endpoint <array> $E$ to the inclusive cumulative counts $P$. Scan <input> <array indices> $i=n-1,n-2,\ldots,0$. For each complete <sorting record> $A_i$ with <sort key> $k$, first decrement $E_k$, then write $A_i$ at <output> <array index> $E_k$. This is equivalent to writing at the old endpoint minus one and then decrementing the endpoint.<Open Data Structures: An Introduction by Pat Morin/11.2 Counting Sort and Radix Sort>[Open Data Structures: An Introduction by Pat Morin; §11.2.1 Counting Sort, final scan paragraph and stability paragraph after Theorem 11.7]{ref}
+
+In the worked example, the first <input> <sorting record> read is $(2,\mathrm G)$ at <array index> six. Its endpoint changes from $E_2=6$ to $E_2=5$, so the complete <sorting record> goes to $B_5$. Next, $(3,\mathrm F)$ changes $E_3$ from seven to six and goes to $B_6$. Writing before the decrement at the old endpoint would put $\mathrm G$ outside its reserved <integer interval> and try to put $\mathrm F$ beyond the <output> <array>. All seven writes are:
+$$
+\begin{array}{c|c|c|c|c}
+\text{step}&\text{input index }i&A_i& E_k\text{ before}\to\text{after}&\text{output index}\\\hline
+1&6&(2,\mathrm G)&6\to5&5\\
+2&5&(3,\mathrm F)&7\to6&6\\
+3&4&(0,\mathrm E)&2\to1&1\\
+4&3&(1,\mathrm D)&3\to2&2\\
+5&2&(2,\mathrm C)&5\to4&4\\
+6&1&(0,\mathrm B)&1\to0&0\\
+7&0&(2,\mathrm A)&4\to3&3
+\end{array}
+$$
+Each endpoint changes only when a <sorting record> with its own <sort key> is placed. Consequently, $E_2$ stays at five through the placements of $\mathrm F,\mathrm E,\mathrm D$ before dropping to four for $\mathrm C$.
+
+\Image[counting-sort-reverse-stable-placement.png]
+{title=A backward <input> scan gives forward order among equal <sort keys>}
+{description=Original complete trace of the seven-<sorting record> example. Each row shows the endpoint decrement and resulting <output> <array>; the newly written complete <sorting record> is dark. Both <input> and <output> <array indices> start at zero. The final order is $\mathrm B,\mathrm E,\mathrm D,\mathrm A,\mathrm C,\mathrm G,\mathrm F$.}
+
+Here is a complete implementation under the stated <input> contract; each <sorting record> is a pair whose first component is its <integer> <sort key>:
+
+```
+def counting_sort_records(records, K):
+    end = [0] * K
+    output = [None] * len(records)
+    for key, data in records:
+        end[key] += 1
+    for key in range(1, K):
+        end[key] += end[key - 1]
+    for i in range(len(records) - 1, -1, -1):
+        key = records[i][0]
+        end[key] -= 1
+        output[end[key]] = records[i]
+    return output
+```
+
+The same <array> `end` successively stores frequencies, inclusive cumulative counts, and moving exclusive endpoints; the formulas $c,S,P$ describe their mathematical values without requiring three stored <arrays>. The write copies the complete <sorting record>, including its associated data. In particular, two occurrences of an identical pair still cause two separate writes.
+
+For a short <algorithm correctness> proof, let $r_k$ be the number of already placed <sorting records> with <sort key> $k$. A <loop invariant> is
+$$
+E_k=P_k-r_k,\qquad [S_k,E_k)\text{ is unfilled},\qquad [E_k,P_k)\text{ is filled}.
+$$
+All <integer intervals> here mean <output> <array indices>. Initially $r_k=0$, so each whole reserved <integer interval> is unfilled. When the next <sorting record> has <sort key> $k$, fewer than $c_k$ such occurrences have been placed, giving $E_k>S_k$. Decrementing selects a fresh slot inside its reserved <integer interval>. At termination, $r_k=c_k$ and $E_k=S_k$: every <output> slot has been filled exactly once with a complete <input> occurrence. The disjoint, increasing <sort key> ranges establish <sortedness>, while the fresh-slot property establishes <sorting permutation preservation>.
+
+For <stable sorting>, take two <input> occurrences with equal <sort keys> at <array indices> $i<j$. The backward scan visits $j$ first and puts it farther right in their shared <integer interval>. When $i$ is visited, the endpoint has decreased at least once, so its <output> position is smaller. Thus their original order survives. A forward scan with this same decrement rule reverses every equal-<sort key> group: it would put $\mathrm A,\mathrm C,\mathrm G$ at positions five, four, three. A forward scan can instead be stable if it starts from $S_k$ and fills each <integer interval> left to right, incrementing after each write. The scan direction and endpoint convention must agree.
+
+Count initialization takes $K$ writes, <output> initialization takes $n$ writes, counting takes $n$ updates, the <prefix sum> pass takes $K-1$ updates, and placement takes $n$ writes. Hence <time complexity> and auxiliary storage are $O(n+K)$ in <Big O notation>, assuming constant-cost <sort key> access, <integer> arithmetic, <array> indexing and complete <sorting record> movement. Large records can instead be represented by constant-size references.<Open Data Structures: An Introduction by Pat Morin/11.2 Counting Sort and Radix Sort>[Open Data Structures: An Introduction by Pat Morin; §11.2.1 Counting Sort, auxiliary counter and output arrays, loop-cost discussion and Theorem 11.7]{ref}
+
+For example, three <sorting records> with <sort keys> zero, $999999$ and zero require one million counters if $K=1000000$; unused <sort keys> still incur initialization and <prefix sum> work. The bound is therefore linear in the <input> length only when $K=O(n)$. Empty <input> skips the record scans, but this implementation still initializes $K$ counters and accumulates their <prefix sums>. For nonempty <input>, counting all $n$ records and filling their ranges gives a concrete termination argument.
+
+Direct <sort key> indexing is a different operation from a binary comparison. The <comparison sorting lower bound> concerns <comparison sorts>; <counting sort> uses its restricted <integer> <sort keys> as <array indices>. Its small-$K$ speed is particularly useful for categorical numerical labels and for each <stable sorting> pass of <radix sort>: the reserved <integer intervals> turn group sizes into exact destinations.
 
 = Radix sort
 {parent=Sorting algorithm}
 {wiki}
 {title2=$T(n,d,R)=O(d(n+R))$}
 
-<Radix sort> sorts encoded <sort keys> a digit at a time. Its least-significant-digit version uses <stable sorting> on each successive digit, often by <counting sort>. For $d$ digits with $R$ possible values each, it takes $O(d(n+R))$ <time complexity> in <Big O notation>, assuming constant-cost digit extraction and indexing. <Stable sorting> retains the ordering established by earlier digits when a later digit ties. Both digit access and the direct indexing in <counting sort> lie outside the <comparison sort> model, so these bounds do not contradict the <comparison sorting lower bound>.<Open Data Structures: An Introduction by Pat Morin/11.2 Counting Sort and Radix Sort>[Theorem 11.8]{ref}
+<Radix sort> sorts encoded <sort keys> a digit at a time. Its least-significant-digit version uses <stable sorting> on each successive digit, often by <counting sort>. For $d$ digits with $R$ possible values each, it takes $O(d(n+R))$ <time complexity> in <Big O notation>, assuming constant-cost digit extraction and indexing. <Stable sorting> retains the ordering established by earlier digits when a later digit ties. Both digit access and the direct indexing in <counting sort> lie outside the <comparison sort> model, so these bounds do not contradict the <comparison sorting lower bound>.<Open Data Structures: An Introduction by Pat Morin/11.2 Counting Sort and Radix Sort>[Open Data Structures: An Introduction by Pat Morin; Theorem 11.8]{ref}
+
+= Least-significant-digit radix sort
+{parent=Radix sort}
+
+A least-significant-digit radix sort processes <numerical digits> from smallest to largest <place value>. Fix <integers> $R\ge2$ and $d\ge1$, and take $n$ complete <sorting records> whose <sort keys> satisfy $0\le k<R^d$. Use exactly $d$ positions in <positional notation> with <radix> $R$, including leading zeros. At pass $j=0,\ldots,d-1$, apply a <stable digit sort> to the current <array> using
+$$
+\delta_j(k)=\left\lfloor\frac{k}{R^j}\right\rfloor\bmod R.
+$$
+The <floor function> selects the integer <quotient>, and the <remainder> selects the current <numerical digit>. Move the complete <sorting record>, including its associated data. There are exactly $d$ passes, so this procedure terminates even for an empty <array>. The <radix sort suffix invariant> supplies its <algorithm correctness> argument.
+
+For an original <input>, let the letters identify the attached data:
+$$
+(314_A,027_B,305_C,042_D,217_E,005_F,127_G,040_H).
+$$
+Here $R=10$, $d=3$, and leading zeros only align <place values>; $005$ represents the <integer> five. The exact pass ledger is:
+$$
+\begin{array}{c|llllllll}
+\text{input}&314_A&027_B&305_C&042_D&217_E&005_F&127_G&040_H\\
+\text{units}&040_H&042_D&314_A&305_C&005_F&027_B&217_E&127_G\\
+\text{tens}&305_C&005_F&314_A&217_E&027_B&127_G&040_H&042_D\\
+\text{hundreds}&005_F&027_B&040_H&042_D&127_G&217_E&305_C&314_A
+\end{array}
+$$
+After the units pass, the <numerical digits> are $0,2,4,5,5,7,7,7$. The ties retain $C$ before $F$ and $B$ before $E$ before $G$. This <array> is not yet ordered by its whole <integer> <sort keys>: $314$ still precedes $305$. After the tens pass, the two-position suffixes are $05,05,14,17,27,27,40,42$. In particular, $217_E$ now precedes $027_B$: their tens <numerical digits> differ, so <stable sorting> does not require retaining their previous order. The hundreds pass produces the final <sorted array>, with all attached letters preserved.
+
+\Image[radix-sort-stable-digit-pass-ledger.png]
+{title=Three stable digit passes order successively longer suffixes}
+{description=Original decimal <radix sort> ledger. Each card carries an unchanged record label. Orange marks the <numerical digit> read in the current pass; green marks lower positions already processed. The suffix row beneath each pass shows precisely what is ordered, rather than claiming whole-key <sortedness> early.}
+
+= Radix sort suffix invariant
+{parent=Least-significant-digit radix sort}
+{title2=$s_p(k)=k\bmod R^p$}
+
+After $p$ passes, $0\le p\le d$, the <array> is in nondecreasing order of $s_p(k)=k\bmod R^p$, the <integer> represented by its $p$ lowest <numerical digits>. Equivalently it is ordered by the <tuple> $(\delta_{p-1}(k),\ldots,\delta_0(k))$ under <lexicographic order>, with the most significant processed <numerical digit> first. Among equal suffixes it retains the original order of the complete <sorting records>.
+
+The <loop invariant> has a simple <mathematical induction> proof. Before any pass, $s_0(k)=k\bmod1=0$ for every <sort key>, so the original <array> satisfies it. Suppose it holds after $p$ passes. The next <stable digit sort> puts smaller $\delta_p$ groups first and preserves the existing $s_p$ order within each tie. Since
+$$
+s_{p+1}(k)=R^p\delta_p(k)+s_p(k),\qquad 0\le s_p(k)<R^p,
+$$
+the new <array> is ordered by $s_{p+1}$. Equal new suffixes have equal current <numerical digits> and equal old suffixes, so their original order is also preserved. Every pass is a <permutation> of complete <sorting records>, establishing <sorting permutation preservation>. At termination $p=d$, the assumption $k<R^d$ gives $s_d(k)=k$: the invariant becomes whole-key <sortedness>, together with <stable sorting>.
+
+= Stable digit sort
+{parent=Radix sort}
+
+A <stable digit sort> applies <stable sorting> to complete <sorting records> using one specified <numerical digit> of their encoded <sort keys>. <Counting sort> can supply it; <stable record placement in counting sort> moves records without discarding their associated data. Stability concerns equal current <numerical digits>, even when the full <sort keys> differ. This is the information-preservation step in <least-significant-digit radix sort>.<Open Data Structures: An Introduction by Pat Morin/11.2 Counting Sort and Radix Sort>[§11.2.1, associated-data and stability paragraphs; §11.2.2, least-significant passes and correctness paragraph after Figure 11.8]{ref}
+
+An original two-record counterexample exposes the need for the tie rule. Start with $(42_A,41_B)$ at width three. A units pass gives $(041_B,042_A)$. Both tens <numerical digits> are four. A deliberately unstable tens pass may reverse their tie and return $(042_A,041_B)$: it is sorted by the tens <numerical digit>, yet its two-position suffixes $42,41$ are decreasing. The final stable hundreds pass sees two zeros and keeps this wrong order. <Sorting permutation preservation> still holds, but <sortedness> fails. Stability in the tens pass would have retained the units information.
+
+With <counting sort> as the <stable digit sort>, each pass initializes $R$ counters, counts $n$ current <numerical digits>, constructs their <prefix sums>, and places $n$ complete <sorting records>. Thus each pass costs $O(n+R)$, and $d$ passes cost $O(d(n+R))$ in <Big O notation>. Reuse the counters and two <arrays> of record references between passes: auxiliary <space complexity> is $O(n+R)$, rather than $O(d(n+R))$. Assume constant-cost <numerical digit> extraction, counter <arithmetic>, <array> indexing and record-reference movement; the bound counts these operations, not the cost of copying arbitrarily large payloads or performing arbitrary-precision <integer arithmetic>.
+
+The benefit is avoiding a counter for every possible whole <sort key>: width $d$ has $R^d$ possibilities, while each pass needs only $R$ counters. A larger <radix> reduces the number of passes for a fixed key range but enlarges the counter <array>. The <comparison sorting lower bound> does not apply to these direct <array indices>; they reveal more than a two-way comparison. Nor does fixing $R$ make $d$ disappear: growing key width still increases work.
+
+= Radix sort key encoding
+{parent=Radix sort}
+
+An encoding for <radix sort> must make the intended <total order> of <sort keys> agree with the <lexicographic order> of its fixed-width <numerical digit> <tuples>. The <positional notation> for bounded nonnegative <integers> has this property. At the most significant differing position $m$, a one-unit <numerical digit> difference contributes $R^m$, while all lower positions together contribute at most
+$$
+(R-1)\sum_{j=0}^{m-1}R^j=R^m-1.
+$$
+This <geometric series> shows why lower <numerical digits> cannot reverse that comparison. Leading zero padding works here because it preserves <place values> and the represented <integer>.
+
+For signed <integers> in a known <integer interval> $L\le x\le U$, encode $e(x)=x-L$ and choose $d$ with $U-L<R^d$. This <order-preserving function> is also <injective>: $x<y$ exactly when $e(x)<e(y)$. For $-8\le x\le7$, the four-<bit> encodings of $-8,-3,-1,0,4,7$ are $0000,0101,0111,1000,1100,1111$ after adding eight. Restore the original signed <sort keys> when displaying the complete <sorting records>; the encoding need not replace their data. Sorting the unsigned values of raw <two's complement> <bit> patterns would put nonnegative <integers> before negative ones, so their representation alone is not this ordered encoding.
+
+For variable-length <strings>, first specify the <alphabet> order and whether a proper prefix precedes its extensions. As an original construction, use $a<b$, let every <string> have length at most three, encode $a$ as one and $b$ as two, and append zeros to width three. Zero is reserved for an end marker strictly below every real symbol. The <strings> $\varepsilon,a,aa,ab,b$ encode as $000,100,110,120,200$ in <radix> three, which preserves their <lexicographic order>. A differing real symbol decides the comparison; at a prefix boundary, the shorter <string>'s zero comes before the extension's one or two. Left padding would instead encode $b$ as $002$ and $aa$ as $011$, reversing $aa<b$. Padding raw <bytes> with zero also fails if zero is an allowed data symbol: distinct <strings> can then receive the same encoding. A reserved end marker and an explicit symbol ordering are essential; byte order alone does not establish a desired human text order.
+
+\Image[radix-sort-stability-and-key-encoding.png]
+{title=Stable ties preserve lower digits; suitable encodings preserve the intended order}
+{description=Original counterexample above: reversing a tens tie destroys the units order and a later stable hundreds pass cannot repair it. Below: signed <integer> offsets and a reserved end marker for bounded <strings> produce increasing fixed-width encodings. All entries are exact constructed examples.}
 
 = Stable sorting
 {parent=Sorting algorithm}
@@ -667,6 +1140,10 @@ The plotted crossover belongs only to the stipulated constants in its caption; i
 
 A randomized algorithm makes some choices using random bits.
 
+For a fixed <input>, the random <bits> can change the path taken by a <randomized algorithm>, its <output>, or its running time. Specify the distribution of those choices and which guarantee is required: <one-sided error> permits mistakes of only one kind, whereas <ZPP> requires a correct answer and bounds the expected running time. <Polynomial identity testing> makes this distinction concrete: choosing different <field> elements changes whether a nonidentity is detected.
+
+A <uniform distribution on a finite set> must be implemented faithfully. To choose uniformly from $\{0,1,2,3,4\}$ using fair <independent> <bits>, read three <bits> as a number from zero to seven, discard five through seven, and repeat until a permitted value appears. Each retained value has the same chance. Taking the three-bit number modulo five instead would give zero, one and two twice as many preimages as three and four, invalidating a calculation that assumes equal chances.
+
 = Derandomization
 {parent=Randomized algorithm}
 {wiki}
@@ -693,6 +1170,24 @@ A probabilistic Turing machine is a <Turing machine> whose transitions may depen
 {parent=Randomized algorithm}
 
 A randomized decision algorithm has one-sided error when one answer is always correct and only the other answer can be mistaken.
+
+The guarantee concerns each fixed <input>, with <probability> taken over the choices of the <randomized algorithm>. Always state which answer is protected. In <polynomial identity testing>, call an <input> positive when its <polynomial> is identically zero, and let acceptance mean claiming an identity. Then the possibilities are:
+
+|| Actual <polynomial>
+|| Accept: claim identity
+|| Reject: claim nonidentity
+
+| Identically zero
+| Always correct; every trial accepts.
+| Impossible with exact <polynomial evaluation>.
+
+| Nonzero
+| Possible mistake if the chosen point is a zero.
+| Always correct; the point is a witness.
+
+Thus a zero <polynomial evaluation> can leave uncertainty, but a nonzero <polynomial evaluation> settles the question. An error bound for a fixed nonzero <polynomial> is not the <conditional probability> that a particular accepted <input> is an identity; that latter question would need a distribution on the <inputs> as well.
+
+In <computational complexity theory>, a <polynomial-time algorithm> with this orientation and false acceptance <probability> at most $1/2$ establishes membership in <co-RP>. Reversing the question to ask whether the <polynomial> is nonzero gives the <RP> orientation: negative instances are always rejected. The <random evaluation test for a polynomial identity> explains the required <field>, <total degree>, sampling and evaluation assumptions.
 
 = RP
 {disambiguate=complexity}
@@ -730,8 +1225,75 @@ $\mathbf{ZPP}=\mathbf{RP}\cap\mathbf{co\text{-}RP}$. Equivalently, it consists o
 
 Independent repetitions reduce a randomized algorithm's error probability while preserving polynomial running time.
 
+The combining rule depends on the error orientation. For <one-sided error> with false acceptance <probability> at most $p<1$, reject as soon as any trial rejects and accept only if every trial accepts. For $k$ <independent> trials on the same fixed negative <input>, false acceptance has <probability> at most $p^k$. The protected positive <inputs> still always accept. If false rejection is the possible mistake instead, accept as soon as any trial accepts. This uses the decisive answer rather than a majority vote.
+
+For constant $p<1$, $k$ grows only logarithmically in $1/\varepsilon$ to achieve error at most $\varepsilon$. A polynomial number of trials preserves a <polynomial-time algorithm>'s running-time bound. Independence matters: repeating one answer, or evaluating at the same random point each time, supplies no new evidence. The <independent repetition of a polynomial identity test> gives an exact $25$-outcome example.
+
 = Polynomial identity testing
 {parent=Randomized algorithm}
 {wiki}
 
 Polynomial identity testing asks whether a polynomial represented implicitly, such as by an arithmetic circuit or a remainder computation, is the zero polynomial.
+
+Here zero means that every <coefficient> vanishes after collecting equal <monomials> in the <polynomial ring>. Testing equality of two <polynomials> $A,B$ amounts to testing $P=A-B$ for zero. An <arithmetic circuit> can permit cheap <polynomial evaluation> even when expanding all <monomials> is expensive. The <random evaluation test for a polynomial identity> exploits this: one nonzero value disproves the <polynomial identity>, while a known <total degree> limits how often a nonzero <polynomial> can evade detection.<CPSC 536N: Randomized Algorithms/Lecture 9: Polynomial Identity Testing by the Schwartz-Zippel Lemma>[CPSC 536N: Randomized Algorithms; Lecture 9: Polynomial Identity Testing by the Schwartz-Zippel Lemma, §1: formal zero means all coefficients vanish; representations and evaluation access]{ref}
+
+For example, for an <integer> $n\ge1$, $\prod_{i=1}^n(1+x_i)$ has $2^n$ distinct <monomials>, one for each <subset> of the $n$ <variables>. Its factored expression needs only $n$ <additions> and $n-1$ <multiplications> for one <polynomial evaluation>. Evaluating the compact expression avoids creating its expanded list of <coefficients>. The saving is especially attractive in many <variables>; it does not make a zero result into a proof of identity.
+
+= Polynomial identity testing over a finite field
+{parent=Polynomial identity testing}
+
+Work in the <finite field> $\mathbb F_5=\{0,1,2,3,4\}$, using <modular arithmetic> modulo five. Consider the two original <polynomial> examples
+$$
+F(x)=(x+1)^2-x^2-2x-1,\qquad G(x)=(x-1)(x-2).
+$$
+The <distributive property> gives $(x+1)^2=x^2+2x+1$, so all <coefficients> of $F$ cancel: $F$ is identically zero. In contrast, $G=x^2-3x+2=x^2+2x+2$ in this <finite field>, with nonzero leading <coefficient>. Its <roots of a polynomial> are exactly one and two: a product in a <field> is zero only if a factor is zero.
+
+The complete <polynomial evaluations>, displayed as representatives modulo five, are
+$$
+\begin{array}{c|ccccc}
+a&0&1&2&3&4\\\hline
+F(a)&0&0&0&0&0\\
+G(a)&2&0&0&2&1
+\end{array}.
+$$
+In particular, $G(3)=(3-1)(3-2)=2$ is a nonzero witness, which disproves identity without examining other points. At one or two, a zero value fails to reveal that $G$ is nonzero. A <random variable> $a$ with a <uniform distribution on a finite set> $\mathbb F_5$ hits those two <polynomial roots> with <probability> $2/5$.
+
+\Image[polynomial-identity-evaluation-outcomes.png]
+{title=Exact evaluations distinguish a zero polynomial from a nonzero polynomial with two roots}
+{description=Every element of the <finite field> $\mathbb F_5$ is shown. The upper row always accepts the identity $F=0$. In the lower row, the two orange zero values falsely accept $G=0$; the three blue nonzero values correctly reject it. These are all possible outcomes, not sampled frequencies.}
+
+A crucial limit appears with $H(x)=x^5-x$. Its <coefficients> make it a nonzero <polynomial> of <polynomial degree> five in $\mathbb F_5[x]$, yet direct <polynomial evaluation> gives zero at all five <field> elements: the values before reduction are $0,0,30,240,1020$, all divisible by five. Thus $H$ induces the same <polynomial function> as the zero <polynomial>. Any number of trials restricted to $\mathbb F_5$ will falsely accept this identity. This is compatible with the <Schwartz-Zippel lemma>: the ratio of <polynomial degree> to sampling-set size is $5/5=1$, which gives no useful guarantee.
+
+When a <polynomial>'s representation permits <polynomial evaluation> over a larger <field extension>, a larger sampling <set> can restore the useful degree ratio. Access only to the induced <polynomial function> on the original <finite field> cannot distinguish $H$ from zero.<CPSC 536N: Randomized Algorithms/Lecture 9: Polynomial Identity Testing by the Schwartz-Zippel Lemma>[CPSC 536N: Randomized Algorithms; Lecture 9: Polynomial Identity Testing by the Schwartz-Zippel Lemma, §1.4: formal nonzero polynomials can vanish everywhere on a finite field; extension-field evaluations need a suitable representation]{ref}
+
+= Random evaluation test for a polynomial identity
+{parent=Polynomial identity testing}
+{title2=$\mathbb P(P(a_1,\ldots,a_n)=0)\le d/|S|$}
+
+Let $P$ be a nonzero <multivariate polynomial> over a <field> $K$, with <total degree> at most $d\ge0$. Choose a nonempty <finite set> $S\subseteq K$. For <independent random variables> $a_1,\ldots,a_n$, each with a <uniform distribution on a finite set> on $S$, the <Schwartz-Zippel lemma> gives
+$$
+\mathbb P\bigl(P(a_1,\ldots,a_n)=0\bigr)\le\min\{1,d/|S|\}.
+$$
+Nonzeroness is essential; the zero <polynomial> always evaluates to zero. The <total degree> sums exponents within each <monomial>, rather than taking their maximum: $x^2y^3+y$ has <total degree> five. The <field> need not be finite, but $S$ must be finite. The estimate reduces error only when $d/|S|<1$.<CMPT 710 and CMPT 407 - Computational Complexity - Fall 2007/CMPT 710 - Complexity Theory: Lecture 18>[CMPT 710 and CMPT 407 - Computational Complexity - Fall 2007; CMPT 710 - Complexity Theory: Lecture 18, §3.1, pp. 3–4: Lemma 4 and its inductive proof]{ref}
+
+The proof begins with the <root bound for a polynomial>. For several <variables>, write $P=\sum_{j=0}^m Q_j(x_1,\ldots,x_{n-1})x_n^j$, with $Q_m\ne0$. The <total degree> of $Q_m$ is at most $d-m$. By <induction>, $Q_m$ vanishes with <probability> at most $(d-m)/|S|$. Otherwise the remaining univariate <polynomial> has at most $m$ <polynomial roots>. Adding the two contributions gives $d/|S|$.<CMPT 710 and CMPT 407 - Computational Complexity - Fall 2007/CMPT 710 - Complexity Theory: Lecture 18>[CMPT 710 and CMPT 407 - Computational Complexity - Fall 2007; CMPT 710 - Complexity Theory: Lecture 18, §3.1, pp. 3–4: split by the leading coefficient in the last variable]{ref}
+
+The <algorithm> samples a point, performs exact <polynomial evaluation>, rejects the identity if the value is nonzero, and otherwise accepts. The lemma bounds false acceptance for every fixed nonzero <input>. For the <polynomial identity testing over a finite field> example, $G$ has $d=2$ and $|S|=5$, so its exact $2/5$ error attains the bound. Numerical near-zero values from <floating-point arithmetic> do not satisfy this exact algebraic contract. A <polynomial-time algorithm> claim additionally needs efficient sampling and evaluation, including the <bit> cost of representing and operating on <field> elements. Counting <field> operations alone does not establish that cost.
+
+= Independent repetition of a polynomial identity test
+{parent=Polynomial identity testing}
+{title2=$p_k=p_1^k\le(d/|S|)^k\quad(d<|S|)$}
+
+Repeat the <random evaluation test for a polynomial identity> with fresh <independent random variables>, keeping the same fixed <polynomial>. Reject as soon as any <polynomial evaluation> is nonzero; accept only if all $k$ values vanish. An identity is always accepted, preserving <one-sided error>. If a nonzero <polynomial> has single-trial false acceptance <probability> $p_1$, <independence> gives $p_k=p_1^k$. The <Schwartz-Zippel lemma> bounds this by $(d/|S|)^k$ when $d<|S|$.
+
+For $G(x)=(x-1)(x-2)$ over the <finite field> $\mathbb F_5$, two uniform <independent> choices $(a,b)$ have $25$ equally likely ordered outcomes, each with <probability> $1/25$. Both <polynomial evaluations> are zero only at $(1,1),(1,2),(2,1),(2,2)$. Hence false acceptance falls from $2/5$ in one trial to $4/25$ in two trials, and correct rejection rises from $3/5$ to $21/25$.
+
+\Image[polynomial-identity-independent-trials.png]
+{title=Four of the twenty-five independent pairs falsely accept the nonidentity}
+{description=The orange cells have both coordinates among the <polynomial roots> one and two of $G(x)=(x-1)(x-2)$ in the <finite field> $\mathbb F_5$. Every blue cell supplies at least one nonzero witness. The full grid enumerates exact outcomes under <independence> and a <uniform distribution on a finite set>; it is not a simulation.}
+
+If the second choice reuses the first, the pair is $(a,a)$ and only five diagonal outcomes are possible. Two still falsely accept, so the error remains $2/5$. Choosing fresh <independent> points is precisely what makes the full $25$-cell grid and the product of <probabilities> valid. For a target error $0<\varepsilon<1$, this example needs
+$$
+k\ge\left\lceil\frac{\log(1/\varepsilon)}{\log(5/2)}\right\rceil.
+$$
+The <ceiling function> makes the trial count an <integer>. Four trials give $(2/5)^4=16/625>1/100$, while six give $64/15625<1/100$; five still give $32/3125>1/100$, so six is the first count below one percent. This is an exact error guarantee for each run on $G$, rather than an observed success rate.

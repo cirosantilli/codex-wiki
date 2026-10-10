@@ -643,174 +643,7 @@ The absolute errors are about $0.0356493$, $0.00894008$ and $0.0000370135$, resp
 
 The same cancellation idea appears in <step-doubling error estimation>. For an order-$p$ one-step method for an <ordinary differential equation>, two half steps each contribute <local truncation error> of order $h^{p+1}$, so their accumulated leading local error has ratio $2^{-p}$ to one full step. This explains the denominator $2^p-1$ there; the appropriate exponent follows from that local error model, rather than automatically from a generic use of <Richardson extrapolation>.
 
-= Error control for ODE solvers
-{parent=Numerical analysis}
-
-Error control selects discretization parameters and checks approximations against requested accuracy. <Local error estimators>, <absolute and relative error tolerances> and an <adaptive step-size controller> provide practical local control. Propagation of defects determines the <global error>, while stiffness, <roundoff error> and algebraic-solve accuracy impose additional limits.
-
-For an <ordinary differential equation>, the practical loop is to propose a step, form a <local error estimator>, scale it by <absolute and relative error tolerances>, and accept or retry before choosing the next step. An <embedded Runge-Kutta pair> supplies two endpoints from shared <Runge-Kutta stages>, making this extra accuracy check inexpensive. The <Euler-Heun embedded pair> below exposes the distinction between the accepted formula's <order of a numerical method> and the estimator's step exponent; its <adaptive Euler-Heun integration of exponential growth> shows accepted local tests alongside accumulated <global error>.
-
-= Adaptive step-size controller
-{parent=Error control for ODE solvers}
-{title2=$h_{\rm new}=h\,\eta E^{-1/r}$}
-
-If a scaled <local error estimator> behaves as $E\propto h^r$ with approximately unchanged error scale, the displayed update targets a fixed local level. A safety factor $0<\eta<1$ aims below the acceptance boundary. For an <embedded Runge-Kutta pair> with <order of a numerical method> $p$ for the accepted output and $p-1$ for the companion formula, the difference generally has $r=p$; for the actual unscaled <local truncation error> of an order-$p$ formula, $r=p+1$. The exponent belongs to the quantity being controlled. Dividing the defect by $h$ changes that exponent. This follows by solving $E(h_{\rm new})\approx E(h)(h_{\rm new}/h)^r$ for the next step.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§6.5.1, equations (6.5.1)–(6.5.4): estimator order and step prediction]{ref}
-
-Rejecting a trial means retrying from the same accepted time and state, with a smaller step. Advancing time or retaining the rejected output would change the <initial value problem> being approximated. Minimum and maximum change factors prevent extreme updates; a zero estimate requires finite capped growth. After acceptance, cap the next step at the remaining interval length. Detect a step that cannot advance time in <floating-point arithmetic>, and report failure rather than an endless retry. An <adaptive step-size controller> can use earlier estimates to smooth step sequences, but the memoryless rule here is sufficient to explain acceptance and rejection.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others>[§6.5.1, Algorithm 6.5.1; §6.5.3, rk23 implementation and About the code: retain state on rejection, safety factor, growth cap, final-step cap, nonadvancing-time check]{ref}
-
-= Absolute and relative error tolerances
-{parent=Error control for ODE solvers}
-{title2=$s_i={\rm atol}_i+{\rm rtol}_i\max(|y_i|,|Y_i|)$}
-
-Absolute tolerances provide a nonzero error scale near zero, while relative tolerances follow component magnitude. A max-norm test $\max_i|\widehat e_i|/s_i\leq1$ controls every scaled estimated component locally. A root-mean-square test has a different componentwise implication. Neither test automatically certifies the complete trajectory's <global error>.
-
-Write $Y_i$ for the candidate accepted component and require $s_i>0$. The <absolute and relative error tolerances> scale in the title produces the dimensionless <maximum norm> test
-$$
-E=\max_{1\leq i\leq m}\frac{|\widehat e_i|}{{\rm atol}_i+{\rm rtol}_i\max(|y_i|,|Y_i|)}\leq1.
-$$
-Absolute tolerances have the same units as the corresponding solution components; relative tolerances are dimensionless. Choose separate absolute scales for components measured in different units or with different significant magnitudes. Near zero, a purely relative test can demand a zero allowable error; a positive absolute scale avoids that difficulty. The crossover is $\max(|y_i|,|Y_i|)\approx{\rm atol}_i/{\rm rtol}_i$ when ${\rm rtol}_i>0$. Official solver documentation specifies the analogous blend ${\rm atol}+{\rm rtol}|y|$ and allows component-specific absolute tolerances; the old/new maximum above is the convention used in this example.<SciPy 1.16.2 documentation/scipy.integrate.solve_ivp>[solve_ivp, rtol and atol parameters: local error estimates, additive scaling and component-specific atol]{ref}
-
-A <root mean square> version replaces the <maximum norm> by $E_{\rm rms}=\sqrt{m^{-1}\sum_i(|\widehat e_i|/s_i)^2}$. It permits one scaled component as large as $\sqrt m$ when all others vanish, so passing that test does not mean every component is at most one. State the aggregation rule along with the <absolute and relative error tolerances>. Neither rule is a bound on actual <global error>.
-
-= Local error estimator
-{parent=Error control for ODE solvers}
-{title2=$\widehat e_{n+1}$}
-
-A local error estimator approximates a numerical step's defect from the exact solution starting at the same input. Differences between formulas estimate error only after their asymptotic orders and constants are accounted for. <Step-doubling error estimation>, an <embedded Runge-Kutta pair> and <predictor-corrector error estimation> are common constructions. They do not by themselves bound accumulated <global error>.
-
-Let $\Phi_h(t_n,y_n)$ be the exact endpoint of the <ordinary differential equation> started at the numerical value $y_n$, and let $Y_{n+1}$ be the candidate numerical endpoint. The signed local defect being estimated is $\ell_{n+1}=\Phi_h(t_n,y_n)-Y_{n+1}$. In contrast, actual <global error> compares $Y_{n+1}$ with the solution of the original <initial value problem>, including all previous steps. The <local truncation error> convention inserts original exact data instead. These starting-value distinctions matter even when the same formula is used for every step. A practical <local error estimator> also relies on a smooth <Taylor expansion>; a small difference can reflect accidental cancellation rather than a rigorous upper bound.
-
-= Predictor-corrector error estimation
-{parent=Local error estimator}
-
-A predictor and corrector give distinct approximations from the same local history. Their difference, scaled by their leading error constants and orders, can estimate a local defect. Raw differences without that calibration need not estimate the corrected solution's error. Variable-step <multistep methods> also require updated coefficients and controlled history handling.
-
-= Embedded Runge-Kutta pair
-{parent=Local error estimator}
-
-Two <Runge-Kutta methods> share a stage matrix and nodes but use different output weights. An order-$p$ and order-$q$ pair with $q<p$ gives an output difference generally of order $h^{q+1}$, estimating the lower-order defect. Shared stage evaluations reduce the cost. The <adaptive step-size controller> exponent must reflect this estimator order, rather than blindly the higher reported solution order.
-
-Using the slope convention for <Runge-Kutta stages>, an <embedded Runge-Kutta pair> computes
-$$
-Y^{[p]}=y_n+h\sum_{i=1}^sb_i k_i,\qquad Y^{[q]}=y_n+h\sum_{i=1}^s\widehat b_i k_i,\qquad d=Y^{[p]}-Y^{[q]}=h\sum_{i=1}^s(b_i-\widehat b_i)k_i.
-$$
-Its <Butcher tableau> has two output rows, $b^T$ and $\widehat b^T$. Evaluating $f$ is often the expensive part of solving an <ordinary differential equation>; after the shared slopes have been computed, the extra row needs only another linear combination.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others/6.5 Adaptive Runge-Kutta>[§6.5.2, embedded formulas and equation 6.5.5: common stages and two output rows]{ref}
-
-Write $\Phi$ for the exact endpoint from the current numerical state, and define signed local defects $\ell_q=\Phi-Y^{[q]}$ and $\ell_p=\Phi-Y^{[p]}$. Then $d=\ell_q-\ell_p$. If $\ell_q=C_qh^{q+1}+O(h^{q+2})$ and $\ell_p=O(h^{p+1})$, with $C_q\ne0$, the difference reproduces the leading lower-order defect. It does not reproduce the leading higher-order defect. Here the powers use <big O notation> and a smooth <Taylor expansion>; a vanishing leading coefficient or accidental cancellation can make the estimate misleading.
-
-A common choice accepts $Y^{[p]}$ after testing $d$ with <absolute and relative error tolerances>. With the scale approximately unchanged on a retry, the <adaptive step-size controller> uses exponent $1/(q+1)$. Accepting a better endpoint does not change the power in the quantity being tested. The <Euler-Heun embedded pair> makes this visible without a large coefficient table.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others/6.5 Adaptive Runge-Kutta>[§6.5.1, equations 6.5.1–6.5.3 and Algorithm 6.5.1: lower-order local estimate and higher-order accepted output]{ref}
-
-= Euler-Heun embedded pair
-{c}
-{parent=Embedded Runge-Kutta pair}
-{title2=$d=h(k_2-k_1)/2$}
-
-The Euler-Heun 1(2) pair combines the <explicit Euler method> and <Heun's method>. Here 1(2) names their respective <order of a numerical method>; the accepted endpoint in this article is the second-order one. Its shared <Runge-Kutta stages> and endpoints are
-$$
-\begin{aligned}
-k_1&=f(t_n,y_n),&k_2&=f(t_n+h,y_n+hk_1),\\
-Y^{[1]}&=y_n+hk_1,&Y^{[2]}&=y_n+\frac h2(k_1+k_2),\\
-d&=Y^{[2]}-Y^{[1]}=\frac h2(k_2-k_1).
-\end{aligned}
-\qquad
-\begin{array}{c|cc}
-0&0&0\\
-1&1&0\\\hline
-&\tfrac12&\tfrac12\\
-&1&0
-\end{array}
-$$
-The first output row in this <Butcher tableau> is <Heun's method>; the second is the <explicit Euler method>. Both outputs cost two evaluations of $f$ together, rather than one for <Euler method> plus two for a separately computed <Heun's method>.
-
-For the <initial value problem> $y'=y$, $y(0)=1$, take $h=0.2$. The first slope is $k_1=1$; the stage state is $1+0.2k_1=1.2$, giving $k_2=1.2$. Therefore
-$$
-Y^{[1]}=1.2,\qquad Y^{[2]}=1.22,\qquad d=0.02,\qquad y(0.2)=e^{0.2}\approx1.22140275816.
-$$
-The exact <exponential function> gives signed local defects approximately $0.02140275816$ for the <explicit Euler method> and $0.00140275816$ for <Heun's method>. Their difference is exactly $0.02$. Thus the pair difference estimates the larger Euler defect; calling it the actual Heun defect would miss by a factor about fourteen here.
-
-More generally, a step from $y_n$ on $y'=y$ has
-$$
-\begin{aligned}
-\ell_1&=y_n(e^h-1-h)=y_n\left(\frac{h^2}{2}+\frac{h^3}{6}+O(h^4)\right),\\
-\ell_2&=y_n(e^h-1-h-h^2/2)=y_n\left(\frac{h^3}{6}+O(h^4)\right),\\
-d&=y_n\frac{h^2}{2}.
-\end{aligned}
-$$
-These original <Taylor expansions> separate three quantities: the accepted <Heun's method> has <local truncation error> $O(h^3)$ and <global error> $O(h^2)$ under suitable <numerical stability>, while the tested <local error estimator> is $O(h^2)$. For $E=|d|/s$ with $s$ held approximately fixed, use $h_{\rm new}=\eta h E^{-1/2}$. A cube-root update would model a different quantity, the actual higher-order local defect.
-
-= Adaptive Euler-Heun integration of exponential growth
-{c}
-{parent=Euler-Heun embedded pair}
-
-Continue the <initial value problem> $y'=y$, $y(0)=1$, to $t=4$ using the <Euler-Heun embedded pair>. Choose <absolute and relative error tolerances> ${\rm atol}=10^{-3}$ and ${\rm rtol}=0$, so the scalar scale is $s=10^{-3}$ throughout. This intentionally absolute-only test makes the local and accumulated errors directly comparable. Start with $h=0.2$, accept the <Heun's method> endpoint precisely when $E=|d|/s\leq1$, and after every trial use the capped <adaptive step-size controller>
-$$
-h_{\rm next}=h\min\left(2,\max\left(0.2,0.9E^{-1/2}\right)\right).
-$$
-For $E=0$ use the growth factor two. Cap every trial at $4-t_n$; on rejection retain the old time and state. These choices specify an original computation, rather than a claim about the defaults of a particular software solver.
-
-The initial trial has $E=20$ and is rejected. Retrying from $(0,1)$ with $h=0.9(0.2)/\sqrt{20}\approx0.0402492236$ gives $E=0.81$ and is accepted. The run takes 315 accepted steps and one rejected trial. Increasing <exponential growth> makes the <local error estimator> $|d|=|y_n|h^2/2$ grow at a fixed $h$, so subsequent steps shrink roughly like $|y_n|^{-1/2}$. The final step is additionally shortened to land at $t=4$.
-
-\Image[euler-heun-adaptive-steps-and-errors.png]
-{title=Computed Euler-Heun step sizes and errors: every accepted local estimate passes, but accumulated global error exceeds the absolute tolerance}
-
-The right panel plots errors against the accepted-step number, all divided by the same $s$. The actual Heun local defect uses the restarted exact endpoint $y_ne^{h_n}$, while actual <global error> uses $e^{t_{n+1}}$. All accepted $E$ are at most one, and the actual Heun local defects here are even smaller, at most about $0.01143s$. Nevertheless the endpoint is $y_N\approx54.5833912205$, versus $e^4\approx54.5981500331$, with <absolute error> about $0.0147588=14.7588s$. Passing local tests therefore does not certify the original trajectory's <global error>.
-
-This failure of a global guarantee has an exact explanation for this example. Put $R(h)=1+h+h^2/2$ and $g_n=e^{t_n}-y_n$. Then
-$$
-g_{n+1}=e^{h_n}g_n+y_n\left(e^{h_n}-R(h_n)\right).
-$$
-Each new local defect is added to the previous error amplified by $e^{h_n}$. Iterating this identity, rather than merely inspecting $E$, accounts for accumulation. The <variable-step global ODE error bound> describes the corresponding mechanism for more general <ordinary differential equations>.
-
-Repeating with ${\rm atol}=10^{-2}$ gives 98 accepted steps, one rejection and endpoint <absolute error> about $0.153252$; with ${\rm atol}=10^{-4}$ it gives 1001 accepted steps, two rejections and endpoint <absolute error> about $0.00145642$. Accuracy improves on this smooth problem, but the endpoint error remains about fifteen times the requested local scale. A different <initial value problem> can amplify or damp defects differently.
-
-= Step-doubling error estimation
-{parent=Local error estimator}
-{title2=$\widehat e_{\rm fine}=(Y_{h/2,h/2}-Y_h)/(2^p-1)$}
-
-For an order-$p$ one-step method with leading numerical error $Ch^{p+1}$, two half steps have leading error $Ch^{p+1}/2^p$. The displayed difference estimates exact minus the finer approximation. Adding it implements <Richardson extrapolation>. It requires a common starting value, the smooth local expansion, and accuracy of all algebraic solves; it can fail across a nonsmooth event.
-
-= Adaptive Euler step doubling for exponential decay
-{c}
-{parent=Error control for ODE solvers}
-{title2=$y'=-y,\quad y(0)=1$}
-
-Consider the nonstiff scalar <initial value problem> $y'=-y$, $y(0)=1$, on $0\leq t\leq8$. Its exact solution is the <exponential decay> $y(t)=e^{-t}$. Use <step-doubling error estimation> with the <explicit Euler method>: from the same numerical starting value $y_n$, form one coarse step $C_n$ and two half steps giving $F_n$:
-$$
-C_n=(1-h_n)y_n,\qquad F_n=(1-h_n/2)^2y_n,\qquad \widehat e_n=F_n-C_n=\frac{h_n^2y_n}{4}.
-$$
-Accept $y_{n+1}=F_n$ when the <absolute and relative error tolerances> test $E_n=|\widehat e_n|/s_n\leq1$ passes, with $s_n=10^{-5}+10^{-3}\max(|y_n|,|F_n|)$. There is no <Richardson extrapolation> in the accepted value. Both approximations have <order of a numerical method> one, while this <local error estimator> has step exponent $r=2$. Consequently the <adaptive step-size controller> uses a <square root>, not a cube root:
-$$
-q_n=\min\!\left(5,\max\!\left(0.2,0.9E_n^{-1/2}\right)\right),\qquad h_{\rm next}=q_nh_n.
-$$
-Start with $h_0=1$. A rejected trial retains both $t_n$ and $y_n$, caps $q_n$ at one, and retries. A zero estimate uses $q_n=5$. Before every trial, cap $h_n$ at $8-t_n$. Stop with a failure if <floating-point arithmetic> gives $t_n+h_n=t_n$, or after 100000 trials. These rules specify the example completely; they are not a prescription for every <ordinary differential equation> solver.
-
-\Image[adaptive-euler-decay-trajectory-and-steps.png]
-{title=Adaptive two-half-step Euler decay: exact and numerical trajectories, accepted step sizes and rejected trials}
-
-The first two trials, $h=1$ and $h=0.2$, have $E\approx247.525$ and $E\approx9.90099$ and are rejected. The next trial has $h\approx0.0572049$ and $E\approx0.81$ and is accepted. For positive decreasing numerical values, $s_n=10^{-5}+10^{-3}y_n$, so the <local error estimator> gives
-$$
-E_n=\frac{h_n^2}{4(10^{-3}+10^{-5}/y_n)}.
-$$
-When the relative term dominates, this suggests nearly constant accepted steps, approximately $2(0.9)\sqrt{10^{-3}}$. When $y_n$ falls below the crossover size $10^{-5}/10^{-3}=0.01$, the absolute term increasingly permits longer steps. The sharp final decrease in $h$ only lands on $t=8$; it does not indicate a sudden loss of smoothness.
-
-The actual signed local defect from the same numerical input is
-$$
-\ell_n=y_ne^{-h_n}-F_n=y_n\left(\frac{h_n^2}{4}-\frac{h_n^3}{6}+O(h_n^4)\right).
-$$
-Here $O$ is <Big O notation>, obtained from <Taylor's theorem> for the <exponential function>. Thus $\widehat e_n$ agrees with the leading term as $h_n\to0$, but is not identical to $\ell_n$. At $h=1$, $y_n=1$, the estimate is $0.25$ while the actual local defect is $e^{-1}-1/4\approx0.117879$. Their closeness improves for the smaller accepted steps. Had we added $\widehat e_n$ using <Richardson extrapolation>, the accepted formula would instead be $y_n(1-h_n+h_n^2/2)$, of <order of a numerical method> two; the same raw difference would still scale as $h_n^2$ and would not estimate that improved value's leading $h_n^3$ defect.
-
-\Image[adaptive-euler-local-estimates-and-global-errors.png]
-{title=Estimated versus actual local Euler defects, rejected trials, and actual accumulated global error scaled by the local tolerance}
-
-The <global error> $g_n=y_n-e^{-t_n}$ obeys an exact <recurrence relation> involving the actual local defects:
-$$
-g_{n+1}=e^{-h_n}g_n-\ell_n,\qquad g_0=0.
-$$
-Each previous <global error> contracts, yet the local defects keep adding. In the plotted run, 101 steps are accepted and two trials are rejected. Every accepted $E_n$ is at most approximately $0.81$, while the largest $|g_{n+1}|/s_n$ is approximately $38.6927$. At $t=8$, the numerical value is approximately $0.00027184218$, compared with the exact $e^{-8}\approx0.00033546263$, giving <absolute error> approximately $6.36204\times10^{-5}$. The right-hand plot deliberately scales actual <global error> by the same $s_n$ used for local acceptance; it is not a new <global error> tolerance test.
-
-Tightening both <absolute and relative error tolerances> by a factor ten gives 315 accepted steps and endpoint <absolute error> approximately $2.14922\times10^{-5}$; tightening both by a factor one hundred gives 991 accepted steps and endpoint <absolute error> approximately $6.94171\times10^{-6}$. This is a convergence comparison for this particular <initial value problem>. The endpoint error decreases by about a factor three per tenfold tightening, rather than by ten: a first-order <Euler method> accumulates defects across many steps, while its <local error estimator> varies quadratically with $h$. A <variable-step global ODE error bound> needs propagation information as well as accepted local tests.
-
-The <absolute stability> boundary remains a separate constraint. On the <Dahlquist test equation> $y'=-\lambda y$ with $\lambda>0$, the accepted two-half-step formula has <stability function> $R(-\lambda h)=(1-\lambda h/2)^2$. It strictly damps perturbations only for $0<\lambda h<4$. Its <local error estimator> is $\lambda^2h^2y_n/4$, which can pass an absolute-tolerance test at tiny $y_n$ even outside this damping interval. In a <stiff two-mode linear system>, a fast mode can therefore constrain the step long after its visible amplitude has become small. An <adaptive step-size controller> does not turn an <explicit Euler method> into an <A-stable> method. Official solver documentation likewise distinguishes explicit <Runge-Kutta methods> for nonstiff problems from implicit <Runge-Kutta methods> and <backward differentiation formulas> for <stiff equations>.<SciPy 1.16.2 documentation/scipy.integrate.solve_ivp>[solve_ivp, method parameter: explicit versus implicit methods and stiffness]{ref}
+\Include[error-control-for-ode-solvers]{parent=Numerical analysis}
 
 = Finite volume method
 {parent=Numerical analysis}
@@ -1519,286 +1352,7 @@ $$
 $$
 The transformed integrand is smooth, so an ordinary second-order midpoint rule recovers its usual convergence rate.
 
-= Interpolation
-{parent=Numerical analysis}
-{wiki}
-{title2=$g(x_i)=y_i$}
-
-Interpolation constructs a <function> agreeing exactly with prescribed values at sample points. The resulting function is an <interpolant>. Choosing a family determines how missing values are filled: <polynomial interpolation> selects a <polynomial>, while <linear interpolation> joins adjacent samples by straight segments. The <McShane extension theorem> instead permits any <Lipschitz function> with a specified bound and provides envelopes controlling all allowed choices.
-
-= Extrapolation
-{parent=Interpolation}
-
-Estimating values beyond the range of the supplied sample points. For two distinct points $P,Q$, the <affine combination> $(1-t)P+tQ$ lies beyond an endpoint of their <line segment> when $t<0$ or $t>1$. The construction specifies an extension of the chosen model; it does not show that an unknown underlying <function> follows that extension.
-
-= Interpolant
-{parent=Interpolation}
-{title2=$g(x_i)=y_i$}
-
-An interpolant is a <function> satisfying the prescribed sample conditions $g(x_i)=y_i$. It agrees with the data exactly, but need not agree with an unknown underlying function between samples. The <polynomial interpolation> example shows that a family or a <polynomial degree> restriction can supply uniqueness; the <McShane extension theorem> shows a useful nonunique alternative.
-
-= Polynomial interpolation
-{parent=Interpolation}
-{wiki}
-{title2=$p_n(x_i)=y_i,\quad\deg p_n\leq n$}
-
-<Polynomial interpolation> constructs a <polynomial> that passes exactly through prescribed data. Given $n+1$ distinct <interpolation nodes> $x_0,\ldots,x_n$ and values $y_0,\ldots,y_n$, there is exactly one <interpolation polynomial> $p_n$ of <polynomial degree> at most $n$ with $p_n(x_i)=y_i$ for every $i$. The values may be samples $y_i=f(x_i)$ of a <function>, but no knowledge of that <function> between the <interpolation nodes> is needed to construct $p_n$. The <Lagrange polynomial> and <Newton polynomial> are two representations of this same answer.https://fncbook.com/polynomial/[Toby A. Driscoll and Richard J. Braun, Fundamentals of Numerical Computation, §9.1, Theorems 9.1.1–9.1.2]{ref}
-
-For example, the three data points $(0,1),(1,2),(2,5)$ give the <quadratic polynomial>
-$$
-p_2(x)=x^2+1,\qquad p_2(0)=1,\quad p_2(1)=2,\quad p_2(2)=5.
-$$
-Thus <polynomial interpolation> supplies $p_2(1/2)=5/4$ as an intermediate value. Whether this approximates an unknown underlying <function> well is a separate question about <polynomial interpolation error>.
-
-Both hypotheses in the uniqueness statement matter. The <Lagrange cardinal polynomials> prove existence constructively. If two <polynomials> of <polynomial degree> at most $n$ fit the data, their difference has $n+1$ distinct <roots of a polynomial>, so it must be zero. Repeated <interpolation nodes> with conflicting values have no solution, and repeated equal values provide no additional independent condition; prescribed <derivatives> instead lead to <Hermite interpolation>. Without the <polynomial degree> restriction there are infinitely many solutions:
-$$
-p(x)=p_n(x)+q(x)\prod_{i=0}^n(x-x_i),
-$$
-where $q$ is any <polynomial>. By the <factor theorem>, this describes every <polynomial> fitting the same data. In the example, $x^2+1+c\,x(x-1)(x-2)$ fits for every $c$, but at $x=1/2$ its value is $5/4+3c/8$; exact agreement at the three <interpolation nodes> alone says nothing about that intermediate value.
-
-The usefulness of <polynomial interpolation> is that data become an explicit <function> whose values, <derivatives>, and <integrals> can be calculated. Differentiating or integrating the <Lagrange cardinal polynomials> produces <differentiation weights from nodal evaluations> or a <quadrature rule>. Exact passage through observations is the defining constraint. In <polynomial regression>, <linear least squares> instead chooses a <polynomial degree> and minimizes a sum of squared residuals, generally without passing through every observation. Interpolating noisy values reproduces their errors at the <interpolation nodes> and can amplify them between <interpolation nodes>; <polynomial interpolation> does not itself smooth measurement noise. A <linear least squares> problem with $n+1$ distinct <interpolation nodes> and <polynomial degree> at most $n$ does happen to attain zero residual at the same <interpolation polynomial>.
-
-= Interpolation polynomial
-{parent=Polynomial interpolation}
-{title2=$p(x_i)=y_i$}
-
-An interpolation polynomial for distinct nodes $x_0,\ldots,x_n$ and prescribed values $y_0,\ldots,y_n$ is a <polynomial> $p$ satisfying $p(x_i)=y_i$. There is a unique such <polynomial> of degree at most $n$: the <Lagrange interpolation polynomial> constructs it explicitly, and uniqueness follows because a nonzero degree-at-most-$n$ difference cannot have $n+1$ distinct roots. <Newton interpolation polynomials> express the same object using <divided differences>.
-
-= Interpolation nodes from best uniform approximation
-{parent=Polynomial interpolation}
-{title2=$\ell_n(f)=p_n^*$}
-
-For a real <continuous function> on a compact interval, choose its <best uniform approximation> $p_n^*$ of <polynomial degree> at most $n$. If its error is nonzero, the <Chebyshev alternation theorem> supplies $n+2$ ordered alternating extrema. The <intermediate value theorem> gives a zero of $f-p_n^*$ in each intervening interval. At these $n+1$ distinct points, the <polynomial interpolant> is exactly $p_n^*$. If the best error is zero, arbitrary distinct nodes suffice. The <Weierstrass approximation theorem> shows that these function-dependent interpolants converge uniformly. The nodes depend on the target function; the conclusion does not provide one universal node sequence for every continuous target.
-
-= Interpolation node
-{parent=Polynomial interpolation}
-{title2=$x_i$}
-
-An <interpolation node> is an argument value $x_i$ at which an <interpolation polynomial> must take a prescribed value $y_i$. The <interpolation nodes> specify where the constraints apply; the values specify how high the graph must pass there. In the three-point example, the <interpolation nodes> are $0,1,2$, while the prescribed values are $1,2,5$. Changing the <interpolation nodes> changes the <Lagrange cardinal polynomials> and the <polynomial interpolation error>, even if their number stays fixed.
-
-= Chebyshev-Lobatto node
-{c}
-{parent=Interpolation node}
-{title2=$x_k=\cos(k\pi/n),\quad k=0,\ldots,n$}
-
-= Chebyshev extreme point
-{c}
-{synonym}
-
-For $n\geq1$, the $n+1$ <Chebyshev-Lobatto nodes> are the <extrema> of the <Chebyshev polynomial> $T_n$ on $[-1,1]$, including both endpoints: $T_n(x_k)=(-1)^k$. Imagine $n+1$ equally spaced angles on a <semicircle> and project their points onto the horizontal axis. The <interpolation nodes> crowd near $-1$ and $1$ because equal angular steps have smaller horizontal projections there. Reversing the order gives the same set. These are distinct from the <roots of a polynomial> $\cos((2k+1)\pi/(2n+2))$ of $T_{n+1}$, which omit the endpoints. Driscoll and Braun call this endpoint-including family Chebyshev points of the second kind or Chebyshev extreme points.https://fncbook.com/python/stability-1/[Driscoll and Braun, Fundamentals of Numerical Computation, §9.3.2, equation 9.3.2]{ref}
-
-On an interval $[a,b]$, use $x_k=(a+b)/2+(b-a)\cos(k\pi/n)/2$. The <Runge phenomenon> example compares <polynomial interpolation> at eleven <Chebyshev-Lobatto nodes> with eleven equally spaced <interpolation nodes>. The distinction matters whenever sampling locations are a choice rather than fixed observations.
-
-= Runge's phenomenon
-{c}
-{parent=Polynomial interpolation}
-{wiki}
-
-= Runge phenomenon
-{c}
-{synonym}
-
-The <Runge phenomenon> is the failure of increasing-degree <polynomial interpolation> at equally spaced <interpolation nodes> to converge to some smooth target <functions>, with large oscillations near the ends of the interval. It is a property of the approximation problem, and can occur even with exact arithmetic. A numerically stable evaluation method cannot remove it. Endpoint clustering, as in <Chebyshev-Lobatto nodes>, changes the approximation problem and can greatly improve it.https://fncbook.com/python/stability-1/[Driscoll and Braun, Fundamentals of Numerical Computation, §9.3.1–9.3.2]{ref}
-
-Take $f(x)=1/(1+25x^2)$ on $[-1,1]$ and <polynomial degree> at most $10$. Use either $x_k=-1+k/5$ or $x_k=\cos(k\pi/10)$ for $k=0,\ldots,10$. Each <interpolation polynomial> passes through all eleven of its own samples, yet the first has severe endpoint oscillations and the second stays much closer to the target <function>. Evaluating both by the <barycentric interpolation formula> on $20{,}001$ equally spaced points, including the endpoints, gives sampled maximum absolute errors of approximately $1.915659$ and $0.132197$, respectively: about a $14.49$-fold reduction. These are maxima over the stated grid, not certified maxima over the continuous interval. The generator separately checks exact reproduction of all stored nodal values.
-
-\Image[interpolation-node-placement.png]
-{title=Degree-10 interpolation of the Runge function at equally spaced and Chebyshev-Lobatto nodes, with absolute errors}
-
-The <polynomial interpolation error> formula explains why <interpolation nodes> enter the analysis. If $f$ has $n+1$ continuous <derivatives> on an interval containing $x$ and all the <interpolation nodes>, then for a suitable $\xi_x$ in that interval,
-$$
-f(x)-p_n(x)=\frac{f^{(n+1)}(\xi_x)}{(n+1)!}\prod_{i=0}^n(x-x_i).
-$$
-At an <interpolation node> the error is zero directly. Away from the <interpolation nodes>, both the product and the high-order <derivative> matter. A short proof applies <Rolle's theorem> repeatedly to $f(t)-p_n(t)-[f(x)-p_n(x)]\prod_i(t-x_i)/\prod_i(x-x_i)$, which vanishes at $n+2$ distinct points.https://fncbook.com/polynomial/[Driscoll and Braun, Fundamentals of Numerical Computation, §9.1.2, Theorem 9.1.3]{ref}
-
-The successful comparison here does not assert that <Chebyshev-Lobatto nodes> solve every approximation problem for every <function>. The <derivatives>, the <polynomial degree>, and measurement errors still matter. The <Lebesgue constant of interpolation> measures worst-case amplification of nodal errors, while the <polynomial reproduction error bound> relates interpolation to the <best uniform approximation> available at that <polynomial degree>.
-
-= Lagrange polynomial
-{c}
-{parent=Polynomial interpolation}
-{wiki}
-{title2=$p_n(x)=\sum_{i=0}^n y_i\ell_i(x)$}
-
-= Lagrange interpolation polynomial
-{c}
-{synonym}
-
-= Lagrange interpolation
-{c}
-{synonym}
-
-= Polynomial interpolant
-{synonym}
-
-The <Lagrange polynomial> writes the <interpolation polynomial> as a <linear combination> of <Lagrange cardinal polynomials>. Each one selects a single <interpolation node>, so the data values themselves become the coefficients:
-$$
-p_n(x)=\sum_{i=0}^n y_i\ell_i(x),\qquad
-\ell_i(x)=\prod_{\substack{0\leq j\leq n\\j\ne i}}\frac{x-x_j}{x_i-x_j}.
-$$
-Distinct <interpolation nodes> make every denominator nonzero. At $x_j$, all terms vanish except $y_j\ell_j(x_j)=y_j$. This gives an explicit construction without solving for <monomial> coefficients. The elegance of the <Lagrange polynomial> is that it builds all constraints into the <basis>, leaving no equations to solve for the data values.
-
-For $(x_0,x_1,x_2)=(0,1,2)$ and $(y_0,y_1,y_2)=(1,2,5)$, substitution gives
-$$
-p_2(x)=\frac{(x-1)(x-2)}2-2x(x-2)+\frac{5x(x-1)}2=x^2+1.
-$$
-At $x=1/2$, the <Lagrange cardinal polynomial> values are $3/8,3/4,-1/8$, so $p_2(1/2)=3/8+2(3/4)+5(-1/8)=5/4$. A negative <Lagrange cardinal polynomial> value is allowed: these weights sum to one but need not be <probabilities>.
-
-The product form is especially useful for deriving <differentiation weights from nodal evaluations> and <quadrature rules>. For repeated numerical evaluation, the <barycentric interpolation formula> reorganizes the same <Lagrange polynomial> into precomputed weights and sums; it avoids evaluating every full product at every argument.
-
-= Differentiation weights from nodal evaluations
-{parent=Lagrange polynomial}
-{title2=$p'(x_0)=\sum_j\ell_j'(x_0)p(a_j)$}
-
-At distinct nodes $a_0,\ldots,a_n$, the <Lagrange interpolation polynomial> has basis $\ell_j(x)=\prod_{i\ne j}(x-a_i)/(a_j-a_i)$. Differentiating its exact expression for a polynomial of degree at most $n$ gives the displayed weights. Their uniqueness follows because the nodal evaluations form a basis of the <dual space> of that polynomial space.
-
-= Discrete minimax interpolation on ordered nodes
-{parent=Lagrange polynomial}
-{title2=$p=t-\lambda r,\quad\lambda=[x^{n+1}]t/[x^{n+1}]r$}
-
-For $n+2$ increasingly ordered nodes $y_j$, let $r_j$ be their <Lagrange cardinal polynomials>, $t=\sum f(y_j)r_j$, and $r=\sum(-1)^jr_j$. The leading coefficient of $r_j$ has sign $(-1)^{n+2-j}$, so all summands in the leading coefficient of $r$ have the same nonzero sign. There is a unique $\lambda$ canceling degree $n+1$ in $t-\lambda r$. Its errors at the nodes are $\lambda(-1)^j$, and a better degree-at-most-$n$ approximation would have a difference polynomial with at least $n+1$ roots. Thus it minimizes the maximum node error. Increasing order matters: for the permutation $(0,1/3,1,2/3)$ the alternating interpolant is already the quadratic $-1+9x(1-x)$, so the leading-coefficient assertion for $n=2$ fails.
-
-= Lagrange cardinal polynomial
-{parent=Lagrange polynomial}
-{c}
-{title2=$\ell_i$}
-
-= Lagrange basis polynomial
-{c}
-{synonym}
-
-For distinct <interpolation nodes> $x_0,\ldots,x_n$, the <Lagrange cardinal polynomial> $\ell_i$ has value one at its own <interpolation node> and zero at every other <interpolation node>:
-$$
-\ell_i(x)=\prod_{j\ne i}\frac{x-x_j}{x_i-x_j},\qquad
-\ell_i(x_j)=\delta_{ij}=
-\begin{cases}1,&i=j,\\0,&i\ne j.\end{cases}
-$$
-Here $\delta_{ij}$ is the <Kronecker delta>. These <Lagrange cardinal polynomials> form a <basis> of the <vector space> of <polynomials> of <polynomial degree> at most $n$: every such <polynomial> has the unique expansion $p(x)=\sum_i p(x_i)\ell_i(x)$. The nodal evaluation <linear functionals> $E_j(p)=p(x_j)$ form the <dual basis>, since $E_j(\ell_i)=\delta_{ij}$.
-
-For the <interpolation nodes> $0,1,2$, the three <Lagrange cardinal polynomials> are
-$$
-\ell_0(x)=\frac{(x-1)(x-2)}2,\qquad
-\ell_1(x)=-x(x-2),\qquad
-\ell_2(x)=\frac{x(x-1)}2.
-$$
-Their values on the <interpolation nodes> are the rows of the <identity matrix>. In the figure, each colored curve passes through its own unit-height marker and through zero at the other two <interpolation nodes>. Multiplying the curves by the data $1,2,5$ and adding gives the <Lagrange polynomial> $x^2+1$.
-
-\Image[lagrange-interpolation-cardinals.png]
-{title=Lagrange cardinal polynomials at nodes 0, 1, 2 and their weighted sum interpolating values 1, 2, 5}
-
-Since the constant <polynomial> one interpolates data values all equal to one, uniqueness gives $\sum_i\ell_i(x)=1$. Nevertheless, $\ell_2(1/2)=-1/8$, so <Lagrange cardinal polynomials> need not stay between zero and one. If a single data value $y_i$ changes by $\varepsilon$, the <interpolation polynomial> changes by exactly $\varepsilon\ell_i(x)$. Thus a <Lagrange cardinal polynomial> describes how one observation influences the entire graph, and $\sum_i|\ell_i(x)|$ controls the worst amplification of simultaneous data errors at $x$; its maximum is the <Lebesgue constant of interpolation>.
-
-= Endpoint derivative signs of Lagrange cardinal polynomials
-{parent=Lagrange cardinal polynomial}
-{title2=$(-1)^iL_i^{(k)}(1)>0$}
-
-At decreasing distinct <interpolation nodes> $1\ge t_0>\cdots>t_n\ge-1$, the <Lagrange cardinal polynomial> $L_i(x)=\prod_{j\ne i}(x-t_j)/\prod_{j\ne i}(t_i-t_j)$ has denominator sign $(-1)^i$. For $1\le k\le n$, its numerator's $k$th <derivative> at one is $k!$ times a sum of products of $n-k$ nonnegative factors $1-t_j$. At most one factor vanishes, and at least one product avoids it, so that sum is strictly positive. The same alternating nodal signs therefore maximize every endpoint derivative simultaneously.
-
-= Nodal derivative norm from Lagrange cardinal polynomials
-{parent=Lagrange cardinal polynomial}
-{title2=$\sup_{|p(t_i)|\le1}|p^{(k)}(x)|=\sum_i|\ell_i^{(k)}(x)|$}
-
-At distinct <interpolation nodes>, differentiating <Lagrange interpolation> gives $p^{(k)}(x)=\sum_i p(t_i)\ell_i^{(k)}(x)$. The <triangle inequality> gives the displayed upper bound, attained by prescribing each nodal value to be the sign of the corresponding <derivative> weight. For increasingly ordered real nodes, the <Markov interlacing lemma> and <monotonicity of polynomial critical points in their roots> imply that $(-1)^i\ell_i^{(k)}(x)$ has at most one sign change, ignoring zero weights. Thus an extremizer has alternating nodal signs with at most one reversal of that alternating pattern. This reduces a choice among $2^{n+1}$ sign patterns to $n+1$ candidate <polynomials>.
-
-= Barycentric interpolation formula
-{parent=Lagrange polynomial}
-{title2=$p_n(x)=\dfrac{\sum_i w_i y_i/(x-x_i)}{\sum_i w_i/(x-x_i)}$}
-
-The <barycentric interpolation formula> evaluates the same <Lagrange polynomial> using weights that depend only on the distinct <interpolation nodes>:
-$$
-w_i=\frac1{\prod_{j\ne i}(x_i-x_j)},\qquad
-p_n(x)=\frac{\displaystyle\sum_{i=0}^n\frac{w_i y_i}{x-x_i}}
-{\displaystyle\sum_{i=0}^n\frac{w_i}{x-x_i}},\qquad x\ne x_i.
-$$
-At $x=x_i$, return $y_i$ directly, before dividing; the formula has <removable singularities> at the <interpolation nodes>. Multiplying every $w_i$ by the same nonzero constant leaves the answer unchanged. Driscoll and Braun derive this formula as a more efficient, numerically stable way to evaluate <polynomial interpolation>.https://fncbook.com/barycentric/[Driscoll and Braun, Fundamentals of Numerical Computation, §9.2, Theorem 9.2.1 and Algorithm 9.2.1]{ref}
-
-For the <interpolation nodes> $0,1,2$, the weights are $(1/2,-1,1/2)$, or equivalently $(1,-2,1)$. With data $(1,2,5)$, at $x=1/2$ the denominator using the latter weights is $2+4-2/3=16/3$ and the numerator is $2+8-10/3=20/3$, giving $p_2(1/2)=5/4$ again. For eleven <interpolation nodes> in the <Runge phenomenon> figure, the generator computes the weights by the direct products above and returns stored values exactly at every <interpolation node>.
-
-The direct products require $O(n^2)$ <arithmetic operations> once; each subsequent value uses $O(n)$ <arithmetic operations>. Here $O$ denotes <Big O notation>. At large <polynomial degree> or on poorly scaled intervals, forming these products can exceed the range of <floating-point arithmetic>; normalization or specialized weight formulas may be needed. Stable evaluation also cannot cure sensitivity intrinsic to the chosen <interpolation nodes>, measured by the <Lebesgue constant of interpolation>, or the approximation failure in the <Runge phenomenon>.
-
-= Divided difference
-{parent=Polynomial interpolation}
-{wiki}
-{title2=$f[x_0,\ldots,x_k]$}
-
-For $k+1$ distinct <interpolation nodes>, the <divided difference> $f[x_0,\ldots,x_k]$ is the coefficient of $x^k$ in the <interpolation polynomial> of <polynomial degree> at most $k$ through those <interpolation nodes>. It is the <leading coefficient> when that <polynomial degree> is exactly $k$, and zero when it is smaller. Explicitly,
-$$
-f[x_0,\ldots,x_k]
-=\sum_{j=0}^k\frac{f(x_j)}
-{\prod_{i\ne j}(x_j-x_i)}.
-$$
-starting with $f[x_i]=f(x_i)$. The <divided differences> obey the recurrence
-$$
-f[x_0,\ldots,x_k]
-=\frac{f[x_1,\ldots,x_k]-f[x_0,\ldots,x_{k-1}]}
-{x_k-x_0}.
-$$
-For data $f(0)=1$, $f(1)=2$, $f(2)=5$, the first <divided differences> are $f[0,1]=(2-1)/(1-0)=1$ and $f[1,2]=(5-2)/(2-1)=3$. The second <divided difference> is $f[0,1,2]=(3-1)/(2-0)=1$, the <leading coefficient> of $x^2+1$. The first <divided difference> is the slope of a <secant line>; higher <divided differences> supply successive coefficients for the <Newton polynomial>.
-
-= Omitted-node identities for divided differences
-{parent=Divided difference}
-{title2=$D_i-D_j=(x_j-x_i)f[x_0,\ldots,x_n]$}
-
-For distinct <interpolation nodes>, write $D_i$ for the <divided difference> with $x_i$ omitted. Symmetry and the divided-difference recurrence give the displayed identity. Consequently, for $0<i<n$,
-$$
-D_i=\frac{x_i-x_0}{x_n-x_0}D_n+\frac{x_n-x_i}{x_n-x_0}D_0.
-$$
-The identity is algebraic and does not require the nodes to be ordered; the coefficients need not be nonnegative.
-
-= Exponential divided difference
-{parent=Divided difference}
-{title2=$D_t(\beta,\gamma)=\int_0^te^{(t-x)\gamma+x\beta}\,dx$}
-
-The displayed integral is $(e^{t\beta}-e^{t\gamma})/(\beta-\gamma)$ for distinct exponents and $te^{t\gamma}$ when they coincide. The latter is the continuous limit, so a zero denominator is a removable singularity. This quantity appears in <variation-of-constants formula> estimates of <matrix> evolution and avoids omitting an equal-exponent case.
-
-= Leibniz rule for divided differences
-{c}
-{parent=Divided difference}
-
-For $h=fg$,
-$$
-h[t_0,\ldots,t_k]=\sum_{m=0}^kf[t_0,\ldots,t_m]g[t_m,\ldots,t_k].
-$$
-
-= Newton polynomial
-{c}
-{parent=Divided difference}
-{wiki}
-{title2=$p_n(x)=\sum_{k=0}^n f[x_0,\ldots,x_k]\prod_{i=0}^{k-1}(x-x_i)$}
-
-= Newton interpolation polynomial
-{c}
-{synonym}
-
-The <Newton polynomial> expresses the <interpolation polynomial> in products that successively vanish at all previously used <interpolation nodes>. With $y_i=f(x_i)$, the coefficients are <divided differences>:
-$$
-p_n(x)=f(x_0)+\sum_{k=1}^nf[x_0,\ldots,x_k]
-\prod_{i=0}^{k-1}(x-x_i).
-$$
-A triangular <divided difference> table computes all its coefficients using exactly $n(n+1)/2$ divisions. The <Newton polynomial> and the <Lagrange polynomial> have the same <polynomial degree> bound and the same nodal values, hence are equal by uniqueness of <polynomial interpolation>.
-
-For $f(0)=1$, $f(1)=2$, $f(2)=5$, the complete <divided difference> table is
-$$
-\begin{array}{c|r|r|r}
-x_i&f[x_i]&f[x_i,x_{i+1}]&f[x_i,x_{i+1},x_{i+2}]\\\hline
-0&1&1&1\\
-1&2&3&\\
-2&5&&
-\end{array}
-$$
-The first <divided differences> are $1$ and $3$, and their <divided difference> is $(3-1)/(2-0)=1$. Reading the top entries gives
-$$
-p_2(x)=1+1(x-0)+1(x-0)(x-1)=1+x+x(x-1)=x^2+1.
-$$
-The initial term fits $(0,1)$; adding $x$ also fits $(1,2)$; adding $x(x-1)$ fits $(2,5)$ while leaving the first two data values unchanged. This is the practical beauty of the <Newton polynomial>: each new correction respects all previous interpolation constraints.
-
-If a new distinct <interpolation node> $x_{n+1}$ with value $y_{n+1}$ arrives, append one term:
-$$
-p_{n+1}(x)=p_n(x)+c\prod_{i=0}^n(x-x_i),\qquad
-c=\frac{y_{n+1}-p_n(x_{n+1})}{\prod_{i=0}^n(x_{n+1}-x_i)}.
-$$
-For example, appending $(3,11)$ to the three-point data gives $c=(11-10)/(3\cdot2\cdot1)=1/6$, hence $p_3(x)=x^2+1+x(x-1)(x-2)/6$. Changing the order of the <interpolation nodes> changes the <Newton polynomial> coefficients and products, but not the final <interpolation polynomial> in exact arithmetic.
-
-The products also permit nested evaluation analogous to <Horner's method>. If $a_k=f[x_0,\ldots,x_k]$, start with $b_n=a_n$ and work backwards by $b_k=a_k+(x-x_k)b_{k+1}$; the answer is $b_0$. The three-point example becomes $1+x[1+(x-1)]$, needing two multiplications for each evaluation. This organization is useful when adding observations incrementally or evaluating a stored <Newton polynomial> many times; the <Runge phenomenon> still depends on the <interpolation nodes> rather than on which representation is used.
+\Include[interpolation]{parent=Numerical analysis}
 
 = Discrete Fourier transform
 {parent=Numerical analysis}
@@ -2612,11 +2166,94 @@ The <Euclidean norm> preservation explains the appeal for <numerical stability>:
 = Gradient descent
 {parent=Numerical analysis}
 {wiki}
+{title2=$x_{k+1}=x_k-\eta\nabla f(x_k)$}
 
 = Steepest descent method
 {synonym}
 
-Gradient descent updates $x$ in the negative-gradient direction. For $F(x)=x^TAx/2-b^Tx$, this direction is the residual $r=b-Ax$.
+<Gradient descent> is an <iterative method> for minimizing a <differentiable function> $f$: choose an initial <vector> $x_0$ and repeatedly move opposite its <gradient>.<Convex Optimization by Stephen Boyd and Lieven Vandenberghe>[§9.3, p. 466, Algorithm 9.3: negative-gradient direction and a separately chosen step size]{ref}
+
+With a fixed positive <step size> $\eta$, the update is
+$$
+x_{k+1}=x_k-\eta\nabla f(x_k),\qquad k=0,1,2,\ldots.
+$$
+The direction and the <step size> play different roles: the <gradient> supplies local information about increase, while $\eta$ determines how far that information is trusted. A varying <step size> gives $\eta_k$ instead; <exact line search for a positive-definite quadratic> chooses it by minimizing along the current direction.
+
+Why is this the steepest direction? For a unit <vector> $v$ in the <Euclidean norm>, the <directional derivative> is $\langle\nabla f(x),v\rangle$. The <Cauchy-Schwarz inequality> bounds it below by $-\|\nabla f(x)\|_2$, attained by $v=-\nabla f(x)/\|\nabla f(x)\|_2$ when the <gradient> is nonzero. This is steepest descent relative to the <Euclidean norm>; changing the <norm> can change the steepest direction. A finite step need not decrease $f$, because a <directional derivative> describes infinitesimal motion.
+
+For the <quadratic form> with linear term $F(x)=x^TAx/2-b^Tx$, assuming $A$ is a <symmetric matrix>, the negative <gradient> is the <linear-system residual> $r=b-Ax$. Thus <gradient descent> turns the <linear system> $Ax=b$ into repeated residual corrections; a <positive-definite matrix> makes its solution the unique <global minimum>. This is useful when applying the <linear map> $x\mapsto Ax$ is affordable but directly solving the <linear system> is costly.
+
+The attraction is that a <gradient> evaluation gives an entire update without solving a new <linear system>. The difficulty is choosing a <step size> that progresses along gently curved directions without overshooting steep ones. <Fixed-step gradient descent on a positive-definite quadratic> makes this tension exact: every <eigenvector> direction has its own multiplier, determined by its <eigenvalue>. The resulting <condition number> dependence explains why a narrow valley can slow even an inexpensive <iterative method>.
+
+The simplicity of the <gradient> update and its sensitivity to the <condition number> of the <Hessian matrix> are central practical features.<Convex Optimization by Stephen Boyd and Lieven Vandenberghe>[§9.3.1, pp. 466–468, and §9.3.2, p. 475, Conclusions: convergence and conditioning]{ref}
+
+= Fixed-step gradient descent on a positive-definite quadratic
+{parent=Gradient descent}
+{title2=$e_{k+1}=(I-\eta A)e_k$}
+
+Consider the original two-dimensional example
+$$
+f(x_1,x_2)=\frac12(x_1^2+9x_2^2),\qquad x_0=(2,1)^T,\qquad \nabla f(x)=(x_1,9x_2)^T.
+$$
+The <Hessian matrix> is $A=\operatorname{diag}(1,9)$, a <symmetric matrix> and <positive-definite matrix>. Its <eigenvectors> are the coordinate directions, its <eigenvalues> are $1$ and $9$, and its <Euclidean norm> <condition number> is $9$. The unique <global minimum> is $x_*=0$, so the error $e_k=x_k-x_*$ equals $x_k$. The <linear map> $I-\eta A$, with $I$ the <identity matrix>, gives
+$$
+x_{1,k}=2(1-\eta)^k,\qquad x_{2,k}=(1-9\eta)^k.
+$$
+For $\eta=1/5=0.2$, the two coordinate error multipliers are $0.8$ and $-0.8$. Consequently $x_1=(1.6,-0.8)^T$, $x_2=(1.28,0.64)^T$, and the second coordinate changes sign at every step while both shrink. The <Euclidean norm> of the error contracts by $0.8$ each step. The objective gap, which we call the quadratic energy, contracts by its square:
+$$
+E_k=f(x_k)-f(x_*)=\frac{13}{2}\left(\frac{16}{25}\right)^k,\qquad E_0=6.5,\quad E_1=4.16,\quad E_2=2.6624.
+$$
+The <level sets> of $f$ are <ellipses>. Oscillation across their narrow direction is compatible with strictly decreasing energy.
+
+\Image[gradient-descent-quadratic-contour-iterates.png]
+{title=Original <gradient descent> iterates on $f=(x_1^2+9x_2^2)/2$: <step size> $0.2$ contracts both directions, whereas $0.25$ expands the second}
+
+For $\eta=1/4=0.25$, the coordinate error multipliers become $0.75$ and $-1.25$, giving $x_1=(1.5,-1.25)^T$. The first coordinate still tends to zero, but the second alternates and grows. Direct substitution gives
+$$
+E_k=2\left(\frac9{16}\right)^k+\frac92\left(\frac{25}{16}\right)^k,\qquad E_1=\frac{261}{32}=8.15625.
+$$
+Thus a larger positive <step size> can turn a strictly <convex function> into a divergent iteration. Energy and error are different quantities: coordinate errors carry signed multipliers, while each coordinate's contribution to energy carries the squared multiplier.
+
+\Image[gradient-descent-quadratic-energy-histories.png]
+{title=Exact constructed quadratic-energy histories from $(2,1)$: <step sizes> $0.1$ and $0.2$ converge, while $0.25$ diverges}
+
+For the general <quadratic form> with linear term
+$$
+f(x)=\frac12x^TAx-b^Tx,\qquad A=A^T>0,\qquad x_*=A^{-1}b,
+$$
+the error obeys the same <linear map> $e_{k+1}=(I-\eta A)e_k$. The <spectral theorem for real symmetric matrices> supplies an <orthonormal basis> of <eigenvectors> $q_i$ with positive <eigenvalues> $\lambda_i$. Writing $e_0=\sum_i c_iq_i$ gives the exact solution and energy identity
+$$
+e_k=\sum_i c_i(1-\eta\lambda_i)^kq_i,\qquad
+E_k=\frac12\sum_i\lambda_i c_i^2(1-\eta\lambda_i)^{2k}.
+$$
+Therefore convergence from every initial <vector> is equivalent to
+$$
+|1-\eta\lambda_i|<1\quad\text{for every }i,
+\qquad\text{or equivalently}\qquad 0<\eta<\frac2{\lambda_{\max}}.
+$$
+At $\eta=2/\lambda_{\max}$, a nonzero error component along a largest-<eigenvalue> <eigenvector> flips sign without shrinking. Above that threshold it grows. A particular start can still converge if it has zero components in every unstable direction; the interval is the condition for all starts. If $\rho=\max_i|1-\eta\lambda_i|<1$, then $\|e_k\|_2\leq\rho^k\|e_0\|_2$ and $E_k\leq\rho^{2k}E_0$. These bounds follow by summing the squared components in the <orthonormal basis>.
+
+= Optimal fixed step for quadratic gradient descent
+{parent=Fixed-step gradient descent on a positive-definite quadratic}
+{title2=$\eta_*=2/(\lambda_{\min}+\lambda_{\max})$}
+
+For a fixed <symmetric matrix> and <positive-definite matrix> $A$, what positive <step size> minimizes the largest coordinate error multiplier over all <eigenvector> directions? Let $m=\lambda_{\min}>0$ and $L=\lambda_{\max}$. Since $|1-\eta\lambda|$ is a <convex function> of $\lambda$, its maximum over the <eigenvalues> occurs at an endpoint:
+$$
+\rho(\eta)=\max\{|1-\eta m|,|1-\eta L|\}.
+$$
+Balance the two extremes by solving $1-\eta m=-(1-\eta L)$:
+$$
+\eta_* = \frac2{m+L},\qquad \rho_* = \frac{L-m}{L+m}=\frac{\kappa-1}{\kappa+1},\qquad \kappa=\frac Lm.
+$$
+Here $\kappa$ is the <Euclidean norm> <condition number> of $A$. This balance is optimal: for $\eta<\eta_*$ the endpoint $1-\eta m$ exceeds $\rho_*$, and for $\eta>\eta_*$ the endpoint $\eta L-1$ exceeds $\rho_*$. The optimal worst-case energy factor is $\rho_*^2$, rather than $\rho_*$. This optimizes a uniform one-step bound; a particular initial error supported on fewer <eigenvectors> can have a different best <step size>.
+
+In the example $m=1$, $L=9$, so $\eta_*=0.2$ and $\rho_*^2=0.64$. Both <eigenvalue> directions attain that energy factor, making the displayed history exact. The smaller <step size> $0.1$ instead gives
+$$
+E_k=2(0.81)^k+\frac92(0.01)^k.
+$$
+Its first step reaches $E_1=1.665$, below $4.16$ for $\eta=0.2$, but subsequent progress is limited by the first direction's energy factor $0.81$. By $k=5$, the energies are approximately $0.69736$ and $0.69793$, respectively; by $k=6$, the $0.2$ iteration is ahead. A better first step need not yield a faster long-run history.
+
+As the <condition number> grows, $\rho_*$ approaches one: stability in the direction of the largest <eigenvalue> forces small movement along the smallest-<eigenvalue> direction. This is a precise reason to improve scaling or use a method such as the <conjugate gradient method>, rather than merely increasing the <step size>. When $m=L$, choosing $\eta=1/m$ eliminates every error component in one step.
 
 = Gradient ascent
 {parent=Gradient descent}
@@ -2642,17 +2279,44 @@ A random vector $G_s$ is an unbiased stochastic gradient at $x_s$ when $\mathbb 
 
 = Lipschitz gradient
 {parent=Gradient descent}
+{title2=$\|\nabla f(x)-\nabla f(y)\|_2\leq\beta\|x-y\|_2$}
 
-A differentiable function has a $\beta$-Lipschitz gradient when
+A <differentiable function> has a $\beta$-<Lipschitz gradient> on a set $D$ if its <gradient> satisfies <Lipschitz continuity> there:
 $$
-\|\nabla f(x)-\nabla f(y)\|\leq\beta\|x-y\|.
+\|\nabla f(x)-\nabla f(y)\|_2\leq\beta\|x-y\|_2\qquad(x,y\in D),\quad \beta\geq0.
 $$
+All <norms> here are the <Euclidean norm>. The constant limits how fast the <gradient> changes; it is not a bound on the magnitude of the <gradient>. For $f(x)=(x_1^2+9x_2^2)/2$, the <gradient> is the <linear map> $x\mapsto\operatorname{diag}(1,9)x$. Its <operator norm> is $9$, so $\beta=9$ works globally and is sharp by taking $x-y=(0,1)^T$. The <gradient> itself is unbounded on the whole <Euclidean space>.
+
+If $f$ has a continuous <Hessian matrix> on an open <convex set> $D$ and $\|\nabla^2f(z)\|_2\leq\beta$ throughout $D$, integrate that <linear map> along the <line segment> from $x$ to $y$:
+$$
+\nabla f(y)-\nabla f(x)=\int_0^1\nabla^2f(x+t(y-x))(y-x)\,dt.
+$$
+The <operator norm> bound proves the displayed <Lipschitz continuity>. Convexity of the domain keeps the entire <line segment> inside it. Bounding the <Hessian matrix> only at the endpoints is insufficient.
 
 = Descent lemma
 {parent=Lipschitz gradient}
 {title2=$f(v)\leq f(u)+\langle\nabla f(u),v-u\rangle+\tfrac L2\|v-u\|^2$}
 
-A differentiable function with an $L$-<Lipschitz gradient> obeys $f(v)\leq f(u)+\langle\nabla f(u),v-u\rangle+(L/2)\|v-u\|^2$. Integrate the gradient along the line segment and bound the deviation from its initial value. The lemma does not require convexity.
+Suppose $f$ is a <differentiable function> on an open <convex set> $D\subseteq\mathbb R^n$ and has an $L$-<Lipschitz gradient> there, in the <Euclidean norm>. For $u,v\in D$, the <descent lemma> states
+$$
+f(v)\leq f(u)+\langle\nabla f(u),v-u\rangle+\frac L2\|v-u\|_2^2.
+$$
+A bounded continuous <Hessian matrix> gives one sufficient route to this estimate.<Convex Optimization by Stephen Boyd and Lieven Vandenberghe>[§9.1.2, p. 461, equation (9.13): Hessian upper bound and quadratic upper estimate; §9.3.1, p. 466, equation (9.17): substitution of a negative-gradient step]{ref}
+
+For a short proof, put $d=v-u$. The <fundamental theorem of calculus> along the <line segment> gives
+$$
+f(v)-f(u)-\langle\nabla f(u),d\rangle
+=\int_0^1\langle\nabla f(u+td)-\nabla f(u),d\rangle\,dt.
+$$
+The <Cauchy-Schwarz inequality> and the <Lipschitz gradient> bound make the <integrand> at most $Lt\|d\|_2^2$; its <integral> is $L\|d\|_2^2/2$. This proof needs no assumption that $f$ is a <convex function>.
+
+For the <gradient descent> update $v=u-\eta\nabla f(u)$, provided $v\in D$, substitution yields
+$$
+f(v)\leq f(u)-\eta\left(1-\frac{L\eta}{2}\right)\|\nabla f(u)\|_2^2.
+$$
+For $L>0$ and $0<\eta<2/L$, this ensures strict decrease whenever the <gradient> is nonzero. At $\eta=2/L$ it guarantees only nonincrease; the quadratic example has a nonshrinking alternating component at this endpoint. At $\eta=1/L$ the guaranteed decrease is $\|\nabla f(u)\|_2^2/(2L)$. A bound valid only on $D$ cannot justify a step leaving $D$.
+
+If a fixed admissible <step size> is used forever, every iterate stays in $D$, and $f(x_k)$ has a finite lower bound, summing this inequality shows $\sum_k\|\nabla f(x_k)\|_2^2<\infty$, hence $\nabla f(x_k)\to0$. That conclusion alone gives neither convergence of the iterates nor a <global minimum>. For example, the smooth <polynomial> $f(x)=x^4-x^2$ has $f'(0)=0$ and $f''(0)=-2$: <gradient descent> started at zero never moves, although $f(1/\sqrt2)=-1/4<0$. On $D=(-1,1)$, $|f''(x)|\leq10$, so the <Lipschitz gradient> hypothesis holds on this domain. <Convex functions> and <strongly convex functions> provide additional structure; the exact quadratic convergence result above uses a <positive-definite matrix>.
 
 = Exact line search for a positive-definite quadratic
 {parent=Gradient descent}
@@ -3085,247 +2749,7 @@ For any <field> $F$ and <vector subspace> $W\subseteq F^m$, some $u\in W$ has at
 
 The Dahlquist test equation is the scalar linear initial-value problem $y'=\lambda y$. A one-step method reduces it to $y_{n+1}=R(h\lambda)y_n$, thereby defining its <stability function> $R$.
 
-= Linear multistep method
-{parent=Numerical analysis}
-{wiki}
-
-= Multistep method
-{synonym}
-
-A linear multistep method approximates an ODE using several previous solution and derivative values.
-
-= Reciprocal-root three-step multistep family
-{parent=Linear multistep method}
-{title2=$\rho(\zeta)=(\zeta-1)(\zeta^2-2\alpha\zeta+1)$}
-
-Take $\sigma(\zeta)=\zeta[(5+\alpha)\zeta^2-(4+8\alpha)\zeta+11-5\alpha]/6$. The <root condition for a multistep method> holds exactly for $-1<\alpha<1$. Since $\rho'(1)=\sigma(1)=2(1-\alpha)$, these and only these parameters give a convergent method. Its <exponential-symbol order criterion for a multistep method> has defect $-(\alpha+5)z^4/12+O(z^5)$, giving formal order three except at $\alpha=-5$, where the first defect is $z^5/10$. None of the convergent family is <A-stable>: for a parasitic root $r=\alpha+i\sqrt{1-\alpha^2}$, perturbation of $\rho(r(z))-z\sigma(r(z))=0$ gives $\operatorname{Re}[r'(0)/r]=(\alpha-1)/12<0$. A small negative real $z$ therefore moves it outside the unit disk. At $\alpha=1$, cancellation would remove a double unit root, but the original recurrence retains that unstable parasitic behavior; it is not legitimately replaced by the reduced Backward Euler recurrence for arbitrary starting values.
-
-= Simpson multistep method
-{c}
-{parent=Linear multistep method}
-{title2=$Y_{n+2}-Y_n=\frac h3(f_{n+2}+4f_{n+1}+f_n)$}
-
-Integrating a quadratic interpolant of the derivative over two steps gives this <linear multistep method>, which has order four. Its <local truncation error> is $-h^5y^{(5)}(t_{n+1})/90+O(h^7)$ and its <zero-stability> polynomial is $\rho(\zeta)=\zeta^2-1$, with simple roots $1,-1$. The <Dahlquist equivalence theorem> therefore gives fourth-order convergence with sufficiently accurate starts. This attains the even two-step <first Dahlquist barrier>. Its undamped parasitic zero-step mode need not have favorable long-time <absolute stability>; finite-time convergence and stiff damping are separate requirements.
-
-= First Dahlquist barrier
-{parent=Linear multistep method}
-
-For a consistent <zero-stable> real linear $k$-step method with constant coefficients and only first-derivative evaluations, the attainable order is at most $k+1$ for odd $k$ and $k+2$ for even $k$. For an explicit method the bound is $k$. These are order barriers under the <root condition for a multistep method>, not bounds on multiderivative methods or on arbitrary variable-step formulations. The <second Dahlquist barrier> adds the stronger bound of order two for irreducible <A-stable> methods.
-
-= Newton-Cotes multistep methods attaining the first Dahlquist barrier
-{c}
-{parent=First Dahlquist barrier}
-{title2=$Y_{n+s}-Y_n=h\sum_{j=0}^sw_jf_{n+j}$}
-
-Using <Newton-Cotes closed quadrature> for the integrated derivative yields the displayed <linear multistep method>. Its first <characteristic polynomial> is $\rho(z)=z^s-1$, whose unit-circle roots are all simple, proving <zero-stability>. Quadrature exactness gives order $s+1$ for odd $s$ and at least $s+2$ for even $s$. The <first Dahlquist barrier> gives equality, while the <Dahlquist equivalence theorem> gives convergence with consistent starts. These are finite-time convergence statements, not claims of <A-stability>.
-
-= Cayley coefficient proof of the first Dahlquist barrier
-{c}
-{parent=First Dahlquist barrier}
-{title2=$p\leq s+1\ (s\text{ odd}),\quad p\leq s+2\ (s\text{ even})$}
-
-For a real consistent <zero-stable> <linear multistep method>, transform its first <characteristic polynomial> by $z=(1+x)/(1-x)$ to $(1-x)^s\rho(z)=xP(x)$. The <root condition for a multistep method> puts all finite roots of $P$ in the closed left half-plane; real linear factors and conjugate quadratic factors consequently give nonnegative coefficients, after choosing $P(0)>0$. The order criterion requires a <polynomial> of degree at most $s$ to agree through degree $p-1$ with $P(x)x/(2\operatorname{arctanh}x)$. The latter quotient has strictly negative nonconstant even coefficients. Its first even coefficient beyond degree $s$ includes a strictly negative multiple of $P(0)$ and cannot vanish. This gives the stated bound.
-
-= Coefficient sign lemma for the first Dahlquist barrier
-{parent=Cayley coefficient proof of the first Dahlquist barrier}
-{title2=$x/\operatorname{arctanh}x=1-\sum_{j\geq1}\gamma_jx^{2j},\quad\gamma_j>0$}
-
-Write $F(x)=\int_0^1(1+x)^t(1-x)^{1-t}\,dt=x/\operatorname{arctanh}x$. Pairing $t$ and $1-t$ after differentiating twice gives
-$$
-F''(x)=-4\int_0^1t(1-t)(1-x^2)^{-3/2}\cosh[(2t-1)\operatorname{arctanh}x]\,dt.
-$$
-The <power series> of $(1-x^2)^{-3/2}$ has strictly positive even coefficients, and the other factor has nonnegative even coefficients. Thus every even coefficient of $F''$ is negative. Since $F$ is even with $F(0)=1$, the displayed sign pattern follows. This supplies a short positivity argument for the <first Dahlquist barrier>.
-
-= Two-step family with a third-order member
-{parent=Linear multistep method}
-{title2=$\rho(w)=(w-1)(w-a),\quad\sigma(w)=\tfrac12(1+a)w^2+\tfrac12(1-3a)w$}
-
-The <exponential-symbol order criterion for a multistep method> gives leading defect $-(1+5a)z^3/12$, so the family has order two except at $a=-1/5$, where it has order three. The <root condition for a multistep method> holds exactly for $-1\leq a<1$, and the convergent <A-stable> members are exactly $0\leq a<1$. At $a=0$ it reduces to the <trapezoidal rule> after removal of a zero root. At $a=1$ a repeated root one destroys <convergence of a numerical method> of the original recurrence despite a common <polynomial> factor and a formally vanishing second-order residual.
-
-= Adams-Bashforth method
-{c}
-{parent=Linear multistep method}
-{title2=$y_{n+1}=y_n+h(3f_n-f_{n-1})/2$}
-
-An explicit <linear multistep method> that integrates a polynomial extrapolation of the past derivative values. The displayed two-step member is second order in time: the linear interpolant through $f_{n-1},f_n$, integrated over the next step, gives coefficients $3/2,-1/2$. For a spatially discretized partial differential equation, the spatial error must also be included in the total local defect.
-
-= Adams-Bashforth stability for centered diffusion
-{c}
-{parent=Adams-Bashforth method}
-{title2=$0\leq\Delta t/(\Delta x)^2\leq1/4$}
-
-For centered-space diffusion, a <Fourier mode> gives $z^2-(1-3a/2)z-a/2=0$, with $a=4\mu\sin^2(\theta/2)$. For $a>0$ the roots have opposite signs, the positive root lies in $(0,1)$, and the negative root lies in $[-1,0)$ exactly when $P(-1)=2-2a\geq0$. At $a=0,1$ the unit-modulus roots are simple. Hence the <root condition for a multistep method> holds for every Fourier frequency exactly when $\mu\leq1/4$. Under fixed $\mu$, the unscaled one-step defect is $-\Delta t^2u_{xxxx}/(12\mu)+O(\Delta t^3)$; dividing by the step changes its order to $O(\Delta t)$.
-
-= Common-factor cancellation defect in a multistep recurrence
-{parent=Linear multistep method}
-
-Canceling a common factor of the characteristic polynomials changes the allowed starting relations and can remove a parasitic mode rather than prove stability of the original recurrence. For example $\rho=(\zeta-1)^2$ and $\sigma=(\zeta^2-1)/2$ fail <zero-stability>. On $y'=0$, the original recurrence admits $y_n=y_0+n(y_1-y_0)$; starting perturbations $y_1-y_0=\sqrt h$ vanish but give divergent error at fixed positive time. The canceled one-step recurrence excludes these data, so its stability cannot be assigned to the original scheme.
-
-= Trapezoidal-BDF two-step family
-{parent=Linear multistep method}
-{title2=$\rho(\zeta)=\zeta^2-\alpha\zeta-(1-\alpha),\quad\sigma(\zeta)=(1-\alpha/4)\zeta^2+1-3\alpha/4$}
-
-This real-parameter <linear multistep method> has formal order two except at the degenerate value $\alpha=2$, where its local symbol vanishes to fourth degree. The zero-stability roots are $1$ and $\alpha-1$, so it is convergent exactly for $0\leq\alpha<2$. Every convergent member is <A-stable>: the <boundary-locus test for multistep A-stability> gives nonnegative real part $\alpha(2-\alpha)(1-\cos\theta)^2/(2|\sigma(e^{i\theta})|^2)$, with no unit-circle denominator zero for $0<\alpha<2$. At $\alpha=0$ the two interlaced sequences obey a trapezoidal step of length $2h$. At $\alpha=4/3$ it is the <BDF2 method>. The endpoint two fails the <root condition for a multistep method> even though canceling a common polynomial factor resembles the <trapezoidal rule>.
-
-= Multiderivative multistep method
-{parent=Linear multistep method}
-
-A multiderivative multistep method uses higher time derivatives as well as values and first derivatives from several time levels. For an autonomous <ordinary differential equation> $y'=f(y)$, the second time derivative is $y''=f'(y)f(y)$ by the <chain rule>. Its <local truncation error> must include the higher-derivative terms. Consequently the usual second-order barrier for <A-stable> <linear multistep methods>, which only use first derivatives, does not apply.
-
-= Symmetric sixth-order two-derivative method
-{parent=Multiderivative multistep method}
-{title2=$y_{n+1}-\frac7{15}hf_{n+1}+\frac1{15}h^2g_{n+1}=y_{n-1}+\frac h{15}(16f_n+7f_{n-1})+\frac1{15}h^2g_{n-1}$}
-
-For $y'=f(y)$ and $g=f'f$, inserting a smooth exact solution into the displayed recurrence gives defect $h^7y^{(7)}(t_n)/4725+O(h^9)$. This follows by expanding $2\sinh z-(14/15)z\cosh z-(16/15)z+(2/15)z^2\sinh z$. The terms through $z^6$ vanish and the $z^7$ coefficient is nonzero. Its zero-step polynomial is $\zeta^2-1$, whose roots are simple and of unit modulus. Thus it is <zero-stable> and has order six, provided starting values and derivative evaluations have corresponding accuracy.
-
-= Symmetric two-step two-derivative formula
-{parent=Multiderivative multistep method}
-{title2=$\alpha=7/15,\quad\beta=1/15,\quad\gamma=16/15$}
-
-For the <multiderivative multistep method> $y_{n+1}-\alpha h f_{n+1}+\beta h^2g_{n+1}=\gamma h f_n+y_{n-1}+\alpha h f_{n-1}+\beta h^2g_{n-1}$, with $g=f'f$, centered expansion gives defect coefficients $2-2\alpha-\gamma$, $1/3-\alpha+2\beta$, and $1/60-\alpha/12+\beta/3$ at powers $h,h^3,h^5$. Their simultaneous vanishing gives the displayed parameters. The next coefficient is $1/4725$ at $h^7$, so the formal order is six. Reflection symmetry removes every even defect power. The method satisfies fifth-order conditions but cannot have exact order five.
-
-= Bounded-root stability set of the symmetric two-derivative formula
-{parent=Symmetric two-step two-derivative formula}
-{title2=$z=iy,\quad y^4-45y^2+225>0$}
-
-For the <symmetric two-step two-derivative formula>, the closed-disk <root condition for a multistep method> fails off the imaginary axis. Positive real part makes the product of root moduli exceed one; negative real part fails the <complex quadratic Schur criterion>, as in the <empty strict decay domain of the symmetric two-derivative formula> proof. On $z=iy$, write $D=15-y^2-7iy=|D|e^{i\delta}$ and set $\xi=i e^{-i\delta}\eta$. The <amplification polynomial> becomes $\eta^2-16y\eta/|D|+1=0$. Its two roots are distinct and on the <unit circle> exactly when $|16y/|D||<2$, or $y^4-45y^2+225>0$. Thus the bounded-root set consists of the imaginary intervals $|y|<\sqrt{(45-15\sqrt5)/2}$ and $|y|>\sqrt{(45+15\sqrt5)/2}$, including $y=0$ and excluding the double-root endpoints. In particular, the set is unbounded. Unit-modulus oscillations are bounded but do not tend to zero.
-
-= Empty strict decay domain of the symmetric two-derivative formula
-{parent=Symmetric two-step two-derivative formula}
-{title2=$\mathcal D_{\rm decay}=\varnothing$}
-
-On the <Dahlquist test equation>, write the <amplification polynomial> as $D\xi^2-16z\xi-A$, where $D=z^2-7z+15$ and $A=z^2+7z+15$. The identity $|A|^2-|D|^2=28\operatorname{Re}z(|z|^2+15)$ shows that both <roots of a polynomial> can lie inside the open <unit disk> only if $\operatorname{Re}z<0$. But the <complex quadratic Schur criterion> would then require $32|\operatorname{Re}z|(|z|^2+15)<28|\operatorname{Re}z|(|z|^2+15)$, which is impossible. Thus the <strict linear stability domain> is empty. This concerns robust damping of all modes, rather than convergence on fixed time intervals or the <bounded-root stability set of the symmetric two-derivative formula>.
-
-= Negative-real instability of the symmetric two-derivative formula
-{parent=Symmetric two-step two-derivative formula}
-{title2=$F_z(-1)=2z<0$}
-
-On the <Dahlquist test equation>, the <symmetric two-step two-derivative formula> has amplification polynomial $F_z(w)=(z^2-7z+15)w^2-16zw-(z^2+7z+15)$. For every real $z<0$, its leading coefficient is positive and $F_z(-1)=2z<0$, whereas $F_z(w)\to+\infty$ as $w\to-\infty$. The <intermediate value theorem> therefore gives a real root below minus one. Thus the method is not <A-stable>, without any appeal to a multistep order barrier.
-
-= A-stable third-order two-step multiderivative method
-{parent=Multiderivative multistep method}
-{c}
-{title2=$7y_{n+2}-6hy'_{n+2}+2h^2y''_{n+2}=8y_{n+1}-y_n$}
-
-The endpoint expansion of this <multiderivative multistep method> has unscaled defect $h^4y^{(4)}/3+O(h^5)$ and <zero-stability> roots $1,1/7$, giving third-order convergence with suitably accurate starting values. On the <Dahlquist test equation> its amplification roots obey $(7-6z+2z^2)\zeta^2-8\zeta+1=0$. The <complex quadratic Schur criterion> puts both roots in the open unit disk for $\operatorname{Re}z<0$, and only the simple root one reaches the boundary at $z=0$. Thus it is <A-stable>; its higher derivative places it outside the hypotheses of the <second Dahlquist barrier>.
-
-= Convergence of a zero-stable multiderivative method
-{parent=Multiderivative multistep method}
-
-For a fixed-step <multiderivative multistep method>, the ordinary <zero-stability> root condition still controls propagation of the starting errors when all derivative evaluation maps are uniformly <Lipschitz continuous> on the relevant bounded region. A local defect $O(h^{p+1})$ then yields global error $O(h^p)$ over a fixed time interval, provided the starting errors are $O(h^p)$ and the implicit updates use the nearby solution branch.
-
-For example, writing the numerical error equation as $\rho(E)e_n=hF_h(e_{n+s})+d_n$, with $F_h$ uniformly <Lipschitz continuous>, a bounded impulse response for the <root condition for a multistep method> gives
-$$
-\max_{j\leq n}\|e_j\|
-\leq C\left(\max_{j<s}\|e_j\|+\sum_{j<n}\|d_j\|\right)
-+Ch\sum_{j\leq n}\max_{i\leq j}\|e_i\|.
-$$
-Absorbing the last current-step term for small $h$ and applying the <discrete Gronwall inequality> gives the stated order. The higher derivatives enter through $F_h$, whose bound stays uniform as $h\to0$.
-
-= Zero-stability
-{parent=Linear multistep method}
-{wiki}
-
-= Zero-stable
-{synonym}
-
-Zero-stability requires the roots of the first characteristic polynomial to lie in the closed unit disc, with unit-modulus roots simple.
-
-= Root condition for a multistep method
-{parent=Zero-stability}
-
-The root condition is the polynomial criterion equivalent to zero-stability for a linear multistep method.
-
-= Parasitic amplification root
-{parent=Root condition for a multistep method}
-
-An amplification root of a <multistep method> is parasitic when it represents an additional numerical mode rather than the principal mode approximating the exact differential-equation flow. For a consistent method the principal root starts at one as the step tends to zero, while other roots can start elsewhere. A simple parasitic root on the unit circle is compatible with <zero-stability>, but its motion outside the circle for a negative test parameter can destroy <absolute stability>. Fixed-time convergence and all-time damping must be distinguished.
-
-= Centered two-step discretization of exponential decay
-{parent=Parasitic amplification root}
-{title2=$\rho_\pm=-Kh\pm\sqrt{1+K^2h^2}$}
-
-Replacing the derivative in $x'=-Kx$ by a <central finite difference> gives $x_{n+1}+2Khx_n-x_{n-1}=0$. Its principal root is $\rho_+=e^{-\operatorname{arsinh}(Kh)}$, while the <parasitic amplification root> is $\rho_-=-e^{\operatorname{arsinh}(Kh)}$. On a fixed time interval, $A_h\rho_+^n+B_h\rho_-^n$ converges uniformly to $Ce^{-Kt}$ exactly when $A_h\to C$ and $B_h\to0$. A fixed nonzero parasitic amplitude alternates between two incompatible limits, but a vanishing starting error can converge despite the root's modulus exceeding one. This distinguishes fixed-time <numerical convergence> from long-time <absolute stability>.
-
-= Root stability of a cubic multistep polynomial
-{parent=Root condition for a multistep method}
-{title2=$\rho(w)=(w-1)(w^2+w+a)$}
-
-The polynomial $\rho(w)=(w-1)(w^2+w+a)$ satisfies the <root condition for a multistep method> exactly for $0\leq a\leq1$. For $a<0$ a root is below $-1$; for $a>1$ the quadratic root product forces a root outside the unit disc. The endpoints have simple unit-modulus roots, and the repeated root at $a=1/4$ is strictly inside. A consistent method with this polynomial is convergent throughout the closed interval.
-
-= Dahlquist equivalence theorem
-{parent=Linear multistep method}
-{c}
-{wiki}
-
-A consistent linear multistep method is convergent exactly when it is zero-stable.
-
-= Necessity of the root condition for multistep convergence
-{parent=Dahlquist equivalence theorem}
-
-For a <linear multistep method>, convergence for every set of consistent starting values requires the <root condition for a multistep method>. Apply the recurrence to $y'=0$ over $N$ steps. A root $\xi$ with $|\xi|>1$ gives the error mode $e_n=|\xi|^{-N}\xi^n$: its fixed-index starting errors vanish as $N\to\infty$, but $|e_N|=1$. A unit-modulus root of multiplicity $m\geq2$ instead gives $e_n=N^{-(m-1)}n^{m-1}\xi^n$, with the same failure. Repeated roots inside the unit disk are harmless because their polynomial growth is dominated by exponential decay.
-
-= Characteristic polynomials of a linear multistep method
-{title2=$\rho,\sigma$}
-{parent=Linear multistep method}
-
-For $\sum_{j=0}^s\alpha_jy_{n+j}=h\sum_{j=0}^s\beta_jf_{n+j}$, the characteristic polynomials are $\rho(\zeta)=\sum_j\alpha_j\zeta^j$ and $\sigma(\zeta)=\sum_j\beta_j\zeta^j$. Applied to $y'=\lambda y$, the amplification roots solve $\rho(\zeta)-h\lambda\sigma(\zeta)=0$.
-
-= Amplification polynomial of a multistep method
-{parent=Characteristic polynomials of a linear multistep method}
-{title2=$P_z(w)=\rho(w)-z\sigma(w)$}
-
-= Amplification polynomial
-{synonym}
-
-Applying a <linear multistep method> to the <Dahlquist test equation> with $z=h\lambda$ produces a constant-coefficient recurrence whose modes satisfy $P_z(w)=0$. <Absolute stability> requires the resulting <roots of a polynomial> to lie in the unit disk, with unit-modulus roots simple. Thus multistep stability depends on every recurrence mode, rather than a single one-step <stability function>.
-
-= Amplification root
-{parent=Amplification polynomial of a multistep method}
-{title2=$\xi(z)$}
-
-An amplification root is a <root of a polynomial> governing a geometric mode $y_n=\xi^n$ of a numerical recurrence on the <Dahlquist test equation>. Its <modulus> measures damping or growth per step. A repeated root produces additional modes such as $n\xi^n$; therefore a <unit-circle root> can be permitted by a bounded-root condition only when it is simple. The principal root approximates $e^z$ near zero, while additional roots can describe <parasitic amplification roots>.
-
-= Exterior roots of the derivative polynomial bound multistep stability
-{parent=Amplification polynomial of a multistep method}
-{title2=$\sigma(w_*)=0$, $|w_*|>1$}
-
-If the derivative <characteristic polynomial> $\sigma$ of a <linear multistep method> has a simple root outside the <unit disk> and keeps its degree in the limit, then its <absolute stability> region is bounded. Otherwise a stable sequence with $|z|\to\infty$ would give amplification polynomials $\sigma-\rho/z$ tending coefficientwise to $\sigma$. A root near the exterior root would persist by continuity, contradicting the <root condition for a multistep method>. This argument excludes stability at every sufficiently large complex $z$, not only along the negative real axis.
-
-= Order conditions for a linear multistep method
-{parent=Characteristic polynomials of a linear multistep method}
-
-A linear multistep method has order $p$ exactly when
-$$
-\sum_j\alpha_jj^q=q\sum_j\beta_jj^{q-1}
-$$
-for $0\leq q\leq p$, with the right side interpreted as zero for $q=0$, and the identity first fails at $q=p+1$.
-
-= Exponential-symbol order criterion for a multistep method
-{parent=Order conditions for a linear multistep method}
-{title2=$\rho(e^z)-z\sigma(e^z)=O(z^{p+1})$}
-
-The <Taylor expansion> of the exact-solution residual for a <linear multistep method> has the same coefficient sequence as
-$$
-\rho(e^z)-z\sigma(e^z).
-$$
-Vanishing through degree $p$ is therefore equivalent to order at least $p$. Exact order $p$ additionally requires a nonzero coefficient at degree $p+1$. This symbol conveniently collects all polynomial consistency and order conditions.
-
-= Adams–Moulton method
-{c}
-{parent=Linear multistep method}
-{wiki}
-
-An Adams–Moulton method is an implicit <linear multistep method> obtained by integrating an interpolation polynomial for the vector field that includes the new time level.
-
-= Second Dahlquist barrier
-{c}
-{parent=Linear multistep method}
-
-An irreducible A-stable linear multistep method has order at most two.
-
-This is an order restriction for an <A-stable> <linear multistep method>.
-
+\Include[linear-multistep-method]{parent=Numerical analysis}
 \Include[numerical-linear-algebra]{parent=Numerical analysis}
 
 = Linear stability domain
@@ -3736,7 +3160,98 @@ Integrate the <Lagrange polynomial> through values at all equally spaced nodes $
 {wiki}
 {title2=$\int_{a}^{a+2h}f\approx\frac h3[f(a)+4f(a+h)+f(a+2h)]$}
 
-<Simpson's rule> integrates the quadratic interpolant through two endpoints and their midpoint. It is exact also on cubic <polynomials>. On $[0,2]$, define the raw kernel $K(t)=L[(x-t)_+^3]$, where $L$ is integral minus the rule. Then $K(t)=-t^3(4-3t)/12$ for $0\leq t\leq1$ and $K(t)=-(2-t)^3(3t-2)/12$ for $1\leq t\leq2$. It is strictly negative inside the interval and integrates to $-1/15$. The <Peano kernel theorem> therefore gives the sharp bound $|L(f)|\leq\|f^{(4)}\|_\infty/90$; $f(x)=x^4/24$ attains equality. Scaling to endpoint spacing $h$ gives $h^5/90$. The normalized <Peano kernel> is $K/3!$, so the external factorial must be omitted when using that normalization.
+<Simpson's rule> approximates a <definite integral> by integrating the <quadratic polynomial> obtained by <polynomial interpolation> at two endpoints and their <midpoint>. For an <interval> $[a,b]$ with $a<b$, write $m=(a+b)/2$ and $h=(b-a)/2$. The three <quadrature nodes> are $a,m,b$, and the <quadrature rule> is
+$$
+S(f)=\frac h3\bigl[f(a)+4f(m)+f(b)\bigr].
+$$
+Thus its <quadrature weights> are $h/3,4h/3,h/3$. Their sum is $2h=b-a$, as required for exactness on <constant functions>. This is the three-node <Newton-Cotes closed quadrature>; its <degree of precision of a quadrature rule> is three, even though the interpolating <polynomial> has <polynomial degree> at most two.https://dlmf.nist.gov/3.5.ii[§3.5(ii), equation 3.5.6: elementary Simpson rule and its fourth-derivative remainder]{ref}
+
+For an original worked example, take the <cubic polynomial> $f(x)=x^3-2x+4$ on the <interval> $[-1,2]$. Here $m=1/2$ and $h=3/2$, so the <function evaluations> give
+$$
+f(-1)=5,\qquad f(1/2)=\frac{25}{8}=3.125,\qquad f(2)=8.
+$$
+<Simpson's rule> gives
+$$
+S(f)=\frac12\left(5+4\cdot\frac{25}{8}+8\right)=\frac{51}{4}=12.75.
+$$
+An <antiderivative> supplies an independent exact <definite integral>:
+$$
+\int_{-1}^{2}(x^3-2x+4)\,dx
+=\left[\frac{x^4}{4}-x^2+4x\right]_{-1}^{2}
+=\frac{51}{4}.
+$$
+The <quadratic polynomial> through the same <quadrature nodes> is $p_2(x)=\tfrac32x^2-\tfrac12x+3$. It differs from $f$ between the <quadrature nodes>, but its <definite integral> agrees exactly. The picture shows why: the signed <polynomial interpolation error> has two lobes with opposite <integrals>.
+
+\Image[simpson-cubic-error-cancellation.png]
+{title=An original cubic and its quadratic interpolant have the same integral because the two interpolation-error lobes have signed integrals plus and minus 81 over 64}
+
+Three <function evaluations> therefore capture more information about an <integral> than about the whole <function>. When an <antiderivative> is unavailable, <composite Simpson's rule> repeats this inexpensive local construction over a <partition of an interval>. For a sufficiently smooth <function>, halving the node spacing reduces its <truncation error> by approximately a factor of sixteen.
+
+= Cubic exactness of Simpson's rule
+{parent=Simpson's rule}
+{title2=$S(p)=\int_a^b p(x)\,dx\quad(\deg p\leq3)$}
+
+<Polynomial interpolation> makes <Simpson's rule> exact for every <polynomial> of <polynomial degree> at most two. To understand the extra <polynomial degree>, centre the coordinate at the <midpoint>: $y=x-m$, with endpoints $-h,h$. For any <cubic polynomial> $p$, let $p_2$ be its interpolating <quadratic polynomial>. The <polynomial> $p-p_2$ vanishes at all three <quadrature nodes>, so
+$$
+p(x)-p_2(x)=A(x-a)(x-m)(x-b)=A y(y^2-h^2),
+$$
+where $A$ is the coefficient of $x^3$ in $p$. As a <function> of $y$, this is an <odd function>, whose <integral> over the symmetric <interval> $[-h,h]$ is zero. Hence integrating $p_2$ also integrates $p$ exactly. This is the symmetry mechanism in the <nodal-polynomial criterion for quadrature exactness>.
+
+In the worked example, the <polynomial> difference factors as
+$$
+f(x)-p_2(x)=(x+1)(x-1/2)(x-2)
+=y^3-\frac94y.
+$$
+Its <definite integrals> on $[-1,1/2]$ and $[1/2,2]$ are respectively $81/64$ and $-81/64$. Their cancellation concerns signed <integrals>, rather than pointwise accuracy of <polynomial interpolation>.
+
+The <degree of precision of a quadrature rule> stops at three: on the same <interval>, the <monomial> $x^4$ gives $S(x^4)=69/8$, whereas $\int_{-1}^{2}x^4\,dx=33/5$. Their difference, exact <integral> minus approximation, is $-81/40$.
+
+= Composite Simpson's rule
+{parent=Simpson's rule}
+{title2=$S_n$}
+
+<Composite Simpson's rule> applies <Simpson's rule> to consecutive pairs of equal subintervals. Choose a positive even <integer> $n\geq2$, put $h=(b-a)/n$, and take <quadrature nodes> $x_j=a+jh$ for $j=0,\ldots,n$. There are $n$ subintervals, $n/2$ two-subinterval panels, and $n+1$ <quadrature nodes>. Then
+$$
+S_n=\frac h3\left[f(x_0)+4\sum_{j=1}^{n/2}f(x_{2j-1})+2\sum_{j=1}^{n/2-1}f(x_{2j})+f(x_n)\right].
+$$
+The second <sum> is empty when $n=2$, recovering one panel. The <quadrature weights>, before multiplication by $h/3$, are $1,4,2,4,\ldots,2,4,1$. Every interior even-indexed <quadrature node> is an endpoint of two panels, so its two endpoint contributions add to two; every odd-indexed <quadrature node> is a <midpoint> with weight four. An odd $n$ cannot be covered by these pairs. The displayed formula requires equal spacing.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others/5.6 Numerical integration>[§5.6, equations 5.6.20–5.6.21: elementary and composite Simpson formulas]{ref}
+
+For the <exponential function> on the <interval> $[0,1]$, the exact <integral> is $I=e-1$. With $n=2$, the formula gives $S_2\approx1.718861151876593$, an overestimate of about $5.793234175\times10^{-4}$. With $n=128$, it gives $S_{128}\approx1.718281828494607$, an overestimate of about $3.556140064\times10^{-11}$. The figure shows the intermediate refinements and compares every computed <absolute error> with the <error bound for composite Simpson's rule>.
+
+\Image[composite-simpson-exponential-convergence.png]
+{title=Computed composite Simpson errors for the exponential function on zero to one approach fourth-order convergence; the dashed curve is the rigorous bound e over 180 n to the fourth power}
+
+For this <exponential function>, a <geometric series> also gives a compact independent formula. With $q=e^h$ and $h=1/n$, summing the $n/2$ panel contributions yields
+$$
+S_n=(e-1)\frac{h(1+4q+q^2)}{3(q^2-1)}.
+$$
+A <Taylor series> at $h=0$ gives
+$$
+S_n-I=(e-1)\left(\frac{h^4}{180}-\frac{h^6}{1512}+O(h^8)\right).
+$$
+The <Big O notation> describes the remaining terms as $h$ tends to zero. Consequently $(S_n-I)/(S_{2n}-I)$ tends to sixteen: the computed ratios increase from about $15.65169$ to $15.99965$. Fourth-order <truncation error> is also obtained by <Richardson extrapolation> of the <composite trapezoidal rule>.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others/5.6 Numerical integration>[§5.6.2, equations 5.6.14–5.6.15: Simpson extrapolation and fourth-order error]{ref}
+
+= Error bound for composite Simpson's rule
+{parent=Composite Simpson's rule}
+{title2=$|I-S_n|\leq M(b-a)h^4/180$}
+
+Suppose $f$ has a fourth <derivative> that is a <continuous function> on the <interval> $[a,b]$, and $|f^{(4)}(x)|\leq M$ there. With $I=\int_a^b f(x)\,dx$, the signed <quadrature error> here is $I-S_n$. Then, for some <point> $\xi\in(a,b)$,
+$$
+I-S_n=-\frac{b-a}{180}h^4 f^{(4)}(\xi),\qquad
+|I-S_n|\leq\frac{M(b-a)}{180}h^4.
+$$
+In particular, a strictly positive fourth <derivative> makes $I-S_n<0$: <composite Simpson's rule> overestimates the <integral>.https://dlmf.nist.gov/3.5.ii[§3.5(ii), equations 3.5.6–3.5.8: continuous fourth derivative, elementary remainder, composite formula and signed error]{ref}
+
+The bound's scale follows by adding the panel errors. A panel of width $2h$ has signed <quadrature error> $-h^5 f^{(4)}(\xi_j)/90$ and <absolute error> at most $Mh^5/90$. There are $(b-a)/(2h)$ panels, so the <triangle inequality> gives $M(b-a)h^4/180$. The <intermediate value theorem> for the continuous fourth <derivative> replaces the average of the panel values $f^{(4)}(\xi_j)$ by a single value $f^{(4)}(\xi)$, giving the signed formula.
+
+The underlying single-panel calculation can be seen through the <Peano kernel theorem>. On the <interval> $[0,2]$, define the raw <Peano kernel> $K(t)=L[(x-t)_+^3]$, where $L$ is <integral> minus <Simpson's rule> and $(x-t)_+=\max(x-t,0)$ is the <positive part>. Then $K(t)=-t^3(4-3t)/12$ for $0\leq t\leq1$ and $K(t)=-(2-t)^3(3t-2)/12$ for $1\leq t\leq2$. It is strictly negative inside the <interval> and has <integral> $-1/15$. Thus
+$$
+L(f)=\frac1{3!}\int_0^2 K(t)f^{(4)}(t)\,dt,\qquad
+|L(f)|\leq\frac{\|f^{(4)}\|_\infty}{90}.
+$$
+The <uniform norm> $\|f^{(4)}\|_\infty$ bounds the fourth <derivative>. The <polynomial> $f(x)=x^4/24$ attains equality. Scaling to endpoint spacing $h$ multiplies the coefficient by $h^5$, giving the sharp single-panel bound $h^5\|f^{(4)}\|_\infty/90$. The normalized <Peano kernel> is $K/3!$, so the external <factorial> must be omitted when using that normalization.
+
+For the <exponential function> on $[0,1]$, $f^{(4)}(x)=e^x$, so $M=e$ and the bound is $e/(180n^4)$. Its leading actual <absolute error> is $(e-1)/(180n^4)$, smaller than the bound because a uniform upper bound on the fourth <derivative> does not use its variation across the <interval>. The theorem bounds <truncation error> with exact <function evaluations>; sample errors and <roundoff error> are additional contributions, as described by <noise sensitivity of a quadrature rule>.
 
 = Convergence of positive quadrature on continuous functions
 {parent=Quadrature rule}
@@ -3796,3 +3311,15 @@ The <QR algorithm> computes <eigenvalues> through repeated <QR decompositions> a
 {wiki}
 
 An <iterative method> approximates a solution by repeatedly updating an initial guess. In <numerical linear algebra>, a <stationary iterative method for a linear system> uses a fixed iteration map; other iterations can change their update rule or search space at each step.
+
+= Forward error
+{parent=Numerical analysis}
+{title2=$\widehat{x}-x_*$}
+
+The <forward error> is the difference between a computed result $\widehat{x}$ and the exact result $x_*$ for the original data. Its size can be measured by a <norm>, or relative to $\|x_*\|$ when $x_*\ne0$. A <linear-system residual> measures the equation imbalance instead; the <condition number> relates that imbalance to the <forward error>.
+
+= Backward error
+{parent=Numerical analysis}
+{title2=$\delta d$}
+
+A <backward error> measures a perturbation $\delta d$ of the input data for which the computed result is an exact solution of the perturbed problem. Specify which data may change and which <norm> measures the perturbation. For a <linear system> $A\widehat{x}=b$, holding $A$ fixed gives $\delta b=A\widehat{x}-b$, the negative <linear-system residual>. The corresponding <forward error> also depends on the <condition number>.

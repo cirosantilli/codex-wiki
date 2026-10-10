@@ -969,7 +969,85 @@ Given finitely encoded nonnegative integers $s_i$ and target $t$, the subset sum
 {c}
 {synonym}
 
-The Boolean satisfiability problem asks whether a Boolean formula has an assignment making it true.
+The <Boolean satisfiability problem> asks whether a <Boolean formula> has an assignment making it true. A complete assignment is a <Boolean valuation>: it gives every <Boolean variable> a <truth value>, consistently at all occurrences. A <satisfying assignment>, also called a <model of a Boolean formula>, makes the entire <Boolean formula> true. A solver's answer `SAT` asserts that at least one <satisfying assignment> exists; `UNSAT` asserts that the input is an <unsatisfiable Boolean formula>. These are statements about existence, rather than the <truth value> under one particular <Boolean valuation>.
+
+For <conjunctive normal form>, or <CNF>, write
+$$
+F=C_1\land\cdots\land C_m,
+\qquad C_i=\ell_{i1}\lor\cdots\lor\ell_{ik_i}.
+$$
+Each <Boolean literal> $\ell$ is a <Boolean variable> or its <logical negation>. Each <Boolean clause> uses inclusive <logical disjunction>: one true <Boolean literal> suffices. The outer <logical conjunction> requires every <Boolean clause> to succeed under the same <Boolean valuation>. Choosing a different <Boolean valuation> for each <Boolean clause> would answer a different question.
+
+Consider the original three-<Boolean variable> example
+$$
+F=(x\lor y)\land(\neg x\lor z)\land(\neg y\lor\neg z),
+\qquad C_1=x\lor y,\quad C_2=\neg x\lor z,\quad C_3=\neg y\lor\neg z.
+$$
+At the <Boolean valuation> $(x,y,z)=(0,1,0)$, the <Boolean literals> in $C_1$ have values $(0,1)$, those in $C_2$ have values $(1,0)$, and those in $C_3$ have values $(0,1)$. Every <Boolean clause> therefore has <truth value> one, so $F$ has <truth value> one: this is a <satisfying assignment>.
+
+\Image[satisfiability-assignment-clause-evaluation.png]
+{title=An original <satisfying assignment> evaluated through <Boolean literals>, three <Boolean clauses>, and their <logical conjunction>}
+
+The complete <truth table> has $2^3=8$ <Boolean valuations>. Exactly two are <satisfying assignments>: $(0,1,0)$ and $(1,0,1)$. In particular, $(1,1,1)$ satisfies the first two <Boolean clauses> but falsifies the third, so satisfying most <Boolean clauses> does not suffice for <SAT>. That different objective belongs to <maximum satisfiability>.
+
+\Image[satisfiability-eight-assignment-truth-table.png]
+{title=All eight <Boolean valuations> of the original <CNF> example, with its two <satisfying assignments> highlighted}
+
+A short proof of completeness avoids listing all eight rows. If $x=0$, the <Boolean clause> $C_1$ forces $y=1$, after which $C_3$ forces $z=0$; $C_2$ is already true. If $x=1$, $C_2$ forces $z=1$, after which $C_3$ forces $y=0$; $C_1$ is already true. These two cases exhaust the <truth values> of $x$ and produce precisely the two <satisfying assignments> above.
+
+<Verifying a satisfying assignment> and finding a <satisfying assignment> are different tasks. Given a candidate, evaluate the <Boolean formula> once; finding a candidate requires choosing compatible <truth values> across all its <Boolean clauses>. The <Cook-Levin theorem> says that general <SAT> is <NP-complete>, even though a proposed <satisfying assignment> is efficiently checkable. Its proof encodes a bounded <nondeterministic computation> as a <Boolean formula> whose <satisfying assignments> describe accepting computations. <Stephen A. Cook>'s 1971 paper established this connection between <computational complexity theory> and <propositional logic>.<The Complexity of Theorem-Proving Procedures by Stephen A. Cook>[The Complexity of Theorem-Proving Procedures by Stephen A. Cook, 1971, §1, Theorem 1 and proof, pp. 2–3 of the revision-3 transcription: CNF encodes accepting computations]{ref}
+
+A concrete use is checking finite configuration rules. Let $x$ mean that an optional feature is enabled, $y$ that a fallback is selected, and $z$ that the feature's required component is installed. Require a feature or fallback, require the component whenever the feature is enabled, and forbid using the fallback with that component. <Logical implication> rewrites the second rule $x\to z$ as $\neg x\lor z$; <De Morgan's laws> rewrite the third rule $\neg(y\land z)$ as $\neg y\lor\neg z$. Their <logical conjunction> is exactly $F$, so its two <satisfying assignments> give the two allowed configurations. The usefulness of <SAT> lies in expressing local rules uniformly while demanding one globally consistent <Boolean valuation>. The conclusion concerns exactly these encoded rules.
+
+= Satisfying assignment
+{parent=Boolean satisfiability problem}
+{title2=$v\models F$}
+
+= Model of a Boolean formula
+{synonym}
+
+A <satisfying assignment> is a complete <Boolean valuation> $v$ for which a <Boolean formula> $F$ has <truth value> one, written $v\models F$. The notation describes a relation between the <Boolean valuation> and the <Boolean formula>. For the example in <Boolean satisfiability problem>, $(0,1,0)$ is a <model of a Boolean formula> $F$, whereas $(0,0,0)$ is not. <SAT> asks for existence of at least one <satisfying assignment>, rather than for every <Boolean valuation> to work; the latter condition makes $F$ a <tautology>.
+
+= Verifying a satisfying assignment
+{parent=Satisfying assignment}
+{title2=$O(n+m+L)$}
+
+For a <CNF> input with $n$ <Boolean variables>, $m$ <Boolean clauses>, and $L$ <Boolean literal> occurrences, first check that the supplied <Boolean valuation> gives each input <Boolean variable> exactly one <truth value>. Evaluate each <Boolean literal> by lookup or <logical negation>, each <Boolean clause> by <logical disjunction>, and the <Boolean formula> by <logical conjunction>. Indexed <Boolean variables> and constant-cost lookups give an $O(n+m+L)$ operation count; with a finite <binary string> encoding the check still takes <polynomial time>. Thus a <satisfying assignment> is a <certificate in computational complexity> for <SAT>, proving that <SAT> belongs to <NP>. Finding it by exhaustive checking can require $2^n$ candidate <Boolean valuations>; this enumeration cost is not a lower bound on every possible <SAT> <algorithm>.<CS 252, Lecture 8: Constraint Satisfaction Problems (Carnegie Mellon University)>[CS 252, Lecture 8: Constraint Satisfaction Problems, p. 3, §3 opening paragraph: assignments as certificates and membership in NP]{ref}
+
+= Unsatisfiable Boolean formula
+{parent=Boolean satisfiability problem}
+{title2=$\nexists v:\ v\models F$}
+
+An <unsatisfiable Boolean formula> has no <satisfying assignment>. For
+$$
+G=x\land\neg x,
+$$
+the <Boolean valuation> $x=0$ falsifies the first <Boolean clause>, and $x=1$ falsifies the second. Both possible <truth values> fail, proving `UNSAT`. Each <Boolean clause> alone has a <satisfying assignment>, but their <logical conjunction> does not: compatibility is the central issue. By contrast, finding just one failed <Boolean valuation> for a general <Boolean formula> only rejects that candidate. Finding one successful <Boolean valuation> proves `SAT`; proving `UNSAT` requires excluding every candidate, possibly with a compact argument rather than a full <truth table>.
+
+= Partial Boolean assignment
+{parent=Boolean satisfiability problem}
+{title2=$v:S\to\{0,1\},\quad S\subseteq\operatorname{Var}(F)$}
+
+A <partial Boolean assignment> gives <truth values> to some of a <Boolean formula>'s <Boolean variables>. An extension is a complete <Boolean valuation> agreeing on the assigned <Boolean variables>. In <CNF>, a <Boolean clause> containing a true assigned <Boolean literal> is already satisfied; a <Boolean clause> whose every <Boolean literal> is assigned false rules out all extensions. A <Boolean clause> with no true assigned <Boolean literal> and at least one unassigned <Boolean variable> is unresolved. An unresolved <Boolean clause> need not have a compatible extension with the other <Boolean clauses>.
+
+For $F$ in <Boolean satisfiability problem>, setting $x=y=0$ already falsifies $C_1$, so both choices of $z$ can be discarded. Setting only $x=0$ leaves $C_1$ unresolved and forces $y=1$ if a <satisfying assignment> is to survive; then $C_3$ forces $z=0$. Branching on an unassigned <Boolean variable> into its two <truth values> and discarding branches with a false <Boolean clause> is sound: every <satisfying assignment> follows one branch and cannot extend a false <Boolean clause>. If all branches are eliminated, the original <Boolean formula> is an <unsatisfiable Boolean formula>.
+
+= 2-satisfiability
+{parent=Boolean satisfiability problem}
+{wiki}
+{title2=$2\text{-SAT}$}
+
+= 2-SAT
+{c}
+{synonym}
+
+<2-satisfiability> restricts <SAT> to <CNF> in which each <Boolean clause> has at most two <Boolean literals>. The example in <Boolean satisfiability problem> is therefore a <2-SAT> instance. Unlike general <SAT> and <3-SAT>, <2-SAT> has a <polynomial-time algorithm>; its tractability concerns finding a <satisfying assignment> or deciding that none exists, not merely checking a candidate. <3-SAT> allows up to three <Boolean literals> per <Boolean clause> and is <NP-complete>, even though it includes many individually easy instances such as this one.<CS 252, Lecture 8: Constraint Satisfaction Problems (Carnegie Mellon University)>[CS 252, Lecture 8: Constraint Satisfaction Problems, pp. 1–2, §2 examples 1 and 3; p. 3, §3 classification items 1 and 3]{ref}
+
+The key <logical equivalence> is
+$$
+a\lor b\equiv(\neg a\to b)\land(\neg b\to a),
+$$
+where $a,b$ are <Boolean literals>. It expresses a two-<Boolean-literal> <Boolean clause> as two <logical implications>. Representing these <logical implications> as edges in a <directed graph> gives a route to the <polynomial-time algorithm>. In the example, $C_2$ says both $x\to z$ and $\neg z\to\neg x$: enabling the feature requires its component, and an absent component excludes the feature.
 
 = Integer programming formulation of satisfiability
 {parent=Boolean satisfiability problem}
@@ -1024,7 +1102,7 @@ A three-<literal> disjunction can be represented by ten unit or two-<literal> <c
 {c}
 {parent=Boolean satisfiability problem}
 
-A Boolean formula is a finite expression built from <Boolean variables> and <Boolean operations>. A choice of truth values determines its value. The <Boolean satisfiability problem> asks whether some choice makes it true.
+A <Boolean formula> is a finite expression built from <Boolean variables> and <Boolean operations>, equivalently a <propositional formula> with two-valued semantics. A <Boolean valuation> determines its <truth value>. In $(x\lor y)\land\neg x$, <logical negation> acts only on $x$, and the outer <logical conjunction> combines $x\lor y$ with $\neg x$. Occurrences of the same <Boolean variable> share one <truth value>. The <Boolean satisfiability problem> asks whether some <Boolean valuation> makes the <Boolean formula> true.
 
 = Disjunctive normal form
 {parent=Boolean formula}
@@ -1041,7 +1119,11 @@ A <Boolean formula> is in disjunctive normal form when it is a disjunction of co
 {title2=$\bigwedge_i\bigvee_j\ell_{ij}$}
 {parent=Boolean formula}
 
-A <Boolean formula> is in conjunctive normal form when it is a conjunction of <Boolean clauses>. It is true precisely when every clause is true; an empty conjunction is true. <3-SAT> restricts each clause to at most three <Boolean literals>.
+= CNF
+{c}
+{synonym}
+
+A <Boolean formula> is in <conjunctive normal form> when it is a <logical conjunction> of <Boolean clauses>. It is true precisely when every <Boolean clause> is true under the same <Boolean valuation>; an empty <logical conjunction> is true. For example, $(x\lor\neg y)\land(z)$ has two <Boolean clauses> with widths two and one. Width counts <Boolean literal> occurrences within a <Boolean clause>, whereas the <Boolean clause> count counts the conjuncts. <2-SAT> bounds width by two, and <3-SAT> bounds width by three. A <Boolean formula> with an empty <Boolean clause> is an <unsatisfiable Boolean formula>.
 
 = Tseytin transformation
 {parent=Conjunctive normal form}
@@ -1068,7 +1150,9 @@ Introduce a <Boolean variable> for each gate output and impose its equivalence t
 = Clauses of a Boolean formula
 {synonym}
 
-A clause is an expression $\ell_1\lor\cdots\lor\ell_k$ formed from <Boolean literals>, true when at least one literal is true. The empty clause is false. Repeating a literal does not change the truth value. A <conjunctive normal form> formula is a conjunction of these clauses.
+A <Boolean clause> is an expression $\ell_1\lor\cdots\lor\ell_k$ formed from <Boolean literals>, true when at least one <Boolean literal> is true. The empty <Boolean clause> is false. Repeating a <Boolean literal> does not change the <truth value>. A <CNF> <Boolean formula> is a <logical conjunction> of these <Boolean clauses>.
+
+For $(\neg x\lor z)$, the only failing pair is $(x,z)=(1,0)$: its two <Boolean literals> then both have <truth value> zero. The one-<Boolean-literal> <Boolean clause> $(x)$ requires $x=1$. A <Boolean clause> containing both $x$ and $\neg x$ is a <tautology>, since one of those <Boolean literals> is true under every <Boolean valuation>. These observations separate <Boolean clause> satisfaction from the simultaneous satisfaction required by <SAT>.
 
 = Boolean literal
 {c}
@@ -1078,14 +1162,14 @@ A clause is an expression $\ell_1\lor\cdots\lor\ell_k$ formed from <Boolean lite
 = Literal
 {synonym}
 
-A Boolean literal is a <Boolean variable> $u$ or its negation $\neg u$. The two literals have opposite truth values. A <Boolean clause> combines literals, and a <Boolean-pair colouring gadget> represents a variable and its negation by two vertices with opposite Boolean colours.
+A <Boolean literal> is a <Boolean variable> $u$ or its <logical negation> $\neg u$. The two <Boolean literals> have opposite <truth values>: a <Boolean valuation> $v$ gives $v(\neg u)=1-v(u)$ when false and true are encoded as zero and one. Thus $u=0$ makes the positive <Boolean literal> $u$ false and the negative <Boolean literal> $\neg u$ true. A <Boolean clause> combines <Boolean literals>, and a <Boolean-pair colouring gadget> represents a <Boolean variable> and its <logical negation> by two <vertices> with opposite Boolean colours.
 
 = Boolean variable
 {c}
 {title2=$u\in\{0,1\}$}
 {parent=Boolean formula}
 
-A Boolean variable takes one of two truth values. It is an input to a <Boolean formula>; a <Boolean literal> uses the variable either positively or negated.
+A <Boolean variable> takes one of two <truth values>, false or true, encoded as zero or one. It is an input to a <Boolean formula>; a <Boolean literal> uses the <Boolean variable> either positively or with <logical negation>. A <Boolean valuation> assigns one <truth value> to each distinct <Boolean variable>, so three distinct <Boolean variables> give eight possible complete assignments regardless of how often each appears.
 
 = 3-SAT
 {c}
@@ -1384,6 +1468,11 @@ The Razborov–Rudich natural-proofs barrier says that the existence of sufficie
 
 A pseudorandom function family is an efficiently computable keyed family whose oracle behavior cannot be distinguished from that of a uniformly random function by the specified class of resource-bounded algorithms.
 
+= Arithmetic circuit
+{parent=Circuit complexity}
+
+An arithmetic circuit is a <directed acyclic graph> whose input nodes are <variables> or constants in a <field>, and whose internal gates perform <addition>, <subtraction>, or <multiplication>. Gates may reuse earlier outputs, so the circuit can represent a <polynomial> without listing all its <monomials>.
+
 = Counting complexity
 {parent=Computational complexity theory}
 {wiki}
@@ -1449,6 +1538,9 @@ The Karp–Lipton theorem states that $\mathbf{NP}\subseteq\mathbf P/\mathrm{pol
 = Primality testing
 {parent=Computational complexity theory}
 {wiki}
+
+= Primality test
+{synonym}
 
 Primality testing is the decision problem of determining whether an input integer is a <prime number>.
 

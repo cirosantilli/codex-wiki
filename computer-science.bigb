@@ -20,6 +20,12 @@ The beauty is that choosing a representation can change what is feasible. Findin
 
 <Software> consists of instructions and associated data used by a <computer>. A <spreadsheet> is <software> that stores <spreadsheet cells> and evaluates their <spreadsheet formulas>.
 
+= Software testing
+{parent=Software}
+
+= Test coverage
+{parent=Software testing}
+
 = Machine word
 {parent=Computer science}
 
@@ -172,165 +178,109 @@ Homepage: https://emreyolcu.com/
 = Work by Michael R. Clarkson
 {parent=Michael R. Clarkson}
 
-= Computer graphics
-{parent=Computer science}
-{wiki}
-
-= Raster graphics
-{parent=Computer graphics}
-{wiki}
-
-= Raster image
-{synonym}
-
-<Raster graphics> describe a picture by an <array> of <pixels> on a grid. For a rectangular image of width $W$ and height $H$, write its stored values as $p_{rc}$, with $0\leq r<H$ and $0\leq c<W$. A <grayscale> <pixel> can have one shade value; a colour <pixel> can have several component values. The grid specifies where values belong, while the encoding specifies what those values mean. A <raster image> therefore needs dimensions and an interpretation of its samples, not just a string of numbers.
-
-The appealing feature is that pictures become explicit data: selecting a rectangle selects entries of an <array>; comparing two images compares their <pixel> values; <image compression> can exploit repeated or related values. <Raster sampling and reconstruction> explains why the stored grid and the displayed picture are different objects. A square drawn around a sample is one display convention, not a claim that the original scene consisted of little squares.
-
-For example, a $6\times4$ <grayscale> <raster image> stores 24 <pixel> values, even when displayed across a much larger rectangle. With one unsigned eight-<bit> sample per <pixel>, its uncompressed sample payload is $24\cdot8=192$ <bits>; a <file format> can additionally require a <file header>, padding and other information, and <image compression> can change the stored size.
-
-Enlarging that image can copy each <pixel> into a block through <nearest-neighbor interpolation>, or infer intermediate values through <interpolation>. Either procedure supplies a reconstruction rule; neither determines which unrecorded detail was present in the original. <Vector graphics> use a different representation, specifying geometric objects to be rendered onto a chosen grid. Re-rendering such a description and enlarging an existing <raster image> are different operations.
-
-= Pixel
-{parent=Raster graphics}
-{wiki}
-
-A <pixel> is one picture element at an indexed position in a <raster image>. It can contain a single <grayscale> value or several colour components. The word can also refer to a physical display element; the indexed element of the stored image is the meaning used here. One stored <pixel> need not occupy exactly one physical display element when the image is resized. Microsoft's bitmap documentation likewise distinguishes an image's grid and its numerical colour representation.https://learn.microsoft.com/en-us/windows/win32/gdi/about-bitmaps[Microsoft Learn, About Bitmaps: pixel grids and bitmap representations]{ref}
-
-Separate \i[position] from \i[value]: <raster sampling and reconstruction> concerns the spatial grid, while <sample depth> concerns how many <bits> encode each component. Four times as many <pixels> can describe a finer grid without improving the <quantization (signal processing)> of any value. Conversely, more <bits> per sample can distinguish more shades without locating an edge more precisely.
-
-In the binary example under <run-length encoding>, one <bit> per <pixel> selects black or white. In the <grayscale> example under <lossy block averaging>, eight <bits> per <pixel> select one of 256 codes. Calling them codes keeps their numerical values distinct from the physical light that a display emits.
-
-= Sample depth
-{parent=Pixel}
-{title2=$b,\quad 2^b$}
-
-The <sample depth> $b$ is the number of <bits> allocated to one stored sample. An unsigned $b$-<bit> <integer> has $2^b$ codes, $0,\ldots,2^b-1$. This is per component, not automatically per <pixel>: three eight-<bit> components require 24 payload <bits> per <pixel>. A <raster image> with $W H$ <pixels> and $k$ such components requires $WHkb$ payload <bits> before <data compression>, padding or a <file header>.
-
-For a toy normalized shade $x\in[0,1]$, define uniform <quantization (signal processing)> with endpoints included by
-$$
-q_b(x)=\left\lfloor(2^b-1)x+\frac12\right\rfloor,\qquad \widehat x_b=\frac{q_b(x)}{2^b-1}.
-$$
-The <floor function> implements rounding to the nearest code, with exact halves rounded upward. The reconstruction step is $\delta_b=1/(2^b-1)$, and $|\widehat x_b-x|\leq\delta_b/2$. For $b=2$, the levels are $0,1/3,2/3,1$; for $b=8$ they are $0,1/255,\ldots,1$. Increasing <sample depth> refines this value grid without changing the spatial grid. These levels are uniform in $x$; if $x$ is encoded <sRGB>, they are not uniform in <relative luminance>.
-
-<PNG> uses a bit-depth field per sample or palette index. Its <grayscale> type without alpha permits 1, 2, 4, 8 or 16 <bits> per sample; its truecolour type permits 8 or 16 <bits> per component. These are format-specific restrictions, not a rule for every <raster image>.https://www.w3.org/TR/png-3/#11IHDR[W3C, PNG Specification, Third Edition, section 11.2.1, IHDR, Table 12]{ref}
-
-= Grayscale
-{parent=Raster graphics}
-{wiki}
-
-= Greyscale
-{synonym}
-
-A <grayscale> image varies along shades from black to white rather than recording independent colour differences. A numerical <grayscale> image assigns one shade sample to each <pixel>; an encoding determines how that sample maps to a displayed shade. A colour <raster image> can also look <grayscale>, for example when its three <sRGB> components are equal.
-
-\Image[raster-pixels-grayscale-quantization.png]
-{title=Toy quantization and sRGB encoding: more codes and more light are different questions}
-
-The convention in our <lossy block averaging> example is black at the <integer> code 0 and white at 255. Its <arithmetic means> act on those stored codes. This is a fully specified numerical experiment, but it does not claim that code 128 means half the physical light of code 255. <PNG> explicitly allows samples that are not proportional to light: its <grayscale> interpretation depends on the indicated transfer curve, and can be device-dependent when that information is absent.https://www.w3.org/TR/png-3/#6Colour-values[W3C, PNG Specification, Third Edition, section 6.1: colour types, grayscale interpretation and transfer curves]{ref}
-
-Two different questions therefore need different operations. To average \i[stored codes], average the <integers>. To average <relative luminance> for neutral <sRGB> shades, decode the codes to linear light, average there, and encode the result again. Equal weights on black and white give encoded value $1/2$ by the first method, but approximately $0.73536$ by the second. Rounded to eight-<bit> codes these are 128 and 188. This example concerns ideal neutral shades and the specified <sRGB> conversion; it does not assert a universal grayscale conversion for every colour encoding.
-
-The upper panels hold the spatial grid fixed and change <sample depth>: four levels produce broad constant bands, while 256 levels make smaller numerical steps. The lower panels hold the colour interpretation fixed and compare encoded <sRGB> values with <relative luminance>. All panels are calculated synthetic examples, not measured display data. <Grayscale> is useful when shade structure is the quantity of interest: a synthetic scalar <image signal> can be inspected without introducing separate colour components.
-
-= Raster sampling and reconstruction
-{parent=Raster graphics}
-{title2=$p_{rc}=f(x_c,y_r)$}
-
-A point-sampling model assigns $p_{rc}=f(x_c,y_r)$ to a <pixel> on a grid, where $f$ is a <continuous function> representing an <image signal>. An area-sampling model instead assigns the <average value of a function> over a specified footprint. These are different models: a narrow feature between point samples can be missed, whereas its contribution to an area sample depends on its width and shade. Neither model says that the recorded value uniquely determines everything inside a grid cell.
-
-\Image[raster-pixels-grayscale-sampling.png]
-{title=A toy raster grid, two reconstructions, and distinct signals with identical samples}
-
-The upper panels start with exactly the same $6\times4$ <array>. <Nearest-neighbor interpolation> repeats its values into a $24\times16$ display; successive <linear interpolations> in the two coordinate directions produce a smoother $24\times16$ display. Original sample positions are marked. Both displays use 384 output <pixels>, but only the same 24 recorded values. The extra values follow the chosen <interpolation> rule. Between-grid appearance is inferred, not independently recorded.
-
-Spatial resolution needs a stated meaning. A grid over a rectangle of width $L_x$ and height $L_y$ has nominal cell pitches $\Delta x=L_x/W$ and $\Delta y=L_y/H$. Over the same rectangle, doubling both dimensions halves these pitches and quadruples the <pixel> count. That is a finer grid, not a guarantee of more recoverable detail. Blurring before sampling, <quantization (signal processing)> and <aliasing> can make different originals share the same recorded <array>. Enlarging the rectangle without adding samples instead increases the displayed pitch.
-
-A reproducible computational demonstration makes the ambiguity exact. Take the one-dimensional profiles $f(x)=0.5+0.4\sin(2\pi x)$ and $g(x)=0.5+0.4\sin(10\pi x)$, repeated identically along every row. Sample at $x_j=j/4$ for $j=0,\ldots,8$. Since $10\pi x_j=2\pi x_j+2\pi j$, the fact that the <sine> is a <periodic function> gives $f(x_j)=g(x_j)$. Both yield $0.5,0.9,0.5,0.1,0.5,0.9,0.5,0.1,0.5$, although at $x=1/8$ they give approximately $0.78284$ and $0.21716$. The lower panel draws both originals and their common samples: no operation on those samples alone can identify the original profile. This is <aliasing> in an ideal point-sampling model, without <image noise> or rounding.
-
-The <Nyquist–Shannon sampling theorem> describes reconstruction under a bandwidth restriction and ideal sampling assumptions; it does not grant uniqueness for arbitrary <image signals> from a finite <raster image>.https://fab.cba.mit.edu/classes/S62.12/docs/Shannon_noise.pdf[Shannon, Communication in the Presence of Noise (1949), section II, Theorem 1 and reconstruction from the infinite sample sequence]{ref} The beautiful lesson is constructive: choose what detail the grid should preserve before sampling, and choose a reconstruction rule suited to the information actually retained.
-
-= sRGB
+= Valentine Kabanets
 {c}
-{parent=Computer graphics}
-{wiki}
+{parent=List of computer scientists}
 
-<sRGB> specifies a red-green-blue colour encoding. Restricting attention to component values in $[0,1]$, its encoded component $s$ corresponds to the linear-light component
-$$
-D(s)=\begin{cases}s/12.92,&0\leq s\leq0.04045,\\((s+0.055)/1.055)^{2.4},&0.04045<s\leq1.\end{cases}
-$$
-Thus the conversion is piecewise, not a single power law. The reverse conversion used here is
-$$
-E(l)=\begin{cases}12.92l,&0\leq l\leq0.0031308,\\1.055l^{1/2.4}-0.055,&0.0031308<l\leq1.\end{cases}
-$$
-These conventional rounded thresholds are used by the W3C conversion routines; they give a tiny mismatch at the join rather than a mathematically exact pair of inverses everywhere.https://www.w3.org/TR/css-color-4/#predefined-sRGB[W3C, CSS Color Module Level 4, section 10.2: encoded and linear-light sRGB]{ref}https://www.w3.org/TR/css-color-4/#color-conversion-code[W3C, CSS Color Module Level 4, sample colour-conversion code: lin_sRGB and gam_sRGB]{ref}
+Identity source: https://www2.cs.sfu.ca/~kabanets/
 
-For an eight-<bit> neutral <grayscale> code $q$, use $s=q/255$ in all three components. Its <relative luminance> is then $D(s)$. For example, $D(0.5)\approx0.21404$, whereas $E(0.5)\approx0.73536$. This is why averaging encoded values and averaging linear light give different answers. <sRGB> is a specified interpretation; merely calling a <raster image> <grayscale> does not imply it uses <sRGB>.
+\Image[https://www2.cs.sfu.ca/~kabanets/Kabanets-pic.jpg]
+{width=240}
+{title=Portrait of <Valentine Kabanets>}
+{description=Portrait identified on the cited institutional profile.}
 
-= Relative luminance
-{parent=sRGB}
-{title2=$Y$}
+= Work by Valentine Kabanets
+{parent=Valentine Kabanets}
 
-For the normalized <sRGB> calculations here, <relative luminance> is the linear-light weighted sum
-$$
-Y=0.2126R+0.7152G+0.0722B,
-$$
-where $R,G,B$ are decoded linear-light components, not encoded code values. This is the <sRGB> calculation specified in W3C's WCAG 2.2 definition of <relative luminance>. It places reference black at 0 and reference white at 1; it does not by itself specify an absolute display light level.https://www.w3.org/TR/WCAG22/#dfn-relative-luminance[W3C, WCAG 2.2, definition of relative luminance: sRGB decoding and weights]{ref}
-
-For a neutral <sRGB> shade, $R=G=B=l$, and the weights sum to 1, so $Y=l$. For a coloured <pixel>, <relative luminance> can be encoded as a neutral <sRGB> shade with all three encoded components $E(Y)$. This preserves the specified $Y$ while discarding colour differences; it is one precisely defined <grayscale> conversion, not a unique way to turn all colour images into <grayscale>.
-
-= Vector graphics
-{parent=Computer graphics}
-{wiki}
-
-<Vector graphics> represent a picture by geometric objects and instructions for drawing them: positions, shapes, fills, boundary strokes and transformations. A <circle> can be stored as a centre and radius; a <rectangle> as a corner, width and height; a <polygon> as an ordered list of vertices. These geometric primitives describe whole objects rather than assigning a colour to every <pixel>. <SVG> provides elements for such basic shapes and for paths assembled from <line segments> and curves.https://www.w3.org/TR/SVG2/shapes.html#Introduction[W3C SVG Working Group, SVG 2, section 10.1: basic shapes and their equivalent paths]{ref}
-
-The useful separation is between the stored geometry and the finite output. A <circle> of radius 2 remains the same geometric description whether rendered across twenty or two thousand output <pixels>. This is the sense in which <vector graphics> are resolution independent: increasing the output grid can evaluate the original geometry again. The resulting <raster image> still has finite spatial resolution, and numerical coordinates have finite precision. Enlarging a previously rendered <raster image> through <interpolation> instead works with its existing samples. Neither operation guarantees that arbitrarily thin details remain visible at every size.
-
-An <SVG> path uses a current point and drawing commands. For example, `M 1 4 L 5 4 L 3 1 Z` moves to $(1,4)$, draws two <line segments>, then closes back to the starting point, giving a <triangle>. Uppercase commands use absolute <coordinates>; the corresponding lowercase commands use offsets from the current point. Thus `M 1 4 l 4 0 l -2 -3 z` describes the same <triangle>. The coordinates belong to the current user <Cartesian coordinate system>, not necessarily to output <pixels>.https://www.w3.org/TR/SVG2/paths.html#PathData[W3C SVG Working Group, SVG 2, section 9.3: path data, current points and absolute or relative commands]{ref}
-
-For a curved example, the path `M 1 4 Q 3 0 5 4 Z` uses one quadratic <Bézier curve> followed by a closing <line segment>. With <control points> $P_0=(1,4)$, $P_1=(3,0)$ and $P_2=(5,4)$, its curved boundary is
-$$
-B(t)=(1-t)^2P_0+2t(1-t)P_1+t^2P_2=(1+4t,\;4-8t+8t^2),\qquad 0\leq t\leq1.
-$$
-The endpoints are $P_0,P_2$, and $B(1/2)=(3,2)$; the interior <control point> $P_1$ is not a point on the curve. A fill paints the enclosed region, while a stroke paints a band around its boundary with a chosen width. One can use either or both: geometry and paint instructions are distinct.https://www.w3.org/TR/SVG2/paths.html#PathDataQuadraticBezierCommands[W3C SVG Working Group, SVG 2, section 9.3.7: quadratic Bézier path commands]{ref}https://www.w3.org/TR/SVG2/painting.html#Introduction[W3C SVG Working Group, SVG 2, section 13.1: filling interiors and stroking outlines]{ref}
-
-\Image[vector-graphics-path-transform.png]
-{title=Analytical path illustration: a quadratic Bézier boundary and its affine image}
-
-The first illustration uses increasing $y$ downward, following the initial <SVG> coordinate convention. Its dashed <control polygon> guides the eye; it is not part of the filled path. Apply the <affine map>
-$$
-T(x,y)=(1.5x+0.5y+1,\;y+1),\qquad A=\begin{pmatrix}1.5&0.5\\0&1\end{pmatrix}.
-$$
-This combines horizontal scaling, a <shear mapping> and a <translation>. The transformed <control points> are $(4.5,5)$, $(5.5,1)$ and $(10.5,5)$, giving the path `M 4.5 5 Q 5.5 1 10.5 5 Z`. Its curved midpoint is $T(3,2)=(6.5,3)$. The <affine equivariance of a geometric basis> explains why transforming only the <control points> transforms the entire <Bézier curve>: its weights sum to one, so the <translation> is added exactly once. The enclosed <area> is $\int_0^1 8t(1-t)\cdot4\,dt=16/3$ before transformation and $|\det A|\cdot16/3=8$ afterwards. These checks concern the filled region, excluding the width of any stroke.
-
-An <SVG> `viewBox` specifies a <rectangle> in user <coordinates> to map into a display region. For example, `viewBox="0 0 6 6"` in a square viewport of 120 by 120 display units gives a scale of 20 display units per user unit; in a square viewport of 600 by 600 it gives 100. The path's <control points> need not change. For unequal proportions, `preserveAspectRatio` controls whether the mapping preserves proportions or stretches the axes separately. These display units need not correspond one for one to physical display <pixels>.https://www.w3.org/TR/SVG2/coords.html#InitialCoordinateSystem[W3C SVG Working Group, SVG 2, section 8.4: initial axes and user units]{ref}https://www.w3.org/TR/SVG2/coords.html#ViewBoxAttribute[W3C SVG Working Group, SVG 2, sections 8.6–8.7: viewBox mapping and preserveAspectRatio]{ref}
-
-\i[Rasterization] converts the geometric drawing into a <raster image> on a chosen grid. Deciding whether each <pixel> centre lies inside a filled region is a simple rule, but a moving diagonal boundary can make entire <pixels> switch abruptly. \i[Antialiasing] reduces these sampling artifacts by accounting for a footprint around each sample, rather than treating every <pixel> as a single inside-or-outside decision. This connects <vector graphics> to <raster sampling and reconstruction> and <aliasing>; a finer grid and a better sampling rule solve different parts of the problem.
-
-For an exact analytical model, fill the region $R=\{(x,y)\in[0,4]^2:y\leq x+1/4\}$. For a square <pixel> footprint $S$, let
-$$
-\alpha_S=\frac{\operatorname{area}(R\cap S)}{\operatorname{area}(S)},\qquad L_S=\alpha_S L_{\rm fill}+(1-\alpha_S)L_{\rm background}.
-$$
-Here $\alpha_S$ is geometric coverage, and $L$ is <relative luminance> for ideal opaque neutral shades, with $L_{\rm fill}=0$ and $L_{\rm background}=1$. The <intersection> and <area> determine how much of the footprint is covered. This is a specified area-average model, not a claim that every <SVG> renderer uses exact coverage. The <SVG> `shape-rendering` property supplies rendering hints and permits implementation tradeoffs, including disabling antialiasing for some choices.https://www.w3.org/TR/SVG2/painting.html#ShapeRenderingProperty[W3C SVG Working Group, SVG 2, section 13.10.1: shape-rendering hints and antialiasing tradeoffs]{ref}
-
-\Image[vector-graphics-raster-coverage.png]
-{title=Analytical rasterization model: pixel-centre decisions versus exact coverage on two grids}
-
-On the $4\times4$ grid of unit squares, $S=[0,1]\times[0,1]$ has coverage $\alpha_S=1-(3/4)^2/2=23/32$, whereas the <pixel> centre $(1/2,1/2)$ lies inside $R$ and gives coverage 1 under the centre rule. The adjacent square $[0,1]\times[1,2]$ has coverage $1/32$ but its centre lies outside. The entire filled <area> is $16-(15/4)^2/2=287/32$. Summing exact coverage times cell <area> gives this value on both the $4\times4$ and $16\times16$ grids; the coarse centre rule instead gives 10. Coverage values are displayed after <sRGB> encoding of the modeled <relative luminance>. The thin coloured line is a geometry overlay, not an extra sampled stroke. Enlarging the middle panel by <nearest-neighbor interpolation> would repeat its sixteen values; re-rendering the geometry produces the 256 independently evaluated footprints in the right panel. Antialiasing reduces abrupt edges but cannot make a finite grid preserve every geometric detail.
-
-The attractive feature of <vector graphics> is editability at the level of intent: move one <control point> to bend a boundary, change a <circle>'s radius, or transform a whole diagram while keeping its parts aligned. Logos, technical diagrams and <outline fonts> benefit because their structure can be expressed with relatively few shapes and curves. A complicated photograph may require enormous geometric detail, so <vector graphics> do not imply a smaller file than <raster graphics>. Nor does an <SVG> container guarantee that every object is vector geometry: its `image` element can embed or reference a <PNG> <raster image>. Transforming that embedded <raster image> changes its placement and reconstruction, but does not recover missing original detail.https://www.w3.org/TR/SVG2/embedded.html#ImageElement[W3C SVG Working Group, SVG 2, section 12.3: image elements and embedded raster content]{ref}
-
-= SVG
+= Nicholas Harvey
 {c}
-{parent=Vector graphics}
-{wiki}
+{parent=List of computer scientists}
 
-= Scalable Vector Graphics
+Identity source: https://www.cs.ubc.ca/~nickhar/W12/
+
+\Image[https://www.cs.ubc.ca/~nickhar/pictures/Portrait.jpg]
+{width=240}
+{title=Portrait of <Nicholas Harvey>}
+{description=Portrait identified on the cited institutional profile.}
+
+= Work by Nicholas Harvey
+{parent=Nicholas Harvey}
+
+= Stephen A. Cook
+{c}
+{parent=List of computer scientists}
+
+= Stephen Cook
 {c}
 {synonym}
 
-<SVG>, short for <Scalable Vector Graphics>, is a markup <file format> for two-dimensional graphics, specified by the W3C SVG Working Group. It describes <vector graphics> shapes, text and image objects, with grouping and transformations; it can therefore contain both geometric objects and <raster images>. The small command strings in <vector graphics> are path data within this format, not complete standalone documents.https://www.w3.org/TR/SVG2/intro.html#AboutSVG[W3C SVG Working Group, SVG 2, section 1.1: scope, graphical objects and transformations]{ref}
+https://www.cs.toronto.edu/~sacook/
+
+\Image[https://www.cs.toronto.edu/~sacook/faculty_November.2015.jpg]
+{width=240}
+{title=Portrait of <Stephen A. Cook>}
+
+= Work by Stephen A. Cook
+{parent=Stephen A. Cook}
+
+= Work by Stephen Cook
+{synonym}
+
+= Venkatesan Guruswami
+{c}
+{parent=List of computer scientists}
+
+Identity source: https://theory.cs.berkeley.edu/
+
+= Work by Venkatesan Guruswami
+{parent=Venkatesan Guruswami}
+
+= Jeff Erickson
+{c}
+{parent=List of computer scientists}
+
+Homepage: https://jeffe.cs.illinois.edu/
+
+= Work by Jeff Erickson
+{parent=Jeff Erickson}
+
+= Harold Abelson
+{c}
+{parent=List of computer scientists}
+
+= Hal Abelson
+{c}
+{synonym}
+
+Biography: https://groups.csail.mit.edu/mac/users/hal/bio.html
+
+\Image[https://www.csail.mit.edu/sites/default/files/styles/headshot/public/images/migration/abelson.jpg?h=5636fc5d&itok=Ltv8HubJ]
+{width=220}
+{title=Portrait of <Harold Abelson>}
+{source=https://www.csail.mit.edu/person/hal-abelson}
+
+= Work by Harold Abelson
+{parent=Harold Abelson}
+
+= Gerald Jay Sussman
+{c}
+{parent=List of computer scientists}
+
+= Gerald Sussman
+{c}
+{synonym}
+
+Biography: https://www.csail.mit.edu/person/gerald-sussman
+
+\Image[https://www.csail.mit.edu/sites/default/files/styles/headshot/public/images/people/profile/Gerald%20Sussman.jpg?h=672a6d71&itok=ra8YsAif]
+{width=220}
+{title=Portrait of <Gerald Jay Sussman>}
+{source=https://www.csail.mit.edu/person/gerald-sussman}
+
+= Work by Gerald Jay Sussman
+{parent=Gerald Jay Sussman}
+
+\Include[computer-graphics]{parent=Computer science}
 
 = File format
 {parent=Computer science}
@@ -343,217 +293,7 @@ A <file format> specifies how a <binary string> is interpreted: field order, fie
 
 A <file header> is leading information describing how to interpret the following data. Dimensions and a choice of compression method are examples. The two toy <image compression> examples explicitly count these fields.
 
-= Data compression
-{parent=Computer science}
-{wiki}
-
-<Data compression> represents data using fewer <bits> than a specified original representation. The saving can reduce storage in a <file system> and reduce the number of <bits> sent through a <communication channel>. At a fixed transmission rate, fewer <bits> arrive sooner; this makes better use of a fixed transmission budget. Both the encoded data and the instructions needed to interpret them contribute to the size of a stored file.
-
-There are two different promises. <Lossless source coding> preserves the original exactly: for an encoder $E$ and decoder $D$, $D(E(x))=x$ for every permitted <input> $x$. Thus $E$ must be an <injective function>. <Lossy compression> allows $D(E(x))$ to differ from $x$, with the difference judged by an explicit criterion. A program or numerical record may require exact recovery; a preview image may tolerate altered <pixels> in return for fewer <bits>.
-
-The appeal of <lossless source coding> is that repetition can be described rather than copied. <Run-length encoding> says "repeat this value twelve times"; a <prefix code> can give more frequent symbols shorter descriptions. These are distinct ways to exploit structure, and neither promises savings for every <input>. <Image compression> supplies especially visible examples of both <lossless source coding> and <lossy compression>.
-
-Claude E. Shannon's 1948 paper made the role of <probability distributions> precise. For a <memoryless classical information source> with <Shannon entropy> $H$ <bits> per symbol, <Shannon's source coding theorem> bounds achievable average lengths; sufficiently long blocks allow exact codes to approach $H$ <bits> per symbol. This is a statement about a specified source and average lengths, not a promise to shorten every message.<A Mathematical Theory of Communication by Claude Shannon>[Theorem 9 and its coding constructions]{ref}
-
-= Universal lossless shortening is impossible
-{parent=Data compression}
-
-Fix $n\geq1$. There is no <injective function> from all length-$n$ <binary strings> to <binary strings> of length strictly less than $n$. There are $2^n$ possible <inputs>, but even allowing the empty string gives only
-$$
-\sum_{k=0}^{n-1}2^k=2^n-1
-$$
-possible shorter <outputs>. The <finite geometric series> and <pigeonhole principle> leave at least two <inputs> sharing an <output>, which prevents exact decoding. For $n=3$, eight <inputs> compete for the empty string and the six strings `0`, `1`, `00`, `01`, `10`, `11`.
-
-This counting argument includes any <file header> or other information sent to the decoder. An <algorithm> chosen separately for each <input> must also be identified to the receiver; its description is not free. A useful compressor saves space on some <inputs> while leaving others unchanged or making them longer. <Lossy compression> avoids the exact-recovery requirement by deliberately allowing several <inputs> to share an <output>.
-
-= Lossy compression
-{parent=Data compression}
-{wiki}
-
-<Lossy compression> reduces a representation while permitting irreversible changes to the original. The encoder can map distinct <inputs> to the same <output>, so its decoder cannot recover both originals exactly. The useful question becomes how much storage is saved for an acceptable amount of distortion: <mean squared error> is one numerical criterion, but it does not by itself measure how noticeable a visual change is.
-
-For example, storing the <arithmetic mean> of four <grayscale> <pixels> retains their average shade while discarding their arrangement. Blocks $\left(\begin{smallmatrix}0&100\\100&0\end{smallmatrix}\right)$ and $\left(\begin{smallmatrix}50&50\\50&50\end{smallmatrix}\right)$ both produce 50. The former has detail and the latter is uniform, yet the decoder receives the same value. <Lossy block averaging> makes this ambiguity, its <bit> saving and its <mean squared error> exact.
-
-= Lossy block averaging
-{parent=Lossy compression}
-{title2=$q_{ij}=\lfloor m_{ij}+1/2\rfloor$}
-
-This toy <image compression> method stores one rounded <arithmetic mean> for each disjoint $2\times2$ block of <grayscale> <pixels>. The <quantization (signal processing)> rule is round to the nearest <integer>, with exact halves rounded upward. Each stored value is an unsigned eight-<bit> <integer>. Reconstruction fills the original block with that value, a form of <nearest-neighbor interpolation>. Averaging already discards information; rounding can discard more.
-
-Here is an exact $16\times16$ source <array>. Index rows and columns by $r,c\in\{0,\ldots,15\}$ and define
-$$
-\begin{aligned}
-b_{rc}&=40+10\lfloor r/2\rfloor+12\lfloor c/2\rfloor,\\
-x_{rc}&=b_{rc}+20(-1)^{r+c}+\mathbf{1}_{\{r\text{ even},\ c\text{ even}\}}.
-\end{aligned}
-$$
-The <floor function> makes $b$ constant within each block; the <indicator function> adds 1 only to its upper-left <pixel>. All values are <integers> from 20 to 215. Each block therefore has the exact form
-$$
-\begin{pmatrix}b+21&b-20\\b-20&b+20\end{pmatrix},\qquad m=b+\tfrac14,\qquad q=\lfloor m+\tfrac12\rfloor=b.
-$$
-For example, the upper-left block $\left(\begin{smallmatrix}61&20\\20&60\end{smallmatrix}\right)$ has <arithmetic mean> $161/4=40.25$ and is stored as 40. The block immediately to its right $\left(\begin{smallmatrix}73&32\\32&72\end{smallmatrix}\right)$ is stored as 52. The complete stored $8\times8$ <array> is specified by $q_{ij}=40+10i+12j$ for $0\leq i,j\leq7$. Its first row is $40,52,64,76,88,100,112,124$; its last is $110,122,134,146,158,170,182,194$.
-
-This toy <file format> again has eight-<bit> width and height fields followed by a one-<bit> mode: 0 means raw eight-<bit> <grayscale> <pixels>, 1 means the rounded block <arithmetic means>. This profile accepts only width and height 16. The decoder knows the block size and reconstruction rule from the format, reads the 64 stored values in row order, and repeats each across its corresponding $2\times2$ block. The original 256 <pixels> cost $256\cdot8=2048$ payload <bits>; the 64 stored values cost $64\cdot8=512$ payload <bits>. The reduction is $75\%$. These payload counts exclude the common 17-<bit> <file header>; complete sizes are 2065 and 529 <bits>, or 2072 and 536 <bits> after final zero padding to eight-<bit> units. There is no stored codebook or additional prediction rule.
-
-The empirical <mean squared error> averages squared differences over the 256 original <pixel> positions:
-$$
-\operatorname{MSE}=\frac1{256}\sum_{r=0}^{15}\sum_{c=0}^{15}(x_{rc}-\widehat x_{rc})^2
-=\frac{21^2+20^2+20^2+20^2}{4}=410.25.
-$$
-Every block has the same four errors, so this value is exact in squared stored shade units. If the unrounded <arithmetic mean> $b+1/4$ could be reconstructed, the error would instead be $410.1875$; eight-<bit> <quantization (signal processing)> adds $0.0625$. That hypothetical comparison does not count fractional means as free eight-<bit> values.
-
-The broad shade pattern survives, while the alternating bright and dark <pixels> vanish. Indeed, a second source with every block constant at $b$ produces the identical stored <array> $q$: exact decoding of both sources is impossible. This makes the storage benefit and the lost detail visible at once. Block averaging is useful for a coarse preview when the individual <pixels> are dispensable; choosing an acceptable <mean squared error> or visual result is part of the application, not a guarantee supplied by the encoder.
-
-\Image[lossy-block-image-comparison.png]
-{title=Rounded 2 by 2 block means reduce the payload by 75 percent while destroying fine detail}
-
-= Run-length encoding
-{parent=Data compression}
-{wiki}
-
-= RLE
-{c}
-{synonym}
-
-<Run-length encoding> replaces each maximal consecutive group of equal values, called a run, by its value and length. Decoding repeats each value the specified number of times. It is <lossless source coding>: no values are discarded. For a <binary string>, successive maximal runs alternate between 0 and 1, so storing the first <bit> and all run lengths is enough.
-
-Take this $8\times8$ <raster image>, with 0 black and 1 white, read left to right across each row and then top to bottom:
-```
-00000000
-00001111
-11110000
-00001111
-11110000
-00001111
-11110000
-00000000
-```
-Reading the whole image as one 64-<bit> <binary string> gives exactly seven runs:
-$$
-(\text{value},\text{length})=(0,12),(1,8),(0,8),(1,8),(0,8),(1,8),(0,12).
-$$
-The lengths sum to $12+8+8+8+8+8+12=64$. Repeating the alternating values for these lengths and splitting after every eighth <pixel> reconstructs every displayed row exactly.
-
-Here is a complete toy <file format>. Its <file header> is an eight-<bit> unsigned width, an eight-<bit> unsigned height, then a one-<bit> mode: 0 means raw <pixels>, 1 means <run-length encoding>. Fields are written most significant <bit> first; this profile accepts only width and height 8, so both decoders know to stop at 64 <pixels>. Raw mode contains 64 <bits>. <RLE> mode contains the initial <bit>, followed by seven-<bit> unsigned run lengths in the range 1 to 64. Zero and lengths above 64 are invalid; a decoder rejects a run that would exceed the remaining <pixel> count. It stops when the decoded lengths sum to 64, so no run-count field or end marker is needed.
-
-For this image, the complete <RLE> serialization is:
-```
-00001000 00001000 1 | 0 | 0001100 0001000 0001000 0001000 0001000 0001000 0001100
-```
-Spaces and vertical bars are explanatory separators, not stored characters. The seven-<bit> fields directly store the lengths; 64 would be `1000000`. The payload costs $1+7\cdot7=50$ <bits>, versus 64 raw <bits>. The 17-<bit> <file header> has the same size in either mode, giving complete sizes of 67 versus 81 <bits>. If packed into eight-<bit> units, append zero padding only at the end: the sizes become 72 versus 88 <bits>. These are sizes of this toy representation, not sizes of <PNG> files.
-
-The field design matters. Restarting <RLE> on every row costs eight initial <bits> plus four <bits> per run when lengths are stored directly: three <bits> represent only 0 through 7, whereas a row can have length 8. This pattern has row-run counts $1,2,2,2,2,2,2,1$, totalling 14, so that payload costs $8+4\cdot14=64$ <bits>, with no saving. Storing length minus one would instead fit lengths 1 through 8 into three <bits>, but is a different declared <file format>. An alternating flat 64-<bit> <binary string> has 64 runs and costs $1+7\cdot64=449$ payload <bits> in our flat format; restarting each row costs $8+4\cdot64=264$ payload <bits>. A one-run image costs only eight payload <bits>. These extremes explain when <RLE> is useful: long uninterrupted regions make short instructions, while frequent changes make instructions expensive.
-
-<Prefix codes> of unequal lengths can replace fixed-width run lengths, provided the decoder knows the code and any necessary code description is counted. <Run-length encoding> names a technique, not one universal serialization. For a real implementation, Microsoft's bitmap documentation specifies `BI_RLE8` with count and value fields plus special commands, rather than our initial-<bit> convention.https://learn.microsoft.com/en-us/windows/win32/gdi/bitmap-compression[Microsoft, Bitmap Compression, BI_RLE8 encoded and absolute modes]{ref}
-
-\Image[run-length-image-compression.png]
-{title=Seven runs serialize an 8 by 8 binary image and reconstruct every pixel exactly}
-
-= Deflate
-{c}
-{parent=Data compression}
-{wiki}
-
-<Deflate> is the <lossless source coding> method specified for <PNG> compression. It can describe repeated stretches of earlier data, going beyond the single-value repetitions of <run-length encoding>.<Portable Network Graphics (PNG) Specification (Third Edition) by Mark Adler and others>[W3C, PNG Specification, Third Edition, section 10.1, compression method 0]{ref}
-
-The format combines <Deflate backreferences>, which describe repeated stretches, with <Deflate Huffman coding>, which represents the resulting instructions using <prefix codes>. <Deflate block framing> tells the decoder which codes apply and where decoding stops. RFC 1951, https://www.rfc-editor.org/rfc/rfc1951[DEFLATE Compressed Data Format Specification version 1.3] (May 1996), defines the format; different encoders can choose different instructions for the same <input>.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, heading and sections 2 and 4: format and encoder choices]{ref}
-
-This separation is useful: discovering a repeated phrase and choosing short <codewords> solve different problems. A repeated phrase can contain many distinct <bytes>, while unequal <codeword lengths> can help even when no phrase repeats. Neither mechanism removes <Deflate compression overhead> or guarantees a saving on every <input>.
-
-= Deflate literal byte
-{c}
-{parent=Deflate}
-
-A <Deflate literal byte> instructs the decoder to append one specified <byte> directly to the <output>. For example, three <Deflate literal bytes> with values 65, 66 and 67 produce `ABC`. These values are symbols in the <Deflate Huffman coding> stage, rather than necessarily eight raw stored <bits> each. A <Deflate backreference> instead describes a copy from earlier <output>.
-
-= Deflate backreference
-{c}
-{parent=Deflate}
-{title2=$(\ell,d)$}
-
-= Deflate length-distance pair
-{c}
-{synonym}
-
-A <Deflate backreference> specifies a length $\ell$ and backward distance $d$, measured in decoded <bytes>. If $n$ <bytes> have already been produced, append $\ell$ <bytes> starting at <output> index $n-d$, counting indices from zero. The permitted ranges are $3\leq\ell\leq258$ and $1\leq d\leq32768$. Without a supplied initial history, $d\leq n$ is also required. The distance refers to decoded history, not a position in the compressed <input>.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, sections 3.2.3 and 3.2.5: available history, overlap, length and distance ranges]{ref}
-
-For the twelve <bytes> `ABCABCABCABC`, an illustrative instruction sequence is three <Deflate literal bytes> `A`, `B`, `C`, followed by the <Deflate backreference> $(\ell,d)=(9,3)$. <Run-length encoding> sees twelve single-<byte> runs because neighbouring values differ; the <Deflate backreference> describes a repeated three-<byte> pattern instead. Conversely, a <Deflate literal byte> `A` followed by $(7,1)$ produces `AAAAAAAA`: distance one can express a single-value repetition. These are chosen instructional examples, not claims about an encoder's chosen instructions or complete serialized streams.
-
-= Deflate overlapping copy
-{c}
-{parent=Deflate backreference}
-
-In a <Deflate overlapping copy>, $\ell>d$: some source <bytes> are created by the very copy being decoded. For each step $i=0,\ldots,\ell-1$, read the current <output> at index $n+i-d$ and append that <byte> at index $n+i$. Because $d\geq1$, the source index is always smaller than the destination index, so the needed <byte> exists when it is read.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, section 3.2.3, printed p. 11: overlapping string references]{ref}
-
-For `ABC` followed by $(9,3)$, the source indices are $0,1,2,3,4,5,6,7,8$ and the destination indices are $3,4,5,6,7,8,9,10,11$. Steps 0 through 2 copy the original `ABC`; steps 3 through 5 copy the `ABC` just appended; steps 6 through 8 copy the next newly appended `ABC`. Thus the final <output> is exactly `ABCABCABCABC`. Taking a snapshot of the original three-<byte> source slice would produce only three <bytes>; that operation does not implement the specified nine-<byte> copy.
-
-\Image[deflate-overlapping-copy-trace.png]
-{title=Nine successive copies at distance three extend ABC to ABCABCABCABC using newly produced bytes}
-
-The reusable idea is a short description of periodic continuation: the decoder repeatedly looks a fixed distance behind its growing <output>. A <Deflate backreference> can also reach across a <Deflate block framing> boundary. Changing the block's <Huffman codes> does not by itself erase the decoded history.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, sections 2 and 3.2.3: independent block codes, references across blocks]{ref}
-
-= Deflate Huffman coding
-{c}
-{parent=Deflate}
-
-For a compressed block, <Deflate Huffman coding> uses one <alphabet> for <Deflate literal bytes>, length symbols and the end-of-block symbol, and another <alphabet> for distance symbols. Values 0 through 255 denote <Deflate literal bytes>, 256 ends the block, and 257 through 285 select lengths. A <Deflate backreference> is encoded as a length symbol, any length extra <bits>, a distance symbol, then any distance extra <bits>. Those extra <bits> select an offset within the symbol's prescribed range; they are not additional <codewords>.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, section 3.2.5, length and distance tables]{ref}
-
-In the illustrative $(9,3)$ <Deflate backreference>, length 9 uses symbol 263 and distance 3 uses symbol 2; neither needs extra <bits>. Under the fixed <Huffman codes>, `A`, `B` and `C` each cost eight <bits>, symbol 263 costs seven, and distance symbol 2 costs five. Adding the seven-<bit> end-of-block symbol and three-<bit> block header gives $3+3\cdot8+7+5+7=46$ <bits>, packed into six <bytes> for a single final block. This is a cost calculation for the explicitly chosen instructions, not a displayed compressed stream.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, sections 3.2.5 and 3.2.6: length 9, distance 3 and fixed code lengths]{ref}
-
-Dynamic blocks transmit <codeword lengths> from which the decoder reconstructs the prescribed <prefix codes>. The code descriptions themselves use a smaller <Huffman code> and repeat instructions for successive <codeword lengths>, including runs of zero lengths. Here <run-length encoding> describes repeated code lengths, a separate role from copying repeated data <bytes>. Fixed blocks use predefined <Huffman codes> and avoid transmitting those descriptions.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, sections 3.2.2, 3.2.6 and 3.2.7: code reconstruction, fixed codes and dynamic code-length repeats]{ref}
-
-= Deflate block framing
-{c}
-{parent=Deflate}
-
-Each block starts with a one-<bit> `BFINAL` flag and a two-<bit> `BTYPE` field. The `BTYPE` values are 0 for stored data, 1 for fixed <Huffman codes>, 2 for dynamic <Huffman codes>, and 3 for an invalid reserved value. For compressed blocks, symbol 256 ends the current block; `BFINAL = 1` says this is the last block. An end-of-block symbol does not mean a literal zero <byte>, and in a nonfinal block it does not end the whole stream.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, section 3.2.3: header, block types and decoding loop]{ref}
-
-\Image[deflate-token-block-pipeline.png]
-{title=Deflate separates literal and copy instructions from Huffman coding and final-block framing; stored blocks bypass both stages}
-
-A stored block instead skips to the next <byte> boundary, reads the sixteen-<bit> `LEN` and its sixteen-<bit> one's complement `NLEN`, then copies exactly `LEN` raw <bytes>. Its length field replaces the compressed block's end-of-block symbol. A compressed block need not end at a <byte> boundary, so the next block header can start inside the current <byte>.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, sections 3.2.3 and 3.2.4: alignment, LEN, NLEN and stored data]{ref}
-
-The diagram shows logical fields, not a serialization into <bits>. RFC 1951 specifies <bit> packing separately, including different conventions for <codewords> and other fields (section 3.1.1). For <PNG>, the filtered image data is compressed inside a zlib wrapper with its own header and checksum; raw <Deflate> and a complete <PNG> file therefore have different framing.<Portable Network Graphics (PNG) Specification (Third Edition) by Mark Adler and others>[PNG Specification, Third Edition, sections 10.1 and 10.2: zlib wrapper and filtered image data]{ref}
-
-= Deflate compression overhead
-{c}
-{parent=Deflate}
-
-Short <inputs> can spend much of their size on <Deflate block framing>, the end-of-block symbol and, for dynamic blocks, <Deflate Huffman coding> descriptions. A repeated phrase is useful only if its <Deflate backreference> costs less than the <Deflate literal bytes> it replaces. <Huffman coding> adapts instruction costs; it does not make either references or code descriptions free.
-
-For an exact expansion example, take the 256 <bytes> with values $0,1,\ldots,255$, each appearing once. A single fixed block containing only <Deflate literal bytes> costs $144\cdot8+112\cdot9+7+3=2170$ <bits>, or 272 <bytes> after final packing. One stored block starting at a <byte> boundary instead costs five overhead <bytes> plus the 256 data <bytes>, or 261 <bytes>. Both exceed the 256-<byte> <input>; these counts follow the specified layouts and are not measurements of an encoder's automatic choice. The example illustrates <universal lossless shortening is impossible>.<DEFLATE Compressed Data Format Specification version 1.3 by L. Peter Deutsch>[RFC 1951, sections 3.2.3, 3.2.4 and 3.2.6: header, stored layout and fixed literal lengths]{ref}
-
-The following independent experiment obtains an actual raw <Deflate> stream using the standard library's `zlib` module, then checks exact recovery. Negative `wbits` selects raw framing; the three lines of compressed-data handling make no assumptions about which <Deflate backreferences> the library selects.<Python 3.14 documentation/zlib — Compression compatible with gzip (Python 3.14 documentation)>[Python 3.14 zlib documentation, compressobj, decompress and negative wbits]{ref}
-```
-import zlib
-data = b"ABCABCABCABC"
-encoder = zlib.compressobj(level=6, wbits=-15)
-packed = encoder.compress(data) + encoder.flush()
-assert zlib.decompress(packed, wbits=-15) == data
-print(len(data), len(packed), packed.hex())
-```
-The printed <bytes> describe this library run. Exact roundtrip recovery is the check; a particular compressed length or instruction choice is not a guarantee for other <inputs> or library versions.
-
-= Image compression
-{parent=Data compression}
-{wiki}
-
-<Image compression> applies <data compression> to pictures, usually represented by <raster images>. Nearby <pixels> often have related shades; an encoder can exploit that structure. A flat region invites <run-length encoding>, while <lossy block averaging> trades fine detail for fewer stored samples. The choice depends on whether exact <pixel> values matter and on the patterns in the image.
-
-<Lossless source coding> recovers the encoded <pixel> values exactly, including sharp text or numerical image data. <Lossy compression> preserves an approximation and can remove features that later <image processing> might need. A visually smooth result is therefore a different promise from exact recovery. Neither method has a universal compression ratio: the chosen <file format>, its <file header> and the particular image all matter.
-
-<PNG> is a real format with <lossless source coding> of its encoded image data. Its specified compression uses <Deflate> on reversibly filtered rows, rather than our toy <RLE> format. The <lossy block averaging> example is also a teaching format, not a description of <PNG>. A lossy preprocessing step followed by saving as <PNG> preserves the already changed <pixels>, not the earlier original.<Portable Network Graphics (PNG) Specification (Third Edition) by Mark Adler and others>[W3C, PNG Specification, Third Edition (2025), section 10, Compression]{ref}
-
-= PNG
-{c}
-{parent=Image compression}
-{wiki}
-
-= Portable Network Graphics
-{c}
-{synonym}
-
-<PNG> is a <file format> for <raster images> with <lossless source coding> of the encoded image data. Its first W3C Recommendation, dated 1 October 1996, described a portable replacement for earlier image formats; this situates the design in exchanging images reliably between systems.https://www.w3.org/TR/REC-png-961001[W3C, PNG (Portable Network Graphics) Specification, 1 October 1996, status and abstract]{ref}
+\Include[data-compression]{parent=Computer science}
 
 = Software module
 {parent=Computer science}
@@ -1182,235 +922,10 @@ This makes <spatial locality> useful and beautiful: the same logical operation o
 
 // Destination: computer-science.bigb
 
-= Spreadsheet
-{parent=Computer science}
-{wiki}
-
-A <spreadsheet> is <software> for organizing information in a rectangular grid of <spreadsheet cells> and calculating with it. Rows are numbered and columns are lettered: `B3` is the <spreadsheet cell> at column `B`, row `3`. A <spreadsheet cell> can hold a label, a numerical <input>, or a <spreadsheet formula> whose value supplies an <output>. This brings a <mathematical model> close to its data: quantities, assumptions and results can be read side by side. The address convention is described in LibreOffice's official help. <Addresses and References, Absolute and Relative, LibreOffice Help>[Addresses and References, Absolute and Relative: Cell references, column letters and row numbers]{ref}
-
-The useful idea is to write a relationship once and reuse it across similar rows. <Relative spreadsheet references> follow each row's data; <absolute spreadsheet references> retain a shared assumption; <mixed spreadsheet references> let one coordinate vary while the other stays fixed. <Spreadsheet dependency evaluation> then computes the resulting <spreadsheet formulas>. A rectangular layout organizes the model for its reader, while the <spreadsheet dependency graph> organizes its calculation.
-
-= Spreadsheet tabular model
-{parent=Spreadsheet}
-
-A <spreadsheet tabular model> assigns a consistent meaning to each row and column. For an original example, let rows 2–4 describe three items, with quantity in column `A`, unit price in column `B`, subtotal in column `C`, and total including tax in column `D`. Put the single shared tax rate in `F1`. The chosen rate $1/5$ is an illustrative assumption. Quantities, unit prices and `F1` are <inputs>; columns `C` and `D` hold <spreadsheet formulas> and display their computed values as <outputs>.
-
-Enter decimal <inputs> `2.5`, `1.75`, `4.5` for the unit prices and `0.2` for the tax rate. The following table expresses those values as exact <fractions> so that the <arithmetic> is easy to check. It does not require typing a fraction into an input <spreadsheet cell> or assume that all <software> calculates with exact <rational numbers>.
-
-|| Row
-|| Quantity (`A`)
-|| Unit price (`B`)
-|| Subtotal (`C`)
-|| Total including tax (`D`)
-
-| 2
-| $3$
-| $5/2$
-| $15/2$
-| $9$
-
-| 3
-| $4$
-| $7/4$
-| $7$
-| $42/5$
-
-| 4
-| $2$
-| $9/2$
-| $9$
-| $54/5$
-
-Start with `C2` containing `=A2*B2` and `D2` containing `=C2*(1+$F$1)`. Here `*` requests <multiplication>, and `1+$F$1` adds the tax fraction to one. Copy these two <spreadsheet formulas> down into rows 3 and 4, a fill operation. The <relative spreadsheet references> change with the destination row: `C3` becomes `=A3*B3` and `D3` becomes `=C3*(1+$F$1)`; `C4` becomes `=A4*B4` and `D4` becomes `=C4*(1+$F$1)`. The <absolute spreadsheet reference> `$F$1` continues to read the shared rate. Copying <spreadsheet formulas> adjusts relative coordinates while retaining absolute coordinates. <Addresses and References, Absolute and Relative, LibreOffice Help>[Addresses and References, Absolute and Relative: Relative Addressing; Absolute Addressing; When to Use Relative and Absolute References, final two paragraphs]{ref}
-
-\Image[spreadsheet-copy-fill-shared-rate.png]
-{title=Original three-row <spreadsheet tabular model> before and after filling two <spreadsheet formulas>, with a shared <absolute spreadsheet reference>}
-
-The same <mathematical expression> applies to every item. Writing $q_i$ for quantity, $p_i$ for unit price and $t$ for the shared tax rate gives
-$$
-s_i=q_i p_i,\qquad d_i=s_i(1+t).
-$$
-For row 2, the exact <arithmetic> is $(3\cdot5/2)(1+1/5)=(15/2)(6/5)=9$. The subtotals add to $47/2$, so the totals add to $(47/2)(6/5)=141/5$, agreeing with $9+42/5+54/5$. The <spreadsheet formulas> encode the relationship; the displayed numbers are its results for these particular <inputs>.
-
-This separation is useful for forecasting and <sensitivity analysis>. Keeping quantities and unit prices fixed while changing only `F1` from $1/5$ to $1/4$ gives exact totals $75/8$, $35/4$, and $45/4$. More generally, a rate change $\Delta t$ changes each total by
-$$
-d_i(t+\Delta t)-d_i(t)=s_i\Delta t.
-$$
-This follows by expanding the two <mathematical expressions> and cancelling $s_i(1+t)$. Here $\Delta t=1/20$, so the increases are $3/8$, $7/20$, and $9/20$, adding to $47/40$. One shared <input> makes the assumption visible and consistent across all rows. Overwriting a computed total with a number would instead remove that <spreadsheet formula>; its value would cease to follow the model when the rate changes.
-
-// Target: computer-science.bigb
-
-= Spreadsheet dependency evaluation
-{parent=Spreadsheet}
-
-Evaluate numeric formula dependencies using <depth-first search> and <memoization>, or a <topological ordering>. Marking active evaluations detects cycles; repeated numerical sweeps need not terminate or determine a unique result.
-
-A <spreadsheet dependency graph> turns a page of <spreadsheet formulas> into a plan: compute each prerequisite before the <spreadsheet cell> that consumes it. This section uses a deliberately small model with explicit cell references, fixed <spreadsheet formulas>, and <deterministic computation> from numerical <inputs>. There are no external data changes or formulas that change their references while running. Within these assumptions, a <topological order> gives a reproducible answer without repeatedly sweeping the visible grid.
-
-Take two input <spreadsheet cells> and five <spreadsheet formulas>:
-
-|| <Spreadsheet cell>
-|| Stored input or <spreadsheet formula>
-|| Initial value
-|| Value after changing `A1` to 5
-
-| `A1`
-| `3`, later `5`
-| $3$
-| $5$
-
-| `A2`
-| `4`
-| $4$
-| $4$
-
-| `B1`
-| `=A1+A2`
-| $7$
-| $9$
-
-| `B2`
-| `=2*A1`
-| $6$
-| $10$
-
-| `C1`
-| `=B1+B2`
-| $13$
-| $19$
-
-| `D1`
-| `=C1/2`
-| $13/2$
-| $19/2$
-
-| `E1`
-| `=A2^2`
-| $16$
-| $16$
-
-\Image[spreadsheet-formula-dependency-evaluation.png]
-{title=An original <spreadsheet dependency graph> and a <topological order> with values before and after one edit}
-
-Our <directed edge> convention is \i[prerequisite to consumer]: `A1` $\to$ `B1` means that `B1` reads `A1`, not the reverse. The seven <directed edges> are `A1` $\to$ `B1`, `A2` $\to$ `B1`, `A1` $\to$ `B2`, `B1` $\to$ `C1`, `B2` $\to$ `C1`, `C1` $\to$ `D1`, and `A2` $\to$ `E1`. This <spreadsheet dependency graph> is a <directed acyclic graph>. One <topological order> is `A1,A2,B1,B2,C1,D1,E1`; `E1` could instead be computed immediately after `A2`. A <topological order> constrains prerequisites, not the physical positions of <spreadsheet cells>.
-
-In that order, the initial <arithmetic operations> give $B1=3+4=7$, $B2=2\cdot3=6$, $C1=7+6=13$, $D1=13/2$, and $E1=4^2=16$. The <spreadsheet formulas> define one value per <spreadsheet cell>: an outline by <induction> along any <topological order> shows that every prerequisite already has its uniquely determined value when its consumer is computed. Different permitted orders therefore agree in this model. The useful idea is that information flows through the <directed acyclic graph> even when the visible grid does not display that flow.
-
-A concrete implementation history illustrates this separation. Microsoft's documentation distinguishes the per-worksheet calculation chains used in Excel 2002 and earlier from calculation using multiple <software threads> introduced in Excel 2007 for independent chain sections. This is a documented implementation example, not a definition of <spreadsheet dependency evaluation>.<Excel Recalculation by Microsoft>[Dependence, Dirty Cells, and Recalculated Cells: paragraphs beginning “In Excel 2002 and earlier versions” and “In Excel 2007”]{ref}
-
-= Spreadsheet dependency graph
-{parent=Spreadsheet dependency evaluation}
-{title2=$G=(V,E)$}
-
-The <directed graph> whose <vertices> are the <spreadsheet cells> and whose <directed edges> $u\to v$ mean that the <spreadsheet formula> in $v$ references $u$. Input <spreadsheet cells> have no prerequisites in this model. Retain both incoming references and outgoing consumers: <depth-first search> for evaluation follows incoming references backwards, whereas downstream invalidation follows outgoing consumers forwards. A <directed path> then expresses indirect dependence, and a <directed cycle> expresses a <spreadsheet circular reference>.
-
-= Spreadsheet circular reference
-{parent=Spreadsheet dependency graph}
-
-A <spreadsheet cell> depends on itself along a nonempty <directed path>. For a separate formula-edit experiment, restore the initial inputs and replace only `B1` by `=A1+A2+C1`. Now `B1` $\to$ `C1` $\to$ `B1` is a <directed cycle>. Requesting `D1` makes `D1,C1,B1` active and then requests the still-active `C1`; the <algorithm> reports `C1,B1,C1` rather than returning an old value. This witness follows references backwards, opposite to our dependency arrows; reversing it gives a <directed cycle> in the <spreadsheet dependency graph>.
-
-`D1` is not itself on that <directed cycle>, but it cannot receive a value from this evaluator because it needs `C1`. Independent requests for `B2` and `E1` still succeed. A <topological order> of the entire modified <spreadsheet dependency graph> is impossible: the two cyclic <directed edges> would require `B1` before `C1` and `C1` before `B1`. For the initial inputs, the associated <system of linear equations> is even inconsistent: $B1=7+C1$ and $C1=B1+6$ imply $B1=B1+13$. Detecting a <directed cycle> is a structural check, not an attempt to solve these <linear equations>.
-
-= Iterative spreadsheet calculation
-{parent=Spreadsheet circular reference}
-
-A different interpretation can treat cyclic <spreadsheet formulas> as simultaneous equations and seek a <fixed point> by repeated numerical updates. This requires an explicit update rule, initial values and stopping condition. It is not automatically the meaning of a <spreadsheet formula>. In particular, a <directed cycle> alone tells us neither whether a <fixed point> exists nor whether a chosen update rule approaches it.
-
-Two original toy examples make the distinction exact. The cyclic pair `X1=Y1+1`, `Y1=X1+1` has no solution over the <real numbers>: substitution gives $X1=X1+2$. For `X1=Y1`, `Y1=X1`, every equal pair is a <fixed point>, so there is no unique answer. Simultaneously updating both <spreadsheet cells> from the previous pair gives $(x_{n+1},y_{n+1})=(y_n,x_n)$. Starting at $(0,1)$ produces the <periodic sequence> $(0,1),(1,0),(0,1),\ldots$, which does not approach a <fixed point>. Updating `X1` first and immediately using its new value for `Y1` instead gives $(1,1)$ in one sweep. That difference follows from the specified rules, not from a claim about any current spreadsheet product. Numerical iteration can be useful for a deliberately chosen model with a justification such as the <contraction mapping theorem>; ordinary acyclic <spreadsheet dependency evaluation> already has its answer from prerequisite order.
-
-= Cached cell value
-{parent=Spreadsheet dependency evaluation}
-
-A numerical value retained for reuse by <memoization>. It is usable only while the <spreadsheet formula> and all its relevant <inputs> remain valid. After changing `A1` from 3 to 5, following outgoing <directed edges> finds exactly `B1,B2,C1,D1`. Invalidate their <cached cell values> before evaluating another requested result; install the new input value for `A1`. The <cached cell values> of `A2` and `E1` remain valid because neither has a <directed path> from `A1`.
-
-\Image[spreadsheet-cycle-downstream-invalidation.png]
-{title=Downstream invalidation after an input edit, and a different formula edit creating a <spreadsheet circular reference>}
-
-One recomputation in the restricted <topological order> `B1,B2,C1,D1` gives $9,10,19,19/2$. Four <spreadsheet formulas> are recomputed, while `E1` stays at 16. Removing invalid values from the cache prevents a subtle error: a finished marker from the previous evaluation does not prove that the old value is correct after an edit. The affected set is conservative; a changed prerequisite might leave a consumer's value numerically equal, but this simple scheme still invalidates it. For a formula edit, update the incoming <directed edges> and corresponding outgoing consumer lists as well as invalidating the edited <spreadsheet cell> and its downstream consumers. Microsoft's documentation explicitly describes both direct and indirect dependents being marked for recalculation.<Excel Recalculation by Microsoft>[Dependence, Dirty Cells, and Recalculated Cells: paragraph beginning “When a structural change is made”; B1/A1 and C1/B1 dirty-cell example]{ref}
-
-For demand-driven evaluation, <memoization> combines with <depth-first search>. Each <spreadsheet cell> has one of three states: `UNSEEN` means no valid <cached cell value>; `ACTIVE` means its evaluation is on the current <call stack>; `FINISHED` means a valid value is available. Initialize valid input <spreadsheet cells> as `FINISHED`. Start with all <spreadsheet formulas> `UNSEEN`, or retain only valid `FINISHED` entries after invalidation. The following original <algorithm> uses an ordered `references` list and an `apply_formula` operation for each <spreadsheet formula>:
-
-```
-def value(cell):
-    if state[cell] == FINISHED:
-        return cache[cell]
-    if state[cell] == ACTIVE:
-        i = stack.index(cell)
-        raise CircularReference(stack[i:] + [cell])
-    state[cell] = ACTIVE
-    stack.append(cell)
-    try:
-        args = [value(p) for p in references[cell]]
-        cache[cell] = apply_formula(cell, args)
-        state[cell] = FINISHED
-        return cache[cell]
-    except Exception:
-        state[cell] = UNSEEN
-        raise
-    finally:
-        stack.pop()
-```
-
-Requesting `D1` first makes `D1,C1,B1` active, then reads the finished inputs `A1,A2`. `B1` finishes at 7. Evaluating `B2` reuses the finished value of `A1` and finishes at 6; `C1` finishes at 13 and `D1` at $13/2$. A later request for `D1` immediately returns its <cached cell value>. The shared prerequisite `A1` is not a <directed cycle>: it was finished before the second request. The crucial distinction is between a previously visited <vertex> and a still-active <vertex>. The exceptional path restores unfinished states while unwinding the <call stack>, so failed evaluations are not cached as successful results. MIT's <depth-first search> notes use stack-duration marks to distinguish an <edge> to an active ancestor and to detect a <directed cycle>.<6.006 Introduction to Algorithms, Fall 2011 by Massachusetts Institute of Technology, 6.006 course staff/Lecture 14: Graphs II: Depth-First Search>[Lecture 14: Graphs II: Depth-First Search, printed pp. 3–4: stack-duration marks and cycle detection]{ref}
-
-With <adjacency lists> and constant-time state/cache access, the structural work of a successful demand-driven evaluation is $O(|V_R|+|E_R|)$ in <big O notation>, where $V_R$ and $E_R$ are the requested <spreadsheet cells> and their recursively reached prerequisites and references. Each reached <spreadsheet formula> is computed once; each reference is inspected once. This <time complexity> counts dependency bookkeeping separately from the cost of the <arithmetic operations>. Detecting a <spreadsheet circular reference> can additionally scan the current <call stack> once to report its witness.
-
-= Spreadsheet cell
-{parent=Spreadsheet}
-
-An addressed entry of a <spreadsheet>, such as `A1`. Here it stores either a literal numerical <input> or a <spreadsheet formula>; its current value is distinct from the stored formula. A <cached cell value> records a previously computed value, not an instruction to compute it again.
-
-In a <spreadsheet tabular model>, `D2` can store `=C2*(1+$F$1)` while displaying `9`. The <spreadsheet cell reference> `D2` identifies the location, the <spreadsheet formula> describes the calculation, and `9` is the value obtained from the present <inputs>. Keeping those three ideas distinct makes copying and checking a model much easier.
-
-= Spreadsheet formula
-{parent=Spreadsheet cell}
-
-A <mathematical expression> stored in a <spreadsheet cell>, with references to other <spreadsheet cells>. In this example `=A1+A2` asks for <addition>, `=2*A1` for <multiplication>, and `=A2^2` for <exponentiation>. The evaluator in <spreadsheet dependency evaluation> assumes these <spreadsheet formulas> have already been represented by their ordered lists of referenced <spreadsheet cells> and operations on the resulting numbers; it does not execute arbitrary formula text.
-
-Copying a <spreadsheet formula> produces a new expression by adjusting its <spreadsheet cell references>. Copying only its displayed value produces a number instead. For example, copying the <spreadsheet formula> `=A2*B2` down one row gives `=A3*B3`; entering its former value $15/2$ in the next row would give neither the required relationship nor this example's correct subtotal $7$.
-
-= Spreadsheet cell reference
-{parent=Spreadsheet formula}
-
-= A1 spreadsheet reference
-{c}
-{synonym}
-
-A <spreadsheet cell reference> identifies the <spreadsheet cell> read by a <spreadsheet formula>. In A1 notation, `B3` combines a column letter with a row number. For copying, the column and row can each be relative or absolute, independently: a `$` immediately before a coordinate fixes that coordinate during the copy. The `$` is an addressing marker, not a currency symbol. <Switch between relative, absolute, and mixed references, Microsoft Support>[Switch between relative, absolute, and mixed references: opening paragraphs and table of reference changes when copying two cells down and two cells right]{ref}
-
-Number columns as $A=1$, $B=2$, and so on. If a <spreadsheet formula> moves by $\Delta c$ columns and $\Delta r$ rows during copying, a referenced coordinate $(c,r)$ becomes
-$$
-(c',r')=(c+\varepsilon_c\Delta c,\ r+\varepsilon_r\Delta r),
-$$
-where each $\varepsilon$ is $1$ for a relative coordinate and $0$ for an absolute coordinate. This is a <translation> on the unfixed coordinates. For ordinary in-sheet references whose translated addresses exist, repeated copies compose by <addition> of their displacements: substitute the rule twice to obtain $c''=c+\varepsilon_c(\Delta c_1+\Delta c_2)$, and likewise for the row. Copying therefore preserves either a fixed coordinate or an offset from the formula's location.
-
-= Relative spreadsheet reference
-{parent=Spreadsheet cell reference}
-
-A <relative spreadsheet reference>, such as `A2`, allows both coordinates to change when its <spreadsheet formula> is copied. From `C2`, `A2` means two columns left, in the same row. Copy `=A2*B2` from `C2` to `C4`: the displacement is zero columns and two rows, so it becomes `=A4*B4`. The row number changes to retain the same positional relationship to the <spreadsheet formula>.
-
-= Absolute spreadsheet reference
-{parent=Spreadsheet cell reference}
-
-An <absolute spreadsheet reference>, such as `$F$1`, fixes both coordinates when its <spreadsheet formula> is copied. In the <spreadsheet tabular model>, every copied total reads the same tax rate. Absolute addressing retains the <spreadsheet cell reference>, not the value: changing the <input> in `F1` changes the computed totals even though the references remain `$F$1`.
-
-= Mixed spreadsheet reference
-{parent=Spreadsheet cell reference}
-
-A <mixed spreadsheet reference> fixes exactly one coordinate. `$A2` fixes column `A` and lets the row follow the copy; `B$1` fixes row `1` and lets the column follow the copy. Put $2,3,4$ in `A2:A4` and $5,6,7$ in `B1:D1`. Store `=$A2*B$1` in `B2`, then fill the rectangle `B2:D4`. The colon denotes the inclusive rectangular range between the named corner <spreadsheet cells>. Each <spreadsheet formula> reads its row's factor from column `A` and its column's factor from row `1`, producing a <multiplication table>.
-
-\Image[spreadsheet-mixed-reference-anchors.png]
-{title=Original <multiplication table> showing how two <mixed spreadsheet references> anchor the column and row independently during two-dimensional copying}
-
-Copying from `B2` to `D4` moves two columns right and two rows down. The <mixed spreadsheet references> become `$A4` and `D$1`, so `D4` contains `=$A4*D$1` and has value $4\cdot7=28$. For comparison, under that same displacement `A2` becomes `C4`, `$A$2` remains `$A$2`, `$A2` becomes `$A4`, and `A$2` becomes `C$2`. These four cases express the independent choice for each coordinate. Microsoft's official table demonstrates the same four possibilities for a two-row, two-column copy. <Switch between relative, absolute, and mixed references, Microsoft Support>[Switch between relative, absolute, and mixed references: final four-row table, absolute column/row, relative column/absolute row, absolute column/relative row, and relative column/row]{ref}
-
-The filled rows have values $(10,12,14)$, $(15,18,21)$, and $(20,24,28)$. The <multiplication table> works because the left factor moves only vertically and the top factor moves only horizontally. Without the anchors, copying `=A2*B1` from `B2` to `D4` would give `=C4*D3`, reading interior results rather than the intended boundary <inputs>.
-
-// Target: computer-science.bigb
-
 \Include[data-structure]{parent=Computer science}
 \Include[operating-system]{parent=Computer science}
 \Include[programming-language]{parent=Computer science}
+\Include[spreadsheet]{parent=Computer science}
 
 = Linial-Mansour-Nisan theorem
 {parent=Computer science}
