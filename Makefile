@@ -2,10 +2,11 @@ PYTHON ?= python3
 MEDIA_ROOT := ./_media
 MPLCONFIGDIR := $(abspath _out/matplotlib)
 FIGURE_SOURCE_ROOT := past-exam-of-the-mathematics-course-of-the-university-of-cambridge
+FIGURE_SOURCE_ROOTS := $(wildcard past-exam-*)
 # Root generators illustrate concept articles; the exam generators retain their
 # mirrored directory layout. Scripts and declared Python dependencies determine
 # image contents; changing this discovery list need not rerender existing images.
-FIGURE_SOURCES := $(sort $(wildcard *.py) $(shell find $(FIGURE_SOURCE_ROOT) -type f -name '*.py' | sort))
+FIGURE_SOURCES := $(sort $(wildcard *.py) $(shell find $(FIGURE_SOURCE_ROOTS) -type f -name '*.py' | sort))
 FIGURES := $(addprefix $(MEDIA_ROOT)/,$(FIGURE_SOURCES:.py=.png))
 
 .PHONY: all clean media

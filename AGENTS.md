@@ -48,6 +48,8 @@ When in doubt, double check that the HTML output is awesome!
 
 Keep .bigb files to a reasonable size. In general, 200 KB seems like a good soft maximum. Attempt to logically split anything that goes much above that into subtopics. Exceptions are possible if there are specific reasons for it.
 
+Use `**my bold**` for bold text and `*my italic*` for italics, we've added it. No need for `\b` and `\i` anymore.
+
 ### OurBigBook links and references
 
 You rarely want explicit `\a` for links because we already have implicit links:
