@@ -13,7 +13,6 @@ import re
 
 
 REPO = Path(__file__).resolve().parent.parent
-DEST = REPO / "past-exam-of-the-natural-sciences-course-of-the-university-of-cambridge"
 TOKEN = re.compile(
     r"\\(?P<command>question|q|partq|examsection|sect|section|subsection|subsubsection|textbf)\*?"
     r"\{(?P<argument>[^{}\n]{1,120})\}"
@@ -197,7 +196,7 @@ def main():
         raise ValueError(f"Course placement and coverage need cataloguing: {sorted(discovered - known_courses)}")
     counts = dict(created=0, checked=0, skipped=0, questions=0, parts=0)
     for course in catalogue["courses"]:
-        folder = DEST / course["path"]
+        folder = REPO / course["path"]
         years = set()
         if course.get("existing_mathematics"):
             years = {p.name for p in folder.iterdir() if p.is_dir() and p.name.isdigit()}

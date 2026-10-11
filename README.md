@@ -20,12 +20,13 @@ find past-exam-of-the-mathematics-course-of-the-university-of-cambridge -name '*
 
 ## Natural Sciences exam stubs
 
-The exam directory follows the `tex/nst/PART/COURSE/` organization in the
-Cambridge exam archive, with full course names in wiki paths: `ia/math`
-becomes `ia/mathematics`, and `ii/oe` becomes
-`ii/optics-and-electrodynamics`. The catalogue's `source_path` retains the
-archive path; `path` specifies the wiki directory.
-Each course has an `index.bigb`, linked from its course entry in
+Each course's exams have their own top-level directory, for example
+`past-exam-of-the-soft-condensed-matter-course-of-the-university-of-cambridge/`.
+The study year is included only where the course name needs disambiguation,
+as with Natural Sciences mathematics in years 1 and 2 and year-1 physics.
+The catalogue's `source_path` retains the exam archive's
+`tex/nst/PART/COURSE/` path; `path` specifies the wiki directory relative to
+the repository root. Each course has an `index.bigb`, linked from its entry in
 `university-of-cambridge.bigb`. A single-paper year uses `YEAR.bigb`;
 multiple-paper years use `YEAR/index.bigb` and `YEAR/paper-N.bigb`.
 Years appear newest first.
