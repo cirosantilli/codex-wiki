@@ -17,3 +17,54 @@ python -m pip install .
 export MPLCONFIGDIR=/tmp/codex-wiki-matplotlib
 find past-exam-of-the-mathematics-course-of-the-university-of-cambridge -name '*.py' -exec python {} \;
 ```
+
+## Natural Sciences exam stubs
+
+The exam directory follows the `tex/nst/PART/COURSE/` organization in the
+Cambridge exam archive, with full course names in wiki paths: `ia/math`
+becomes `ia/mathematics`, and `ii/oe` becomes
+`ii/optics-and-electrodynamics`. The catalogue's `source_path` retains the
+archive path; `path` specifies the wiki directory.
+Each course has an `index.bigb`, linked from its course entry in
+`university-of-cambridge.bigb`. A single-paper year uses `YEAR.bigb`;
+multiple-paper years use `YEAR/index.bigb` and `YEAR/paper-N.bigb`.
+Years appear newest first.
+
+The existing 98 mathematics paper files were moved without changing their
+contents. Mathematics has separate Part IA and Part IB course entries.
+
+Run from the repository root:
+
+```sh
+python3 tools/import-nst-exam-stubs.py
+python3 tools/import-nst-exam-stubs.py --check
+ourbigbook .
+```
+
+Use `--tex-root PATH` for a different exam archive location. The importer
+requires only the Python standard library. It extracts section labels,
+question numbers, lettered parts, and nested Roman or numeric parts. It
+handles restarted enumerations and the transcription's explicit numbering
+macros. It emits no statements, mathematical expressions, diagrams, or
+solutions, and never overwrites an existing paper. `--check` compares the
+header trees while allowing future solution prose.
+
+`nst-exam-catalog.json` records course placement, source links and explicit
+solution-coverage exclusions. Review this evidence before adding new papers:
+
+* Theories of Quantum Matter: all eight currently transcribed papers have
+  worked solutions and are excluded.
+* Thermal and Statistical Physics: the 2022 released paper includes worked
+  solutions and is excluded; the other available years are included.
+* Physics B, 2017: selected final answers are available, but these sheets do
+  not cover every question. Both papers are included and link to the sheets.
+* Examiner commentary is not assumed to be a complete worked solution.
+  Exact solution coverage inside the restricted Cambridge teaching system
+  remains unverified.
+
+The Cambridge release is available at
+https://www.whatdotheyknow.com/request/natural_science_tripos_physics_e .
+Links use the original 509-page PDF's page positions, as recorded in
+`pdf/nst/sullivan-2022/README.md` in the exam archive. Ten older Quantum
+Condensed Matter papers link to the official course archive; their direct
+PDF URLs remain unverified.
