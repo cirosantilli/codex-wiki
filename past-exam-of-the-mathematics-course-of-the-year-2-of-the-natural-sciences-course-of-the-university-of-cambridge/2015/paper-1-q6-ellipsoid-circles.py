@@ -4,7 +4,6 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
 
 fig = plt.figure(figsize=(10, 4.8), layout="constrained", facecolor="white")
 ax = fig.add_subplot(1, 2, 1, projection="3d")
@@ -29,5 +28,5 @@ section.set(xlim=(-3.3, 3.3), ylim=(-2.3, 2.3), xlabel=r"$\xi$", ylabel=r"$\eta$
 section.set_aspect("equal")
 section.grid(alpha=0.16)
 section.legend(fontsize=9, loc="upper center")
-fig.savefig("paper-1-q6-ellipsoid-circles.png", dpi=165, facecolor="white")
+fig.savefig("paper-1-q6-ellipsoid-circles.png", dpi=165, facecolor="white", bbox_inches="tight")
 plt.close(fig)
