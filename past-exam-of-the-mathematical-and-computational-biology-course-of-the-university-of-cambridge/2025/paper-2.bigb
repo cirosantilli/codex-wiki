@@ -1,0 +1,713 @@
+= Paper 2
+{scope}
+
+https://www.whatdotheyknow.com/request/past_exam_information_of_nst_ib_2/response/3538010/attach/2/FOI%202026%20642%20Cui%20materials%20Part2.pdf?cookie_passthrough=1#page=126[Original paper, released PDF pages 126–135]
+
+= 1
+{parent=Paper 2}
+{scope}
+
+= a
+{parent=1}
+{scope}
+
+= Solution
+{parent=a}
+
+A <cyclic rotation> moves the first character to the end without changing the cyclic order of the remaining characters. Starting with the specified terminator-first row and repeatedly rotating left gives the following <matrix>; its row order is only a construction order, not a sorting order:
+$$
+R=\begin{pmatrix}
+\char36{}&A&C&A&A&C&G\\
+A&C&A&A&C&G&\char36{}\\
+C&A&A&C&G&\char36{}&A\\
+A&A&C&G&\char36{}&A&C\\
+A&C&G&\char36{}&A&C&A\\
+C&G&\char36{}&A&C&A&A\\
+G&\char36{}&A&C&A&A&C
+\end{pmatrix}.
+$$
+Under <lexicographic order>, compare characters from left to right, using $\char36{}\lt A\lt C\lt G$. The sorted <cyclic rotation> <matrix> is therefore
+$$
+B=\begin{pmatrix}
+\char36{}&A&C&A&A&C&G\\
+A&A&C&G&\char36{}&A&C\\
+A&C&A&A&C&G&\char36{}\\
+A&C&G&\char36{}&A&C&A\\
+C&A&A&C&G&\char36{}&A\\
+C&G&\char36{}&A&C&A&A\\
+G&\char36{}&A&C&A&A&C
+\end{pmatrix}.
+$$
+The <Burrows-Wheeler transform> is the last column, read downwards, so **the transformed string** is
+$$
+\boxed{\operatorname{BWT}(S_1)=\texttt{GC\char36{}AAAC}}.
+$$
+
+= b
+{parent=1}
+{scope}
+
+= Solution
+{parent=b}
+
+To invert the <Burrows-Wheeler transform>, begin with six empty rows. At every iteration prepend the supplied last-column characters in their fixed row order, then sort the resulting rows in <lexicographic order>. After $k$ iterations the rows contain the length-$k$ prefixes of the sorted <cyclic rotations>. For example, the first two iterations give
+$$
+\begin{aligned}
+T_1&=(\texttt{\char36{}},\texttt{B},\texttt{C},\texttt{E},\texttt{M},\texttt{X}),\\
+T_2&=(\texttt{\char36{}M},\texttt{BE},\texttt{CB},\texttt{EX},\texttt{MC},\texttt{X\char36{}}).
+\end{aligned}
+$$
+Each iteration works because sorting the preceding character together with the already reconstructed prefix restores the ordering of the next-longer prefixes. Six iterations give the completed <matrix>
+$$
+B=\begin{pmatrix}
+\char36{}&M&C&B&E&X\\
+B&E&X&\char36{}&M&C\\
+C&B&E&X&\char36{}&M\\
+E&X&\char36{}&M&C&B\\
+M&C&B&E&X&\char36{}\\
+X&\char36{}&M&C&B&E
+\end{pmatrix}.
+$$
+The original linear string is the unique row ending in the terminator, hence
+$$
+\boxed{S_2=\texttt{MCBEX\char36{}}}.
+$$
+As a check, the reconstructed <matrix>'s final column is precisely the supplied <Burrows-Wheeler transform>.
+
+= c
+{parent=1}
+{scope}
+
+= Solution
+{parent=c}
+
+Use one-based row numbers, and write $F$ and $L$ for the first and last columns. The <last-to-first mapping> matches the $k$th occurrence of a character in $L$ to its $k$th occurrence in $F$: equal characters retain the ordering of their following suffixes. This lets us extend an interval of matching <suffixes> one character to the left without reconstructing the full strings.
+
+Start with the last query character. Rows $5,6,7$ of $F$ contain C, so the interval of <suffixes> beginning with C is $[5,7]$. Within those rows, the A entries of $L$ are at rows $5$ and $7$. They are respectively the first and second A entries in all of $L$, and therefore map to rows $2$ and $3$ of $F$. These are exactly the <suffixes> beginning with AC. Reading their supplied positions gives **matches starting at positions 11 and 3**, or positions **3 and 11** in increasing genomic order.
+
+The same calculation can be written as <backward search>. Let $C(c)$ count characters strictly smaller than $c$, and let $\operatorname{Occ}(c,r)$ count occurrences of $c$ in $L[1:r]$, with $\operatorname{Occ}(c,0)=0$. Prepending $c$ changes an inclusive interval $[l,r]$ to
+$$
+[l',r']=[C(c)+\operatorname{Occ}(c,l-1)+1,\ C(c)+\operatorname{Occ}(c,r)].
+$$
+Here $C(\mathrm A)=1$, $\operatorname{Occ}(\mathrm A,4)=0$ and $\operatorname{Occ}(\mathrm A,7)=2$, giving $[l',r']=[2,3]$.
+
+= d
+{parent=1}
+{scope}
+
+= Solution
+{parent=d}
+
+Build an <FM-index>: store the <Burrows-Wheeler transform>, cumulative character counts $C$, and a structure supporting fast <rank queries> for $\operatorname{Occ}(c,r)$. Then each step of <backward search> uses two <rank queries> instead of rescanning the last column. A <wavelet tree> or suitably checkpointed counts can supply these queries while keeping memory manageable. The counting cost is proportional to query length times the <rank query> cost, rather than repeatedly scanning the whole <genome>.<Opportunistic Data Structures with Applications by Paolo Ferragina and others>[§2, LF-mapping; §§3.1–3.2, counting and locating occurrences]{ref}
+
+To recover genomic positions, store a sampled <suffix array> and follow the <last-to-first mapping> to a sampled position, adding the number of steps taken. More samples trade storage for faster position recovery. **Index character counts and sample positions**, rather than storing the quadratic-size full <cyclic rotation> <matrix>.
+
+= 2
+{parent=Paper 2}
+{scope}
+
+= a
+{parent=2}
+{scope}
+
+= Solution
+{parent=a}
+
+With no deletion states allowed, each <match state> must emit once in every aligned sequence. Thus the four gap-free alignment columns, $1,2,5,7$, become $M_1,M_2,M_3,M_4$. Columns $3$ and $4$ form one optional run, represented by a single looping <insertion state> $I_2$; column $6$ requires a separate <insertion state> $I_3$ after $M_3$. **Two insertion states are sufficient and minimal** in an ordered <profile hidden Markov model>: the two optional regions are separated by a compulsory emission and occupy different positions in the profile.
+
+Estimate each <transition probability> by the number of observed uses of that transition divided by all transitions leaving its source state. The complete arrow diagram is given below; repeated labels denote the same state, so the second and third lines supply the branches of the first line. Start and End are silent:
+$$
+\begin{gathered}
+\mathrm{Start}\xrightarrow{1}M_1\xrightarrow{1}M_2\xrightarrow{1/4}M_3\xrightarrow{1/2}M_4\xrightarrow{1}\mathrm{End},\\
+M_2\xrightarrow{3/4}I_2\xrightarrow{3/4}M_3,\qquad I_2\xrightarrow{1/4}I_2,\\
+M_3\xrightarrow{1/2}I_3\xrightarrow{1}M_4.
+\end{gathered}
+$$
+Three aligned sequences visit $I_2$, giving three exits to $M_3$, while one sequence emits twice there, giving one self-transition. Thus its exit and loop probabilities are $3/4$ and $1/4$, respectively. Two sequences visit $I_3$ and two bypass it. All absent transitions have probability zero.
+
+The <probability mass functions> of the emitting states, estimated from all characters assigned to each state with no added counts, are
+$$
+\begin{array}{c|rrrr}
+\text{state}&\mathrm A&\mathrm T&\mathrm G&\mathrm C\\\hline
+M_1&1/2&0&1/4&1/4\\
+M_2&0&0&3/4&1/4\\
+I_2&1/4&1/2&1/4&0\\
+M_3&0&1&0&0\\
+I_3&0&0&0&1\\
+M_4&1/4&0&3/4&0
+\end{array}.
+$$
+In particular, pooling the two optional columns into $I_2$ pools four emissions: two T, one A and one G. This is a generative <Hidden Markov model>, so it can generate other run lengths and combinations as well as the training sequences; reproducing each training column deterministically is not its purpose.
+
+= b
+{parent=2}
+{scope}
+
+= Solution
+{parent=b}
+
+The sequence has five characters, while the four <match states> account for four compulsory emissions. Consequently exactly one <insertion state> emission is needed. An insertion at $I_3$ would have to emit T, which has probability zero there. The only nonzero hidden path is therefore
+$$
+\mathrm{Start},\ M_1(\mathrm C),\ M_2(\mathrm G),\ I_2(\mathrm T),\ M_3(\mathrm T),\ M_4(\mathrm A),\ \mathrm{End}.
+$$
+Multiply its <transition probabilities> and <emission probabilities>, including the probability of exiting $I_2$ immediately and bypassing $I_3$:
+$$
+\begin{aligned}
+P(\texttt{CGTTA})
+&=1\cdot\frac14\cdot1\cdot\frac34\cdot\frac34\cdot\frac12\cdot\frac34\cdot1\cdot\frac12\cdot\frac14\cdot1\\
+&=\boxed{\frac{27}{4096}\approx0.00659180}.
+\end{aligned}
+$$
+Normally the <forward algorithm> sums over all compatible paths. Here all other paths have probability zero, so this single path gives the full sequence probability.
+
+= c
+{parent=2}
+{scope}
+
+= Solution
+{parent=c}
+
+Use a uniform independent <DNA> background, so each <nucleotide> has probability $1/4$. Conditional on length five, its sequence probability is $4^{-5}=1/1024$. The requested score, often called log-odds in sequence analysis, is a <log-likelihood ratio> against this background:
+$$
+\boxed{\log_2\frac{P(\texttt{CGTTA})}{4^{-5}}=\log_2\frac{27}{4}\approx2.75489\ \text{bits}}.
+$$
+Using <natural logarithms> instead gives $\ln(27/4)\approx1.90954$. Identically distributed independent positions do not, by themselves, require equal base frequencies. If the intended background instead has specified frequencies $q_A,q_T,q_G,q_C$, the general answer is
+$$
+\log\frac{27/4096}{q_Cq_Gq_T^2q_A}.
+$$
+The numerical value above uses the conventional equal-frequency random <DNA> model.
+
+Taking a <logarithm> only after multiplying probabilities does not prevent <floating-point underflow>: the product may already have rounded to zero, and its <logarithm> is then $-\infty$. **Accumulate logarithms before forming tiny products**; where alternative paths must be added, use <log-sum-exp> in the <forward algorithm> or rescale its intermediate probabilities.
+
+= d
+{parent=2}
+{scope}
+
+= Solution
+{parent=d}
+
+For the same uniform background and base-two <log-likelihood ratio>, replace every <emission probability> $b_i(x)$ by $e_i(x)=\log_2[b_i(x)/(1/4)]$. The background specifies independent letters, not a competing hidden-state process. Its single emitting state has continuation factor one when scoring a fixed-length word, so each model transition contributes $s_{ij}=\log_2 a_{ij}$; dividing every transition by $1/4$ would incorrectly count the background twice.
+
+The complete transition-score diagram is
+$$
+\begin{gathered}
+\mathrm{Start}\xrightarrow{0}M_1\xrightarrow{0}M_2\xrightarrow{-2}M_3\xrightarrow{-1}M_4\xrightarrow{0}\mathrm{End},\\
+M_2\xrightarrow{\log_2(3/4)}I_2\xrightarrow{\log_2(3/4)}M_3,\qquad I_2\xrightarrow{-2}I_2,\\
+M_3\xrightarrow{-1}I_3\xrightarrow{0}M_4.
+\end{gathered}
+$$
+Every omitted transition has score $-\infty$. Silent Start and End supply no emission score. The complete table of emission scores is
+$$
+\begin{array}{c|rrrr}
+\text{state}&\mathrm A&\mathrm T&\mathrm G&\mathrm C\\\hline
+M_1&1&-\infty&0&0\\
+M_2&-\infty&-\infty&\log_2 3&0\\
+I_2&0&1&0&-\infty\\
+M_3&-\infty&2&-\infty&-\infty\\
+I_3&-\infty&-\infty&-\infty&2\\
+M_4&0&-\infty&\log_2 3&-\infty
+\end{array}.
+$$
+For the unique nonzero path identified in (b), add the five emission scores and all transition scores:
+$$
+\begin{aligned}
+\text{score}
+&=\underbrace{0+\log_2 3+1+2+0}_{\text{emissions}}+\underbrace{2\log_2(3/4)-1}_{\text{transitions}}\\
+&=\log_2 27-2=\boxed{\log_2(27/4)}.
+\end{aligned}
+$$
+This equals (c). For a sequence with several nonzero hidden paths, the full <log-likelihood ratio> is the <log-sum-exp> of their path scores; selecting only the largest score would instead compute a best-path approximation.
+
+= e
+{parent=2}
+{scope}
+
+= Solution
+{parent=e}
+
+Let $Z_t$ be the hidden state. With the usual convention $\alpha_t(i)=P(o_1,\ldots,o_t,Z_t=i)$ and $\beta_t(i)=P(o_{t+1},\ldots,o_T\mid Z_t=i)$, the <Markov property> and the <conditional independence> of emissions factor the joint probability as
+$$
+\begin{aligned}
+&P(O,Z_t=i,Z_{t+1}=j,Z_{t+2}=k)\\
+&\qquad=\alpha_t(i)\,a_{ij}\,b_j(o_{t+1})\,a_{jk}\,b_k(o_{t+2})\,\beta_{t+2}(k).
+\end{aligned}
+$$
+The requested state-path probability after observing the complete data is the corresponding <conditional probability>:
+$$
+\boxed{P(Z_t=i,Z_{t+1}=j,Z_{t+2}=k\mid O)=\frac{\alpha_t(i)a_{ij}b_j(o_{t+1})a_{jk}b_k(o_{t+2})\beta_{t+2}(k)}{P(O)}}.
+$$
+Here the <forward algorithm> and <backward algorithm> give the same normalizer at any interior time,
+$$
+P(O)=\sum_r\alpha_t(r)\beta_t(r).
+$$
+There is no extra factor $b_i(o_t)$: it is already included in $\alpha_t(i)$. If an unconditioned joint probability with the observations is intended, it is the numerator alone. Summing the boxed expression over all $i,j,k$ gives one.
+
+= 3
+{parent=Paper 2}
+{scope}
+
+= a
+{parent=3}
+{scope}
+
+= Solution
+{parent=a}
+
+Let $T$ be the time since the two sampled <mitochondrial genomes> shared their ancestor. Under the stipulated one-change-per-difference approximation, both descendant lineages contribute, giving a total evolutionary duration $2T$. Therefore the per-site, per-lineage <mutation rate> estimate is
+$$
+\boxed{\widehat\mu_{\mathrm{naive}}=\frac{0.29}{2(14.5\times10^6)}=1.00\times10^{-8}\ \text{site}^{-1}\text{year}^{-1}}.
+$$
+This is not a whole-<genome> event rate; multiplying by the number of usable sites would give that rate. Without equal lineage rates, the pairwise data identify their sum rather than either rate separately.
+
+The calculation assumes an accurate <sequence alignment> of corresponding ancestral sites, negligible errors in <DNA sequencing>, and an appropriate divergence-time calibration for the sampled <mitochondrial genomes>. It assumes a constant <molecular clock> on each lineage, comparable rates across sites for this simple average, and no extra differences introduced by incorrectly aligned insertions or deletions. It treats observed <nucleotide substitutions> as a record of <mutations>; interpreting a substitution-based rate as the underlying <mutation rate> additionally requires a suitable neutral model rather than strong filtering by <natural selection>. Independence between sites is useful for a simple sampling model and uncertainty calculation. The supplied time must refer to the common ancestor of these sequences: a species split need not coincide exactly with a sampled gene's ancestral split.
+
+= b
+{parent=3}
+{scope}
+
+= Solution
+{parent=b}
+
+**The printed “otherwise” branch requires correction.** Its factor $3/4$ is the probability of ending at any of the three bases different from the initial base, not of ending at one specified different base. Assigning that probability to each of three alternatives would make a row of the <transition matrix> sum to $5/2-(3/2)e^{-\mu t}$, which exceeds one for $t>0$. This distinction is present in the source PDF, not introduced by the transcription.
+
+For a consistent <Jukes-Cantor model>, let each ordered change from one <nucleotide> to a specified different <nucleotide> have instantaneous rate $q$. Its <continuous-time Markov chain> has diagonal generator entries $-3q$ and off-diagonal entries $q$. If $p_s(t)$ is the probability of still having the same base as at time zero, its <Kolmogorov equations> give
+$$
+p_s'(t)=-3q\,p_s(t)+q[1-p_s(t)]=q-4q\,p_s(t),\qquad p_s(0)=1.
+$$
+Solving the <linear ordinary differential equation> gives
+$$
+p_s(t)=\frac14+\frac34e^{-4qt}.
+$$
+Set $\mu=4q$ to match the exponent used in the question. Symmetry then gives the properly normalized <transition probabilities>
+$$
+\boxed{P_{ij}(t)=\begin{cases}\dfrac14(1+3e^{-\mu t}),&i=j,\\[2pt]\dfrac14(1-e^{-\mu t}),&i\ne j.\end{cases}}
+$$
+Summing the three different-base outcomes yields
+$$
+\boxed{P(\text{different base at }t)=\frac34(1-e^{-\mu t})}.
+$$
+The assumptions are a time-homogeneous <Markov process>, the same change rate between every distinct ordered base pair, identical rates across independent sites, and no insertions or deletions. The <stationary distribution> is uniform over the four bases; starting the process in that distribution is not required for this conditional calculation.
+
+There is also a parameter-convention issue. The actual total <mutation rate> out of a base is $r=3q=3\mu/4$. Thus the exponent parameter $\mu$ in (b)–(d) is $4/3$ times the event rate used in the elementary counting interpretation of (a). Keeping this conversion explicit avoids changing the meaning of “mutation rate” halfway through the calculation.
+
+= c
+{parent=3}
+{scope}
+
+= Solution
+{parent=c}
+
+Under the independent-site <Jukes-Cantor model>, the number of differences from a known ancestor has a <binomial distribution> with mismatch probability
+$$
+p(t)=\frac34(1-e^{-\mu t}),\qquad d\sim\operatorname{Binomial}(L,p(t)).
+$$
+For an interior estimate, <maximum likelihood estimation> gives $\widehat p=d/L$. Equating this to the model probability and rearranging gives
+$$
+1-\frac{4d}{3L}=e^{-\widehat\mu t},\qquad\boxed{\widehat\mu=-\frac1t\ln\left(1-\frac{4d}{3L}\right)}.
+$$
+This is finite for $0\leq d/L<3/4$. At $d/L=3/4$, the estimate tends to infinity: the endpoint distribution has reached its limiting saturation and no finite rate can reproduce it exactly. For $d/L>3/4$, the displayed <logarithm> is not defined as a real number; within this model the constrained likelihood is maximized only as $\mu\to\infty$. For $d=0$ the boundary estimate is zero. The corresponding estimate of the actual event <mutation rate> is $\widehat r=3\widehat\mu/4$.
+
+= d
+{parent=3}
+{scope}
+
+= Solution
+{parent=d}
+
+The two descendant branches of an equal-rate <Jukes-Cantor model> compose to a single branch of duration $2T$. More explicitly, the model is symmetric, so summing over the ancestral base gives $\sum_a\pi_aP_{ai}(T)P_{aj}(T)$ and a total mismatch probability $\tfrac34(1-e^{-2\mu T})$. Thus use the pairwise difference fraction directly with $t=2T$, rather than halving the differences and correcting the halves separately:
+$$
+\begin{aligned}
+\widehat\mu
+&=-\frac{\ln(1-4\times0.29/3)}{29\times10^6}\\
+&=\boxed{1.68568\times10^{-8}\ \text{year}^{-1}}.
+\end{aligned}
+$$
+This is the parameter in the printed formula of (c). For a <mutation rate> measured as actual changes per site per year, the conversion derived in (b) gives
+$$
+\boxed{\widehat r=\frac34\widehat\mu=1.26426\times10^{-8}\ \text{site}^{-1}\text{year}^{-1}}.
+$$
+The latter is directly comparable to the naive estimate in (a): allowing repeated changes raises that estimate by about $26.4\%$. The exponent parameter and actual event rate are two conventions for the same fitted process, not two different biological estimates.
+
+= 4
+{parent=Paper 2}
+{scope}
+
+= a
+{parent=4}
+{scope}
+
+= Solution
+{parent=a}
+
+Let $p(a)$ be the true <seroprevalence> at age $a$, and $\lambda(a)$ the <force of infection>, meaning the instantaneous rate of a first infection among people still uninfected. In an irreversible <serocatalytic model>, people begin seronegative and retain detectable antibodies after infection. Their seronegative fraction $s(a)=1-p(a)$ obeys
+$$
+\frac{ds}{da}=-\lambda(a)s(a),\qquad s(0)=1.
+$$
+Hence
+$$
+\boxed{p(a)=1-\exp\left[-\int_0^a\lambda(u)\,du\right]}.
+$$
+Equivalently, where differentiation is possible, $\lambda(a)=p'(a)/[1-p(a)]$. This identifies the <force of infection> as a <hazard function> and $1-p(a)$ as the <survival function> for remaining uninfected. For constant exposure $\lambda$, **$p(a)=1-e^{-\lambda a}$**. A single calendar-time survey reflects each birth cohort's accumulated exposure; interpreting the same age curve as a timeless age effect requires assumptions about historical transmission.
+
+= b
+{parent=4}
+{scope}
+
+= Solution
+{parent=b}
+
+Assume a constant annual <force of infection> $\lambda>0$ across ages and calendar years. For independent sampled people with ages $a_i>0$ and binary results $y_i$, fit
+$$
+Y_i\sim\operatorname{Bernoulli}(p_i),\qquad p_i=1-e^{-\lambda a_i}.
+$$
+Applying the <complementary log-log link> gives
+$$
+\begin{aligned}
+\ln[-\ln(1-p_i)]&=\ln(\lambda a_i)\\
+&=\beta_0+\ln a_i,\qquad\beta_0=\ln\lambda.
+\end{aligned}
+$$
+Therefore fit a <binomial regression> with the <complementary log-log link>, an intercept, and **$\ln a_i$ as an offset with coefficient fixed at one**. Age is measured in years. An ordinary freely fitted coefficient of age, or even a freely fitted coefficient of $\ln a_i$, would describe a different exposure model. The annual <force of infection> estimate is
+$$
+\boxed{\widehat\lambda=e^{\widehat\beta_0}\ \text{year}^{-1}}.
+$$
+An infection-naive person's one-year infection probability is $1-e^{-\widehat\lambda}$, which is approximately $\widehat\lambda$ only when that rate is small.
+
+The <log-likelihood> being maximized is, apart from constants,
+$$
+\ell(\beta_0)=\sum_i\left[y_i\ln\{1-\exp(-a_ie^{\beta_0})\}-(1-y_i)a_ie^{\beta_0}\right].
+$$
+A <confidence interval> for $\beta_0$ can be exponentiated to give a positive interval for $\lambda$. For groups of $n_j$ people at a common age $a_j$, use $Y_j\sim\operatorname{Binomial}(n_j,1-e^{-\lambda a_j})$ with the same <offset>. If an age band is broad, use individual ages or average $1-e^{-\lambda a}$ over the band's age distribution instead of treating its midpoint as exact. No numerical estimate is possible without the survey observations.
+
+The biological interpretation assumes that <immunoglobulin G> positivity records previous infection, persists over the relevant ages, and is not substantially produced by maternal antibodies or vaccination. These are conditions to check, rather than conclusions from the fitted curve. Use known-positive and known-negative serum controls to assess the assay threshold, and validate specificity against relevant other infections. Cross-reactive antibodies to other flaviviruses can produce positive <dengue virus> serology, so a positive result need not be a marker specific to <dengue virus> exposure.<Serologic Tests for Dengue Virus by the Centers for Disease Control and Prevention>[IgG Tests: persistence after previous exposure and cross-reactivity with other flaviviruses]{ref}
+
+If independently established assay <diagnostic sensitivity> and <diagnostic specificity> are $Se$ and $Sp$, the observed positive probability is
+$$
+p_{i,\mathrm{obs}}=Se(1-e^{-\lambda a_i})+(1-Sp)e^{-\lambda a_i}.
+$$
+Use that observation model in the <binomial likelihood>; it is generally no longer the simple intercept-plus-offset <complementary log-log link> fit. With only the stated survey, one cannot freely estimate $Se$, $Sp$, antibody loss and an arbitrary infection history simultaneously. A single binary result also does not identify how many subsequent infections a person has experienced.
+
+= c
+{parent=4}
+{scope}
+
+= Solution
+{parent=c}
+
+**A susceptible person must have the same annual force of infection at every age.** Thus the difference between age groups is their length of exposure, not an age-dependent infection hazard. To interpret one fitted constant as a historical annual <force of infection>, also assume that this common rate was sufficiently stable over the calendar years represented by the sampled birth cohorts. Otherwise an age pattern can reflect past outbreaks or cohort exposure, and the fitted constant is only a model-dependent summary. Representative sampling and comparable antibody detection across ages are additional conditions on interpreting the observed <seroprevalence>.
+
+= d
+{parent=4}
+{scope}
+
+= Solution
+{parent=d}
+
+Before introduction there is no local infection exposure. Let $H=2024-2005=19$ years, using the actual elapsed time between introduction and sampling if exact dates are available. A lifelong resident aged $a_i$ has therefore had only
+$$
+e_i=\min(a_i,H)
+$$
+years of possible exposure. With a constant post-introduction <force of infection> $\lambda$, replace age by this exposure duration:
+$$
+\boxed{p_i=1-e^{-\lambda\min(a_i,19)},\qquad\operatorname{cloglog}(p_i)=\beta_0+\ln\min(a_i,19)}.
+$$
+Fit the same <binomial regression> with $\ln e_i$ as its <offset>. The predicted <seroprevalence> increases with age up to 19 and then reaches a plateau, since older residents all began local exposure at introduction.
+
+This is equivalent to using a calendar-time <force of infection> of zero before 2005 and $\lambda$ afterwards. With a changing post-introduction rate, the more general exposure is $\int_{\max(2005,\,2024-a_i)}^{2024}\lambda(u)\,du$. Account separately for migration or infection acquired elsewhere, since current residence alone need not specify lifetime exposure. Subjects with exactly zero exposure have model probability zero and cannot be included by taking $\ln0$ as an ordinary finite <offset>; handle them through the original probability model.
+
+= 5
+{parent=Paper 2}
+{scope}
+
+= a
+{parent=5}
+{scope}
+
+= i
+{parent=a}
+{scope}
+
+= Solution
+{parent=i}
+
+The <Waiting times of a Poisson process> have an <exponential distribution> with the arrival rate. Measuring time in days, the <survival function> is $P(W>w)=e^{-\alpha w}$. Therefore
+$$
+\boxed{P(W>1)=e^{-3}\approx0.0497871},
+$$
+or **about $4.98\%$**.
+
+= ii
+{parent=a}
+{scope}
+
+= Solution
+{parent=ii}
+
+A day's admission count is a <Poisson random variable> with mean three. “Less than three” includes zero, one and two, so
+$$
+\begin{aligned}
+P(A<3)&=\sum_{k=0}^{2}\frac{3^ke^{-3}}{k!}\\
+&=e^{-3}\left(1+3+\frac92\right)=\boxed{\frac{17}{2}e^{-3}\approx0.423190}.
+\end{aligned}
+$$
+Thus the probability is **about $42.32\%$**.
+
+= b
+{parent=5}
+{scope}
+
+= Solution
+{parent=b}
+
+For an <exponential distribution>, the <survival function> at the <median> equals one half. Thus $e^{-10\delta}=1/2$, and
+$$
+\boxed{\delta=\frac{\ln2}{10}\approx0.0693147\ \text{day}^{-1}}.
+$$
+The corresponding mean care time is $1/\delta=10/\ln2\approx14.43$ days; a ten-day <median> should not be substituted as the mean.
+
+= c
+{parent=5}
+{scope}
+
+= Solution
+{parent=c}
+
+This is an <immigration--death process>, equivalently an <M-M-infinity queue>: admission occurs at rate $\alpha$ regardless of occupancy, and each of $n$ animals is discharged independently at rate $\delta$. Its state-transition diagram through four animals is
+$$
+0\underset{\delta}{\overset{\alpha}{\rightleftarrows}}1\underset{2\delta}{\overset{\alpha}{\rightleftarrows}}2\underset{3\delta}{\overset{\alpha}{\rightleftarrows}}3\underset{4\delta}{\overset{\alpha}{\rightleftarrows}}4\underset{5\delta}{\overset{\alpha}{\rightleftarrows}}\cdots.
+$$
+Every upper arrow points right and every lower arrow points left. Thus $q_{n,n+1}=\alpha$ and $q_{n,n-1}=n\delta$ for $n\geq1$, with no discharge from zero. Four is only the limit of the requested sketch, not an absorbing state or a capacity boundary.
+
+= d
+{parent=5}
+{scope}
+
+= Solution
+{parent=d}
+
+Admissions add to the <expected value> at rate $\alpha$, while the expected aggregate discharge rate is $\delta\mathbb E[X(t)]$. Consequently
+$$
+\boxed{N'(t)=\alpha-\delta N(t)}.
+$$
+Multiplying this <linear ordinary differential equation> by the <integrating factor> $e^{\delta t}$ gives
+$$
+\frac{d}{dt}[e^{\delta t}N(t)]=\alpha e^{\delta t}.
+$$
+Integrating from zero, using $N(0)=0$, gives $e^{\delta t}N(t)=\alpha(e^{\delta t}-1)/\delta$. Hence
+$$
+\boxed{N(t)=\frac\alpha\delta(1-e^{-\delta t})}.
+$$
+It starts at zero, has initial slope $\alpha$, and approaches $\alpha/\delta$ as $t\to\infty$, as the admission and discharge rates balance.
+
+= e
+{parent=5}
+{scope}
+
+= Solution
+{parent=e}
+
+Setting the mean equation's derivative to zero gives
+$$
+\boxed{\widehat N=\frac\alpha\delta=\frac5{0.2}=25\ \text{animals}}.
+$$
+When the actual current occupancy is $n=25$, the next admission has <exponential distribution> rate five and the next discharge has rate $n\delta=5$. The <memoryless property> makes these independent competing clocks conditional on the current occupancy. Therefore
+$$
+\boxed{P(\text{discharge before admission}\mid X=25)=\frac{25(0.2)}{5+25(0.2)}=\frac12}.
+$$
+The rate comparison uses the actual stated occupancy. Knowing only the mean occupancy would not justify replacing the random $X$ inside $X\delta/(\alpha+X\delta)$ by its mean.
+
+= f
+{parent=5}
+{scope}
+
+= Solution
+{parent=f}
+
+Use the parameters from (e), and interpret overflow as the number needing simultaneous care exceeding capacity at a randomly chosen time in <stationary distribution>. The occupancy of the <immigration--death process> is not fixed at its mean. <Detailed balance> gives
+$$
+\pi_n\alpha=\pi_{n+1}(n+1)\delta,\qquad\pi_n=\pi_0\frac{(\alpha/\delta)^n}{n!}.
+$$
+Normalizing yields $\pi_0=e^{-25}$, so **stationary occupancy has a <Poisson distribution> with mean 25**. Thus integer capacity $K$ must satisfy
+$$
+P(X>K)=1-e^{-25}\sum_{n=0}^{K}\frac{25^n}{n!}<0.1.
+$$
+The adjacent tails are
+$$
+P(X>31)\approx0.1000679170,\qquad P(X>32)\approx0.0714560312.
+$$
+Since the tail decreases with $K$, the **minimum capacity is $\boxed{32\ \text{animals}}$**. The small excess above $0.1$ at 31 matters; a <normal approximation> rounded too early can choose the wrong integer.
+
+This is a stationary occupancy criterion. If the event is instead an offered arrival finding at least $K$ animals already present in this unrestricted process, <Poisson arrivals see time averages> gives $P(X\geq K)$, whose minimum qualifying capacity is 33. That uses a different event definition. From an initially empty centre, occupancy at a finite time is <Poisson distributed> with mean $N(t)\leq25$, so the stationary criterion also bounds the fixed-time overflow probability during initial filling. A probability of ever exceeding capacity over an unlimited future is a different question: this irreducible recurrent process will eventually exceed every finite capacity with probability one. If instead arrivals are refused when all places are occupied, that changes the model to an <loss network>, whose blocking probability is not the unrestricted occupancy tail calculated here.
+
+= 6
+{parent=Paper 2}
+{scope}
+
+= a
+{parent=6}
+{scope}
+
+= Solution
+{parent=a}
+
+Average the four local <clustering coefficients> and the four supplied mean <graph distances>, using the same weighting convention for the reference networks:
+$$
+C=\frac{0.8+0.7+0.6+0.8}{4}=0.725,\qquad L=\frac{3.6+3.7+3.6+3.8}{4}=3.675.
+$$
+The two reference values average to $C_{\mathrm{rand}}=0.35$ and $L_{\mathrm{rand}}=3.6$. The normalized <small-worldness> is the relative clustering divided by the relative path length,
+$$
+\boxed{\sigma=\frac{C/C_{\mathrm{rand}}}{L/L_{\mathrm{rand}}}=\frac{0.725/0.35}{3.675/3.6}\approx2.02915}.
+$$
+This uses the standard ratio-of-ratios definition, with the supplied degree-matched <random graphs> as the chosen reference ensemble.<Network ‘Small-World-Ness’: A Quantitative Method for Determining Canonical Network Equivalence by Mark D. Humphries and others>[Results, New measures of small-world-ness, Definition 2 and the ratio of relative clustering to relative path length]{ref}
+
+= b
+{parent=6}
+{scope}
+
+= Solution
+{parent=b}
+
+Under the conventional $\sigma>1$ criterion, **the supplied summaries classify it as a <small-world network>**: clustering is about $2.071$ times the reference value, while path length is only about $1.021$ times the reference value. Two reference <random graphs> permit a numerical comparison but do not establish the variability or statistical significance of that classification.
+
+There is a literal consistency problem with describing these summaries as those of a four-<vertex> simple unweighted <graph>. Any finite <graph distance> is at most three, whereas the supplied mean path lengths exceed three. A local <clustering coefficient> with at most three neighbours can only be $0$, $1/3$, $2/3$ or $1$ under the usual definition, not $0.7$ or $0.8$. Thus the result above is the intended calculation from the given summaries; **they cannot all describe an ordinary four-node simple unweighted network**. A larger network or a separately specified weighted convention would be needed for a literal network interpretation.
+
+= c
+{parent=6}
+{scope}
+
+= Solution
+{parent=c}
+
+**No.** A <scale-free network> is characterized by an approximately power-law tail in its <degree distribution>, $P(k)\propto k^{-\gamma}$ over a meaningful range. <clustering coefficients> and mean <graph distances> do not supply that distribution. One would need the <degrees of vertices>, enough observations over a substantial range, and a fitted power-law model assessed against alternatives. Four <vertices> cannot establish such a tail, even if their degrees were supplied. <small-worldness> alone does not imply a <scale-free network>.
+
+= d
+{parent=6}
+{scope}
+
+= Solution
+{parent=d}
+
+Use <degree-preserving edge rewiring>, often called a double-edge swap. Select two <edges> $(u,v)$ and $(x,y)$ with four distinct endpoints, then replace them by $(u,y)$ and $(x,v)$, choosing the reconnection symmetrically. Reject a proposal that would create a <self-loop> or an already present edge if the target is a <simple graph>. Each endpoint loses one edge and gains one, so every <degree of a vertex>, as well as the numbers of <vertices> and <edges>, is preserved exactly.
+
+Repeat many such random proposals to generate reference networks. With symmetric proposals, retaining rejected steps as self-transitions, the uniform distribution on the reachable degree-preserving realizations is stationary. Adequate mixing must be checked; a few successful swaps do not establish an independent random sample. Degree preservation alone does not preserve connectedness, so impose and check that extra restriction if the <graph distance> comparison requires connected networks.
+
+= e
+{parent=6}
+{scope}
+
+= Solution
+{parent=e}
+
+Factor the <characteristic polynomial> as $\lambda^2(\lambda^2-3)$. The <eigenvalues>, with algebraic multiplicity, are therefore
+$$
+\boxed{\sqrt3,\ -\sqrt3,\ 0,\ 0}.
+$$
+The <adjacency matrix> describes a <star graph> with node 1 as the hub. For the positive leading <eigenvalue> $\lambda=\sqrt3$, write the hub component as $h$. The leaf equations $h=\lambda v_i$, for $i=2,3,4$, give equal leaf components $\ell=h/\sqrt3$. The hub equation is $3\ell=\lambda h$, which is consistent precisely because $\lambda^2=3$. Thus an <eigenvector> is $(\sqrt3,1,1,1)^\mathsf T$.
+
+Normalizing its <Euclidean norm> to one gives the <eigenvector centrality>
+$$
+\boxed{v=\frac1{\sqrt6}(\sqrt3,1,1,1)^\mathsf T=\left(\frac1{\sqrt2},\frac1{\sqrt6},\frac1{\sqrt6},\frac1{\sqrt6}\right)^\mathsf T}.
+$$
+Numerically this is $(0.707107,0.408248,0.408248,0.408248)^\mathsf T$. It satisfies both $Av=\sqrt3v$ and $v^\mathsf Tv=1$. If “normalized” instead means maximum component one, use $(1,1/\sqrt3,1/\sqrt3,1/\sqrt3)$; if it means components summing to one, divide $(\sqrt3,1,1,1)$ by $\sqrt3+3$. The hub-to-leaf ratio $\sqrt3$ is invariant under these conventions. The negative leading-magnitude <eigenvalue> also has an <eigenvector>, but its mixed signs do not define nonnegative <eigenvector centrality>.
+
+= f
+{parent=6}
+{scope}
+
+= Solution
+{parent=f}
+
+The <Louvain method> approximately maximizes <network modularity>. Start with each <vertex> in its own community. Repeatedly visit each <vertex>, evaluate moving it into each neighbouring community, and accept the move with the greatest positive modularity gain. When no such local move improves the score, contract each community into a new weighted <vertex>, summing inter-community edge weights and retaining internal edges as <self-loops>. Repeat local optimization and contraction until no further gain is obtained, then map the communities back to the original <vertices>.<Fast unfolding of communities in large networks by Vincent D. Blondel and others>[§2, Method, pp. 4–5 of the preprint: local moves followed by aggregation]{ref}
+
+For an undirected unweighted <graph> with $m$ edges, <degrees of vertices> $k_i$ and community labels $c_i$, the objective is
+$$
+Q=\frac1{2m}\sum_{i,j}\left(A_{ij}-\frac{k_ik_j}{2m}\right)\mathbf1\{c_i=c_j\}.
+$$
+The term $k_ik_j/(2m)$ subtracts the expected connectivity in a degree-based <network null model>. If all <vertices> are put in one community, the observed and expected total weights cancel, so $Q=0$. A partition with excess internal connectivity can have $Q>0$, and merging away that structure reduces the score. **The modularity objective and positive-gain rule prevent arbitrary merging merely to increase cluster size.** They do not forbid a single community in every possible network: if there is no better modular partition, one community may be an appropriate result. The method is a greedy heuristic, so it does not guarantee the global maximum of $Q$.
+
+= 7
+{parent=Paper 2}
+{scope}
+
+= a
+{parent=7}
+{scope}
+
+= Solution
+{parent=a}
+
+The substrate contact area is the square bottom face, so the total <traction> force magnitude is stress times area:
+$$
+F=100\ \mathrm{N\,m^{-2}}\,(20\times10^{-6}\ \mathrm m)^2=4.0\times10^{-8}\ \mathrm N=\boxed{40\ \mathrm{nN}}.
+$$
+By <Newton's third law>, the force exerted by the substrate on the <biological cell> has the same magnitude and opposite direction to the cell's force on the substrate.
+
+= b
+{parent=7}
+{scope}
+
+= Solution
+{parent=b}
+
+First convert the <dynamic viscosity> to SI units:
+$$
+\eta=0.1\frac{10^{-3}\ \mathrm{kg}}{10^{-2}\ \mathrm m\,\mathrm s}=0.01\ \mathrm{Pa\,s}.
+$$
+Using the stipulated effective-size version of <Stokes's law> with $a=20\times10^{-6}\ \mathrm m$, the drag coefficient is
+$$
+\zeta=6\pi\eta a=6\pi(0.01)(20\times10^{-6})\approx3.76991\times10^{-6}\ \mathrm{N\,s\,m^{-1}}.
+$$
+The speed is $v=10^{-7}\ \mathrm{m\,s^{-1}}$, hence
+$$
+\boxed{F_{\mathrm{drag}}=\zeta v\approx3.76991\times10^{-13}\ \mathrm N=3.76991\times10^{-4}\ \mathrm{nN}}.
+$$
+The drag acts opposite the velocity. Its magnitude is about $1.06\times10^5$ times smaller than the substrate force in (a); balancing surrounding-fluid drag alone therefore cannot account for the much larger substrate <traction>. The calculation uses the size parameter exactly as supplied. An exact drag calculation for a cube moving close to a wall would need geometry and boundary corrections beyond this stipulated approximation.
+
+= c
+{parent=7}
+{scope}
+
+= Solution
+{parent=c}
+
+Take $x=0$ at chamber A and $x=L$ at chamber B. At <steady state>, the <diffusion equation> with constant positive <diffusion coefficient> gives
+$$
+0=D\frac{d^2c}{dx^2},\qquad c(x)=A+Bx.
+$$
+The two <Dirichlet boundary conditions> give $A=c_0$ and $B=-c_0/L$. Thus
+$$
+\boxed{c(x)=c_0\left(1-\frac{x}{L}\right),\qquad0\leq x\leq L}.
+$$
+The concentration <gradient> is constant, $dc/dx=-c_0/L$. By <Fick's first law>, the <diffusive flux> is $J=-D\,dc/dx=Dc_0/L$, directed from A towards B. The profile is linear independently of $D$, while the flux and the time needed to approach it depend on $D$.
+
+This result assumes no significant bulk flow, <chemoattractant> loss to the walls, degradation or cellular uptake. Experimentally, a uniform-concentration control with matched reservoir concentrations tests for directional <cell migration> caused by flow or apparatus asymmetry; reversing the reservoir concentrations tests whether the directional response follows the chemical <gradient>. Keeping both reservoirs well mixed and measuring the concentration profile checks the assumed boundary concentrations and whether uptake has distorted it. These controls distinguish the assumed passive <diffusion> field from other directional cues; the derived profile alone does not establish the mechanism of <chemotaxis>.
+
+= d
+{parent=7}
+{scope}
+
+= Solution
+{parent=d}
+
+For a cell of length $\ell$ aligned with the capillary, the steady linear <gradient> produces the front-to-back concentration difference
+$$
+\Delta c=\ell\left|\frac{dc}{dx}\right|=\frac{c_0\ell}{L}.
+$$
+At the given initial length, $L=5\times10^{-3}\ \mathrm m$, this is $100(20\times10^{-6})/(5\times10^{-3})=0.4\ \mathrm{nM}$, above the stated threshold. Requiring $\Delta c\geq0.1\ \mathrm{nM}$ gives
+$$
+L\leq\frac{(100\ \mathrm{nM})(20\times10^{-6}\ \mathrm m)}{0.1\ \mathrm{nM}},\qquad\boxed{L_{\max}=2.0\times10^{-2}\ \mathrm m=2.0\ \mathrm{cm}}.
+$$
+The <diffusion coefficient> does not enter this steady-gradient threshold. It does constrain experimental waiting time: for fixed reservoir concentrations, the slowest decaying mode of the <diffusion equation> has timescale $L^2/(\pi^2D)$. With the supplied $D$, this is about $7.04$ hours at $0.5$ cm and $4.69$ days at $2$ cm; several such times may be required for an accurate <steady state>. Thus the maximum from the detection threshold is usable only if the reservoirs and cells remain suitable while the profile develops.
+
+= e
+{parent=7}
+{scope}
+
+= Solution
+{parent=e}
+
+For the same concentration <gradient>, the front-to-back difference scales with cell length. A much smaller bacterial cell samples a correspondingly smaller spatial signal, while stochastic arrival and binding of individual <chemoattractant> molecules make <receptor> measurements noisy. For illustration, a $2\ \mu\mathrm m$ cell in the $0.5$ cm capillary would experience only $0.04\ \mathrm{nM}$ across its length, compared with $0.4\ \mathrm{nM}$ for the longer cell. This illustrates a size penalty; it does not assume that bacterial and human detection thresholds are identical.
+
+Many swimming bacteria, including <Escherichia coli>, use <temporal sensing in bacterial chemotaxis>: they compare recent receptor stimulation with an adapted baseline as they move. Increasing attractant suppresses reorientation and prolongs runs; decreasing attractant increases tumbling. Repeated runs and reorientations therefore generate a biased <random walk> up the <gradient>, without requiring a simultaneous comparison between the front and back. <Chemotaxis feedback regulation> supplies the adaptation needed to remain sensitive to changes rather than responding only to absolute concentration.
+
+A discriminating experiment changes concentration rapidly and uniformly around the bacteria: a response then occurs without a spatial difference across the cell. The classic temporal-step experiments found increased tumbling after attractant decreases and smoother swimming after increases.<The gradient-sensing mechanism in bacterial chemotaxis by Robert M. Macnab and Daniel E. Koshland Jr.>[pp. 2509–2512, Abstract and temporal-gradient response experiments]{ref} In a new experiment, compare up-steps and down-steps with constant-concentration and sham-mixing controls, holding temperature and medium composition fixed. Measure run durations and tumble frequency, rather than only average swimming speed. Such a test supports temporal comparison but does not by itself identify every molecular component or show that all bacterial species use the same mechanism.

@@ -15,6 +15,10 @@ all: media
 
 media: $(FIGURES)
 
+# Chemistry figures importing shared drawing primitives depend on that helper.
+CHEMISTRY_DIAGRAM_SOURCES := $(shell rg -l '^from tools\.chemistry_diagram import' --glob '*.py' $(FIGURE_SOURCE_ROOTS))
+$(addprefix $(MEDIA_ROOT)/,$(CHEMISTRY_DIAGRAM_SOURCES:.py=.png)): tools/chemistry_diagram.py
+
 # The phase trajectory reuses the adjacent transport-model generator.
 $(MEDIA_ROOT)/$(FIGURE_SOURCE_ROOT)/2013/iii/paper-71-phase-trajectory.png: $(FIGURE_SOURCE_ROOT)/2013/iii/paper-71-phase-trajectory.py $(FIGURE_SOURCE_ROOT)/2013/iii/paper-71-fields.py
 
