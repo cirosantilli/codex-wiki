@@ -75,7 +75,7 @@ def reviewed_numbering_tree(source, title, definition, source_sha256):
                 raise ValueError("Reviewed numbering nodes contain labels only")
             label, kind = item["title"], item["kind"]
             if kind not in {"section", "question", "part"} or not re.fullmatch(
-                r"(?:Section [A-Z0-9]+(?:\([ivx]+\))?|[A-E]?\d+(?:\.\d+)*[A-Z]?|[a-z]+|[A-Z]+)", label
+                r"(?:Section [A-Z0-9]+(?:\([ivx]+\))?|[A-E]?\d+(?:\.\d+)*[A-Z]?|[a-z]+(?: \([A-Za-z0-9 ]{1,64}\))?|[A-Z]+)", label
             ):
                 raise ValueError(f"Unsupported reviewed label/kind: {label!r}/{kind!r}")
             child = parent.child(label, kind)
@@ -279,9 +279,14 @@ def render(tree, source, *, title2=None, fixedcaps=False, root_parent=None):
         metadata += f"\n{{title2={title2}}}"
     blocks = [f"= {tree.title}\n{metadata}", source]
     for node in list(walk(tree))[1:]:
+        # Some papers repeat printed a/b labels within one question. Keep the
+        # reviewed qualifier in metadata so it does not change the printed label.
+        qualified = re.fullmatch(r"([a-z]+) \(([A-Za-z0-9 ]{1,64})\)", node.title)
+        title = qualified[1] if qualified else node.title
+        disambiguate = f"\n{{disambiguate={qualified[2]}}}" if qualified else ""
         capitalization = "{c}\n" if re.fullmatch(r"(?:[A-E]\d+|\d+[A-Z])", node.title) else ""
         parent = root_parent if node.parent is tree and root_parent else node.parent.title
-        blocks.append(f"= {node.title}\n{capitalization}{{parent={parent}}}\n{{scope}}")
+        blocks.append(f"= {title}\n{capitalization}{{parent={parent}}}{disambiguate}\n{{scope}}")
         if not node.children and node.kind != "section":
             blocks.append(f"= Solution\n{{parent={node.title}}}")
     return "\n\n".join(blocks) + "\n"
