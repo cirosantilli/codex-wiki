@@ -21,6 +21,23 @@ The attraction is that a <gradient> evaluation gives an entire update without so
 
 The simplicity of the <gradient> update and its sensitivity to the <condition number> of the <Hessian matrix> are central practical features.<Convex Optimization by Stephen Boyd and Lieven Vandenberghe>[§9.3.1, pp. 466–468, and §9.3.2, p. 475, Conclusions: convergence and conditioning]{ref}
 
+= Epoch complexity
+{parent=Gradient descent}
+
+The number of <optimization epochs> needed to meet a stated accuracy criterion. Comparisons must specify the work counted by an <optimization epoch>, the accuracy measure, and whether a random method is controlled in <expectation> or with a stated <probability>. Counting coordinate <partial derivatives> is useful for comparing <randomized block coordinate descent> with <gradient descent>, but need not match elapsed computation time.
+
+\C[[Target: gradient-descent.bigb, under Stochastic gradient descent.]]
+
+= Optimization epoch
+{parent=Gradient descent}
+
+= Epoch in optimization
+{synonym}
+
+A unit of work corresponding to one full pass through the components used to measure an <iterative method>. For <coordinate descent> in $n$ coordinates, count $n$ coordinate <partial derivative> evaluations as an optimization epoch: updates on blocks of size $m$ require $n/m$ updates per optimization epoch. For <stochastic gradient descent> on a finite sum of losses, a common different convention counts one evaluation of every loss component. The convention must be specified. Random sampling with replacement need not visit every component during one such unit of work.
+
+\C[[Target: gradient-descent.bigb, under Gradient descent.]]
+
 = Fixed-step gradient descent on a positive-definite quadratic
 {parent=Gradient descent}
 {title2=$e_{k+1}=(I-\eta A)e_k$}
@@ -101,6 +118,25 @@ As the <condition number> grows, $\rho_*$ approaches one: stability in the direc
 
 Stochastic gradient descent updates parameters using an unbiased or approximate gradient computed from one observation or a mini-batch rather than the complete data set.
 
+= Averaged stationarity bound for stochastic gradient descent
+{parent=Stochastic gradient descent}
+{title2=$k^{-1}\sum_{j<k}\mathbb E\|\nabla f(X^j)\|^2\leq M+2L\Delta_0/k$}
+
+Suppose a fixed-<step size> <stochastic gradient descent> iteration satisfies
+$$
+\mathbb E[f(X^{j+1})\mid X^j]\leq f(X^j)-\frac1{2L}\|\nabla f(X^j)\|^2+\frac M{2L},
+$$
+and $f$ has a <global minimizer> $x^*$. Taking <expectations> and forming a <telescoping sum> proves the displayed bound with $\Delta_0=f(X^0)-f(x^*)$ and deterministic $X^0$. The <Cauchy-Schwarz inequality> then bounds the averaged, or the best, expected <gradient> <Euclidean norm> by $\sqrt{M+2L\Delta_0/k}$. This is a guarantee of stationarity in the indicated senses, rather than a last-iterate convergence assertion. The additive $M$ is a <stochastic gradient noise floor>.
+
+\C[[Target: real-analysis.bigb, under Strongly convex function.]]
+
+= Stochastic gradient noise floor
+{parent=Stochastic gradient descent}
+
+A residual accuracy level in a bound for <stochastic gradient descent> with a fixed <step size> and nonvanishing <gradient> noise. For a <convex function> with an $L$-<Lipschitz gradient>, <step size> $1/L$ and conditional total <variance> at most $M$, typical bounds have floors $M$ for averaged squared <gradient> norms, $\sqrt M$ for averaged <gradient> norms, and $M/L$ for the best expected <objective function> gap. Such floors are upper bounds depending on the analysis and assumptions, rather than claims that these exact values are attained or that every last iterate converges.
+
+\C[[Target: gradient-descent.bigb, under Stochastic gradient descent.]]
+
 = Projected stochastic gradient descent
 {parent=Stochastic gradient descent}
 
@@ -110,6 +146,14 @@ Projected stochastic gradient descent takes a stochastic-gradient step and then 
 {parent=Stochastic gradient descent}
 
 A random vector $G_s$ is an unbiased stochastic gradient at $x_s$ when $\mathbb E[G_s\mid x_s]=\nabla f(x_s)$.
+
+= Stochastic gradient second-moment identity
+{parent=Unbiased stochastic gradient}
+{title2=$\mathbb E[\|H\|^2\mid X]=\|\nabla f(X)\|^2+\mathbb E[\|H-\nabla f(X)\|^2\mid X]$}
+
+For an <unbiased stochastic gradient> $H$ at $X$ with finite conditional second moment, expand $H=\nabla f(X)+(H-\nabla f(X))$ in the squared <Euclidean norm>. The cross term has zero <conditional expectation>, which proves the displayed identity. It separates the squared true <gradient> from the total conditional <variance> of its random estimate.
+
+\C[[Target: gradient-descent.bigb, under Stochastic gradient descent.]]
 
 = Lipschitz gradient
 {parent=Gradient descent}
@@ -126,6 +170,47 @@ $$
 \nabla f(y)-\nabla f(x)=\int_0^1\nabla^2f(x+t(y-x))(y-x)\,dt.
 $$
 The <operator norm> bound proves the displayed <Lipschitz continuity>. Convexity of the domain keeps the entire <line segment> inside it. Bounding the <Hessian matrix> only at the endpoints is insufficient.
+
+= Block Lipschitz constant from coordinate smoothness
+{parent=Lipschitz gradient}
+{title2=$L_{\mathcal B}\leq\sum_{i\in\mathcal B}L_i$}
+
+For a continuously <differentiable> <convex function> on $\mathbb R^n$ with <coordinate Lipschitz continuity> constants $L_i$, its <block coordinate gradient> is <Lipschitz continuous> along each corresponding <coordinate subspace>, with constant at most $S_{\mathcal B}=\sum_{i\in\mathcal B}L_i$.
+
+To prove this without assuming a <Hessian matrix>, put $\delta_{\mathcal B}=\nabla_{\mathcal B}f(x)-\nabla_{\mathcal B}f(y)$. Sum the <coordinate derivative bound by Bregman divergence> over the block, then repeat with $x,y$ interchanged and average:
+$$
+\|\delta_{\mathcal B}\|^2\leq S_{\mathcal B}\big(D_f(x,y)+D_f(y,x)\big)
+=S_{\mathcal B}(\nabla f(x)-\nabla f(y))^T(x-y).
+$$
+If $x-y$ is supported in the block, the <dot product> uses only $\delta_{\mathcal B}$. The <Cauchy-Schwarz inequality> and cancellation of its <Euclidean norm> give the result, including the zero case separately. Taking the full block supplies a global <Lipschitz gradient> constant $\sum_iL_i$.
+
+\C[[Target: convex-optimization.bigb, under Coordinate descent.]]
+
+= Coordinate derivative bound by Bregman divergence
+{parent=Lipschitz gradient}
+{title2=$[\partial_i f(x)-\partial_i f(y)]^2\leq2L_iD_f(x,y)$}
+
+Suppose $f$ is a <differentiable> <convex function> with <coordinate Lipschitz continuity> constant $L_i>0$. Put $\phi(u)=D_f(u,y)=f(u)-f(y)-\nabla f(y)^T(u-y)$, the <Bregman divergence> from the supporting <affine function> at $y$. The <subgradient inequality> gives $\phi\geq0$, and its coordinate <Lipschitz constant> is still $L_i$. The coordinate <descent lemma> with <step size> $1/L_i$ yields
+$$
+0\leq\phi\left(x-\frac{\partial_i\phi(x)}{L_i}e_i\right)\leq\phi(x)-\frac{[\partial_i\phi(x)]^2}{2L_i}.
+$$
+Since $\partial_i\phi(x)=\partial_i f(x)-\partial_i f(y)$, rearrangement proves the bound. Continuous <differentiability> suffices; a <Hessian matrix> is unnecessary.
+
+\C[[Target: gradient-descent.bigb, under Lipschitz gradient.]]
+
+= Coordinate Lipschitz continuity
+{parent=Lipschitz gradient}
+{title2=$|\partial_i f(x+te_i)-\partial_i f(x)|\leq L_i|t|$}
+
+The displayed estimate, for all $x$ and real $t$, defines a coordinate <Lipschitz constant> $L_i$ for the <partial derivative> in coordinate $i$. It implies the coordinate <descent lemma>
+$$
+f(x+te_i)\leq f(x)+t\partial_i f(x)+\frac{L_i}{2}t^2
+$$
+by the <fundamental theorem of calculus> and integration of the <Lipschitz continuity> estimate. Subtracting an <affine function> leaves these constants unchanged.
+
+The apparently weaker estimate along the singleton negative <gradient> direction is equivalent when every real <step size> is allowed: if the initial <partial derivative> is nonzero, any displacement can be written $-\alpha\partial_i f(x)e_i$; if it is zero but the final <partial derivative> is nonzero, reverse the endpoints; if both vanish the estimate is trivial.
+
+\C[[Target: gradient-descent.bigb, under Lipschitz gradient.]]
 
 = Descent lemma
 {parent=Lipschitz gradient}
@@ -179,6 +264,16 @@ $$
 and $p_{k+1}=r_{k+1}+\beta_kp_k$ with
 $\beta_k=r_{k+1}^Tr_{k+1}/(r_k^Tr_k)$.
 
+= Conjugate gradient convergence bound
+{parent=Conjugate gradient method}
+{title2=$\|e_k\|_H\leq2\left(\frac{\sqrt{\kappa_2(H)}-1}{\sqrt{\kappa_2(H)}+1}\right)^k\|e_0\|_H$}
+
+For a <symmetric positive-definite matrix> $H$, the <Conjugate gradient method> minimizes the error in the induced <weighted norm> over its affine <Krylov subspace>. Writing the error as $p(H)e_0$ gives
+$$
+\frac{\|e_k\|_H}{\|e_0\|_H}\leq\min_{\deg p\leq k,\ p(0)=1}\max_{\lambda\in[\lambda_{\min},\lambda_{\max}]}|p(\lambda)|.
+$$
+For $\lambda_{\min}<\lambda_{\max}$, choose the scaled <Chebyshev polynomial> $p(\lambda)=T_k((\lambda_{\max}+\lambda_{\min}-2\lambda)/(\lambda_{\max}-\lambda_{\min}))/T_k((\lambda_{\max}+\lambda_{\min})/(\lambda_{\max}-\lambda_{\min}))$. On the spectral interval its numerator has absolute value at most one. With $\rho=(\sqrt\kappa+1)/(\sqrt\kappa-1)$, the denominator equals $(\rho^k+\rho^{-k})/2\geq\rho^k/2$. This proves the displayed bound. If the two endpoints coincide, $H$ is a positive scalar multiple of the identity and one iteration solves the system exactly.
+
 = Linear-system residual
 {parent=Conjugate gradient method}
 {title2=$r=b-Ax$}
@@ -222,6 +317,41 @@ The order-$k$ Krylov subspace generated by $A$ and $b$ is
 $$
 \mathcal K_k(A,b)=\operatorname{span}\{b,Ab,\ldots,A^{k-1}b\}.
 $$
+
+= Generalized minimal residual method
+{parent=Krylov subspace}
+{title2=$x_k=\operatorname*{argmin}_{x\in\mathcal K_k(A,b)}\|Ax-b\|_2$}
+
+= GMRES
+{c}
+{synonym}
+
+With zero initial guess, the generalized minimal residual method minimizes the <Euclidean norm> of the <linear-system residual> over each <Krylov subspace>. The <Arnoldi decomposition> reduces this to $\min_y\|\widetilde H_ky-\|b\|_2e_1\|_2$, followed by $x_k=Q_ky$. <Givens rotations> solve the small problem in $O(k^2)$ operations once the decomposition is available. For an <invertible matrix> $A$, the same iterate minimizes the error in the <weighted norm> induced by $A^TA$, because $\|Ax-b\|_2=\|x-x_*\|_{A^TA}$.
+
+= Arnoldi iteration
+{c}
+{parent=Krylov subspace}
+{title2=$AQ_k=Q_{k+1}\widetilde H_k$}
+
+Starting with $q_1=b/\|b\|_2$, the Arnoldi iteration constructs an <orthonormal basis> of successive <Krylov subspaces>. At step $j$, orthogonalize $Aq_j$ against $q_1,\ldots,q_j$, and normalize the remainder as $q_{j+1}$ if it is nonzero. The coefficients form an <upper Hessenberg matrix> $\widetilde H_k$ and satisfy $AQ_k=Q_{k+1}\widetilde H_k$. A zero remainder means the current <Krylov subspace> is invariant under $A$.
+
+= Lanczos algorithm
+{c}
+{parent=Arnoldi iteration}
+{title2=$Aq_j=\beta_{j-1}q_{j-1}+\alpha_jq_j+\beta_jq_{j+1}$}
+
+For a real <symmetric matrix> $A$, the leading block $Q_k^TAQ_k$ of the <Arnoldi decomposition> is both symmetric and an <upper Hessenberg matrix>, hence a <tridiagonal matrix>. The resulting three-term recurrence is the Lanczos algorithm. If $A$ is a <symmetric positive-definite matrix>, its compression is too, since $y^TQ_k^TAQ_ky=(Q_ky)^TA(Q_ky)>0$ for nonzero $y$.
+
+= Arnoldi decomposition
+{c}
+{parent=Arnoldi iteration}
+{title2=$AQ_k=Q_{k+1}\widetilde H_k$}
+
+= Arnoldi factorization
+{c}
+{synonym}
+
+The factorization produced by the <Arnoldi iteration>, with <orthonormal> $Q_{k+1}$ and an <upper Hessenberg matrix> $\widetilde H_k$. Multiplying by $Q_k^T$ identifies its leading square block as $H_k=Q_k^TAQ_k$.
 
 = Krylov dimension from spectral components
 {parent=Krylov subspace}

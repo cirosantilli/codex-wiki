@@ -8,6 +8,33 @@ R(\widehat f)=\mathbb E\bigl[L(Y^*,\widehat f(X^*))\mid\mathcal D_n\bigr],
 $$
 where $(X^*,Y^*)$ is a fresh observation, <independent> of the <training data> $\mathcal D_n$, from the intended target <probability distribution>. This <prediction error> fixes the fitted rule and averages over future observations; averaging again over <training data> gives the learning procedure's average performance. Its practical beauty is that a rule compresses past observations into useful future predictions. Its central difficulty is that excellent <training error> need not imply good <generalization>: <cross-validation> supports <model selection>, and a reserved <test set> assesses the resulting choice.
 
+= Online learning
+{parent=Statistical learning}
+
+Learning through a sequence of decisions and observations, assessing performance by comparison with a benchmark decision or rule. A <multi-armed bandit> is a model in which only the reward of the selected action is observed.
+
+= Optimism in the face of uncertainty
+{parent=Online learning}
+
+A decision principle that maximizes possible reward jointly over an action and a parameter in a <confidence set>. On the event that the set contains the true parameter, the reward predicted for this selected pair is at least the true optimal reward. This inequality bounds <pseudoregret> by the width of the <confidence set> in the selected action's direction. For an $L$-<Lipschitz continuous> reward link and a radius-$\beta$ <confidence ellipsoid>, <Cauchy-Schwarz inequality> and the <triangle inequality> bound that width by $2L\beta\sqrt{x^TV^{-1}x}$.
+
+= Multi-armed bandit
+{parent=Online learning}
+
+A sequential decision model in which each round selects an action and observes its reward, balancing information gathering against immediate reward. For fixed action means $m(x)$, the <pseudoregret> compares selected actions with an action maximizing $m$. In models with a <link function> and parameter $\theta$, rewards may have means $m_\theta(x)=\mu(\langle x,\theta\rangle)$.
+
+= Elliptical potential bound
+{parent=Multi-armed bandit}
+{title2=$\sum_{t=1}^n x_t^TV_{t-1}^{-1}x_t\leq2\log(\det V_n/\det V_0)$}
+
+Let $V_t=V_{t-1}+x_tx_t^T$ with <positive-definite matrix> $V_0$, and suppose $u_t=x_t^TV_{t-1}^{-1}x_t\leq1$. The <matrix determinant lemma> gives $\det V_t/\det V_{t-1}=1+u_t$. Since $2\log(1+u)-u$ has nonnegative derivative $(1-u)/(1+u)$ for $0\leq u\leq1$, summation proves the displayed bound. In particular, $V_0=\lambda I$, $\lambda\geq1$, and $\|x_t\|_2\leq1$ ensure $u_t\leq1$. Without that restriction a general form is $\sum_t\min\{1,u_t\}\leq2\log(\det V_n/\det V_0)$: for $u\geq1$, $2\log(1+u)\geq2\log2\geq1$. The bound connects widths of <confidence ellipsoids> to growth of a <determinant>.
+
+= Pseudoregret
+{parent=Multi-armed bandit}
+{title2=$R_n=\sum_{t=1}^n[m(x_\star)-m(X_t)]$}
+
+The cumulative difference between the mean reward of an optimal fixed action and the mean rewards of the selected actions. For adaptive random actions, this sum is itself a <random variable>; taking its <expected value> gives expected pseudoregret. Observation noise is absent from the sum, although earlier noise can influence later actions.
+
 = Feature interaction
 {parent=Statistical learning}
 
@@ -131,6 +158,25 @@ A cluster in <cluster analysis> is a nonempty group of observations treated as s
 {wiki}
 
 For a prescribed number of groups, minimize within-cluster squared Euclidean distances. At fixed assignments, differentiating the objective gives the mean as the optimal centroid. At fixed centroids, assigning each point to a nearest centroid minimizes its contribution. Alternating these steps cannot increase the objective but can converge to a local optimum, so multiple starts are useful. Empty clusters and ties need an explicit handling rule. The method favors roughly spherical groups and depends on variable scaling.
+
+= One-dimensional K-means iteration bound
+{parent=K-means clustering}
+{title2=$N_{\mathrm{steps}}\le\binom{n-1}{K-1}\le n^{K-1}$}
+
+For $n$ distinct observations on the real line and $1\le K\le n$, nearest-centre assignment produces contiguous blocks of the sorted observations because each <Voronoi cell> is an <interval>. The <arithmetic means> of distinct ordered blocks are strictly ordered, preserving this property at subsequent assignments. Initialize at $K$ distinct observed values so that the initial assignment has no empty cluster.
+
+The empty-cluster repair in <finite termination of k-means clustering> also preserves contiguous blocks: an observation farthest from a centre over its assigned block lies at one of that block's endpoints, so transferring it to a new singleton splits the block into two contiguous blocks.
+
+There are $\binom{n-1}{K-1}$ possible partitions into $K$ nonempty blocks: choose $K-1$ cuts among the $n-1$ gaps. Under the stable tie rule in <finite termination of k-means clustering>, every round after the first strictly reduces the objective until stopping, so a block partition cannot recur. The number of assignment, repair, and centre-update rounds is therefore at most $\binom{n-1}{K-1}\le n^{K-1}$. Check stability after each update without an additional update round; for $K=1$, one update suffices.
+
+= Finite termination of K-means clustering
+{parent=K-means clustering}
+
+For a finite dataset, alternate nearest-centre assignment and replacement of each centre by the <centroid> of its assigned observations. Keep the current assignment whenever an observation is tied between nearest centres. A changed assignment then strictly decreases the within-cluster sum of squared <Euclidean distances>; updating centres cannot increase it by the <centroid sum-of-squares identity>.
+
+After each centre update, the centres are determined by the current <partition of a set> of observation indices. There are only finitely many such partitions, so a strictly improving sequence cannot revisit one and must stop. A convenient exact stopping test is to check after each update whether every observation is still assigned to a nearest centre. This proof is for <algorithm termination>; it does not guarantee a <global minimum>.
+
+Empty clusters need an explicit convention. To retain exactly $K\le n$ nonempty clusters, transfer an observation from a cluster with at least two members to each empty cluster, making it a singleton centred at that observation. This cannot increase the objective: the transferred observation now has squared distance zero, and no other contribution changes before centre updating. A deterministic choice is an eligible observation farthest from its currently assigned centre, with ties resolved by index. After the first round, an empty cluster can arise only during a strictly improving reassignment, so these repairs preserve the finite-termination argument.
 
 = Nearest-centroid decision hyperplane
 {parent=K-means clustering}
@@ -348,6 +394,12 @@ A scree plot graphs ordered covariance or correlation <eigenvalues> against comp
 {title2=$r_j=\sqrt{\lambda_j}\ell_j$}
 
 Two conventions occur for principal-component loadings: the unit <eigenvector> $\ell_j$ defining a <principal component>, and the scaled vector $r_j=\sqrt{\lambda_j}\ell_j$. For <principal component analysis on a correlation matrix>, the entries of the latter are the correlations between each standardized variable and the component scaled to variance one. Indeed, $\operatorname{Cov}(Z,\ell_j^TZ)=C\ell_j=\lambda_j\ell_j$ and $\operatorname{Var}(\ell_j^TZ)=\lambda_j$. Thus $\|r_j\|^2=\lambda_j$, whereas $\|\ell_j\|=1$; reporting the convention avoids confusing component directions with correlations.
+
+= Loadings matrix
+{parent=Principal component loading}
+{title2=$V=(v_1,\ldots,v_p)$}
+
+In <principal component analysis>, the <matrix> whose columns are the chosen orthonormal <eigenvectors> of a <covariance matrix>, ordered by decreasing <eigenvalues>. Under this convention the <principal component scores> of centered data are $Z=X_cV$. Some literature instead scales the vectors by square roots of eigenvalues; the convention should be stated explicitly.
 
 = Principal component
 {parent=Principal component analysis}
@@ -812,6 +864,81 @@ K-fold cross-validation partitions observations into $K$ folds, trains $K$ times
 {synonym}
 
 A neural network composes affine maps with nonlinear activation functions and learns their weights from data.
+
+= Exploding gradient problem
+{parent=Neural network}
+
+= Exploding gradient
+{synonym}
+
+Repeated differentiation through a deep or recurrent <neural network> can make some <gradient> components extremely large. In the scalar recurrence $h_t=ah_{t-1}$, the derivative with respect to $h_0$ is $a^t$, which grows exponentially if $|a|>1$. Large individual matrix norms alone do not imply such growth, because directions can change or cancel; the full product of step <Jacobian matrices> determines the effect.
+
+= Vanishing gradient problem
+{parent=Neural network}
+
+= Vanishing gradient
+{synonym}
+
+Repeated differentiation through a deep or recurrent <neural network> can make <gradients> associated with distant layers or earlier sequence positions extremely small. A simple mechanism is a product of step <Jacobian matrices> whose <operator norms> are all bounded above by some $a<1$: the product <operator norm> is then at most $a^L$ over $L$ steps by submultiplicativity. This can impede learning long-range dependencies in a <recurrent neural network>.
+
+= Recurrent neural network
+{parent=Neural network}
+{title2=RNN}
+
+A <neural network> whose hidden state follows a recurrence $h_t=F(h_{t-1},x_t)$ with shared parameters. It represents dependence across sequence positions through its hidden state. The standard recurrence is sequential across positions, and differentiation through many steps multiplies step <Jacobian matrices>, potentially causing a <vanishing gradient> or an <exploding gradient>.
+
+= Dropout
+{parent=Neural network}
+
+A training regularization method that randomly removes selected activations or connections. In inverted dropout with keep probability $p$, multiply each retained activation by $1/p$, so its conditional <expectation> equals the original activation; inference then uses the unmasked activations. The random masks discourage dependence on a particular small collection of activations.
+
+= Residual connection
+{parent=Neural network}
+{title2=$z\mapsto z+F(z)$}
+
+A connection that adds a sublayer's input to its output, using a projection when dimensions require it. Its derivative is $I+DF(z)$, so the derivative has a direct identity contribution in addition to the sublayer's contribution. This supports propagation through a deep network but does not itself guarantee bounded <gradients>.
+
+= Layer normalization
+{parent=Neural network}
+{title2=$\mathrm{LN}(z)$}
+
+For $z\in\mathbb R^d$, define $\bar z=d^{-1}\sum_jz_j$ and $s_z^2=d^{-1}\sum_j(z_j-\bar z)^2$. Layer normalization returns $\gamma\odot(z-\bar z\mathbf1)/\sqrt{s_z^2+\varepsilon}+\beta$, with learned coordinatewise scale $\gamma$, shift $\beta$, and fixed $\varepsilon>0$. In a <transformer block>, this normalization is applied across feature coordinates separately within each example and sequence position; it does not average over a batch.
+
+= Transformer model
+{parent=Neural network}
+
+A sequence model built from stacked <transformer blocks>, using <self-attention> to mix information between positions and positionwise <feedforward neural networks> to transform their representations. <Positional encoding> supplies sequence-order information. An autoregressive decoder uses <causal self-attention>; generation remains sequential even when training computations over known sequence positions are parallel.
+
+= Positional encoding
+{parent=Transformer model}
+
+Information representing sequence position or relative position, supplied to input representations or to attention scores. It can be fixed or learned. Without order information or a position-dependent mask, a <self-attention> layer using shared projections treats a simultaneous permutation of sequence positions equivariantly.
+
+= Self-attention
+{parent=Transformer model}
+
+An attention operation in which queries, keys, and values are projections of one sequence's representations. At each position, learned similarities between its query and permitted keys determine a weighted sum of the corresponding values. <Scaled dot-product attention> and <multi-head attention> are standard implementations; <causal self-attention> restricts which positions can be accessed.
+
+= Causal self-attention
+{parent=Self-attention}
+
+<Self-attention> whose output at sequence position $t$ may depend only on positions at or before $t$. In a score <matrix>, set forbidden future-position scores to negative infinity before applying the <softmax function>; the corresponding weights become zero. This permits parallel computation over a known training sequence without allowing future tokens to influence earlier predictions.
+
+= Multi-head attention
+{parent=Self-attention}
+
+Several independently learned query, key, and value projections apply <scaled dot-product attention> in parallel. Concatenating their outputs and applying a learned output projection allows different heads to mix sequence information using different learned representations.
+
+= Scaled dot-product attention
+{parent=Self-attention}
+{title2=$\operatorname{softmax}(QK^T/\sqrt{d_k})V$}
+
+With query and key dimension $d_k$, form the score <matrix> $QK^T/\sqrt{d_k}$, apply the <softmax function> row by row, and multiply by the values $V$. If query and key coordinates have independent unit <variance>, their dot product has <variance> $d_k$; division by $\sqrt{d_k}$ keeps that score scale of order one. Optional additive masks exclude forbidden keys before the <softmax function>.
+
+= Transformer block
+{parent=Transformer model}
+
+A standard transformer block combines <multi-head attention> with a positionwise <feedforward neural network>, wrapping each sublayer in a <residual connection> and <layer normalization>. An encoder-decoder transformer's decoder also has a cross-attention sublayer. Pre-normalization and post-normalization variants differ in where <layer normalization> occurs relative to the sublayer and <residual connection>.
 
 = Neural network bias
 {parent=Neural network}

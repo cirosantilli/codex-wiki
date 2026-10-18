@@ -186,6 +186,34 @@ U\leq\frac{f(X)}{Mh(X)}.
 $$
 The accepted value has density $f$, the acceptance probability is $1/M$, and the expected number of proposals is $M$.
 
+= Optimal geometric envelope for a Poisson distribution
+{parent=Rejection sampling}
+{title2=$\rho_*=\max\{1-\lambda/K,1/(K+1)\},\quad K=\lceil\lambda\rceil$}
+
+For a <Poisson distribution> target of mean $\lambda>0$ and a <geometric distribution> proposal with <probability mass function> $q_k=(1-t)t^k$ on the nonnegative integers, the tight <rejection sampling> envelope is
+$$
+M(t)=\frac{e^{-\lambda}}{1-t}\frac{(\lambda/t)^m}{m!},\qquad m=\lfloor\lambda/t\rfloor.
+$$
+Successive target-to-proposal ratios have ratio $\lambda/[t(k+1)]$, proving this maximizing index. The function $\log M(t)$ is the maximum of the <convex functions> $-\lambda-\log(1-t)+k\log(\lambda/t)-\log(k!)$. Within a branch its <derivative> is $(1-t)^{-1}-m/t$.
+
+Writing $K=\lceil\lambda\rceil$, the optimum is $t_*=\min\{\lambda/K,K/(K+1)\}$, and the success parameter is $\rho_*=1-t_*$. For $K-1<\lambda\leq K^2/(K+1)$, $t_* =\lambda/K$ is a branch boundary; the left and right <derivatives> are nonpositive and nonnegative respectively. For $K^2/(K+1)<\lambda\leq K$, the active branch has a zero <derivative> at $t_*=K/(K+1)$, including a tie at the upper endpoint. Convexity proves global optimality. The minimum expected proposal count is $M(t_*)$; no claim about machine-specific instruction costs is implied.
+
+= Clipped acceptance reweighting identity
+{parent=Rejection sampling}
+{title2=$p_{\mathrm{out}}(x)=q(x)a(x)/\mathbb E_q[a(Y)]$}
+
+Draw proposals with <probability density function> or <probability mass function> $q$, independently draw $U$ from the <uniform distribution> on $(0,1)$, and repeat until $U\leq h(Y)$ for a nonnegative threshold $h$. The actual acceptance <probability> given $Y=y$ is $a(y)=\min(1,h(y))$. If $A=\mathbb E_q[a(Y)]>0$, the returned <probability distribution> has density or mass $q(y)a(y)/A$. Indeed the joint law of a proposal and acceptance has density or mass $q(y)a(y)$, and conditioning on acceptance divides by $A$. Summing over failed trials gives the same law and expected trial count $1/A$. Thresholds exceeding one cannot be used as unbounded reweighting factors.
+
+= Squeeze rejection sampling
+{parent=Rejection sampling}
+{title2=$0\leq h\leq\widetilde p\leq M\widetilde q$}
+
+A lower envelope $h$ can save evaluations of an expensive unnormalized target $\widetilde p$ in <rejection sampling>. Draw $Y$ with <probability density function> $\widetilde q/Z_q$ and an <independent> <uniform distribution> value $U$. Accept immediately if $U\leq h(Y)/(M\widetilde q(Y))$. Otherwise draw a fresh <independent> <uniform distribution> value $V$ and accept if
+$$
+V\leq\frac{\widetilde p(Y)-h(Y)}{M\widetilde q(Y)-h(Y)}.
+$$
+For a fixed proposal, writing $B=M\widetilde q(Y)$, $H=h(Y)$ and $P=\widetilde p(Y)$ gives total acceptance <probability> $H/B+(1-H/B)(P-H)/(B-H)=P/B$. If $H=B$, the first stage accepts with <probability> one and the residual test is skipped. Thus the accepted <probability density function> is $\widetilde p/Z_p$, and the overall acceptance <probability> is $Z_p/(MZ_q)$. The <probability> of avoiding a target evaluation on one proposal is $\int h/(MZ_q)$.
+
 = Acceptance mass for an unnormalized rejection envelope
 {parent=Rejection sampling}
 {title2=$p_{\rm acc}=C/M$}
@@ -274,6 +302,12 @@ Reject pairs of independent uniform coordinates from the square until their squa
 
 For n independent proposals and an envelope constant $M$, each rejection decision succeeds with probability $1/M$. The accepted count is Bin(n,1/M). Conditional on any acceptance pattern, the accepted values have independent target density f; summing over patterns preserves that product law conditional on the count. The empty-output probability is $(1-1/M)^n$.
 
+= One-sided normal approximation for a rejection proposal budget
+{parent=Binomial count and iid values in fixed-budget rejection sampling}
+{title2=$n\simeq[\{z\sqrt{M-1}+\sqrt{z^2(M-1)+4MN}\}/2]^2$}
+
+For <rejection sampling> with acceptance <probability> $1/M$, $M>1$, the accepted count in $n$ trials has <binomial distribution>, mean $n/M$ and <variance> $n(M-1)/M^2$. To obtain at least $N$ acceptances with approximate <probability> $1-\delta$, use the <standard normal distribution> <quantile> $z=\Phi^{-1}(1-\delta)$. The <central limit theorem> without continuity correction gives $n-MN\geq z\sqrt{n(M-1)}$. Solving this <quadratic inequality> in $\sqrt n$ gives the displayed threshold, rounded upward. It exceeds the average stopping cost $MN$ because it allows for fluctuations in the accepted count. For $M=1$, the count is deterministic and $n=N$ exactly. Exact coverage uses the <binomial distribution> tail rather than the approximation.
+
 = Random-count central limit theorem for accepted rejection samples
 {parent=Binomial count and iid values in fixed-budget rejection sampling}
 {title2=$\sqrt n(\widehat\theta_{\rm rej}-\theta)\Rightarrow N(0,M\operatorname{Var}_f\phi)$}
@@ -300,6 +334,12 @@ $$
 \frac1m\sum_{i=1}^m g(Y_i)\frac{f(Y_i)}{h(Y_i)}.
 $$
 The summands have expectation $\int g(x)f(x)\,dx$, and the <strong law of large numbers> gives almost-sure convergence under integrability.
+
+= Reciprocal importance sampling
+{parent=Importance sampling}
+{title2=$\widehat{Z^{-1}}$}
+
+Let $r$ be an unnormalized density, $Z=\int r$ with $0<Z<\infty$, and $\pi=r/Z$. Given independent draws $\theta_t\sim\pi$ and an evaluable normalized density $q$ supported where $r>0$, reciprocal importance sampling estimates $Z^{-1}$ by $T^{-1}\sum_tq(\theta_t)/r(\theta_t)$. Its <expectation> is $Z^{-1}\int q=Z^{-1}$ and its <variance> is $(TZ^2)^{-1}(\int q^2/\pi-1)$. Broad tails of $q$ relative to $\pi$ can make this infinite; reversing the <importance sampling> ratio reverses the dangerous tail mismatch. Taking the reciprocal of the estimate is generally biased for $Z$.
 
 = Importance sampling of a Cauchy tail
 {parent=Importance sampling}

@@ -7,6 +7,42 @@ Three questions organize error analysis. <Truncation error> measures the approxi
 
 For example, the <square root> $s(a)=\sqrt a$ has relative <condition number> $|as'(a)/s(a)|=1/2$ for $a>0$: a small relative change in $a$ produces about half that relative change in $s(a)$. In contrast, $g(a)=1/(1-a)$ has relative <condition number> $|a/(1-a)|$. Changing $a=0.99$ to $0.9901$ changes $g(a)=100$ to about $101.010101$: an input change of about $0.0101\%$ produces an output change of about $1.0101\%$. This sensitivity exists even with exact arithmetic. MIT's conditioning lecture separates the <condition number> from <roundoff error> in precisely this way.https://ocw.mit.edu/courses/18-335j-introduction-to-numerical-methods-spring-2019/pages/week-2/[Steven G. Johnson, MIT 18.335J, Lecture 5: Condition Numbers, 2019]{ref}
 
+= Implicit numerical method
+{parent=Numerical analysis}
+
+A method defining the next state through equations involving that unknown state. Solving these equations can be costly, while enlarged stability regions are useful for stiff problems.
+
+= Explicit numerical method
+{parent=Numerical analysis}
+
+A method whose next state is obtained from known stages without solving simultaneous equations involving the unknown next state. Stability may restrict its admissible step sizes.
+
+= Energy error
+{parent=Numerical analysis}
+
+The difference between a computed system energy and its exact value. Long-time bounded oscillation of this error is distinct from secular numerical energy drift.
+
+= Manufactured solution
+{parent=Numerical analysis}
+
+A chosen smooth function inserted into a differential equation to define a matching source and boundary data. Its known exact values permit direct verification of an implementation's convergence order.
+
+= Error norm
+{parent=Numerical analysis}
+
+A <norm> used to quantify numerical error on a grid, such as the maximum norm or a mesh-weighted root-mean-square norm. Convergence studies must compare the same norm at a fixed physical time.
+
+= Vectorized numerical computation
+{parent=Numerical analysis}
+
+<Vectorized numerical computation> applies numerical operations to entire arrays of values instead of explicitly iterating over scalar entries. For a <power series>, constructing a <vector> of term indices, evaluating all corresponding terms and summing that <vector> is a vectorized evaluation. A loop over bounded blocks can control memory while preserving vectorized computation within each block.
+
+= Backward stability
+{parent=Numerical analysis}
+{title2=$\widehat f(d)=f(d+\delta d)$}
+
+A <numerical algorithm> is backward stable when its computed output is the exact output for input data perturbed by an amount comparable to the arithmetic's <round-off error>. The allowed input perturbations and their <norm> must be specified. A bound on <backward error> gives a <forward error> bound only after accounting for the problem's <condition number>. For example, a <singular value decomposition> with <orthonormal> computed outer factors is backward stable in the <spectral norm> if $\|A-\widehat U\widehat\Sigma\widehat V^T\|_2\leq c u\|A\|_2$, with machine precision $u$ and a modest dimension-dependent constant $c$.
+
 = Root finding
 {parent=Numerical analysis}
 
@@ -16,6 +52,24 @@ Find a value $x$ satisfying $f(x)=0$ for a given function. Methods include the <
 {parent=Numerical analysis}
 
 Fixed-point iteration seeks a <fixed point> of a map $F$ by repeatedly setting $x_{k+1}=F(x_k)$. Convergence requires additional hypotheses; for example, a <contraction mapping> on a complete metric space has a unique fixed point reached by this iteration.
+
+= Order of convergence
+{parent=Fixed-point iteration}
+{title2=$\lim_{k\to\infty}\|e_{k+1}\|/\|e_k\|^p=C\in(0,\infty)$}
+
+An iteration converging to $x_*$ has exact asymptotic order $p$ if its nonzero errors $e_k=x_k-x_*$ satisfy the displayed limit. A bound $\|e_{k+1}\|\leq C\|e_k\|^p$ instead asserts at least order $p$. Finite termination is treated separately because the error ratios become undefined.
+
+= Linear convergence
+{parent=Order of convergence}
+{title2=$|e_{k+1}|/|e_k|\to\rho\in(0,1)$}
+
+An <iteration of a map> has linear convergence to its <limit> when its nonzero errors $e_k=x_k-\alpha$ satisfy $|e_{k+1}|/|e_k|\to\rho$ for some $0<\rho<1$. The error eventually shrinks by approximately the same factor at each step. This is exact <order of convergence> one, in contrast to <quadratic convergence>.
+
+= Cubic convergence
+{parent=Order of convergence}
+{title2=$\|e_{k+1}\|\leq C\|e_k\|^3$}
+
+An iteration has at least cubic convergence when its errors eventually satisfy the displayed inequality with fixed $C>0$. Exact <order of convergence> three requires a positive finite limit of $\|e_{k+1}\|/\|e_k\|^3$. If $C^{1/2}\|e_N\|<1$, setting $d_k=C^{1/2}\|e_k\|$ gives $d_{k+1}\leq d_k^3$, hence $d_{N+j}\leq d_N^{3^j}$.
 
 = Fixed-point arithmetic
 {parent=Numerical analysis}
@@ -93,6 +147,17 @@ exhibits <quadratic convergence>: once close, the number of correct decimal digi
 
 Global convergence requires additional care. For the <polynomial> $F(x)=x^3-2x+2$, starting at $x_0=0$ gives $F(0)=2$, $F'(0)=-2$, hence $x_1=1$. Then $F(1)=1$, $F'(1)=1$ gives $x_2=0$. The sequence repeats $0,1,0,1,\ldots$ forever, although a real <polynomial root> lies in $(-2,-1)$ by the <intermediate value theorem>. Neither point in the cycle is a <zero of a function>, and neither has zero <derivative>. A maintained sign-changing interval and fallback <bisection method> can protect a root solver from unsuitable Newton steps.
 
+= Newton iteration at a multiple root
+{parent=Newton root-finding iteration}
+{c}
+{title2=$e_{k+1}/e_k\to(m-1)/m$}
+
+If a sufficiently smooth <function> has the form $f(x)=(x-\alpha)^m q(x)$ with $m>1$ and $q(\alpha)\ne0$, then the <Newton root-finding iteration> satisfies
+$$
+x_{k+1}-\alpha=(x_k-\alpha)\left(1-\frac{q(x_k)}{m q(x_k)+(x_k-\alpha)q'(x_k)}\right).
+$$
+Thus the ratio of successive nonzero errors tends to $(m-1)/m$: the usual iteration has only <linear convergence>. Cancelling the common factor in $f/f'$ produces a continuous extension at the <multiple root>, although the original quotient is undefined there. An implementation should stop upon finding an exact <zero of a function>.
+
 = Exact Newton error identity for a quadratic
 {c}
 {parent=Newton root-finding iteration}
@@ -121,6 +186,23 @@ For a short proof outline, apply <Taylor's theorem> between $t_r$ and $t_*$; sub
 For a $C^2$ map $\Phi$ on a <Banach space>, define $N(p)=p-[D\Phi(p)]^{-1}\Phi(p)$ wherever the bounded <derivative> is invertible. It solves the local affine approximation to $\Phi=0$. Every zero is a <fixed point> of $N$. Near a zero with invertible <derivative>, bounded inverses and a locally Lipschitz <derivative> give the <quadratic Newton error bound in a Banach space>.
 
 // Target: numerical-analysis.bigb
+
+= Multivariable Newton iteration
+{parent=Newton iteration in a Banach space}
+{title2=$DG(x_k)s_k=-G(x_k),\quad x_{k+1}=x_k+s_k$}
+
+= Newton's method for nonlinear systems
+{synonym}
+{c}
+
+The finite-dimensional <Newton root-finding iteration> for a vector equation $G(x)=0$. At a point with invertible <Jacobian matrix>, solve the displayed <linear system>. For $G=\nabla F$, its <Jacobian matrix> is the <Hessian matrix>, giving <Newton's method in optimization>. The update solves the affine first-order approximation $G(x_k)+DG(x_k)s_k=0$; it can converge to any nondegenerate <critical point>, including a <saddle point>.
+
+= Newton correction compatibility condition
+{parent=Multivariable Newton iteration}
+{c}
+{title2=$-\mathbf f(\mathbf x)\in\operatorname{im}D\mathbf f(\mathbf x)$}
+
+A <multivariable Newton iteration> correction must solve the <linear system> $D\mathbf f(\mathbf x)\mathbf s=-\mathbf f(\mathbf x)$. It exists exactly when the right-hand side is in the image of the <Jacobian matrix>, and is unique when that <Jacobian matrix> is invertible. At a <singular matrix>, there may be either no corrections or several; singularity alone does not decide which. For finding a <critical point> of a scalar function $F$, use $\mathbf f=\nabla F$, so the <Jacobian matrix> is the <Hessian matrix>. Equal rows of the <Hessian matrix> with unequal corresponding <gradient> entries immediately make the correction <equations> inconsistent.
 
 = Frozen Newton correction for a fixed-point equation
 {parent=Newton iteration in a Banach space}
@@ -496,6 +578,11 @@ At regular transverse intersections, the displayed map has a rank-three $3\times
 
 This example also has a large <condition number>: independently perturbing the two inputs of $a-b$ can produce a relative amplification $(|a|+|b|)/|a-b|=2467$. High sensitivity belongs to the input-output problem; <numerical stability> concerns the arithmetic used to solve it. Conversely, on a common binary system with 53 significant bits and rounding to nearest, $(10^{16}+1)-10^{16}$ evaluates to zero while $(10^{16}-10^{16})+1$ evaluates to one. Exact arithmetic makes both one: changing summation order changes the accumulated <roundoff error>. MIT's summation lecture explains why <numerical stability> and the <condition number> must be assessed separately.https://ocw.mit.edu/courses/18-335j-introduction-to-numerical-methods-spring-2019/pages/week-2/[Steven G. Johnson, MIT 18.335J, Lecture 3: Floating-Point Summation and Backwards Stability, 2019]{ref}
 
+= Cancellation error
+{parent=Round-off error}
+
+Subtracting nearly equal approximate quantities can lose significant digits because the absolute input errors become large relative to the small difference. For example, the positive <polynomial root> of $az^2+z-y=0$ can be evaluated as $2y/(1+\sqrt{1+4ay})$, avoiding the subtraction in $(-1+\sqrt{1+4ay})/(2a)$ when $ay$ is small.
+
 = Richardson extrapolation
 {parent=Numerical analysis}
 {c}
@@ -841,6 +928,18 @@ where $C_T$ is independent of $h$. For a linear homogeneous recurrence, a unifor
 
 Finite-interval <numerical stability> differs from <absolute stability> at a fixed step size. Applying the <Euler method> to $y'=-2y$ multiplies a perturbation by $1-2h$ each step. At $h=0.2$ this is $0.6$, so perturbations shrink; at $h=1.2$ it is $-1.4$, so they alternate and grow. Nevertheless the <Euler method> converges as $h\to0$ for this problem: failure at a coarse step does not contradict the convergence theorem. <Absolute stability> asks whether a selected step preserves boundedness of the <Dahlquist test equation> over arbitrarily many steps. MIT's analysis uses strict decay, $|1+h\lambda|<1$, rather than the boundary-inclusive boundedness convention.https://ocw.mit.edu/courses/18-330-introduction-to-numerical-analysis-spring-2012/a9d2bd9be098f0ada172af40379a17cc_MIT18_330S12_Chapter5.pdf[Laurent Demanet, MIT 18.330, Chapter 5, Example 14, 2012]{ref}
 
+= Practical stability of a finite difference scheme
+{parent=Stability of a numerical method}
+{title2=$\|U^m\|\leq\|U^0\|$}
+
+= Practical stability
+{synonym}
+
+= Practically stable
+{synonym}
+
+In the contraction convention for numerical evolution, practical stability means non-growth of the chosen <norm> for every datum and every permitted time level. This is stronger than finite-time mesh-uniform <stability> allowing a bound $C_T\|U^0\|$. For a scalar translation-invariant one-step scheme on the infinite grid, a <Fourier amplification symbol> $G$ with $|G|\leq1$ gives this contraction by the <Parseval identity>. If $|G|\geq1+c>1$ on a frequency set of positive measure, choose a nonzero square-integrable transform supported there to obtain $\|U^m\|\geq(1+c)^m\|U^0\|$. The constant $c$ may depend on the mesh. Centered pure advection with forward time has $c=\sqrt{1+(\Delta t/\Delta x)^2/2}-1$ on the set $\sin^2\theta\geq1/2$. The distinction from finite-time <stability> is quantified by <centered-advection refinement-dependent stability>.
+
 = Consistency of a numerical method
 {parent=Numerical analysis}
 
@@ -881,6 +980,28 @@ For a time update with one-step defect $\delta_{h,k}$ after exact solution value
 {parent=Numerical analysis}
 
 The energy method differentiates a norm or quadratic energy along a differential equation or numerical evolution and estimates the resulting terms. Dissipative, skew-adjoint, and boundary contributions can yield stability or conservation without diagonalizing the operator.
+
+= Monotonicity energy estimate for a semilinear Dirichlet problem
+{parent=Energy method}
+{title2=$\|(u-v)'\|_2^2+\frac12\|u-v\|_2^2\leq\frac12\|f-g\|_2^2$}
+
+Suppose $-u''+u+q(u)=f$ and $-v''+v+q(v)=g$ on a bounded interval, the solutions have the same <Dirichlet boundary conditions>, and $q$ is a <nondecreasing function>. Multiplying the difference equation by $w=u-v$ and using <integration by parts> gives
+$$
+\|w'\|_2^2+\|w\|_2^2+\int(q(u)-q(v))w=\int(f-g)w.
+$$
+The nonlinear <integral> is nonnegative. <Young's inequality for products> gives the displayed <energy estimate>. It proves <uniqueness> and <continuous dependence on forcing>. The same argument holds for nodal values when <integration by parts> is replaced by <discrete summation by parts>.
+
+= Energy identity
+{parent=Energy method}
+{title2=$E'(t)+D(t)=F(t)$}
+
+An energy identity is an exact balance obtained by differentiating a chosen functional along a <solution of a differential equation>. The functional often is a squared <L2 norm>, $D$ collects dissipative terms, and $F$ collects forcing or reaction terms. Dropping nonnegative terms gives an <energy estimate>.
+
+For $u_t=u_{xx}+g$ on $(0,1)$ with $u_x(0,t)=\alpha u(0,t)$ and $u(1,t)=0$, <integration by parts> proves
+$$
+\frac12\frac d{dt}\int_0^1u^2\,dx+\int_0^1u_x^2\,dx+\alpha u(0,t)^2=\int_0^1ug\,dx.
+$$
+The boundary term is $[u u_x]_0^1=-\alpha u(0,t)^2$; the minus sign at the left endpoint is essential. For $\alpha\geq0$ it contributes dissipation. If $ug\leq a(t)u^2$ and the initial data vanish, the <Gronwall inequality> forces $u\equiv0$.
 
 = Dirichlet convection-diffusion contraction
 {c}
@@ -1313,6 +1434,18 @@ $$
 $$
 The <uniform norm> on $[a,b]$ measures the approximation between samples. This bound connects <quadrature rule> accuracy to <uniform approximation>, rather than promising an error from sample count alone. Corners, sharp unresolved features and <roundoff error> require their own assessment; the <absolute value function> example already shows why <polynomial> exactness is a qualified guarantee.
 
+= Exponential convergence of Gaussian quadrature
+{parent=Gaussian quadrature}
+{title2=$|I-Q_n|\leq C e^{-Ln}$}
+
+For positive <quadrature weights> summing to the total mass $M$, a <quadrature rule> exact on <polynomials> through <polynomial degree> $d$ satisfies $|I(f)-Q(f)|\leq2M\|f-p_d\|_\infty$ for every such <polynomial> $p_d$. This follows by subtracting the exactly integrated $p_d$ and applying the <triangle inequality> to the integral and weighted sum. For <Gauss-Legendre quadrature> with $n+1$ nodes, $M=2$ and $d=2n+1$. Exponentially decaying <Chebyshev series> coefficients therefore yield a bound proportional to $e^{-2Kn}$ when $|c_j|\leq e^{-Kj}$.
+
+= Discrete orthogonality of Gaussian quadrature
+{parent=Gaussian quadrature}
+{title2=$A^TWA=I,\quad AA^T=W^{-1}$}
+
+Let $\phi_0,\ldots,\phi_n$ be <orthonormal> <polynomials> for a positive weight, and let $x_i,w_i$ define its $(n+1)$-point <Gaussian quadrature>. Put $A_{ij}=\phi_{j-1}(x_{i-1})$ and $W=\operatorname{diag}(w_0,\ldots,w_n)$. Exactness through <polynomial degree> $2n+1$ gives $A^TWA=I$. Positivity of the <quadrature weights> makes $W^{1/2}A$ a square <orthogonal matrix>, so $AA^T=W^{-1}$ also. Thus the unweighted row <inner products> of the evaluation <matrix> are $\delta_{ij}/w_{i-1}$.
+
 = Gauss-Legendre quadrature
 {parent=Gaussian quadrature}
 {c}
@@ -1431,6 +1564,13 @@ $$
 The endpoint singularities of the weight are integrable. Thus the <Chebyshev polynomials> are <orthogonal polynomials> for this weight, making coefficients in a <least-squares polynomial in an orthogonal-polynomial basis> separate cleanly. Their <polynomial roots> also give <Chebyshev–Gauss quadrature>, connecting <polynomial interpolation> to <Gaussian quadrature>.<NIST Digital Library of Mathematical Functions/18 Orthogonal Polynomials>[NIST Digital Library of Mathematical Functions; Koornwinder and collaborators, NIST DLMF, §18.3, Table 18.3.1: first-kind Chebyshev weight and normalization]{ref}
 
 Accuracy still depends on the target <function>. The <absolute value function> $|x|$ has a corner at zero, so the hypothesis requiring continuous <derivatives> in the displayed <polynomial interpolation error> bound fails. Endpoint clustering cannot remove that corner. A jump poses a stronger obstruction: <polynomials> are <continuous functions>, so they cannot converge in the <uniform norm> to a discontinuous <function> on the whole <interval>. Chebfun's documented examples show persistent overshoot for such jumps; these are a limitation of global <polynomial interpolation>, not a universal promise of rapid accuracy from <Chebyshev polynomials>.https://www.chebfun.org/docs/guide/guide04.html#4.3[Chebfun development team, Chebfun Guide, §4.3: polynomial interpolation of discontinuous functions]{ref}
+
+= Chebyshev series
+{parent=Chebyshev polynomial}
+{c}
+{title2=$f(x)=\sum_{j\geq0}c_jT_j(x)$}
+
+A Chebyshev series expands a <function> in <Chebyshev polynomials> $T_j$. If $|c_j|\leq Mq^j$ for $0<q<1$, then $|T_j(x)|\leq1$ on $[-1,1]$ gives <uniform convergence> and the tail bound $\|f-\sum_{j=0}^dc_jT_j\|_\infty\leq Mq^{d+1}/(1-q)$ by the <geometric series>.
 
 = Chebyshev projection of a semicircle
 {c}
