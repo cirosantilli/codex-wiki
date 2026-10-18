@@ -1,0 +1,80 @@
+"""Original cylinder forces and rotation diagrams; Python 3.14,
+NumPy 2.3.5, Matplotlib 3.10.7. Writes the same-basename PNG in CWD.
+"""
+from pathlib import Path
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Arc, Circle
+import numpy as np
+
+
+def arrow(ax, start, end, color="#126782"):
+    ax.annotate("", end, start, arrowprops={"arrowstyle": "->", "color": color, "lw": 1.6})
+
+
+def rotation(ax, centre, sense):
+    radius = 0.30
+    ax.add_patch(Arc(centre, 2*radius, 2*radius, theta1=0 if sense>0 else 120,
+                     theta2=240 if sense>0 else 360, color="#b55d15", lw=1.5))
+    a0, a1 = np.radians([223, 240]) if sense>0 else np.radians([137, 120])
+    c = np.array(centre)
+    arrow(ax, c+radius*np.array([np.cos(a0), np.sin(a0)]),
+          c+radius*np.array([np.cos(a1), np.sin(a1)]), "#b55d15")
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "figure.facecolor": "white"})
+    fig, axes = plt.subplots(1, 3, figsize=(12, 5.7))
+    radius = 0.6
+    centres = [(-radius, radius), (radius, radius), (0, radius*(1+np.sqrt(3)))]
+    for i, ax in enumerate(axes):
+        for centre in centres:
+            ax.add_patch(Circle(centre, radius, facecolor="#f7fafb", edgecolor="#233746", lw=1.6))
+        ax.plot([-2.1, 2.1], [0, 0], color="#596672", lw=2)
+        if i == 1:
+            for x in np.arange(-2.0, 2.05, 0.18):
+                ax.plot([x, x-0.12], [0, -0.12], color="#596672", lw=0.7)
+        ax.set(xlim=(-2.25, 2.25), ylim=(-0.55, 3.1), aspect="equal")
+        ax.set_axis_off()
+    top = np.array(centres[2])
+    for sign, label in [(1, r"$N_L$"), (-1, r"$N_R$")]:
+        end = top+np.array([sign*0.57, 0.57*np.sqrt(3)])
+        arrow(axes[0], top, end)
+        axes[0].text(end[0]+sign*0.12, end[1]+0.06, label, ha="center", color="#126782", fontsize=14)
+    arrow(axes[0], top, top+np.array([0, -0.78]), "#596672")
+    axes[0].text(0.16, 1.35, r"$mg$", color="#596672")
+    arrow(axes[0], (-2.0, 0.6), (-1.24, 0.6))
+    axes[0].text(-1.7, 0.78, r"$F$", color="#126782", fontsize=14)
+    arrow(axes[0], (0.8, 0.6), (1.7, 0.6))
+    axes[0].text(1.5, 0.77, r"$Q$", color="#126782", fontsize=14)
+    axes[0].text(0, -0.37, "All three normals must be nonnegative", ha="center", fontsize=10)
+    axes[0].set_title("(a) Frictionless translation", fontsize=13)
+    for i, description in [(1, "(b)(i) Rough ground; smooth cylinders"), (2, "(b)(ii) Smooth ground; rough cylinders")]:
+        ax = axes[i]
+        for sign in (-1, 1):
+            arrow(ax, (sign*1.25, 0.5), (sign*2.02, 0.5))
+            ax.text(sign*1.8, 0.73, r"$u$", ha="center", color="#126782", fontsize=14)
+        arrow(ax, (1.55, 2.45), (1.55, 1.45), "#287d53")
+        ax.text(1.72, 1.9, r"$w$", color="#287d53", fontsize=14)
+        rotation(ax, centres[0], 1 if i == 1 else -1)
+        rotation(ax, centres[1], -1 if i == 1 else 1)
+        ax.text(0, top[1], "No spin", ha="center", va="center", fontsize=10)
+        ax.text(0, -0.37, "Lower cylinders start moving apart", ha="center", fontsize=10)
+        ax.set_title(description, fontsize=11)
+    fig.suptitle("Three stacked cylinders: normals and initial rolling constraints", fontsize=17, y=0.97)
+    for x, formula in [(0.18, r"$g/(3\sqrt{3})\leq a\leq g/\sqrt{3}$"),
+                       (0.51, r"$w=g/(7+6\beta)$"), (0.83, r"$w=g/(7+8\beta)$")]:
+        fig.text(x, 0.16, formula, ha="center", fontsize=15)
+    fig.text(0.5, 0.08, r"At release: $u=\sqrt{3}\,w$. Lower-cylinder rotation senses reverse between the two rough-contact choices.",
+             ha="center", fontsize=11)
+    fig.text(0.5, 0.025, "The rough contacts are assumed to have enough static friction to prevent slipping; the smooth ground exerts no torque.",
+             ha="center", fontsize=10, color="#596672")
+    fig.subplots_adjust(left=0.025, right=0.985, bottom=0.27, top=0.83, wspace=0.15)
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name,
+                dpi=140, facecolor="white", transparent=False, metadata={"Software": "Matplotlib"})
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()

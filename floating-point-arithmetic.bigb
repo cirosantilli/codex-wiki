@@ -45,6 +45,39 @@ Python's `as_integer_ratio()` returns a pair of <integers> whose quotient equals
 
 Historically, David Goldberg's March 1991 ACM Computing Surveys paper explained representation, rounding and <catastrophic cancellation> together with the IEEE standard's design choices. Oracle provides an authorized edited reprint. Its enduring lesson is practical: use the spacing to understand <roundoff error>, and inspect intermediate values when mathematically equivalent <algorithms> behave differently.https://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html[Goldberg, 1991, reprint notice and §§Rounding Error, Cancellation]{ref}
 
+= Double-precision floating-point format
+{parent=Floating-point arithmetic}
+{wiki}
+{title2=binary64}
+
+= binary64
+{synonym}
+
+= Double precision
+{synonym}
+
+A <floating-point representation> occupying $64$ <bits>, or $8$ bytes, with one sign bit, $11$ exponent bits and $52$ explicitly stored fraction bits. The implicit leading bit of a normal number gives $53$ bits of significand precision. Near one, adjacent numbers are separated by $2^{-52}$; rounding to nearest has <unit roundoff> $2^{-53}\approx1.11\times10^{-16}$ in the normal range. These are relative precision scales, distinct from underflow limits or a universal absolute error bound.<IEEE arithmetic in Oracle's Numerical Computation Guide>[Chapter 2, IEEE Arithmetic Model and Double Format, Table 2-5]{ref}
+
+= Floating-point overflow
+{parent=Floating-point arithmetic}
+
+Floating-point overflow occurs when the magnitude of a computed result exceeds the largest finite representable <floating-point number>. Large values of an <exponential function> are a common source. In a normalized weighted sum, replacing exponentials $e^{r_i}$ by $e^{r_i-r_{\max}}$ before division prevents this particular overflow while leaving the normalized weights unchanged; this is an application of the <log-sum-exp> construction.
+
+= NaN
+{c}
+{parent=Floating-point arithmetic}
+{wiki}
+
+= Not a number
+{synonym}
+
+A special <floating-point arithmetic> value representing an undefined or unrepresentable numerical result. A displayed <NaN> is not a numerical zero and is not a valid <p-value>.
+
+= Floating-point rounding
+{parent=Floating-point arithmetic}
+
+Replacement of an exact real arithmetic result by a representable <floating-point number> under a specified rounding rule. Repeated products can depend on evaluation order, so a recursive rewrite intended to reproduce a floating-point loop should preserve its sequence of accumulator operations. An exact algebraic invariant does not by itself establish equality of rounded machine results.
+
 = Floating-point underflow
 {parent=Floating-point arithmetic}
 
@@ -100,6 +133,12 @@ $$
 where $u$ is <unit roundoff> for rounding to nearest. Some authors instead call $u$ their <machine epsilon>; MIT 18.335J uses this half-gap convention. Always check which definition an error bound uses.https://ocw.mit.edu/courses/18-335j-introduction-to-numerical-methods-spring-2019/2f313023ae3404bc217a81a31b227170_MIT18_335JS19_lec2.pdf[Persson, MIT 18.335J, Lecture 2, slides 3, 8–9: the half-gap convention]{ref}
 
 The gap below one is smaller: the preceding binary64 value is $1-2^{-53}$, whereas the next value above one is $1+2^{-52}$. Under nearest-even rounding, `1.0 + 2.0**-53` is exactly `1.0`: the exact <sum> is a tie and one has the even final <binary digit>. By contrast, `1.0 + 2.0**-52` is the next value. Thus searching for the smallest increment that changes one by trial <addition> also depends on the rounding convention. At $2^{53}$ the next larger binary64 value is $2^{53}+2$, illustrating why a small absolute increment can disappear at large magnitude.
+
+= Scale-aware stopping criterion for Newton iteration
+{parent=Machine epsilon}
+{title2=$|x_{n+1}-x_n|\le C\epsilon\max(1,|x_n|)$}
+
+Near a well-conditioned simple root, a numerically stable <Newton root-finding iteration> cannot usually resolve steps far below the local spacing of <floating-point numbers>. That spacing has relative scale comparable to <machine epsilon> $\epsilon$, motivating the displayed position-based criterion with a modest constant $C$. It combines an absolute scale near zero with a relative scale for large inputs. A residual-only test is changed by rescaling the equation, whereas the root and exact Newton step are unchanged. A tiny step alone is not a universal accuracy certificate: derivative errors, stagnation and cycles require separate consideration.
 
 = Unit roundoff
 {parent=Floating-point arithmetic}

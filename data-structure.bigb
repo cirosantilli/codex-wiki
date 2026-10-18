@@ -7,11 +7,82 @@ Suppose three requests arrive as $(5,\mathrm{Ada}),(2,\mathrm{Bo}),(4,\mathrm{Cy
 
 This is a useful design principle: preserve just enough organization for the operations the application needs. Maintaining a <sorted array> gives the whole order, but moving entries to insert a new key can be expensive. A <binary heap> keeps a weaker <heap order> that supports fast repeated selection without maintaining a <sorted array>. A good <data structure> makes an <algorithm>'s next step easy.
 
+= Persistent data structure
+{parent=Data structure}
+{wiki}
+
+A <data structure> whose previous versions remain usable after an update. An immutable representation can return a new root while retaining old roots. Persistence is a version-availability property; it does not require copying the whole structure, and it does not by itself guarantee a particular <time complexity> or <space complexity>.
+
+Path copying in a balanced <tree> can preserve old versions while allocating only the updated root-to-leaf path. A <linked list> can share an unchanged suffix but may copy a long prefix for a positional edit. Retained versions extend the lifetime of their reachable data, which matters when comparing snapshot history with edit-specific inverse commands.
+
+= Structural sharing
+{parent=Persistent data structure}
+
+Different immutable versions reuse unchanged component <software objects> rather than duplicating them. Sharing a <linked list> suffix or unchanged <subtrees> saves storage while retaining distinct roots. The shared components must remain immutable for old versions to remain trustworthy. Merely sharing a mutable <array> does not create a stable snapshot.
+
+Saving references to before/after versions adds constant reference storage per history entry, but the data reachable through those references may be much larger. With balanced-tree path copying, $h$ small updates to a size-$n$ structure can retain $O(n+h\log n)$ nodes. Whole-array copying can instead retain $\Theta(hn)$ entries. The implementation and update pattern determine which bound applies.
+
+= Optional value
+{parent=Data structure}
+
+A value that is either absent or contains one payload. In <Haskell>, `Maybe a` uses `Nothing` for absence and `Just x` for presence. These alternatives distinguish an absent element from a present payload that may itself be undefined.
+
+= Cursor
+{parent=Data structure}
+
+A sequential-access object with a non-consuming current-value operation and a separate advance operation. Repeated reads of the current value leave its abstract <sequence> unchanged. Converting a consuming <iterator> into a cursor therefore needs a cache or an equivalent saved-current representation.
+
+= Iterator
+{parent=Data structure}
+
+A stateful interface exposing a remaining <sequence> through an availability test and an operation returning and consuming its head. An iterator can represent an infinite sequence without materializing all elements, provided demanded steps terminate. Destructive iterators generally require exclusive ownership of their consumption state; sharing an iterator is not the same as creating a fresh independent traversal.
+
+= Demand-driven filtering iterator
+{parent=Iterator}
+
+An <iterator> adapter that consumes underlying values only far enough to find the next value passing a predicate. Store at most one passing value in an <optional value>. With no cached value, its abstract remainder is the filtered underlying remainder; with cached $x$, it is $x$ followed by that filtered remainder.
+
+Construction performs no read. On `hasNext` or `next`, consume rejected values until one passes or the input is exhausted. Cache the passing value immediately and stop. Repeated availability tests reuse it. Returning it clears the cache without prefetching another value. This gives a precise demand boundary even when producing source values is expensive. Availability need not terminate on an infinite input with no further passing value.
+
+= Shared iterator consumption
+{parent=Iterator}
+
+Two wrappers referring to the same destructive <iterator> share its remaining <sequence>. Their local wrapper fields do not duplicate the underlying consumption state. If one wrapper drains the shared source, a later consumer sees exhaustion. Correct reasoning must therefore track aliases and the actual demand order rather than combine the outputs of imagined independent traversals.
+
+= Iterator concatenation
+{parent=Iterator}
+
+Consume the first <iterator> until it is exhausted, then consume the second. Short-circuit availability testing avoids polling the second producer while the first still has entries. Construction need not request any entry. If both wrappers share an underlying cursor, however, draining the first may also consume entries the second would otherwise have returned.
+
+= Demand-driven alternating iterator
+{parent=Iterator}
+
+A wrapper selecting alternate underlying entries can maintain one flag indicating whether the next entry must first be discarded. Construction performs no requests. On demand, skip at most that one entry, clear the flag, and leave the selected entry unconsumed until next is called. Returning a selected entry sets the flag again. Repeated availability tests cannot repeatedly skip; a final skipped entry may need to be consumed to establish exhaustion.
+
+= Stateless iterator
+{parent=Iterator}
+
+An <iterator> whose future observable <sequence> can be produced without changing cursor state. An infinite constant <sequence> is an example: removing its first element leaves the same <sequence>. A permanently empty <iterator> is another. Such cases show why an <iterator> interface does not logically force every implementing object to be mutable, although ordinary finite nonempty traversals need progress state somewhere.
+
+= Occurrence-position representation of a sequence
+{parent=Data structure}
+{title2=$\operatorname{rep}(xs)(v)=\{i:xs_i=v\}$}
+
+= Occurrence-position representations of a sequence
+{synonym}
+
+Represent a <sequence> by a <function> mapping each value to its increasing <list> of occurrence positions. On finite inputs, querying a value produces every matching index and a terminating tail. On infinite inputs, absence of further occurrences may be uncomputable by a generic scan, as expressed by the <absence-detection obstruction for infinite lists>. Parity filtering and index rescaling represent alternate-element subsequences, but may fail to preserve <productivity>.
+
 = Suffix array
 {parent=Data structure}
 {title2=$\operatorname{SA}$}
 
 A <suffix array> stores starting positions of a <string>'s <suffixes> in <lexicographic order>. All <suffixes> starting with a fixed query occupy a consecutive interval. This permits <string-searching algorithms> to search a compact list of positions instead of storing every suffix explicitly.
+
+= Adjacent-suffix characterization of longest repeats
+{parent=Suffix array}
+
+The length of a <longest repeated substring> equals the maximum longest-common-prefix length over adjacent suffixes in <lexicographic order>. Suffixes beginning with a fixed <string> form a consecutive interval: a <string> outside that <string prefix> <software class> differs earlier or ends sooner, putting it strictly to one side. Two occurrences of a <longest repeated substring> therefore bound an interval in which every adjacent pair shares that <string prefix>. At least one adjacent pair attains its length, and no pair can exceed the global maximum. This proves the result even when occurrences overlap; a text with fewer than two suffixes needs a separate empty-result convention.
 
 = Wavelet tree
 {parent=Data structure}
@@ -33,6 +104,76 @@ A character <rank query> asks how many occurrences of character $c$ appear in th
 {synonym}
 
 A <list> is an ordered collection in which entries may repeat. Removing duplicates would discard information about both multiplicity and, depending on the representation, order. A <linked list> and an <array> are different ways to implement list operations.
+
+= Index-function representation of a list
+{parent=List (abstract data type)}
+{title2=$f:\mathbb Z\to\operatorname{Maybe}(A)$}
+
+Represent a finite <list> by a <function> from indices to <optional values>. There must be a length $m$ for which exactly the indices $0\leq i<m$ are present; later indices are absent, so the representation has no holes. Prepending and removing a head shift indices, taking restricts the present domain, and dropping translates it. Functional composition can accumulate query costs, so <array>-like constant-time access does not follow from the representation type.
+
+= Random-access list
+{parent=List (abstract data type)}
+
+A persistent <list> representation supporting positional lookup more efficiently than a conventional <linked list>. Different implementations trade lookup, insertion and deletion costs; “random-access” does not itself guarantee constant-time indexing. A <skew-binary random-access list> supports worst-case constant-time front insertion and removal with logarithmic worst-case lookup.
+
+= Skew-binary random-access list
+{parent=Random-access list}
+
+Represent a finite <list> by a <forest> of value-bearing <perfect binary trees> of sizes $1,3,7,\ldots$, in nondecreasing order, using the greedy largest sizes and allowing a repeated size only in the first two positions. Concatenated <preorder traversals> recover the <list>. Cached tree sizes guide indexing.
+
+Front insertion merges the first two equal-size trees beneath a new root, or adds a singleton if they differ. Removing the first root either discards a singleton or splits its two children into the initial equal-size pair. Both operations inspect and allocate only a bounded number of constructors, taking worst-case <constant time> and sharing the remaining representation. A positional query skips whole cached tree sizes and then descends through one tree, taking $O(\log(n+1))$ time. Conversion in either direction takes <linear time> on finite input.
+
+The duplicate-size restriction follows directly from greediness. If two size-$w$ trees had any preceding nonempty portion, there would be at least $2w+1$ elements available, enough for the next larger <perfect binary tree>. Three equal-size trees would likewise suffice for that larger tree. Both contradict the greedy representation.
+
+= Difference list
+{parent=List (abstract data type)}
+{title2=`[a] -> [a]`}
+
+Represent a <list> $xs$ by the <function> `\ys -> xs ++ ys`. Concatenation becomes function composition, the empty list is represented by `id`, and applying to `[]` recovers the list. Only functions of this tail-prepending form are valid representations; arbitrary functions of the displayed type need not satisfy the invariant. A higher-order <tree fold> using difference lists produces an inorder traversal in linear time on every tree shape.
+
+= Linear flattening of a binary tree
+{parent=Difference list}
+{title2=`go t acc = flatten t ++ acc`}
+
+For a <leaf-labelled binary tree>, define `go (One x) acc = x:acc` and `go (Two l r) acc = go l (go r acc)`, then apply `go t []`. The invariant in the title follows by <structural induction> and <associativity> of <list concatenation>. It proves preservation of leaf order. Each leaf supplies one output constructor and each internal node requires constant bookkeeping, giving <linear time> in the number of nodes. By contrast, flattening both subtrees and concatenating their results can copy prefixes of sizes $1,2,\ldots,n-1$ on a left-branching <tree>, taking <quadratic time>. The accumulator is the already-known suffix in a <difference list> representation.
+
+= List concatenation
+{parent=List (abstract data type)}
+{title2=`(++) :: [a] -> [a] -> [a]`}
+
+Append the second <list> after the first. For a finite left list of length $n$, consuming the concatenation costs $\Theta(n)$ to copy its spine and can share the second argument. Repeatedly appending large left lists can cause quadratic <time complexity>; <difference lists> make concatenation into function composition.
+
+= Predicate prefix-suffix reconstruction
+{parent=List concatenation}
+
+Concatenating the initial <list prefix> accepted by a <predicate> with the remaining <list suffix> reconstructs the input, provided every test reached before the first false result terminates. Prove the finite case by <structural induction>: a true test copies the head, and a false test returns the untouched <list suffix>. An undefined reached test is an obstruction because reconstruction loses an exposed cons cell. An infinite all-true <list prefix> can still reconstruct the input, since <list concatenation> never demands its second argument there.
+
+= Suffix of a list
+{parent=List (abstract data type)}
+
+= List suffix
+{synonym}
+
+= Suffixes of a list
+{synonym}
+
+A <list> obtained by dropping an initial segment. The whole list and, for finite lists, the empty list are suffixes. Proper suffixes exclude the whole list; nonempty suffixes exclude `[]`. In a <linked list>, suffixes can share the original nodes, permitting a list of all suffixes to be constructed with linear additional space.
+
+= Prefix of a list
+{parent=List (abstract data type)}
+
+= List prefix
+{synonym}
+
+= Prefixes of a list
+{synonym}
+
+An initial segment of a <list>, including the empty segment and, for finite lists, the whole list. A proper prefix excludes the whole list. Fully materialising all prefixes of a length-$n$ list needs $\Theta(n^2)$ element constructors, although the outer list of prefixes has only $n+1$ entries.
+
+= String prefix
+{parent=Prefix of a list}
+
+An initial segment of a <string>, including the empty <string> or the whole <string>. Two <strings> share a prefix exactly when their initial characters agree up to its length. The <longest common prefix> is the longest such shared initial segment.
 
 = Heap data structure
 {parent=Data structure}
@@ -73,6 +214,11 @@ A min-heap has every parent key no greater than its child keys. The root therefo
 = Dictionary
 {synonym}
 
+= Sparse map with a default value
+{parent=Associative array}
+
+Represent a total <function> by storing only selected entries of a finite <partial function> and returning a fixed default for missing keys. A missing payment-count record can denote two zero counts. Storing an explicit default-valued record can have the same observable meaning, so the <abstraction function> need not be injective. Update operations must preserve all unrelated keys and establish the intended change whether or not the key was previously stored.
+
 = Treap
 {parent=Data structure}
 
@@ -97,6 +243,11 @@ A suffix automaton is a finite automaton recognizing all suffixes of a fixed <st
 
 = deque
 {synonym}
+
+= Deque endpoint invariant
+{parent=Double-ended queue}
+
+In an endpoint-based doubly linked deque, the two endpoint references are simultaneously null exactly in the empty state. Otherwise the first predecessor and last successor are null, the finite chain is acyclic, and neighbouring links are <reciprocal>. Following successors and predecessors gives the same nodes in reverse order. Removing the sole node must therefore clear both endpoints; merely clearing the one used by the operation is insufficient.
 
 = Monotonic queue
 {parent=Double-ended queue}
@@ -241,6 +392,11 @@ Distinct items may share a priority. Inserting $(2,\mathrm{Eli})$ alongside $(2,
 
 The interface specifies behavior; the <data structure> determines costs. A <binary heap> implements a <priority queue> with constant-time `peek` and logarithmic-time insertion and `extract-min`, under the cost assumptions below. Scheduling by urgency or by the time of the next event needs exactly this repeated next-item selection. MIT's notes use these applications to motivate the <priority queue> interface.https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/40d4851e550507ca14dc778b9b2266cc_MIT6_006S20_lec8.pdf[MIT 6.006, lecture 8: priority queues and binary heaps, pp. 1–2]{ref}
 
+= Maximum priority queue
+{parent=Priority queue}
+
+A <priority queue> whose distinguished entry has largest key. A <max-heap> implements maximum inspection in <constant time>, and insertion, extraction of a maximum and increasing the key of a located entry in $O(\log n)$ <running time>. An entry handle needs its current heap index to support that last bound; searching by an arbitrary key can take <linear time>. Multiple entries can have equal keys without requiring a particular tie order.
+
 = Binary heap
 {parent=Priority queue}
 {wiki}
@@ -313,6 +469,12 @@ To build a <binary heap>, begin at index $\lfloor n/2\rfloor-1$ and work backwar
 The <Dijkstra algorithm> additionally needs to decrease the priority of an existing <vertex> when its <tentative distance> improves. Given its current index, lowering the key followed by <sift up> takes $O(\log n)$ time for $n\ge2$. An indexed <binary heap> maintains a separate map from item identity to its current index and updates that map after every exchange. For <vertices> numbered in a fixed range, the map can be another <array>, giving constant-time index lookup. An ordinary unindexed <binary heap> supplies no such guarantee: locating an arbitrary item can require scanning $n$ entries. Item identity and priority must remain distinct, especially when several <vertices> have equal <tentative distances>.
 
 The attractive compromise is local organization with global usefulness. A <binary heap> maintains only the <heap order>, yet every `extract-min` gives the next smallest key. Repeated extraction of the original example gives $2,3,4,5,7,8,9$, so a <priority queue> also supplies a <sorting algorithm> without storing a <sorted array> between extractions.
+
+= Bottom-up heap construction
+{parent=Binary heap}
+{title2=$\sum_{h\ge1}\lfloor n/2^h\rfloor<n$}
+
+Construct a <binary heap> from an <array> by processing internal nodes backwards, applying <sift down> at each. The <complete binary tree> shape ensures that the subtrees below the current node have already been repaired. The number of nodes whose height is at least $h$ is at most $\lfloor n/2^h\rfloor$, so charging each repair by its height gives total work at most a constant multiple of $n+\sum_{h\ge1}\lfloor n/2^h\rfloor<2n$. The construction takes $\Theta(n)$ time in either heap orientation, whereas inserting entries separately has an $O(n\log n)$ worst-case bound.
 
 = Heap order
 {parent=Binary heap}
@@ -600,6 +762,12 @@ Inserting $X$ after $B$ in an <array> holding $A,B,C$ with one unused slot produ
 
 A fixed-capacity <array> cannot accept another entry when full. A resizable representation can allocate a larger <array> and copy the entries. Doubling capacity when full gives $O(1)$ append cost by <amortized analysis> over a <sequence> starting empty, but a single append that copies $n$ entries still has $O(n)$ worst-case <time complexity>. The outline is a <geometric series>: copied capacities $1,2,4,\ldots,2^k$ sum to $2^{k+1}-1$, less than twice the number of appends that triggered the last copy. Middle insertion still pays for its shifts. https://opendatastructures.org/ods-java/2_1_ArrayStack_Fast_Stack_O.html[Pat Morin, Open Data Structures, sections 2.1.2–2.1.3: resizing and amortized costs]{ref}
 
+= Majority element
+{parent=Array (data structure)}
+{title2=$2\,\#\{i:A_i=x\}>n$}
+
+An entry occurring strictly more than half the time in a finite <array> or <sequence>. At most one distinct value can satisfy this condition: two such occurrence counts would sum to more than the input length. A <majority element> need not be the smallest, largest or most recently observed entry.
+
 = Difference array
 {parent=Array (data structure)}
 
@@ -652,6 +820,11 @@ A <dynamic array> is an <array> whose backing storage can grow as entries are ap
 A <circular buffer> stores a changing <sequence> in a fixed-capacity <array>, reusing slots by wrapping <array indices> through <modular arithmetic>. A front <array index> and an occupied count can represent a <FIFO queue> without shifting entries after removal. The physical <array> stays in place; the position at which its logical <sequence> begins moves. This makes a <circular buffer> useful when storage must remain bounded while successive items arrive and leave.
 
 Capacity and overflow behavior are separate choices. A rejecting <FIFO queue> preserves all accepted items until removal and reports failure on a full insertion. An overwriting <circular buffer> deliberately discards its oldest item to retain the newest arrivals. These are different <application programming interfaces>. The existing <representation independence> example specifies the rejecting policy and gives its <abstraction function> and correctness argument against a shifting <array> implementation.
+
+= Interrupt-safe ring-buffer snapshot
+{parent=Circular buffer}
+
+When an <interrupt handler> is the sole writer of a fixed <ring buffer>, foreground code can obtain a coherent view by saving and masking the relevant interrupt, copying the count and valid entries, and restoring the earlier mask. Perform expensive calculations on the copy after leaving the <critical section>. Exclusion prevents the writer from changing the logical version during the copy; individually atomic loads alone do not give this guarantee. Correctness also requires compiler ordering at the boundaries, no unmasked competing writer, and a short enough mask interval that the peripheral does not lose events. Restoring the previous mask avoids accidentally enabling an interrupt disabled by an outer caller.
 
 = Circular buffer indices
 {parent=Circular buffer}
@@ -761,11 +934,21 @@ A <stack> is a <data structure> with last-in, first-out behavior: `push` adds an
 
 A <stack> records work that must be resumed in reverse order: the most recent unfinished task is handled first. <Depth-first search> uses this discipline to finish a newly entered branch before resuming the older branch that led to it. <Breadth-first search> uses a <FIFO queue> to resume the oldest pending <vertex> instead. Both are small interfaces whose removal rule changes the shape of a <graph search>.
 
+= Shared-array double stack
+{parent=Stack (data structure)}
+
+Two <stacks> can share a fixed <array> by growing inwards from opposite ends. Store one <stack> in $[0,l)$ and the other in $[r,M)$, with <representation invariant> $0\leq l\leq r\leq M$. The first top is at $l-1$, the second at $r$, and $[l,r)$ is free. The <abstraction function> reads the first segment backwards and the second forwards to obtain top-first <lists>. Push requires $l<r$; a pop requires its own <stack> to be nonempty. Every operation uses constant time, and either <stack> can use all remaining space. The bounded <abstract data type> must expose or specify the shared capacity restriction.
+
 = Call stack
 {parent=Stack (data structure)}
 {wiki}
 
 A <call stack> stores active procedure calls and the information needed to resume each caller, such as its return location and local variables. A call adds a frame; returning removes that frame and resumes the previous call. When <depth-first search> uses <recursion>, a frame also records where its <adjacency list> scan paused. The active frames describe a <graph path> from the starting <vertex> to the current <vertex>; finished calls have left the <call stack>, although their <vertices> remain marked as discovered.
+
+= Stack alignment
+{parent=Call stack}
+
+<Stack alignment> constrains the <stack pointer> to a multiple of a specified byte boundary. <AAPCS32> requires word alignment generally and eight-byte alignment at public interfaces. Saving four 32-bit words preserves eight-byte alignment; saving three would change it by four bytes and may require padding before another call. Frame size and the alignment of local objects must be considered together.<Procedure Call Standard for the Arm Architecture by ARM Limited>[Base standard, universal and public-interface stack constraints]{ref}
 
 = Stack frame
 {parent=Call stack}
@@ -795,6 +978,52 @@ $$
 b_0=1,\qquad b_n=\sum_{i=0}^{n-1}b_i b_{n-1-i}\quad(n\geq1).
 $$
 For each left <subtree> size $i$, choose its shape and the right <subtree> shape independently. This yields the <Catalan numbers>: $b_1=1$, $b_2=2$, and $b_3=2+1+2=5$. The two shapes at $n=2$ are exactly the left-only and right-only examples. Forgetting the slot distinction would change the counting problem.
+
+= Leaf-labelled binary tree
+{parent=Binary tree}
+
+= Leaf-labelled tree
+{synonym}
+
+A <binary tree> with each data label stored at a <leaf of a tree>. One useful <Haskell> datatype has constructors `One a` for a leaf and `Two (Tree a) (Tree a)` for an internal node. Every finite inhabitant has at least one leaf, so this datatype cannot encode an empty leaf sequence. Its natural <tree fold> has a leaf operation `a -> b` and an internal operation `b -> b -> b`; replacing the two constructors by those operations defines the <structural recursion>.
+
+= Left-size potential of a binary tree
+{parent=Binary tree}
+{title2=$L(T)=|T.left|+L(T.right)$}
+
+Define $L(\varnothing)=0$ and $L(T)=|T.left|+L(T.right)$. Subtracting the right-spine length from total size gives the same quantity, because every node lies either on that spine or in one of its disjoint left <subtrees>. A <right tree rotation> at the root decreases this potential by exactly one; removing a root with no left child preserves it. Thus repeated root rotations and inorder removals take linear total work.
+
+= Tree rotation
+{parent=Binary tree}
+
+A local change of root and child pointers that preserves inorder order. A <right rotation> promotes a left child, moves that child's right <subtree> to the old root's left position, and makes the old root its right child. The five inorder pieces remain in the same order; a left rotation reverses this transformation. Rotation does not by itself require search-tree key ordering.
+
+= Right tree rotation
+{parent=Tree rotation}
+
+= Right rotation
+{synonym}
+
+For old root $y$ with left child $x$ and untouched <subtrees> $A,B,C$, change the shape from $((A,x,B),y,C)$ to $(A,x,(B,y,C))$. Both have inorder <sequence> $A,x,B,y,C$. In a destructive traversal that only rotates at the current root, this transformation extends the right spine by one node and decreases the left-size potential by one.
+
+= Balanced binary tree
+{parent=Binary tree}
+
+A binary tree whose subtree sizes or heights satisfy a stated balance condition. Recursively splitting an $n$-element sorted list into sizes $\lfloor n/2\rfloor$ and $\lceil n/2\rceil-1$ gives logarithmic height and child sizes differing by at most one. This is a static construction; ordinary <binary search tree> insertion does not automatically retain balance.
+
+= Leaf-balanced binary tree
+{parent=Balanced binary tree}
+
+A <leaf-labelled binary tree> is leaf-balanced when the leaf counts of the two subtrees at every internal node differ by at most one. Splitting a finite nonempty <list> into pieces of sizes $\lfloor n/2\rfloor$ and $\lceil n/2\rceil$ and applying the same construction recursively preserves the original leaf order and gives this balance condition. Both pieces are nonempty for $n\ge2$ and strictly shorter than the input; <induction> proves termination and balance. This leaf-count convention is different from demanding equal subtree heights.
+
+= Subtree-size balance
+{parent=Balanced binary tree}
+{title2=$\bigl||T.left|-|T.right|\bigr|\leq1$}
+
+= Nearly balanced binary tree
+{synonym}
+
+The condition that each binary-tree vertex has child <subtrees> whose node counts differ by at most one. Recursively choosing the middle entry of an index interval establishes this condition at every vertex, with exactly one allocated node per entry. No ordering assumption on the stored values is needed for the balance property or for reproducing the input's inorder <sequence>.
 
 = Binary expression tree
 {parent=Binary tree}
@@ -851,6 +1080,11 @@ An <inorder traversal> of a <binary tree> uses <recursion> to visit the left <su
 
 // Target: computer-science.bigb
 
+= Destructive inorder traversal by right rotations
+{parent=Inorder traversal}
+
+While the remaining root has a left child, apply a <right tree rotation> there. Once the left child is null, output the root and advance to its right child. The output already produced followed by the remaining inorder <sequence> is <invariant>. There are exactly $N$ output removals and $L(T_0)\leq N$ rotations, because rotations decrease the left-size potential and removals preserve it. The <algorithm> therefore takes linear time and constant auxiliary pointer space, at the cost of changing the input links.
+
 = Binary search tree
 {parent=Binary tree}
 
@@ -879,6 +1113,11 @@ An <inorder traversal> visits a left <subtree>, then its own <vertex>, then a ri
 This combination is useful and attractive: one <data structure> supports directed lookup and ordered enumeration. An <inorder traversal> costs $O(n)$ <time complexity> for $n$ entries, since it visits every <vertex>; balance accelerates lookup but cannot eliminate the work of outputting all keys.
 
 // Destination: computer-science.bigb
+
+= Undoing insertion of a new extreme key
+{parent=Binary search tree}
+
+If a key $q$ is smaller than every key of a finite <binary search tree> $R$, insert $q$ and then delete the minimum: the original tree, including its shape, is recovered. The insertion follows the leftmost search route and creates a new minimum leaf; deleting that leaf reverses the same route. The symmetric statement uses a fresh maximum. At a node with root $x$, the bounds on its children therefore let a direct <tree fold> reconstruct an untouched child from that child's insertion result. This gives a direct fold implementation of insertion without assuming that insertion is injective on arbitrary trees.
 
 = Dictionary intersection
 {parent=Binary search tree}
@@ -949,12 +1188,58 @@ Deletion similarly needs the incoming link: to remove $X$ after known $B$, set `
 
 There are practical costs beyond <Big O notation>. Each singly linked <linked list node> needs a successor reference in addition to its item; separate allocation may add further overhead, while an <array> can reserve unused capacity. Consecutive <array> slots can make a scan reuse nearby contents already brought into a <memory cache>; separated <linked list nodes> can make link following wait for successive <computer memory> fetches. These are layout-dependent effects, not a guarantee that every <array> operation beats every <linked list> operation on every machine. An <array> of references can still lead to scattered objects, and <linked list nodes> can be allocated close together. https://people.freebsd.org/~lstewart/articles/cpumemory.pdf[Ulrich Drepper, What Every Programmer Should Know About Memory, sections 3.3 and 6.2: access patterns and cache use]{ref}
 
+= Move-to-front heuristic
+{parent=Linked list}
+
+After a successful search in a <linked list>, detach the found <linked list node> and insert that same <linked list node> at the front. An immediate repetition of that search then succeeds after one key comparison. This helps workloads with temporal locality, though it need not reduce the cost of the search that triggers the move.
+
+A <dummy header node> lets a search return the found node's predecessor. If that predecessor is already the header, do nothing; otherwise bypass the found node, point it at the old first real node, and point the header at it. This preserves each key/value binding and avoids allocation. It preserves a <dictionary> abstraction whose ordering is unobservable, but generally changes the abstraction of an ordered <list>.
+
+= Sentinel node
+{parent=Linked list}
+
+= Dummy header node
+{synonym}
+
+A sentinel is a permanently present <linked list node> that is excluded from the represented data. A header sentinel provides a predecessor even for the first real element, allowing uniform link updates. Its datum has no abstract meaning and must not be counted by the <abstraction function>. A <representation invariant> should keep the sentinel outside its own finite acyclic successor chain.
+
+= Doubly linked list
+{parent=Linked list}
+
+A <linked list> whose nodes store predecessor and successor references satisfying reciprocal-link consistency. A known node can be unlinked in constant pointer work without searching for its predecessor. The representation uses extra references and requires both directions to be updated on insertion and deletion.
+
+= Singly linked list
+{parent=Linked list}
+
+A <linked list> in which each node stores a successor reference. Forward traversal is direct, but finding a predecessor generally requires a scan unless it is retained separately. A head and tail together with a cached length support constant-time <FIFO queue> operations.
+
+= In-place linked-list reversal
+{parent=Linked list}
+{title2=$reverse(P)\mathbin{++}Q=S$}
+
+Reverse a finite acyclic <linked list> using a reversed-prefix head and an untouched-suffix head. Save the suffix head's old successor, redirect its successor to the prefix, then advance both heads. If $P$ and $Q$ are the current sequences of node identities and $S$ the original sequence, the <loop invariant> is $reverse(P)\mathbin{++}Q=S$, with the two reachable node sets disjoint and all payload fields unchanged. Moving $q$ from $Q=q:Q'$ to $q:P$ preserves this equation. The suffix length decreases, and at exit the prefix is exactly the reversed original list. The method takes linear <running time> and constant <auxiliary space>, reusing the original nodes.
+
+= Circular linked list
+{parent=Linked list}
+
+A <linked list> in which following successors returns to the starting node rather than reaching null. A common non-dummy representation uses a null tail pointer for the empty case and a finite simple cycle for the nonempty case; `tail.next` is the first node. A traversal stops after one complete turn, comparing <object identity> with its remembered start. Appending is constant-time once the insertion point and absence of duplicate keys are established.
+
+= Null-terminated linked list
+{parent=Linked list}
+
+A <linked list> whose final node has a null successor, with a null head denoting emptiness. A finite acyclic representation supports a traversal that repeatedly follows `next` until null. A <circular linked list> needs a different stopping rule because its final successor points back into the list.
+
 = Linked list node
 {parent=Linked list}
 
 One record holding an item and the references that connect it into a <linked list>. In the singly linked examples, its `next` identifies the successor or is `null`. A <linked list node>'s position in the <sequence> can change when links change, without moving the <linked list node> in <computer memory>.
 
 // Target: computer-science.bigb
+
+= List header
+{parent=Linked list node}
+
+A permanent dummy node marking a list boundary, often also storing metadata. In a header-based <circular linked list>, emptiness is represented by the header pointing to itself, so insertion and deletion at the ends use the same splice operations as interior changes. The header payload need not denote an ordinary data entry.
 
 = Mutable list
 {parent=Linked list}
@@ -969,6 +1254,40 @@ A <linked list> whose links are held in <ML reference type> cells and may be cha
 A <linked list> whose future structure is obtained by calling a delayed computation. In <Standard ML>, `unit -> node` delays a computation until demand. Filtering may need to force arbitrarily many rejected elements to produce its next retained element; filtering an infinite list need not produce a result. Delay alone does not imply <memoization>.
 
 // Destination: computer-science.bigb
+
+= Proper lazy list
+{parent=Lazy list}
+
+A <proper lazy list> has a spine exposing either finitely many cons constructors followed by `[]`, or infinitely many cons constructors, without an undefined tail at a finite position. This is a condition on the spine: an element may itself be the <bottom value> without hiding the <list>'s constructors. A <partial list> with a finite visible prefix followed by $\bot$ fails this condition. The distinction supports <productivity> proofs that inspect constructors without evaluating the stored elements.
+
+= Absence-detection obstruction for infinite lists
+{parent=Lazy list}
+
+A generic correct scan cannot always terminate with a certificate that a value is absent from an arbitrary infinite <list>. Any terminating scan observes only finitely many elements. Changing the unobserved tail to include the value preserves all its observations but invalidates the certificate. The same argument prevents certifying that no occurrence follows the last one already found. A promise such as strict ascending order can provide an independent stopping rule. This explains why mathematical occurrence sets and computed <occurrence-position representations of a sequence> need different treatment on infinite inputs.
+
+= Stream productivity
+{parent=Lazy list}
+
+= Productivity
+{synonym}
+
+A stream computation is productive when every demanded finite prefix of its output can be produced in finite work. Filtering an infinite <list> need not be productive: asking for odd elements of `[0,2..]` never produces even an empty-list constructor. <Lazy evaluation> alone does not prove productivity.
+
+= Partial list
+{parent=Lazy list}
+{title2=$x_1:\cdots:x_n:\bot$}
+
+A <list> whose spine or elements may contain <bottom values>. The displayed value has a known finite spine prefix and an undefined tail. An entirely undefined list exposes no outer constructor, while `[]` exposes a terminating empty list. These distinctions matter to <strict functions> and to the <fold factorisation criterion>.
+
+= Partial-list interleaving obstruction
+{parent=Partial list}
+
+No generic sequential pure <Haskell> operation can guarantee emission of every available input occurrence when either of two input spines may be the <bottom value>. To obtain an arbitrary element, it must eventually demand one input. That input can be undefined while the other is a defined singleton, so the demand blocks the promised singleton output. Choosing the other input first reverses the counterexample. <Lazy evaluation> cannot determine which computation will diverge; the positive two-stream fairness result needs <proper lazy lists> or a stronger concurrent computational model.
+
+= Finite approximation of a lazy list
+{parent=Partial list}
+
+A finite <list prefix> followed by bottom records only the constructors known so far. The chain $\bot,\ x_1:\bot,\ x_1:x_2:\bot,\ldots$ approximates an infinite <lazy list>. A <Scott continuous map> is determined on the limit by its values on these approximations. This justifies extending an identity proved on finite <partial lists> to definable operations on infinite <lists>; equality merely on finite terminating <lists> does not provide the same premise.
 
 = Disjoint-set data structure
 {parent=Data structure}
@@ -992,6 +1311,11 @@ A <disjoint-set data structure> maintains a <partition of a set>. Its find opera
 Start with a <singleton set> for every stored <set element>. Each <disjoint-set find operation> returns a <disjoint-set representative>; a <disjoint-set union operation> merges the containing <blocks of a set partition>. The interface does not split a <block of a set partition> or delete a member.<Algorithms, 4th edition by Robert Sedgewick and others/UF.java>[Algorithms, 4th edition by Robert Sedgewick and others; UF.java, class documentation: initial singletons, representative equality and union interface]{ref}
 
 The <partition of a set> consists of nonempty disjoint <blocks of a set partition> covering the stored <set>; being in the same <block of a set partition> defines an <equivalence relation>. A <disjoint-set representative> names a whole <block of a set partition>, without requiring a list of its members.
+
+= Quick-find
+{parent=Disjoint-set data structure}
+
+An eager representation of a <disjoint-set data structure> that stores each member's current representative directly. Finding a representative is direct when keys are array indices; arbitrary keys in a parallel key array can add a <linear search>. A <disjoint-set union operation> scans members and replaces every occurrence of one old representative with the other. The representative labels must be snapshotted before this scan. Its easy <abstraction function> contrasts with the parent-pointer representation of a <disjoint-set forest>.
 
 = Union by size
 {parent=Disjoint-set data structure}
@@ -1031,6 +1355,11 @@ The first five calls succeed. After the third, the <partition of a set> is $\{\{
 {description=Each coloured enclosure is one <block of a set partition>. Columns identify the same seven members in every row; enclosures show membership rather than parent pointers.}
 
 This is exactly the kind of changing membership needed by <Kruskal component merging>: an accepted <edge> joins two current <connected components of a graph>, while an <edge> whose endpoints already have equal <disjoint-set representatives> is rejected. The existing <Kruskal's algorithm worked example> follows that application. A <disjoint-set forest> stores membership efficiently without repeatedly enumerating every <block of a set partition>.
+
+= Snapshot representatives before quick-find union
+{parent=Disjoint-set union operation}
+
+When merging two blocks in <quick-find>, let $a=rep_0(x)$ and $b=rep_0(y)$ be fixed saved labels. Replacing every old occurrence of $b$ by $a$ preserves all other blocks. A scan <loop invariant> says processed cells already have their specified final labels while unprocessed cells still have their old labels. Recomputing $rep(y)$ during this mutation can change the replacement label after the cell for $y$ is processed, causing remaining old-$b$ cells to be missed. Saving both labels makes the update criterion stable and the invariant provable.
 
 = Disjoint-set forest
 {parent=Disjoint-set data structure}

@@ -1,0 +1,405 @@
+= Bayesian statistical probabilistic programming
+{scope}
+{title2=A17482W1}
+{title2=A17514W1}
+{c}
+
+Solutions to the single paper shared by the two printed routes, dated 8 June 2021. https://www.whatdotheyknow.com/request/ba_computer_science_past_papers/response/2577745/attach/2/202402%20183%20CS%20Papers.zip?cookie_passthrough=1[Oxford examination source release]. The <probabilistic programming> calculations below use only information supplied in the paper. Question 2 contains two notation or naming issues, identified at the affected parts; Question 3 requires an explicit choice of <prior distribution>.
+
+== 1
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Assume $0<Z=\sum_xr(x)<\infty$, and work on the <support> $S=\{x:r(x)>0\}$. In <rejection sampling>, choose a normalized proposal <probability mass function> $g$ and a known finite constant $M$ satisfying $r(x)\leq Mg(x)$ everywhere. Draw <independent random variables> $Y\sim g$ and $U\sim\operatorname{Unif}(0,1)$, accepting $Y$ when $U\leq r(Y)/(Mg(Y))$. The joint <probability> of proposing and accepting $x$ is $r(x)/M$, so the overall acceptance <probability> is $Z/M$ and the accepted value has <probability mass function> $r(x)/Z$. Fresh trials therefore produce <independent and identically distributed random variables> with the desired <probability distribution>. For a fixed positive number $N$ of accepted values, the sample average $N^{-1}\sum_{i=1}^Nf(Y_i)$ is an <unbiased estimator> of the <expectation> when that <expectation> is finite. Its <variance> is $\operatorname{Var}_p(f)/N$ if the second moment is finite. Finding a valid envelope can be difficult, and a small acceptance <probability> makes the method expensive.
+
+For the <Metropolis–Hastings algorithm>, choose a proposal <transition matrix> $q$ and, at the current state $x$, propose $y\sim q(x,\cdot)$. Accept with the <Metropolis–Hastings acceptance probability>
+$$
+\alpha(x,y)=\min\left\{1,\frac{r(y)q(y,x)}{r(x)q(x,y)}\right\}.
+$$
+A proposal outside $S$ is rejected; an impossible proposal need not be assigned a ratio. Otherwise remain at $x$. This constructs a <Markov chain> satisfying <detailed balance> with $p$, without computing $Z$ or a global envelope. Estimate the <expectation> by averaging $f(X_i)$ over iterations, **including repeated states after rejections**. Keeping only accepted jumps generally changes the <stationary distribution> of the recorded process.
+
+The <Metropolis–Hastings algorithm> produces dependent samples, so the <variance> of its average includes <autocovariances>; starting outside <stationarity> can also cause finite-run <bias>. With <Markov chain irreducibility>, suitable recurrence and an integrable $f$, the <countable-state Markov chain ergodic theorem> gives consistency. <Aperiodicity> is additionally needed for the usual convergence of one-time <probability distributions>. In contrast, accepted <rejection sampling> values need no initial transient. Neither method is universally faster: envelope rejection competes with the proposal quality and <mixing time> of the <Markov chain>. Nonnegativity of $f$ alone does not guarantee a finite <expectation> or <variance>.
+
+=== b
+{scope}
+
+==== Solution
+
+Here $q(x,y)=p(y)$, with fresh proposal randomness independent of the past. For $x,y\in S$, the <Metropolis–Hastings acceptance probability> is
+$$
+\alpha(x,y)=\min\left\{1,\frac{p(y)p(x)}{p(x)p(y)}\right\}=1.
+$$
+Thus $P(x,y)=p(y)$ is independent of $x$, and $X_1,\ldots,X_N$ are <independent and identically distributed random variables> with <probability distribution> $p$, even if $X_0$ was chosen arbitrarily in $S$. **The method becomes ordinary <Monte Carlo method> sampling from $p$.** The average of $f(X_1),\ldots,f(X_N)$ is an <unbiased estimator>, with the <variance> stated in part (a). Including an arbitrary initial state would spoil this finite-sample property. This is the <independent stationary proposal lemma>.
+
+=== c
+{scope}
+
+==== Solution
+
+**Neither <Markov chain irreducibility> nor fast convergence follows from <detailed balance>.** On two states, the identity <transition matrix> satisfies <detailed balance> for the uniform <probability distribution>, but neither state can reach the other.
+
+Even after imposing <Markov chain irreducibility> and <aperiodicity>, consider
+$$
+P_\varepsilon=\begin{pmatrix}1-\varepsilon&\varepsilon\\\varepsilon&1-\varepsilon\end{pmatrix},\qquad 0<\varepsilon<\tfrac12.
+$$
+It satisfies <detailed balance> for $\pi=(1/2,1/2)$. Its nontrivial <eigenvalue> is $1-2\varepsilon$, and, from state zero, its <total variation distance> from $\pi$ after $n$ steps is $\tfrac12(1-2\varepsilon)^n$. This approaches zero arbitrarily slowly as $\varepsilon$ decreases. <Detailed balance without rapid convergence> separates correctness of a <stationary distribution> from reachability and speed.
+
+=== d
+{scope}
+
+==== Solution
+
+Put $a=p(x)q(x,y)$ and $b=p(y)q(y,x)$. For $a+b>0$, the off-diagonal <probability> flux of the proposed rule is
+$$
+p(x)q(x,y)\beta(x,y)=a\frac{b}{a+b}=\frac{ab}{a+b}=b\frac{a}{a+b}=p(y)q(y,x)\beta(y,x).
+$$
+If $a=b=0$, define both acceptance <probabilities> to be zero; both fluxes are zero. The diagonal <detailed balance equations> hold automatically, including the <probability> of rejected proposals. Summing the <detailed balance equations> over $x$ gives <stationarity>:
+$$
+\sum_xp(x)P(x,y)=\sum_xp(y)P(y,x)=p(y).
+$$
+**The alternative rule therefore preserves $p$.** The unknown <normalizing constant> cancels after replacing $p$ by $r$. This <Barker acceptance probability> is no larger than the <Metropolis–Hastings acceptance probability> for the same proposed move: if $t=b/a>0$, then $t/(1+t)\leq\min(1,t)$. Preservation of $p$ still requires separate <Markov chain irreducibility> and convergence checks before it guarantees useful sampling.
+
+=== e
+{scope}
+
+==== Solution
+
+Use the <Poisson distribution> with <probability mass function> $\pi_n=e^{-\lambda}\lambda^n/n!$ on $\mathbb N_0$. A symmetric nearest-neighbour proposal with a reflecting boundary is
+$$
+q(n,n+1)=\tfrac12\quad(n\geq0),\qquad q(n,n-1)=\tfrac12\quad(n\geq1),\qquad q(0,0)=\tfrac12.
+$$
+All other entries vanish. In particular, the boundary proposal does not force a move to one: retaining the <probability> $q(0,0)=1/2$ makes $q(0,1)=q(1,0)$.
+
+The adjacent ratios of the <Poisson distribution> are $\pi_{n+1}/\pi_n=\lambda/(n+1)$ and $\pi_{n-1}/\pi_n=n/\lambda$. The <Metropolis–Hastings acceptance probability> consequently gives
+$$
+u_n=\tfrac12\min\{1,\lambda/(n+1)\},\qquad d_n=\tfrac12\min\{1,n/\lambda\}\ (n\geq1),\qquad d_0=0,
+$$
+where the symbol $u_n$ denotes the upward <transition probability>. Thus the complete <transition matrix> is
+$$
+\boxed{P(n,n+1)=u_n,\quad P(n,n-1)=d_n,\quad P(n,n)=1-u_n-d_n,}
+$$
+with no downward entry at zero and all other entries zero. In matrix form,
+$$
+P=\begin{pmatrix}
+1-u_0&u_0&0&0&\cdots\\
+d_1&1-u_1-d_1&u_1&0&\cdots\\
+0&d_2&1-u_2-d_2&u_2&\cdots\\
+\vdots&\vdots&\ddots&\ddots&\ddots
+\end{pmatrix}.
+$$
+Every row is nonnegative and sums to one. An executable <Python> step of this <Poisson Metropolis chain> is:
+
+```
+def poisson_step(n, lam, rng):
+    if lam <= 0 or n < 0 or int(n) != n:
+        raise ValueError("require lam > 0 and an integer n >= 0")
+    y = n + 1 if rng.random() < 0.5 else max(0, n - 1)
+    ratio = lam / (n + 1) if y > n else n / lam if y < n else 1.0
+    return y if rng.random() < min(1.0, ratio) else n
+```
+
+Supply a <pseudorandom number generator> such as `random.Random(2021)` and retain each returned state, including repeats. No <normalizing constant> or evaluation of a <factorial> is needed by the algorithm.
+
+=== f
+{scope}
+
+==== Solution
+
+For each adjacent pair, the <detailed balance equations> follows directly:
+$$
+\pi_nP(n,n+1)=\tfrac12\pi_n\min(1,\pi_{n+1}/\pi_n)=\tfrac12\min(\pi_n,\pi_{n+1})=\pi_{n+1}P(n+1,n).
+$$
+For nonadjacent distinct states both fluxes vanish, and diagonal fluxes agree trivially. Since $\sum_n\pi_n=e^{-\lambda}\sum_n\lambda^n/n!=1$, this is a genuine <stationary distribution>, rather than merely an invariant measure of infinite mass.
+
+Every upward and downward <transition probability> between neighbouring states is positive for $\lambda>0$. Any two states can therefore be joined by a finite path of positive <probability>: the <Markov chain> is <irreducible>. Moreover,
+$$
+P(0,0)=1-\tfrac12\min(1,\lambda)\geq\tfrac12>0.
+$$
+State zero has period one; <Markov chain irreducibility> makes every state <aperiodic>. Finally, the standard countable-state recurrence theorem states that an <irreducible Markov chain> admitting a <stationary distribution> of total mass one is <positive recurrent>, with that <stationary distribution> unique. The <countable-state Markov chain convergence theorem> then states that <Markov chain irreducibility>, <positive recurrence> and <aperiodicity> imply $P^k(i,j)\to\pi_j$ for all states $i,j$. The hypotheses just verified hold on the infinite <state space> $\mathbb N_0$, not merely on a numerical truncation.<Markov Chains by James R. Norris>[Sections 1.7–1.8, invariant distributions and convergence to equilibrium]{ref}
+
+Consequently, **the unique <stationary distribution> and the <limiting distribution> are both $\operatorname{Poisson}(\lambda)$**, from every initial state. The <countable-state Markov chain ergodic theorem> also gives $N^{-1}\sum_{k=1}^Nf(X_k)\to\sum_n\pi_nf(n)$ <almost surely> whenever $\sum_n\pi_n|f(n)|<\infty$.<Markov Chains by James R. Norris>[Section 1.10, ergodic theorem]{ref}
+
+== 2
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+<Variational inference> replaces exact <Bayesian inference> by an <optimization> problem over a tractable family $q_\lambda(z)$. A <guide program> samples from this approximating family. Optimizing an <evidence lower bound> is equivalent to minimizing $D_{\rm KL}(q_\lambda\Vert p(\cdot\mid x))$. Its appeal is that a fitted approximation can be cheap to sample and may scale well when an exact <posterior distribution> is inaccessible. A restricted family, such as <mean-field variational inference>, can miss dependence or entire modes; a local optimum can add further error. More optimization cannot remove approximation error caused by an inadequate family.
+
+<Monte Carlo method> inference instead estimates posterior <expectations> using simulated values or weighted values. Examples include <rejection sampling>, <importance sampling> and <Markov chain Monte Carlo>. Under their respective support and convergence assumptions, increasing computation can yield consistent estimates without choosing a finite-dimensional posterior family. Their uncertainty includes simulation error; an inefficient proposal or slow <mixing time> can make that error large. <Markov chain Monte Carlo> additionally requires convergence and dependence diagnostics.
+
+**The central trade-off is optimization within an approximate family versus simulation under a target <probability distribution>.** It is not an absolute distinction between deterministic and random computation: <variational inference> often uses <Monte Carlo method> estimates of its <gradient>, while <Monte Carlo method> inference may use fitted proposals. Neither method automatically guarantees accurate uncertainty estimates or superiority at a fixed computational budget.
+
+=== b
+{scope}
+
+==== Solution
+
+Let $0<p(x)<\infty$, take $q_\lambda$ supported where $p(z,x)>0$, and assume the following <expectations> exist. By the definition of <Kullback-Leibler divergence> and <Bayes' theorem>,
+$$
+\begin{aligned}
+D_{\rm KL}(q_\lambda\Vert p(\cdot\mid x))
+&=\mathbb E_{q_\lambda}\left[\log q_\lambda(z)-\log\frac{p(z,x)}{p(x)}\right]\\
+&=\log p(x)-\mathbb E_{q_\lambda}[\log p(z,x)-\log q_\lambda(z)].
+\end{aligned}
+$$
+Therefore the <evidence lower bound> is
+$$
+\boxed{\mathcal L(\lambda)=\mathbb E_{q_\lambda}[\log p(z,x)-\log q_\lambda(z)]=\log p(x)-D_{\rm KL}(q_\lambda\Vert p(\cdot\mid x)).}
+$$
+Nonnegativity of <Kullback-Leibler divergence> proves $\mathcal L(\lambda)\leq\log p(x)$. The <marginal likelihood> $p(x)$ is constant with respect to the variational parameter $\lambda$, so maximizing $\mathcal L$ minimizes the stated <Kullback-Leibler divergence>.
+
+The practical advantage is that evaluating <logarithms> of joint <probabilities> and $\log q_\lambda$ requires no evaluation of the usually intractable <marginal likelihood>. One can estimate $\mathcal L$ and its <gradient> with <Monte Carlo method>. Equality with the log <marginal likelihood> occurs only when $q_\lambda=p(\cdot\mid x)$ almost everywhere. Merely maximizing the <evidence lower bound> over a restricted family neither computes the exact <posterior distribution> nor proves that the maximum attains this equality.
+
+=== c
+{scope}
+
+==== Solution
+
+The discrete base factors in the displayed construction inherit their variational parameters. Accordingly write **$s_\lambda(\varepsilon)$**, not a parameter-independent $s(\varepsilon)$, for the joint base <probability mass function> or <probability density function>. The continuous noise factors can be parameter independent while the discrete factors are $\lambda$ dependent. Calling the entire base law parameterless while retaining its nonzero <score function> would be inconsistent.
+
+Let $t_\lambda$ push the base law forward to $q_\lambda$, and define
+$$
+W_\lambda(\varepsilon,x)=\log p(t_\lambda(\varepsilon),x)-\log q_\lambda(t_\lambda(\varepsilon)).
+$$
+Use a fixed base <measure> $\nu$, with <counting measure> for discrete coordinates and <Lebesgue measure> for continuous coordinates. Assume locally parameter-independent support, differentiability and an integrable domination permitting <differentiation under the integral sign>. A valid <reparameterization gradient> gives
+$$
+\mathcal L(\lambda)=\int s_\lambda(\varepsilon)W_\lambda(\varepsilon,x)\,d\nu(\varepsilon).
+$$
+Apply the <product rule> before simplifying:
+$$
+\begin{aligned}
+\nabla_\lambda\mathcal L
+&=\int\left[(\nabla_\lambda s_\lambda)W_\lambda+s_\lambda\nabla_\lambda W_\lambda\right]d\nu\\
+&=\mathbb E_{s_\lambda}\left[(\nabla_\lambda\log s_\lambda(\varepsilon))W_\lambda(\varepsilon,x)+\nabla_\lambda W_\lambda(\varepsilon,x)\right]\\
+&=\mathbb E_{s_\lambda}\left[(\nabla_\lambda\log s_\lambda(\varepsilon))W_\lambda(\varepsilon,x)+\nabla_\lambda\log p(t_\lambda(\varepsilon),x)-\nabla_\lambda\log q_\lambda(t_\lambda(\varepsilon))\right].
+\end{aligned}
+$$
+This is the required <combined score and pathwise gradient estimator>. A sample from $s_\lambda$ and the integrand on the last line give an <unbiased stochastic gradient> under the stated regularity conditions. Its first term is a <score-function gradient estimator> contribution; the remaining terms differentiate the sampled objective along the continuous transformation. The same separation appears in the general <stochastic computation graph> construction.<Gradient Estimation Using Stochastic Computation Graphs by John Schulman and others>[Section 3.1, Theorem 1, equations (5)–(6); Appendix A]{ref}
+
+All derivatives inside the <expectation> hold $\varepsilon$ fixed. They still include both explicit parameter dependence and dependence through $t_\lambda$. For a continuous coordinate $z=t_\lambda(\varepsilon)$,
+$$
+\nabla_\lambda\log q_\lambda(t_\lambda(\varepsilon))=(\partial_\lambda\log q_\lambda)(z)+(D_\lambda t_\lambda)^T\nabla_z\log q_\lambda(z).
+$$
+The model joint density $p(z,x)$ is fixed as $\lambda$ changes, but its composition with $t_\lambda$ need not be constant. Discrete coordinates are not differentiated as real-valued paths; their changing <probabilities> enter through the <score function>. Moving supports or parameter-dependent branch boundaries require additional care and are not justified merely by formally interchanging a derivative and an integral.
+
+=== d
+{scope}
+
+==== Solution
+
+**The two limiting-case names in the printed bullets are reversed.** Fully reparameterized continuous choices give a <reparameterization gradient>; non-reparameterized discrete choices give a <score-function gradient estimator>. Here are both reductions, including the extra term that vanishes only after taking an <expectation>.
+
+When all choices are reparameterized with parameter-independent base noise, $s_\lambda=s$ and $\nabla_\lambda\log s=0$. The expression in part (c) becomes
+$$
+\nabla_\lambda\mathcal L=\mathbb E_s\left[\nabla_\lambda\{\log p(t_\lambda(\varepsilon),x)-\log q_\lambda(t_\lambda(\varepsilon))\}\right].
+$$
+Differentiating along the sampled transformation is precisely the <pathwise gradient>, also called the <reparameterization gradient>. There is no <score function> of the parameter-independent base law.
+
+When all choices are discrete and left untransformed, $t_\lambda(\varepsilon)=\varepsilon=z$ and $s_\lambda=q_\lambda$. Set $S_\lambda(z)=\nabla_\lambda\log q_\lambda(z)$ and $W_\lambda(z,x)=\log p(z,x)-\log q_\lambda(z)$. Since $p$ has no variational parameter, the integrand in part (c) is
+$$
+S_\lambda(z)W_\lambda(z,x)-S_\lambda(z)=S_\lambda(z)(W_\lambda(z,x)-1).
+$$
+<Normalization> gives the zero-mean <score function> identity
+$$
+\mathbb E_{q_\lambda}S_\lambda=\sum_z\nabla_\lambda q_\lambda(z)=\nabla_\lambda1=0.
+$$
+Thus
+$$
+\boxed{\nabla_\lambda\mathcal L=\mathbb E_{q_\lambda}[S_\lambda W_\lambda]=\mathbb E_{q_\lambda}[S_\lambda(W_\lambda-1)].}
+$$
+The first expression is the usual <score-function gradient estimator>; the second has a <constant score baseline> of one. The two random integrands are generally different even though their <expectations> agree. A suitable <constant score baseline> can reduce <variance>, but one is not universally the optimal baseline.<Gradient Estimation Using Stochastic Computation Graphs by John Schulman and others>[Section 4, Theorem 2 and footnote 3]{ref}
+
+For a concrete check, take $q_\lambda(D,Z)=\operatorname{Bernoulli}(q)\,N(m,\sigma^2)$ with $q=(1+e^{-a})^{-1}$ and $\sigma=e^\ell$, and a fixed target $p(D,Z)=\operatorname{Bernoulli}(0.4)\,N(D,1)$. Direct integration gives
+$$
+\mathcal L=-D_{\rm KL}(\operatorname{Bern}(q)\Vert\operatorname{Bern}(0.4))-\tfrac12\{\sigma^2+m^2-2mq+q-1-2\ell\}.
+$$
+Using $Z=m+\sigma\varepsilon$, $\varepsilon\sim N(0,1)$, the combined integrand has components $(D-q)(W-1)$, $D-Z$ and $1-(Z-D)\sigma\varepsilon$. Their <expectations> are respectively $q(1-q)[\log(0.4/0.6)-\log(q/(1-q))+m-1/2]$, $q-m$ and $1-\sigma^2$, matching direct differentiation. Dropping the discrete <score function> term would incorrectly give zero for the first component. This calculation checks the combination without accepting the printed reversal.
+
+== 3
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Treat each observed arrival label as a constraint on an unobserved walking duration. Departures are treated as fixed design information. Writing $c$ for the minutes available until work starts, the derived late-label thresholds have frequencies $20:1,21:3,25:3,27:1,32:2$; the early-label thresholds have frequencies $29:1,34:1,36:3,37:1,38:1,39:1,43:1,44:1$. These are <censoring> thresholds, **not measured journey times**. A late label means $T>c$, and an early label means $T<c$; equality has <probability> zero under the continuous model.
+
+The paper specifies no <prior distribution>. One explicit proper model is
+$$
+\mu\sim\operatorname{Unif}(0,60),\qquad \sigma\sim\operatorname{Unif}(1,20),\qquad T_i\mid\mu,\sigma\overset{\rm iid}{\sim}N(\mu,\sigma^2),
+$$
+with independent priors; all times are in minutes. These ranges are a transparent modelling choice, not information deduced from the observations. In particular, this is a prior on the <standard deviation> $\sigma$, not a uniform prior on the <variance> $\sigma^2$. The <normal distribution> permits negative durations; it is the mathematical approximation requested here, rather than a claim that such durations are physically possible. A truncated model would be a different model.
+
+The following <Python> implements hard conditioning by <rejection sampling>. `None` marks a rejected trace; an accepted <Boolean> answers whether all five future arrivals are late. The same parameters are shared across past and future days.
+
+```
+import math
+import random
+
+LATE = {20: 1, 21: 3, 25: 3, 27: 1, 32: 2}
+EARLY = {29: 1, 34: 1, 36: 3, 37: 1, 38: 1, 39: 1, 43: 1, 44: 1}
+RECORDS = [(c, True) for c, n in LATE.items() for _ in range(n)]
+RECORDS += [(c, False) for c, n in EARLY.items() for _ in range(n)]
+
+def journey_trace(rng):
+    mu = rng.uniform(0.0, 60.0)
+    sigma = rng.uniform(1.0, 20.0)
+    # Twenty latent past durations and five future durations.
+    past = [rng.gauss(mu, sigma) for _ in RECORDS]
+    future = [rng.gauss(mu, sigma) for _ in range(5)]
+    if not all(t > c if late else t < c
+               for t, (c, late) in zip(past, RECORDS)):
+        return None
+    return all(t > 30.0 for t in future)
+
+def accepted_average(trace, n, rng):
+    if n <= 0:
+        raise ValueError("n must be positive")
+    successes = accepted = 0
+    while accepted < n:
+        result = trace(rng)
+        if result is not None:
+            accepted += 1
+            successes += int(result)
+    return successes / n
+```
+
+For example, `accepted_average(journey_trace, n, random.Random(2021))` estimates the desired <conditional probability> from $n$ accepted traces. Accepting `False` is essential: treating a false answer as a rejected trace would condition on the desired conclusion. The model deliberately emphasizes clear semantics; rejection can be inefficient because all twenty past-label constraints must hold together.
+
+=== b
+{scope}
+
+==== Solution
+
+An idealized underlying <probability space> is
+$$
+\Omega=(0,60)\times(1,20)\times\mathbb R^{25},\qquad
+\mathbb P=\operatorname{Unif}(0,60)\otimes\operatorname{Unif}(1,20)\otimes N(0,1)^{\otimes25},
+$$
+with the product <Borel sigma-algebra>. Its 27 independent random coordinates are $\mu$, $\sigma$, twenty past standard-normal noises, and five future standard-normal noises. Define $T_i(\omega)=\mu+\sigma\varepsilon_i$. Sampling an unknown <variance> does not mean drawing a new <variance> on each day; a single draw of $\sigma^2$ applies to all durations in a trace.
+
+Let $A$ be the <event> that the first twenty durations satisfy their corresponding observed inequalities. The observations are the twenty late/early labels, conditional on the fixed departure thresholds. They are not exact values of the latent $T_i$. The posterior <probability measure> on traces is
+$$
+\mathbb P_A(B)=\mathbb P(B\mid A)=\frac{\mathbb P(B\cap A)}{\mathbb P(A)}.
+$$
+Here $\mathbb P(A)>0$: at every interior parameter pair each strict normal-tail <probability> lies in $(0,1)$, so their finite product has positive prior integral.
+
+The returned outcome is
+$$
+Y(\omega)=\mathbf1\{T_{21}>30,\ldots,T_{25}>30\}\in\{0,1\}.
+$$
+Thus **the underlying <sample space> has dimension 27, the successful output space is $\{0,1\}$, and the observations define the conditioning event $A$**. The desired output <probability distribution> is the <pushforward measure> of $\mathbb P_A$ under $Y$. Rejection is an implementation device, not a third scientific answer: `None` is discarded before forming the conditional output law.
+
+=== c
+{scope}
+
+==== Solution
+
+Write $\Phi$ for the <standard normal distribution function>. Integrating out the twenty independent past durations gives the <threshold-censored normal likelihood>
+$$
+L(\mu,\sigma)=\prod_{c\in C_L}\Phi\left(\frac{\mu-c}{\sigma}\right)^{n_L(c)}\prod_{c\in C_E}\Phi\left(\frac{c-\mu}{\sigma}\right)^{n_E(c)}.
+$$
+The frequencies $n_L,n_E$ are those in part (a). For a future day, the conditional late-arrival <probability> is $\pi(\mu,\sigma)=\Phi((\mu-30)/\sigma)$. <Conditional independence> of the five future durations gives $h(\mu,\sigma)=\pi(\mu,\sigma)^5$.
+
+Exactly three primitive random coordinates suffice. Draw $\mu,\sigma$ from the same priors and one independent $U\sim\operatorname{Unif}(0,1)$. Reject if $U\geq L(\mu,\sigma)$; otherwise return whether $U<L(\mu,\sigma)h(\mu,\sigma)$. Conditional on acceptance and the parameters, $U$ is uniform on an interval of length $L$; the true-answer subinterval has length $Lh$. Reusing this same uniform value is therefore intentional, not an independence mistake.
+
+Indeed the two output contributions at each parameter value are
+$$
+\mathbb P(A,Y=1\mid\mu,\sigma)=Lh,\qquad \mathbb P(A,Y=0\mid\mu,\sigma)=L(1-h).
+$$
+These are exactly the contributions obtained by integrating the original twenty-five duration noises. Multiplication by the common <prior density> and <normalization> therefore give the same joint <posterior distribution> of $(\mu,\sigma,Y)$. The revised program preserves the query and parameter posterior, but does not retain individual latent durations. This is <uniform-interval encoding of conditioning and a binary query>.
+
+Here is an executable version, reusing the definitions from part (a). <Logarithms> avoid multiplying many small <probabilities>.
+
+```
+def normal_logcdf(z):
+    value = 0.5 * math.erfc(-z / math.sqrt(2.0))
+    return math.log(value) if value > 0.0 else -math.inf
+
+def journey_loglik(mu, sigma):
+    return (sum(n * normal_logcdf((mu - c) / sigma)
+                for c, n in LATE.items())
+            + sum(n * normal_logcdf((c - mu) / sigma)
+                  for c, n in EARLY.items()))
+
+def collapsed_trace(rng):
+    mu = rng.uniform(0.0, 60.0)
+    sigma = rng.uniform(1.0, 20.0)
+    log_likelihood = journey_loglik(mu, sigma)
+    # This uniform lies in (0, 1], avoiding log(0).
+    log_u = math.log(1.0 - rng.random())
+    if log_u >= log_likelihood:
+        return None
+    log_h = 5.0 * normal_logcdf((mu - 30.0) / sigma)
+    return log_u < log_likelihood + log_h
+```
+
+`accepted_average(collapsed_trace, n, rng)` consequently has the same target as the original program. The ideal three-dimensional <sample space> is $(0,60)\times(1,20)\times(0,1)$ with product uniform <probability measure>, conditioned on the displayed acceptance event. Finite-precision normal tails can underflow to zero in this simple implementation; the mathematical equivalence concerns exact <probabilities>, and the numerical check in part (d) independently integrates the <likelihood> in the region carrying appreciable posterior mass.
+
+=== d
+{scope}
+
+==== Solution
+
+For any chosen proper <prior density> $\rho(\mu,\sigma)$ on $\mathbb R\times(0,\infty)$ with positive evidence, <Bayes' theorem> gives
+$$
+\boxed{\mathbb P(Y=1\mid A)=\frac{\displaystyle\int_0^\infty\int_{-\infty}^{\infty}\rho(\mu,\sigma)L(\mu,\sigma)\Phi\left(\frac{\mu-30}{\sigma}\right)^5\,d\mu\,d\sigma}{\displaystyle\int_0^\infty\int_{-\infty}^{\infty}\rho(\mu,\sigma)L(\mu,\sigma)\,d\mu\,d\sigma}.}
+$$
+The <prior density> comes from the first two random draws. The <likelihood> $L$ is the <probability> of satisfying all observed-label constraints after integrating the past duration noises. The factor $\Phi((\mu-30)/\sigma)^5$ is the <probability> of the five-day outcome conditional on the shared parameters. The denominator is the <probability> of acceptance, which converts the numerator's joint <probability> into the required <conditional probability>.
+
+For the independent uniform priors in part (a), the constant $\rho=1/(60\cdot19)$ cancels and both integrals reduce to $0<\mu<60$, $1<\sigma<20$. A prior on the <variance> $v=\sigma^2$ would require transforming the density: this chosen prior has density $1/(38\sqrt v)$ for $1<v<400$ conditional on $\mu$. One must not silently replace it by a uniform prior on $v$.
+
+There is no unique numerical <probability> until the <prior distribution> is chosen. As a check for the stated uniform priors, independent <Gaussian quadrature> calculations with 256 and 512 nodes per coordinate agree at the shown precision:
+$$
+\mathbb P(Y=1\mid A)\approx0.15038909,\qquad \mathbb E[\pi\mid A]\approx0.61265126.
+$$
+The prior-predictive <probability> of all observed labels is approximately $0.00030422536$, explaining the rejection cost. These numbers are illustrations of the explicit model, not additional observed data.
+
+A subtle point is that the five future days are independent only conditional on $(\mu,\sigma)$. Integrating shared parameter uncertainty gives $\mathbb E[\pi^5\mid A]$, **not** $(\mathbb E[\pi\mid A])^5$. The latter is about $0.08631110$ for these priors and understates the five-day <probability>. <Jensen's inequality> gives $(\mathbb E[\pi\mid A])^5\leq\mathbb E[\pi^5\mid A]$, while $0\leq\pi\leq1$ gives $\mathbb E[\pi^5\mid A]\leq\mathbb E[\pi\mid A]$. For two future late-arrival <indicator functions>, their posterior <covariance> is $\operatorname{Var}(\pi\mid A)\geq0$. This is the <posterior predictive repeated-success identity>.
+
+\Image[bayesian-statistical-probabilistic-programming-censored-journeys.png]
+{title=Posterior uncertainty and the five-day predictive probability for the explicitly chosen uniform priors. The contour is cropped to the parameter region carrying the visible mass; integration uses the full prior rectangle.}
+
+=== e
+{scope}
+
+==== Solution
+
+I would first collapse the duration noises as in part (c), then use <self-normalized importance sampling> on the two shared parameters. Draw independent $(\mu_j,\sigma_j)\sim\rho$, give each the <importance weight> $w_j=L(\mu_j,\sigma_j)$, and return
+$$
+\boxed{\widehat P_N=\frac{\sum_{j=1}^Nw_j\pi(\mu_j,\sigma_j)^5}{\sum_{j=1}^Nw_j}.}
+$$
+This is <likelihood weighting>: the observations affect the weights rather than forcing repeated simulation of twenty latent inequalities. Integrating out both the constraints' auxiliary randomness and the future <Boolean> query is <Rao-Blackwellization>; at fixed parameters it removes randomness without changing the relevant <conditional expectations>.
+
+The weights and weighted queries lie in $[0,1]$, and the evidence is positive. The <strong law of large numbers> therefore makes the numerator and denominator averages converge to their corresponding integrals, proving <almost sure convergence> of their ratio to part (d). The finite-$N$ ratio is generally biased; the assertion concerns consistency rather than a finite-sample <unbiased estimator>. Use <logarithms> of <importance weights> to avoid numerical underflow:
+
+```
+def weighted_answer(n, rng):
+    if n <= 0:
+        raise ValueError("n must be positive")
+    samples = []
+    for _ in range(n):
+        mu = rng.uniform(0.0, 60.0)
+        sigma = rng.uniform(1.0, 20.0)
+        samples.append((journey_loglik(mu, sigma),
+                        math.exp(5.0 * normal_logcdf((mu - 30.0) / sigma))))
+    offset = max(logw for logw, h in samples)
+    if not math.isfinite(offset):
+        raise ArithmeticError("all weights underflowed")
+    scaled = [(math.exp(logw - offset), h) for logw, h in samples]
+    den = math.fsum(w for w, h in scaled)
+    answer = math.fsum(w * h for w, h in scaled) / den
+    ess = den * den / math.fsum(w * w for w, h in scaled)
+    return answer, ess
+```
+
+The returned <effective sample size of importance sampling> is a concentration diagnostic, not a proof of accuracy. Repeat runs and inspect the weights. If the prior is much broader than the posterior, improve the proposal with the corresponding <importance sampling> density correction, or use the <Metropolis–Hastings algorithm> targeting $\rho L$. Because this particular collapsed problem is only two-dimensional, deterministic <numerical integration> is also an excellent independent accuracy check; it was used for the figure and numerical illustration. Straight rejection of the original traces is correct but wastes most proposals here.

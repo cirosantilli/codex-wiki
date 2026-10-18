@@ -74,6 +74,12 @@ A <formal language> is decidable if a <Turing machine> halts on every input and 
 
 A word over an alphabet $\Sigma$ is a finite sequence of symbols from $\Sigma$. The empty word has length zero, and $\Sigma^*$ denotes the set of all finite words.
 
+= Longest common prefix
+{parent=String}
+{title2=$\operatorname{LCP}(s,t)$}
+
+The longest common prefix of two <strings> is the longest <string> that is a <string prefix> of both. Its length is the number of matching initial characters before the first mismatch or the end of a <string>. A direct scan maintains equality of the processed prefixes and takes time linear in that length plus one. For suffixes represented by indices in a shared <array>, no character copying is needed.
+
 = String suffix
 {parent=String}
 
@@ -444,6 +450,68 @@ A <finite-state machine> processes inputs using a <finite set> of <automaton sta
 Finite memory does not impose a maximum input length. A <finite-state machine> can read arbitrarily long <words>, revisiting its <automaton states> indefinitely. The restriction is that the part already read must be compressed into one of finitely many summaries. For <divisibility> by three, a <word> of <binary digits> can describe an enormous <integer>, yet its <congruence class> modulo three is all that the machine needs to retain. Two already-read <words> giving the same <automaton state> behave identically under every subsequent continuation in a <DFA>.
 
 This makes <finite-state machines> useful whenever past details can be forgotten safely: checking whether a sequence of commands follows an allowed order, or recognizing a pattern with a <regular expression>. The beautiful design question is which distinctions about the past matter to the future. <DFA minimization> makes that question precise by merging <indistinguishable states of a deterministic finite automaton>. Both <DFAs> and <NFAs> recognize exactly the <regular languages>.
+
+= Interrupt-driven pulse sequencer
+{parent=Finite-state machine}
+
+A pulse sequencer can separate event capture from output timing. A short <interrupt handler> acknowledges the <event latch> and increments a pending count. An independent <finite-state machine> consumes one count on entering `ON`, changes to `GAP` after the pulse width, and enters `IDLE` only after the mandatory off interval. Even an empty queue must not bypass `GAP`: an arrival immediately after light-off would otherwise start too soon.
+
+The pending count equals recorded events minus started pulses. A <critical section> protects its read-modify-write operations; declaring shared state as in <volatile-qualified objects in C> does not alone make each update an <atomic operation>. Separate sequencers for different channels allow simultaneous pulses while one <hardware timer> schedules their earliest deadline. Finite queue capacity, detector rearming and dispatch resolution remain explicit assumptions.
+
+= Moore machine
+{parent=Finite-state machine}
+{c}
+{title2=$s^+=F(s,a),\ z=G(s)$}
+
+A <Moore machine> is a <finite-state machine> whose output depends only on the current state. In a clocked implementation, a state entered at a <clock edge> determines the following period's output. Specifying an initial state is necessary to define startup behavior.
+
+= Debounced toggle switch
+{parent=Finite-state machine}
+
+A sampled toggle controller can reject short disturbances by requiring three consecutive high samples to toggle, and then three consecutive low samples before another high run is allowed to toggle. One four-<bit> <synchronous sequential circuit> stores output $z$, an armed <bit> $e$, and input history $p,q$. Initially $(p,q,e,z)=(0,0,1,0)$. Set
+$$
+c=a\land p\land q,\qquad d=\neg a\land\neg p\land\neg q,
+\qquad(p',q')=(a,p),\qquad e'=d\lor(e\land\neg c),\qquad
+z'=z\oplus(e\land c).
+$$
+The two <three-sample run detectors> cannot assert simultaneously. A high run toggles once and clears $e$; only a complete low run rearms it. All right-hand sides use the old state, so the toggling event occurs at the third qualifying <clock edge>.
+
+The controller has twelve distinguishable behaviours: for each $z$, three armed states count trailing highs of lengths $0,1,2$, and three disarmed states count trailing lows of lengths $0,1,2$. The run lengths are distinguished by the number of further matching samples needed before a toggle or rearm. Armed and disarmed states are distinguished by an all-high continuation. Thus at least $\lceil\log_2 12\rceil=4$ state <bits> are required, and the displayed design attains that bound.
+
+= Three-sample run detector
+{parent=Finite-state machine}
+{title2=$w_t=a_t\land a_{t-1}\land a_{t-2}$}
+
+Store the two previous input <bits> in $p,q$. At the next <clock edge>, use $w=a\land p\land q$ and update $(p,q)'=(a,p)$. The output is high exactly when the present input and previous two samples are all high. Replacing each input by its <negation> detects a three-sample low run. Both detectors can share the same two history <bits>, using $a\land p\land q$ and $\neg a\land\neg p\land\neg q$. With initial history zero, the high detector cannot trigger before three actual high samples have occurred.
+
+= Synchronous sequential circuit
+{parent=Finite-state machine}
+{title2=$s'=F(s,a),\quad w=G(s,a)$}
+
+A <synchronous sequential circuit> stores a finite collection of <bits> $s$, reads inputs $a$, and updates all stored <bits> at each <clock edge> according to a specified next-state function $F$. A combinational output is $G(s,a)$; an output that is itself stored is included among the state <bits>. An initial state is part of a complete design. These equations provide a precise implementation-level description of a <finite-state machine> without requiring a particular gate drawing.
+
+= Synchronous 110 detector
+{parent=Synchronous sequential circuit}
+{title2=$z_k=a_{k-2}a_{k-1}(1-a_k)$}
+
+A <synchronous sequential circuit> emitting a one-cycle pulse at the first low sample after at least two consecutive high samples. Three <D flip-flops> can implement $q_1^+=a$, $q_2^+=q_1\land a$, and $z^+=q_2\land\neg a$, with all updates using the old state. Initializing all state bits to zero excludes a false startup history. The stored output changes only at clock edges. After a detecting low sample, $q_2$ becomes zero, so the next output is zero regardless of the next input. A longer high run still ends with the same three-sample pattern.
+
+= Digital counter
+{parent=Synchronous sequential circuit}
+{title2=$c^+=(c+1)\bmod M$}
+
+A <digital counter> is a finite-state circuit that increments its stored value on each qualifying clock or event. A binary $w$-bit implementation naturally has modulus $2^w$. Dividing counted ticks by a known clock frequency gives a time interval, subject to wrap ambiguity and sampling accuracy.
+
+= Hardware timer
+{parent=Digital counter}
+
+A <hardware timer> uses a <clock signal> to measure intervals, commonly by a <digital counter> with capture or comparison facilities. A comparison event can request an <interrupt> or change an output directly. Counter resolution, wraparound, <interrupt> latency and the hardware's comparison semantics determine the timing guarantees available to software.
+
+= Synchronous pulse detector with two-zero rearming
+{parent=Synchronous sequential circuit}
+{title2=$q_1^+=a,\ q_0^+=q_1\lor(q_0\land a),\ z=q_1\land\neg q_0$}
+
+The displayed two-register <Moore machine>, initialized to $q_1q_0=00$, generates a one-clock pulse on a sampled high when ready, then waits for two consecutive sampled zeros before it can generate another. The codes $00,10,11,01$ represent ready, pulse, disabled and one-zero-seen respectively. From ready a high enters pulse; from pulse the next edge leaves for disabled on a high or one-zero-seen on a low. Disabled enters one-zero-seen on a low. A second consecutive low returns to ready, whereas a high returns to disabled. This transition analysis proves the output rule, the one-period duration and the immediate first-edge response after reset. It assumes a synchronous input meeting setup and hold requirements.
 
 = Automaton state
 {parent=Finite-state machine}
@@ -870,6 +938,12 @@ Statistical learning theory studies mathematical guarantees and limitations for 
 {title2=$\mathcal D_n=\{(X_i,Y_i)\}_{i=1}^n$}
 
 The observations used to construct a <classifier> or other fitted rule. For a random fitted <classifier>, its <conditional misclassification risk> conditions on these observations and evaluates an independent test pair. Auxiliary randomization used in fitting belongs to the conditioning information as well.
+
+= ImageNet
+{c}
+{parent=Training data}
+
+An image dataset organized around labelled object categories, widely used for training and testing visual recognition models. Its category labels and image statistics supply a particular learning environment, not a literal reconstruction of a developing primate’s experience.
 
 = Concept class
 {parent=Statistical learning theory}

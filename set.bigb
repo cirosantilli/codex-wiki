@@ -188,6 +188,41 @@ A pointed set is a <set> $X$ with a distinguished element $x_0\in X$. A morphism
 
 A multiset records a nonnegative integer multiplicity for each element of a <set>. A finite multiset has finite support and finite total multiplicity. Its <cardinality> is the sum of its multiplicities; its disjoint union with another multiset adds multiplicities. The <hook lengths> of a <Young diagram> form a multiset, since different cells can have equal lengths.
 
+= Array multiset
+{parent=Multiset}
+
+A <multiset> of keys in a fixed finite <integer> range represented by one nonnegative count per key. The <abstraction function> extends the stored <array> counts by zero outside the range. Single-key <additions>, removals and queries use constant <array> work, provided overflow and operation <preconditions> are handled. <Encapsulation> of the count <array> is necessary to preserve its <representation invariant>.
+
+= Constant-time distinct-size counter
+{parent=Array multiset}
+{title2=$D=|\{i:c_i>0\}|$}
+
+Maintain a counter equal to the number of positive count-<array> entries. Increment it only when an <addition> changes zero to one; decrement it only when a removal changes one to zero. Other count changes leave the support unchanged. Initialization at zero and these cases prove the <representation invariant> by <induction> over completed operations, giving a constant-time distinct-size query.
+
+= Support of a multiset
+{parent=Multiset}
+{title2=$\operatorname{supp}(b)=\{x:b(x)>0\}$}
+
+= Multiset support
+{synonym}
+
+The <set> of keys with positive multiplicity. Its <cardinality> counts distinct keys, whereas summing the multiplicities counts all occurrences. A count-<array> implementation can maintain the support <cardinality> by tracking only zero-to-positive and positive-to-zero transitions.
+
+= Signed multiset
+{parent=Multiset}
+{title2=$m:T\to\mathbb Z$}
+
+= Complete multiset
+{synonym}
+
+A finitely supported function $m:T\to\mathbb Z$, allowing negative as well as positive multiplicities. Missing keys denote zero. Addition, exact subtraction, pointwise maximum/minimum and pointwise order can be implemented over the union of operand supports. A nonnegative <multiset> is a refinement, but exact subtraction can leave that refinement while still producing a signed multiset. Fixed-width count implementations must also specify overflow behavior.
+
+= Multiset overlap
+{parent=Multiset}
+{title2=$|A\cap B|=\sum_x\min(m_A(x),m_B(x))$}
+
+The common multiplicity of two <multisets>, summing the smaller multiplicity of each value. To return an order-preserving overlap of two finite <lists>, scan the first list and consume one equal item from the second whenever available. Each token can be consumed at most once, so the resulting <subsequence> has maximum possible length among those that occur in a permutation of the second list.
+
 = Nondecreasing family of sets
 {parent=Set}
 
@@ -280,6 +315,12 @@ A generating set is a subset from which every element of a structure can be obta
 {wiki}
 
 A set $A$ is a subset of $B$ when every element of $A$ belongs to $B$.
+
+= Superset
+{parent=Subset}
+{title2=$B\supseteq A$}
+
+A <set> $B$ is a <superset> of $A$ when $A$ is a <subset> of $B$, meaning that every element of $A$ belongs to $B$. Equality is permitted; a proper <superset> additionally differs from $A$.
 
 = Set inclusion
 {parent=Subset}
@@ -572,10 +613,49 @@ For every natural parameter $k$, there is a finite length $N$ such that every <s
 
 A partially ordered set, or poset, is a set equipped with a reflexive, antisymmetric and transitive binary relation.
 
+= Two-level partial order
+{parent=Partially ordered set}
+{title2=$P\sqcup C,\quad p<c\text{ for all }p\in P,c\in C$}
+
+Take disjoint <antichains> $P,C$ and place every element of $P$ below every element of $C$. Together with equality these comparisons define a <partial order>: a strict step always moves from $P$ to $C$, so there cannot be a strict two-step path or a reverse comparison.
+
+If both levels have at least two elements, a <subset> $S$ has an <upper bound> exactly when it contains at most one element of $C$. When it contains one such element $c$, that element is its <maximum> and its only <upper bound>. A singleton $\{p\}\subseteq P$ has <maximum> and <least upper bound> $p$. A <subset> of $P$ with at least two elements has all of $C$ as <upper bounds> and has no <least upper bound>, because these elements are incomparable. The empty <subset> has all of $P\sqcup C$ as <upper bounds> and has no <least upper bound>. These cases prove the complete classification.
+
+= Hasse diagram
+{c}
+{parent=Partially ordered set}
+{wiki}
+
+A <Hasse diagram> draws a finite <partially ordered set> using one point for each element and an upward line from $x$ to $y$ for each <cover relation> $x\prec y$. It omits reflexive loops and comparisons already implied by paths. Line crossings are not additional elements. In a finite <partially ordered set>, following upward paths recovers exactly the original comparisons. The diagram is named after <Helmut Hasse>.
+
+= Covering relation
+{parent=Partially ordered set}
+{title2=$x\prec y$}
+{wiki}
+
+= Cover relation
+{synonym}
+
+In a <partially ordered set>, $y$ covers $x$ when $x<y$ and there is no $z$ with $x<z<y$. Thus a <cover relation> records an immediate increase, rather than every comparable pair. For a finite <partially ordered set>, every strict comparison can be obtained by chaining <cover relations>.
+
 = Order ideal
 {parent=Partially ordered set}
 
 A subset $I$ of a <partially ordered set> such that $x\in I$ and $y\le x$ imply $y\in I$. Thus membership forces all smaller elements to belong as well. This definition concerns an order, rather than an ideal of a ring.
+
+= Monotone boundary representation of a grid order ideal
+{parent=Order ideal}
+{title2=$B=\{(x,y):0\leq x<r_y\},\quad r_0\geq r_1\geq\cdots$}
+
+For an <order ideal> in a finite rectangular grid with coordinatewise <partial order>, occupied cells in each row form a left prefix. Their lengths form a nonincreasing <sequence> $r_y$. Conversely, any nonincreasing sequence of valid row lengths specifies exactly one such <order ideal>, giving an <abstraction function> with no redundant per-cell information.
+
+Removing all occupied cells with $x\geq a$ and $y\geq b$ replaces $r_y$ by $\min(r_y,a)$ for $y\geq b$ and leaves earlier rows unchanged. The new lengths remain nonincreasing: affected rows preserve their mutual order, and the first affected row only decreases. For a legal removal, the boundary immediately below it was already at least $a$. A cached <sum> of row lengths can be updated by subtracting the decreases. This yields constant-time membership and count queries, linear storage, and an update linear in the number of affected rows.
+
+= Order-ideal board representation
+{parent=Order ideal}
+{title2=$B=\{(x,y):0\leq y<h(x)\}$}
+
+A downward-closed subset of a finite product grid can be represented by nonincreasing column heights. Occupancy is $0\leq y<h(x)$; the condition $h(0)\geq\cdots\geq h(N-1)$ is exactly closure toward smaller coordinates. Removing the northeast rectangle anchored at a legal $(x,y)$ truncates each height to its right to $\min(h(i),y)$, preserving closure. This represents a potentially quadratic number of occupied cells using a linear number of boundary values.
 
 = Zeta transform
 {parent=Partially ordered set}
@@ -802,6 +882,11 @@ For $n$ independent uniform points in a rectangle, condition on one point with n
 {title2=$<$}
 
 A <strict partial order> is an irreflexive transitive relation. In a classical set, it corresponds to a <partial order> through reflexification, but recovering the strict relation from the weak one requires inequality. In an arbitrary <topos>, this reverse operation need not be geometric or define an inverse interpretation.
+
+= Infinite-model property of a serial strict partial order
+{parent=Strict partial order}
+
+A <strict partial order> that is a <serial relation> has no finite nonempty <first-order model>. If the domain had $N$ elements, seriality would produce a chain of $N+1$ successive elements. The <pigeonhole principle> supplies a repeated element, and transitivity along the resulting cycle contradicts irreflexivity. An infinite example is the usual strict order on the <natural numbers>: every element has its successor. The nonempty-domain convention is essential; the displayed universal conditions hold vacuously on an empty domain if such domains are permitted.
 
 = Reflexification of a strict partial order
 {parent=Strict partial order}
@@ -1093,6 +1178,12 @@ A directed set is a nonempty <preorder> in which every finite subset has an uppe
 {wiki}
 
 A total order is a reflexive, antisymmetric, transitive relation in which every two elements are comparable.
+
+= Adjacent pair in a linear order
+{parent=Total order}
+{title2=$u<v\ \land\ \neg\exists w\,(u<w<v)$}
+
+Two elements $u<v$ of a <totally ordered set> form an adjacent pair when no domain element lies strictly between them. Every pair of consecutive <integers> is adjacent, while a <dense order> has no adjacent pair. A gap in a subset of the <real numbers> matters here only through which points belong to the domain: $1,2$ are adjacent in $[0,1]\cup[2,3]$.
 
 = Minimum of a subset of a total order
 {parent=Total order}

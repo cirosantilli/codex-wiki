@@ -9,10 +9,23 @@ The central tradeoff is between <code rate> and <minimum distance>. Additional s
 
 Richard W. Hamming's *Error Detecting and Error Correcting Codes* appeared in the *Bell System Technical Journal* in April 1950, pp. 147–160. Its introduction motivates automatic correction through failures in digital computing, and its constructions go beyond detecting an error to identifying and correcting its location.https://zoo.cs.yale.edu/classes/cs323/doc/Hamming.pdf[Hamming, Error Detecting and Error Correcting Codes, 1950]{ref}
 
+= Error detection and correction
+{parent=Coding theory}
+{wiki}
+
+= Error correction
+{parent=Error detection and correction}
+
 = Channel coding
 {parent=Coding theory}
 
 Channel coding represents messages with <codewords> chosen to withstand transmission errors. An <error-correcting code> deliberately supplies redundancy, so a receiver can distinguish nearby corrupted outputs and recover the message. <Lossless source coding> instead removes predictable redundancy; practical communication can use both operations. The <Shannon second coding theorem> relates achievable rates on a <discrete memoryless channel> to its <channel capacity>.
+
+= Channel code
+{parent=Channel coding}
+{title2=$c:\{1,\ldots,m\}\to\mathcal X^n,\quad d:\mathcal Y^n\to\{1,\ldots,m\}$}
+
+A deterministic fixed-length channel code consists of a <channel encoder> $c$ and a <channel decoder> $d$. It represents $m$ possible messages by length-$n$ input <codewords> for a <communication channel>, and estimates the message from the resulting output word. Its <code rate> is $(\log_2m)/n$ <bits> per <channel> use. The <maximal decoding error probability> requires reliable recovery of every message, while an average error criterion depends on the chosen message <probability distribution>.
 
 = Code encoding
 {parent=Coding theory}
@@ -408,6 +421,15 @@ This is conditional independence of the outputs given the prescribed input word.
 
 The <binary symmetric channel> and <binary erasure channel> make two different memoryless noise models with a binary input. One hides flipped <bits>; the other marks missing <bits>. Their different <channel capacities> show why the whole <transition matrix> matters, as the <flips versus erasures in a binary channel> demonstrate.
 
+= Three-input two-point additive-noise channel
+{parent=Discrete memoryless channel}
+
+Let the input <alphabet> be $\{0,1,2\}$ and let the output be $Y=X+Z$, where <independent> noise is uniform on two distinct integers. Translating the output <alphabet> reduces the noise to $\{0,d\}$, $d\geq1$. The reachable output <alphabet> has size $3+\min(d,3)$: it is the union of two three-element intervals shifted by $d$.
+
+For $d=1$, every row of the <transition matrix> has conditional <information entropy> one <bit>, so $I(X;Y)\leq\log_2 4-1=1$. Input <probabilities> $(1/2,0,1/2)$ make the output uniform and attain one <bit> per use. For $d\geq3$, the two translated input <alphabets> are disjoint and every output identifies its input. A uniform input then attains $\log_2 3$ <bits> per use.
+
+For $d=2$, <reflection> <symmetry> and <concavity of information entropy> permit restricting to input <probabilities> $(s/2,1-s,s/2)$. Conditional on output <parity>, outputs whose labels are <even integers> have <probabilities> $(1/4,1/2,1/4)$ and outputs whose labels are <odd integers> have <probabilities> $(1/2,1/2)$. Consequently $I(X;Y)=h_2(s)+s/2$. Its strictly negative <second derivative> and stationary equation $\log_2((1-s)/s)+1/2=0$ give $s=\sqrt2/(1+\sqrt2)$ and <channel capacity> $\log_2(1+\sqrt2)$. All three values follow from overlap of translated input <alphabets>, rather than from output <alphabet> size alone.
+
 = Channel encoder
 {parent=Discrete memoryless channel}
 {title2=$f:\{1,\ldots,M\}\to\mathcal X^n$}
@@ -426,6 +448,12 @@ For deterministic block transmission without feedback, a <channel encoder> maps 
 
 A deterministic <channel decoder> maps a received length-$n$ word over the output <alphabet> $\mathcal Y$ to an estimated message label. Given message $m$, successful decoding means $g(Y^n)=m$, where $Y^n$ is the random received word after the <communication channel> acts on the <channel encoder>'s word $f(m)$. The <channel decoder> can recover a message despite changed symbols because it uses the relationships among complete <codewords>. The <Shannon second coding theorem> concerns choosing both maps so that the decoding-error <probability> becomes small at a specified rate.
 
+= Maximal decoding error probability
+{parent=Channel decoder}
+{title2=$\varepsilon_{\max}=\max_w\Pr(d(Y)\ne w\mid W=w)$}
+
+The worst message's error <probability> under a specified <channel encoder>, <communication channel>, and <channel decoder>. It upper-bounds the average error <probability> under every message <probability distribution>. In particular, a uniform bound on <maximal decoding error probability> remains valid after restricting to any nonempty subset of messages. This distinguishes it from an average-only error guarantee in <channel coding>.
+
 = Finite-alphabet erasure channel
 {parent=Discrete memoryless channel}
 {title2=$Y=X\text{ with probability }1-f,\quad Y=e\text{ with probability }f$}
@@ -443,6 +471,26 @@ For a <finite-alphabet erasure channel> with $k$ input symbols, $I(X;Y)=(1-f)H(X
 {wiki}
 
 A binary erasure channel transmits each input bit correctly with probability $1-\varepsilon$ and replaces it by an erasure symbol with probability $\varepsilon$. Its <channel capacity> is $1-\varepsilon$ bits per use.
+
+= Repeat-until-success coding over an erasure channel
+{parent=Binary erasure channel}
+{title2=$M_j\sim\operatorname{Geom}(1-q),\quad n/(M_1+\cdots+M_n)\to1-q$}
+
+With <channel feedback>, resend each message <bit> through a <binary erasure channel> until a non-erased copy arrives, then move to the next <bit>. The <channel decoder> deletes erasure symbols, giving the message without error whenever transmission completes. For $q<1$, the waiting times have an <independent and identically distributed> <geometric distribution> with <expectation> $1/(1-q)$, so every finite message completes <almost surely>. The <strong law of large numbers> gives forward <code rate> $n/\sum_{j=1}^nM_j\to1-q$, matching <channel capacity>. At $q=1$, transmission never completes. Independent erasure indicators, rather than independent message <bits>, are the essential hypothesis.
+
+= Erasure-pattern counting bound for maximal decoding error
+{parent=Binary erasure channel}
+{title2=$(1-\varepsilon_{\max})(\log_2m-1)\leq n(1-q)$}
+
+For a deterministic length-$n$ <channel code> with $m>2$ messages on a <binary erasure channel> of erasure <probability> $q$, exclude the message decoded from the all-erased output. Under a uniform choice of the other $m-1$ messages, success <probability> is at least $1-\varepsilon_{\max}$. Conditional on an erasure pattern with $k\geq1$ unerased positions, there are at most $2^k$ output words, so average success is at most $\min\{1,2^k/(m-1)\}$. With no unerased positions it is zero.
+
+Put $L=\log_2m-1$. The scalar bound $\min\{1,2^k/(m-1)\}\leq k/L$ is immediate for $k\geq L$. Otherwise set $r=m/2^k>2$. Since $\log_2r\leq r-1$ for $r\geq2$,
+$$
+L=k-1+\log_2r\leq k+r-2\leq k(r-1)<k(m-1)/2^k.
+$$
+The inequality $\log_2r\leq r-1$ follows because equality holds at $r=2$ and the <derivative> of $r-1-\log_2r$ is $1-1/(r\ln2)>0$ for $r\geq2$. Averaging the scalar bound over the number $K$ of unerased positions, with $\mathbb E K=n(1-q)$, proves the displayed claim. Thus $\varepsilon_{\max}\leq\delta<1$ implies <code rate> $R\leq(1-q)/(1-\delta)+1/n$. The cases $m\leq2$ satisfy this rate bound directly.
+
+Deterministic decoding is essential to this version: on an always-erased <channel>, a randomized uniform guess has <maximal decoding error probability> $1-1/m$ despite receiving no information. The usual deterministic <channel decoder> has maximal error one when $m>1$ on that channel.
 
 = Z-channel
 {c}
@@ -793,6 +841,12 @@ The whole-space binary code is $\mathbb F_2^n$, with parameters $[n,n,1]$.
 {synonym}
 
 The Hamming weight $\operatorname{wt}(x)$ of a word is the number of its nonzero coordinates.
+
+= Byte-table population count
+{parent=Hamming weight}
+{title2=$\operatorname{popcount}(x)=\sum_j T[(x\gg8j)\mathbin{\&}255]$}
+
+Store the <Hamming weight> of each possible <byte> in a 256-entry table. Extract each byte of a word by a <logical right shift> and a <bit mask>, then sum its table entries. The byte positions partition the word's bits, proving the formula. A 32-bit word needs four lookups, which can be unrolled. Logical extraction does not depend on the <endianness> of a stored word. The speed advantage depends on table-access costs as well as instruction counts.
 
 = Minimum Hamming distance of a linear code
 {title2=$d$}
@@ -1338,6 +1392,29 @@ For a fixed source distribution and code alphabet, an optimal <uniquely decodabl
 
 In a prefix code no codeword is the prefix of another, so concatenated messages have unique instantaneous decoding.
 
+= Ternary prefix code
+{parent=Prefix code}
+{title2=$c:\mathcal X\to\{0,1,2\}^*$}
+
+A <prefix code> whose <codewords> use a three-symbol <alphabet>, conventionally $\{0,1,2\}$. No complete <codeword> is a prefix of another, permitting sequential decoding by following a <code tree> to a <tree leaf>. Its <expected codeword length> is $\sum_i p_i|c(i)|$ <trits> per source symbol. For source <probabilities> $(1/2,1/4,1/8,1/8)$, the <codewords> $(0,1,20,21)$ give <expected codeword length> $5/4$ <trits>.
+
+= Shape of minimum-cost positive-weight ternary prefix trees
+{parent=Ternary prefix code}
+
+For a finite source <alphabet> with at least two symbols and strictly positive weights, every <ternary prefix code> minimizing weighted <codeword length> has all internal <vertices> of <outdegree> three, except possibly one of <outdegree> two whose <tree children> are deepest <tree leaves>.
+
+To prove this, let $L$ be the greatest <tree leaf> depth. A missing <tree child> at any depth $n<L$ would permit moving a deepest <tree leaf> into that vacant branch, strictly reducing its positive weighted cost. Thus all internal <vertices> above depth $L-1$ have three <tree children>. <Tree parents> at depth $L-1$ have only <tree leaves> as <tree children>; one <tree child> would permit contraction and strict improvement. If two such <tree parents> each had two <tree children>, move one <tree child> of the second into the first <tree parent>'s third slot, preserving its depth, and contract the second <tree parent>'s remaining <tree child>. This again strictly improves cost. There is therefore at most one binary <tree parent>. If the number of symbols is an <odd number>, the leaf-count formula for a <full ternary tree> forces $N_2$ to be an <even integer>; since $N_2\leq1$, there is no binary <tree parent>.
+
+Strict positivity matters. For <probabilities> $(1,0,0)$, the <prefix code> $(0,10,110)$ minimizes <expected codeword length> at one <trit>, yet has unary <vertices> and a deepest <tree leaf> without a <sibling codeword>. Removing or rearranging zero-weight branches can select a reduced minimizer, but arbitrary minimizers need not have the positive-weight shape.
+
+= Binary translation of a quaternary prefix code
+{parent=Prefix code}
+{title2=$L_2^*\leq2L_4^*\leq L_2^*+1$}
+
+Replacing every quaternary digit by its fixed two-<bit> representation preserves the <prefix code> property: a binary prefix between translated <codewords> would end at an even position and hence imply a quaternary prefix. Thus a translated <quaternary Huffman code> cannot beat binary <Huffman coding> in <expected codeword length>.
+
+For the reverse bound, binary <prefix code> lengths $\ell_i$ give candidate quaternary lengths $k_i=\lceil\ell_i/2\rceil$. Since $\sum_i4^{-k_i}\leq\sum_i2^{-\ell_i}\leq1$, the <Kraft inequality> supplies such a quaternary <prefix code>. Optimality of <quaternary Huffman coding> and $2\lceil\ell_i/2\rceil\leq\ell_i+1$ give $2L_4^*\leq L_2^*+1$. These quantities are <expected codeword lengths> for the same source <probability distribution>.
+
 = Prefix code for a rare geometric success
 {parent=Prefix code}
 {title2=$\mathbb E L=n+\bigl(1-(1-2^{-n})^{2^n}\bigr)^{-1}$}
@@ -1428,6 +1505,16 @@ Thus the probability that the Shannon code loses to another code by $k$ or more 
 {parent=Prefix code}
 
 Every binary prefix code has expected length at least its source entropy; Shannon lengths achieve expected length strictly below $H+1$.
+
+= Dyadic source matched to a complete prefix code
+{parent=Entropy lower bound for prefix codes}
+{title2=$\overline\ell=H(p)\ \Longleftrightarrow\ p_i=2^{-\ell_i}$}
+
+For a complete binary <prefix code> with lengths $\ell_i$, the <Kraft inequality> is an equality: $\sum_i2^{-\ell_i}=1$. Put $q_i=2^{-\ell_i}$. The difference between <expected codeword length> and <Shannon entropy> is
+$$
+\overline\ell-H(p)=\sum_i p_i\log_2\frac{p_i}{q_i}.
+$$
+The <Kullback-Leibler divergence> is nonnegative and vanishes exactly when $p=q$. Hence a complete code is entropy-tight exactly for its dyadic matching source. For example, lengths $(1,2,2)$ match probabilities $(1/2,1/4,1/4)$. Being an <optimal prefix code> among symbol-by-symbol codes is a weaker condition and does not imply this equality.
 
 = Shannon's source coding theorem
 {c}

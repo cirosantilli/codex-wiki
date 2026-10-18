@@ -53,10 +53,35 @@ A <numerical algorithm> is backward stable when its computed output is the exact
 
 Find a value $x$ satisfying $f(x)=0$ for a given function. Methods include the <bisection method>, which retains a bracket around a root, and derivative-based iteration. Finding a root numerically is distinct from the root as a mathematical object.
 
+= Residual root error bound
+{parent=Root finding}
+{title2=$|\widehat x-x_*|\leq|f(\widehat x)|/m$}
+
+Suppose $f$ is continuous on an <interval>, differentiable in its interior, and $|f'|\geq m>0$ throughout the interior. If $x_*$ is a <root> in the <interval> and $\widehat x$ is another point in it, the <mean value theorem> gives $f(\widehat x)-f(x_*)=f'(\xi)(\widehat x-x_*)$ for an intermediate point $\xi$. Taking absolute values proves the stated bound from the <residual of a root equation>. This converts an observed residual into a stopping certificate, provided the evaluation error in that residual is also controlled.
+
+= Residual of a root equation
+{parent=Root finding}
+{title2=$r=f(\widehat x)$}
+
+The <residual of a root equation> $f(x)=0$ at a proposed solution $\widehat x$ is the value $f(\widehat x)$. It measures violation of the equation, while the forward error $|\widehat x-x_*|$ measures distance from a chosen exact <root>. Rescaling $f$ rescales the <residual of a root equation> without moving its <roots>, so a small residual needs a scale or a <derivative> bound before it certifies a small forward error.
+
+= Secant method
+{parent=Root finding}
+{title2=$x_{k+1}=x_k-f(x_k)(x_k-x_{k-1})/(f(x_k)-f(x_{k-1}))$}
+{wiki}
+
+The <secant method> approximates a <zero of a function> by repeatedly taking the zero of a <secant line> through the two most recent sampled points. The formula follows by setting the line $f(x_k)+(x-x_k)(f(x_k)-f(x_{k-1}))/(x_k-x_{k-1})$ equal to zero. It requires distinct sampled positions and a nonzero difference of sampled values, unless a <root> has already been found. After initialization it needs one new <function> evaluation per step. Unlike <bisection>, it need not retain a bracket. For a sufficiently smooth <function> near a simple <root>, its usual local <order of convergence> is $(1+\sqrt5)/2$.<NIST Digital Library of Mathematical Functions/3.8 Nonlinear Equations>[§3.8(iii), Secant Method, following equation 3.8.6]{ref}
+
 = Fixed-point iteration
 {parent=Numerical analysis}
 
 Fixed-point iteration seeks a <fixed point> of a map $F$ by repeatedly setting $x_{k+1}=F(x_k)$. Convergence requires additional hypotheses; for example, a <contraction mapping> on a complete metric space has a unique fixed point reached by this iteration.
+
+= Affine iteration
+{parent=Fixed-point iteration}
+{title2=$x_{k+1}=Mx_k+c$}
+
+Iterating an <affine map> gives $x_k=M^{k-1}x_1+\sum_{j=0}^{k-2}M^jc$. A <fixed point> exists exactly when $c$ is in the <image of a linear map> $I-M$. If the <spectral radius> of $M$ is below one, its <matrix powers> tend to zero and every orbit converges to the unique <fixed point> $(I-M)^{-1}c$.
 
 = Order of convergence
 {parent=Fixed-point iteration}
@@ -151,6 +176,26 @@ exhibits <quadratic convergence>: once close, the number of correct decimal digi
 {title=Newton tangent steps toward a square root and a nonconvergent two-cycle}
 
 Global convergence requires additional care. For the <polynomial> $F(x)=x^3-2x+2$, starting at $x_0=0$ gives $F(0)=2$, $F'(0)=-2$, hence $x_1=1$. Then $F(1)=1$, $F'(1)=1$ gives $x_2=0$. The sequence repeats $0,1,0,1,\ldots$ forever, although a real <polynomial root> lies in $(-2,-1)$ by the <intermediate value theorem>. Neither point in the cycle is a <zero of a function>, and neither has zero <derivative>. A maintained sign-changing interval and fallback <bisection method> can protect a root solver from unsuitable Newton steps.
+
+= Broyden's method
+{parent=Newton root-finding iteration}
+{c}
+{wiki}
+{title2=$B_{k+1}=B_k+(y_k-B_ks_k)s_k^{\mathsf T}/(s_k^{\mathsf T}s_k)$}
+
+A secant-updating method for a vector equation $F(x)=0$, named for <Charles George Broyden>. Solve $B_kd_k=-F(x_k)$, choose $x_{k+1}=x_k+\alpha_kd_k$, and form $s_k=x_{k+1}-x_k$, $y_k=F(x_{k+1})-F(x_k)$. For a nonzero step the displayed “good Broyden” update satisfies $B_{k+1}s_k=y_k$, learning the <Jacobian matrix> action along the observed step rather than evaluating a new full <Jacobian matrix>.
+
+The update also has a least-change characterization in the <Frobenius norm>. Write $u=y_k-B_ks_k$. Any correction $E$ satisfying $Es_k=u$ has squared row norms bounded below by $u_i^2/\|s_k\|^2$, by the <Cauchy-Schwarz inequality>. Summing these bounds gives $\|E\|_F^2\ge\|u\|^2/\|s_k\|^2$, with equality for $E=us_k^{\mathsf T}/\|s_k\|^2$. This proves the rank-one correction is the least-change update satisfying the secant constraint. <Superlinear convergence> needs local regularity and suitable initialization; it is not a global consequence of this algebraic identity.<A Class of Methods for Solving Nonlinear Simultaneous Equations by Charles George Broyden>[pp. 577–581, motivation and Jacobian-updating construction.]{ref}
+
+= Concave Newton iteration from below
+{parent=Newton root-finding iteration}
+{title2=$-K e_n^2/(2m)\le e_{n+1}<0$}
+
+Suppose $f\in C^2([a,r])$, $f(r)=0$, $f'\ge m>0$ and $-K\le f''<0$. Starting at $x_0\in[a,r)$, the <Newton root-finding iteration> remains below $r$ and increases strictly to it. To prove this, assume $x_n<r$. Strict increase of $f$ gives $f(x_n)<0$, so the Newton step is positive. <Taylor's theorem> between $x_n$ and $r$ gives, with $e_n=x_n-r$,
+$$
+e_{n+1}=\frac{f''(\xi_n)}{2f'(x_n)}e_n^2.
+$$
+Its coefficient is negative and at least $-K/(2m)$, proving both the stated error bound and $x_n<x_{n+1}<r$. <Mathematical induction> establishes the invariant. The increasing bounded iterates have a <limit> $L\le r$; continuity in $x_{n+1}-x_n=-f(x_n)/f'(x_n)$ forces $f(L)=0$, hence $L=r$. The error bound supplies local <quadratic convergence>.
 
 = Newton iteration at a multiple root
 {parent=Newton root-finding iteration}
@@ -583,6 +628,22 @@ At regular transverse intersections, the displayed map has a rank-three $3\times
 
 This example also has a large <condition number>: independently perturbing the two inputs of $a-b$ can produce a relative amplification $(|a|+|b|)/|a-b|=2467$. High sensitivity belongs to the input-output problem; <numerical stability> concerns the arithmetic used to solve it. Conversely, on a common binary system with 53 significant bits and rounding to nearest, $(10^{16}+1)-10^{16}$ evaluates to zero while $(10^{16}-10^{16})+1$ evaluates to one. Exact arithmetic makes both one: changing summation order changes the accumulated <roundoff error>. MIT's summation lecture explains why <numerical stability> and the <condition number> must be assessed separately.https://ocw.mit.edu/courses/18-335j-introduction-to-numerical-methods-spring-2019/pages/week-2/[Steven G. Johnson, MIT 18.335J, Lecture 3: Floating-Point Summation and Backwards Stability, 2019]{ref}
 
+= Function-value resolution near a nondegenerate minimum
+{parent=Round-off error}
+{title2=$\delta x\asymp\sqrt{\delta f/|f''(x_*)|}$}
+
+Near a smooth <local minimum> $x_*$ with $f'(x_*)=0$ and $f''(x_*)>0$, <Taylor's theorem> gives
+$$
+f(x_*+h)-f(x_*)=\tfrac12 f''(x_*)h^2+o(h^2).
+$$
+If evaluated <function> values have absolute uncertainty of order $\delta f$, differences on that scale cannot reliably identify smaller displacements than order $\sqrt{\delta f/f''(x_*)}$. In ordinary <floating-point arithmetic>, when $f(x_*)\ne0$ and evaluations have relative error of order $\epsilon$, this becomes
+$$
+|h|\sim\sqrt{\epsilon\,\frac{|f(x_*)|}{f''(x_*)}}.
+$$
+For unit-scale values and curvature, this is the square root of <machine epsilon>, rather than machine epsilon itself. It explains why a <derivative>-free <golden-section search> can lose reliable comparisons while candidate positions remain representably different.<One dimensional minimization in the GNU Scientific Library manual>[Caveats: loss of the quadratic term when added to a nonzero minimum value]{ref}
+
+This is a precision limit of the evaluated values, not an invariant property of the minimizer. Accurately subtracting a known constant, obtaining values at higher precision, or locating a zero of an accurately evaluated <derivative> can change the attainable position accuracy. A zero minimum with relative error controlled on its small values also needs separate analysis.
+
 = Cancellation error
 {parent=Round-off error}
 
@@ -748,6 +809,12 @@ An implicit time-stepping method determines a new solution value through an equa
 
 For an <initial value problem>, convergence means that the largest <global error> on each fixed finite time interval tends to zero as the step size tends to zero and the starting errors vanish. For <linear multistep methods>, the <Dahlquist equivalence theorem> separates this requirement into <consistency of a numerical method> and <zero-stability>.
 
+= Superlinear convergence
+{parent=Convergence of a numerical method}
+{title2=$\|e_{n+1}\|/\|e_n\|\longrightarrow0$}
+
+An iterative sequence converges superlinearly to its <limit> when its nonzero error norms satisfy the displayed ratio condition, or when it reaches the <limit> in finitely many steps. <Quadratic convergence> is a stronger local rate. In contrast, exact <linear convergence> has a positive asymptotic error ratio below one. A superlinear method need not have <quadratic convergence>.
+
 = Quadratic convergence
 {parent=Convergence of a numerical method}
 {title2=$|e_{n+1}|\le C|e_n|^2$}
@@ -887,6 +954,13 @@ A <spectral method> has <spectral accuracy> for a class of smooth data when its 
 {parent=Spectral method}
 
 A Fourier spectral method represents a periodic unknown by finitely many <Fourier modes> and converts differentiation into multiplication by wavenumber.
+
+= FFT grid on a periodic interval
+{c}
+{parent=Fourier spectral method}
+{title2=$x_j=jL/N,\quad 0\le j<N$}
+
+Use $N$ equally spaced samples on a period of length $L$, excluding the repeated endpoint. Their spacing is $L/N$, and the <discrete Fourier transform> angular wavenumbers are $2\pi m/L$. Including both endpoints in an $N$-point array gives spacing $L/(N-1)$ and is inconsistent with that wavenumber assignment. It does not supply an extra independent periodic sample.
 
 = Spectral truncation
 {parent=Fourier spectral method}
@@ -1726,6 +1800,16 @@ Therefore the second-order <backward differentiation formula> $3U^{n+2}-4U^{n+1}
 = Constrained optimization
 {parent=Numerical analysis}
 {wiki}
+
+= Nearest-point minimization outside a Euclidean ball
+{parent=Constrained optimization}
+{title2=$\operatorname*{arg\,min}_{\|x\|\geq R}\|x-a\|^2=Ra/\|a\|\quad(0<\|a\|<R)$}
+
+Suppose $0<\|a\|<R$ in a <Euclidean space>. Among points outside or on the radius-$R$ ball centred at zero, the unique closest point to $a$ is $x_*=Ra/\|a\|$. Its squared distance is $(R-\|a\|)^2$.
+
+Indeed, the <reverse triangle inequality> gives $\|x-a\|\geq\|x\|-\|a\|\geq R-\|a\|$. Equality requires $\|x\|=R$ and $x$ pointing in the same direction as $a$, giving the stated unique point. If $a=0$, every point on the sphere is a minimizer. If $\|a\|\geq R$, the point $a$ itself is feasible and the minimum distance is zero.
+
+The exterior is not a <convex set>, so a direct geometric argument is useful: it certifies the global answer without treating every candidate satisfying the <Karush-Kuhn-Tucker conditions> as a minimum.
 
 = Constraint reparameterization
 {parent=Constrained optimization}

@@ -1,0 +1,36 @@
+"""Original conceptual tweezers diagram and exact dimensionless search scaling."""
+from pathlib import Path
+import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, Rectangle
+fig, (ax, bx) = plt.subplots(1, 2, figsize=(12, 5), layout='constrained', facecolor='white')
+ax.set(xlim=(-2, 2), ylim=(-.4, 6.4), aspect='equal', title='Magnetic tweezers: conceptual geometry')
+ax.add_patch(Rectangle((-1.7, 5.5), 1.2, .5, color='#c05229'))
+ax.add_patch(Rectangle((.5, 5.5), 1.2, .5, color='#176b87'))
+ax.text(0, 6.2, 'Rotating magnets impose turns', ha='center', fontsize=10)
+ax.add_patch(Circle((0, 4.5), .45, facecolor='#b9d9e5', edgecolor='black'))
+ax.annotate('Magnetic bead', xy=(.4, 4.6), xytext=(.8, 4.8), fontsize=10)
+ax.annotate('', xy=(0, 5.4), xytext=(0, 4.95), arrowprops={'arrowstyle': '->', 'lw': 1.5})
+ax.text(-.3, 5.2, 'pull', ha='right', fontsize=10)
+y = np.linspace(.3, 4.05, 500)
+x = .13 * np.sin(8 * y)
+ax.plot(x, y, color='#176b87', lw=2)
+ax.plot(-x, y, color='#c05229', lw=1.5)
+ax.add_patch(Circle((0, 2.1), .35, facecolor='#e6c877', edgecolor='black', zorder=5))
+ax.text(.5, 2.15, 'RNAP: local\nDNA opening', va='center', fontsize=10)
+ax.plot([-1.5, 1.5], [.2, .2], color='.3', lw=5)
+ax.text(0, -.15, 'Torsionally fixed attachment', ha='center', fontsize=10)
+ax.annotate('', xy=(-.9, 4.5), xytext=(-.9, .3), arrowprops={'arrowstyle': '<->'})
+ax.text(-1.15, 2.7, 'Bead height', rotation=90, va='center', fontsize=10)
+ax.axis('off')
+u = np.logspace(-1, 1, 400)
+bx.plot(u, .5 * u, '--', label='Sliding: u / 2')
+bx.plot(u, .5 / u, '--', label='Bulk relocation: 1 / (2u)')
+bx.plot(u, .5 * (u + 1 / u), color='#176b87', lw=2.3, label='Total')
+bx.plot([1], [1], 'o', color='#c05229')
+bx.axvline(1, color='.6', ls=':', lw=1)
+bx.set(xscale='log', xlim=(.1, 10), ylim=(0, 5.5), xlabel=r'$u=\lambda/\lambda_*$', ylabel=r'$\tau/\tau_{\min}$', title='Balance of local scanning and relocation')
+bx.legend(frameon=False)
+fig.savefig(Path.cwd() / Path(__file__).with_suffix('.png').name, dpi=120, facecolor='white', metadata={'Software': 'matplotlib'})

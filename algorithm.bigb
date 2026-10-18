@@ -9,10 +9,147 @@ An <algorithm> is an idea that can have implementations in different <programmin
 
 A particularly useful design question is: what knowledge survives each step? In <binary search>, it is the location of every possible match inside the remaining candidate range. Writing that fact as a <loop invariant> turns an intuitive shortcut into a procedure whose discarded candidates can be justified. This often helps discover the <algorithm>, rather than merely check it afterward.
 
+= Two-way array partition
+{parent=Algorithm}
+
+= Array partitioning
+{synonym}
+
+Rearrange an <array> segment $a[l,r)$ into a low segment containing values below a pivot $p$ and a high segment containing values at least $p$, preserving the segment's <multiset> and leaving the rest of the <array> unchanged. The pivot need not itself occur, and either resulting segment may be empty.
+
+An in-place scan maintains indices $l\leq k\leq j\leq r$ with $a[l,k)<p$ and $a[k,j)\geq p$. A low value at $j$ is swapped into position $k$ and advances both indices; a high value advances only $j$. The unexamined length $r-j$ is a <loop variant>. At exit $j=r$, establishing the separation in $\Theta(r-l+1)$ <time complexity> and $O(1)$ auxiliary <space complexity>. Equal values consistently belong to the high side.
+
+= Fair enumeration
+{parent=Algorithm}
+
+A <fair enumeration> emits every required occurrence after finitely many computation steps. The inputs can be infinite; completeness does not mean waiting until they have all been exhausted. If two <proper lazy lists> alternate their next available entries, every occurrence reaches the output after finitely many swaps. In contrast, a nested <list comprehension> can remain forever in its first infinite inner <list>. Fairness concerns input occurrences, even when different occurrences happen to have equal values.
+
+= Diagonal merging of lazy lists
+{parent=Fair enumeration}
+{title2=$\text{round}(i,j)=i+j$}
+
+For an outer <proper lazy list> of inner <proper lazy lists>, introduce row $i$ in round $i$ and advance each active row once per round. Discard an active row when its terminating constructor is observed. Each round inspects finitely many rows, and the entry at row index $i$, within-row index $j$, is emitted in round $i+j$. Every earlier round has finite work, proving <fair enumeration> of all occurrences.
+
+An implementation can keep a finite <list> of row remainders, append at most one newly introduced row, collect one head from every nonempty remainder, and retain their tails for the next round. It must not first combine all not-yet-introduced rows. In fact, `foldr interleave [] ([1,2] : repeat [])` can emit `1` and then block before `2`; <diagonal merging of lazy lists> emits both. If infinitely many empty rows remain after the final output, detecting termination is impossible in general: the <absence-detection obstruction for infinite lists> prevents a universal promise of a terminating empty tail, while every required occurrence can still be emitted.
+
+= Multiselection by balanced rank partitioning
+{parent=Algorithm}
+{title2=$\Theta(n\log(n/k))$}
+
+To find the order statistics at ranks $k,2k,\ldots,n$ when $n/k$ is a power of two, partition into equal lower and upper rank halves and recurse, stopping at blocks of size $k$. Return each leaf block's maximum. Half boundaries are multiples of $k$, so these leaf maxima are exactly the requested ranks. Linear-time <selection> gives total $\Theta(n)$ partition work per internal level and $\Theta(n)$ leaf work, hence $\Theta(n(1+\log(n/k)))$ overall. The shorter displayed bound applies when $n/k\geq2$.
+
+= Median of medians
+{parent=Algorithm}
+
+For deterministic linear-time <selection>, group keys into fives, compute the median of each group, and recursively select the median of those medians as a pivot. Apart from bounded end effects, at least $3n/10$ keys lie on either side. Thus the selection cost satisfies $T(n)\leq T(\lceil n/5\rceil)+T(7n/10+O(1))+O(n)=O(n)$, since the fractions sum to $9/10<1$. A <strong induction> with sufficiently large linear coefficient absorbs the lower-order terms.
+
+= Selection algorithm
+{parent=Algorithm}
+
+= Selection
+{synonym}
+
+Find one specified <order statistic> without sorting every element. Partitioning about a pivot retains only the side containing the requested rank. <Median of medians> guarantees a balanced enough pivot to give worst-case linear <time complexity>.
+
+= Quickselect
+{parent=Selection algorithm}
+
+A <selection algorithm> that uses <array partitioning> around a pivot and recursively searches only the side containing the desired <order statistic>. If there are $s$ entries before the placed pivot, an earlier rank is unchanged and a later rank is reduced by $s+1$. Segment length strictly decreases, proving <algorithm termination>. The same reduction can update local bounds in a loop, using constant auxiliary space.
+
+Balanced reductions give linear work by a <geometric series>, while repeatedly discarding only a constant number of entries can give quadratic work. For distinct entries and independent uniform random pivots, a pivot in the middle half has probability at least one half and reduces the retained length to at most three quarters, up to rounding. The expected number of attempts for each such reduction is bounded, so summing expected work over geometric size scales gives $O(n)$ expected time. This random-pivot guarantee is not a worst-case guarantee for a deterministic median-of-three heuristic. With duplicates and a strict two-way partition, random pivot choice alone can also fail to shrink an all-equal segment; a three-way partition treats equal keys together.
+
+= Median-of-three pivot selection
+{parent=Quickselect}
+
+Choose the median value among the first, middle and last entries of an active <array> segment. For at least three distinct sampled values, the selected value cannot be the whole segment's minimum or maximum. It can still be the second-smallest or second-largest value, so a balanced split does not follow. Coincident sample indices in segments of length one or two can be handled by the same comparison code. Ties must also have a defined branch policy.
+
+= Quadratic median-of-three selection family
+{parent=Median-of-three pivot selection}
+{title2=$C(n)=\lfloor n^2/4\rfloor$}
+
+A distinct-input counterexample for <Quickselect> that chooses the first/middle/last median, reserves it at the last slot, scans lower values to the front, and finally swaps the pivot into place. Let $A_n$ be the following <permutation> of $0,\ldots,n-1$. For $n<4$, take increasing order. For $n\geq4$, let $B=A_{n-2}+2$ componentwise and $m=\lfloor n/2\rfloor$, then set
+$$
+A_n(0)=1,\quad A_n(m)=0,\quad A_n(n-1)=B(m-2),\quad A_n(1)=B(n-3),
+$$
+and put $A_n(j)=B(j-2)$ at every other index $2\leq j\leq n-2$. These assignments use every entry of $B$ once and add zero and one, so they really define a <permutation>.
+
+The sampled values are $1,0,B(m-2)$, with the last at least two, so the pivot is one. After the initial pivot swap, the only lower value is the zero at index $m$. Moving it to the front places the displaced $B(m-2)$ at its intended tail position. The final pivot swap moves $B(n-3)$ from index one to the last position. Every other tail entry already has its intended position. Thus the complete partitioned result is exactly $[0,1]$ followed by $B$.
+
+Selecting the maximum consequently repeats the same construction on $n-2$ entries. If $C(n)$ counts only pivot comparisons made by the partition scan, then $C(n)=n-1+C(n-2)$, with $C(1)=0$ and $C(2)=1$. Hence $C(n)=\lfloor n^2/4\rfloor$ and total runtime is $\Theta(n^2)$. For example, $A_6=[1,4,3,0,2,5]$. This disproves a linear worst-case claim even when every value is distinct.
+
+= Two-sorted-array order statistic
+{parent=Selection algorithm}
+{title2=$A_L\le B_R,\quad B_L\le A_R$}
+
+To obtain the $k$-th smallest entry of two ascending <sorted arrays> of lengths $m,n$, choose prefix lengths $i,j$ with $i+j=k$. Search $\max(0,k-n)\le i\le\min(m,k)$ for the two boundary inequalities in the title, treating missing left boundaries as $-\infty$ and missing right boundaries as $+\infty$. Then all $k$ selected entries precede all unselected entries, so their largest boundary value is the answer. If $A_L>B_R$, decrease $i$; if $B_L>A_R$, increase $i$. These failures are monotone because one prefix grows as the other shrinks. <Binary search> thus takes $O(\log(\min(m,n)+1))$ comparisons when the shorter <array> supplies the searched prefix. Repeated values retain their multiplicities in the ranks.
+
+= Comparison lower bound for interval disjointness
+{parent=Algorithm}
+
+Deciding whether $n$ open real intervals are pairwise disjoint has comparison complexity $\Theta(n\log n)$. Sort by left endpoint and scan the maximum previous right endpoint for the upper bound. For the lower bound, map integer keys $z_i$ to $(2z_i,2z_i+1)$. Such intervals intersect exactly when the original integers agree. Each comparison between endpoints $2z_i+a$ and $2z_j+b$, with $a,b\in\{0,1\}$, is determined by a comparison of $z_i,z_j$ and their fixed offsets, so the reduction preserves the <comparison model>. Apply the <element distinctness problem> lower bound.
+
+= Finite candidate elimination bound
+{parent=Algorithm}
+
+Suppose a finite candidate <set> of size $N$ contains the truth, every query chooses a current candidate, and each wrong reply eliminates that candidate while retaining the truth. Then at most $N-1$ wrong queries occur. If a correct reply uniquely identifies the truth, an infinite strategy of this kind eventually repeats the true candidate; stopping when only one candidate remains takes at most $N-1$ replies. The proof is the strictly decreasing positive <cardinality> of the surviving candidate set after every nonidentifying round.
+
+= Duplicate-aware positional scoring
+{parent=Algorithm}
+
+To score a guess against a fixed-length secret, first reserve every equal-position match. For the remaining positions, consume at most one unused secret occurrence for each cow. This two-stage rule prevents an earlier wrong-position token from using the occurrence needed for a later positional match. The sum of bull and cow counts is the <multiset overlap> of the two sequences. With only <equality tests>, deletion from a list gives a quadratic-time implementation; token-count maps can improve the allocation step when a suitable key representation is available.
+
 = Quantum algorithm
 {parent=Algorithm}
 
 A computational procedure using quantum state preparation, controlled operations and measurement, together with any required classical processing. Complexity counts the relevant operations and repetitions; a large superposition is not itself a guarantee of a useful speedup.
+
+= Approximate quantum counting
+{parent=Quantum algorithm}
+{title2=$k=|\{x:f(x)=1\}|$}
+
+Approximate quantum counting estimates the number $k$ of <satisfying assignments> of a <Boolean function>, using a <quantum oracle> and <quantum measurement>. Controlled repetitions of a <Grover search algorithm> iteration let <quantum interference> reveal the count. For one input <bit>, a <Hadamard test> can give <Pauli Z gate> <expectation value> $1-k$: with the complemented <phase oracle> $U_f=\operatorname{diag}(2f(0)-1,2f(1)-1)$ and $G=-XU_f$, use $\langle+|X=\langle+|$ to obtain $\langle+|G|+\rangle=-[(2f(0)-1)+(2f(1)-1)]/2=1-k$. Repeated preparations estimate this <expectation value>; one binary measurement result does not distinguish all three counts $0,1,2$.
+
+= Bernstein-Vazirani algorithm
+{parent=Quantum algorithm}
+{c}
+
+= BV algorithm
+{synonym}
+{c}
+
+The <Bernstein-Vazirani algorithm> identifies the coefficient string of a <linear Boolean function> with one <Boolean quantum oracle> call. It contrasts with the $n$ calls required by the <classical query complexity of linear Boolean function identification>. Prepare the data <qubits> at $|0\rangle^{\otimes n}$ and an <ancilla qubit> at $|1\rangle$, apply a <Hadamard gate> to every wire, query the <function oracle>, and apply the <Hadamard gates> again. The full output is $|a\rangle|1\rangle$.
+
+The mechanism is <Bernstein-Vazirani phase kickback>. The <Pauli X gate> has <eigenvector> $|-\rangle=(|0\rangle-|1\rangle)/\sqrt2$ with <eigenvalue> $-1$. Thus the target flips become relative <quantum phases> on the data, giving
+$$
+2^{-n/2}\sum_x(-1)^{a\cdot x}|x\rangle
+=\bigotimes_{j=1}^{n}\frac{|0\rangle+(-1)^{a_j}|1\rangle}{\sqrt2}.
+$$
+The final <Hadamard transform> maps this product to $|a\rangle$, so <computational-basis measurement> recovers every coefficient with certainty. The <ancilla preparation for the Bernstein-Vazirani algorithm> ensures the required minus sign, and the <Hadamard-conjugated linear oracle> gives an exact <quantum circuit> interpretation. One query is optimal for $n\ge1$, since without a query the output cannot depend on the unknown string.
+
+= Ancilla preparation for the Bernstein-Vazirani algorithm
+{parent=Bernstein-Vazirani algorithm}
+{title2=$H|1\rangle=|-\rangle$}
+
+The displayed <Bernstein-Vazirani algorithm> prepares its <ancilla qubit> in the <computational-basis state> $|1\rangle$ before the first <Hadamard gate>. At the <function oracle> it is therefore the $-1$ <eigenstate> $|-\rangle$ of the <Pauli X gate>, which enables <phase kickback>. Preparing $|0\rangle$ instead yields $|+\rangle$ at the <function oracle>; target flips leave this state unchanged, so the data contain no information about $a$.
+
+The <Hadamard-conjugated linear oracle> makes the more general statement transparent. With zero data and initial <ancilla qubit> $\alpha|0\rangle+\beta|1\rangle$, the full fixed <quantum circuit> outputs
+$$
+\alpha|0\rangle^{\otimes n}|0\rangle+\beta|a\rangle|1\rangle.
+$$
+For nonzero $a$, the correct data outcome has <probability> $|\beta|^2$. To obtain exact identification for all $a$, this preparation must have $\alpha=0$, so it is $|1\rangle$ up to <global phase>. This is a condition on the prescribed preparation circuit: any alternative <quantum state preparation> that supplies $|-\rangle$ at the <function oracle> is equivalent.
+
+= Hadamard-conjugated linear oracle
+{parent=Bernstein-Vazirani algorithm}
+{c}
+{title2=$H^{\otimes(n+1)}U_aH^{\otimes(n+1)}$}
+
+Let $U_a|x\rangle|b\rangle=|x\rangle|b\oplus(a\cdot x)\rangle$ be the <Boolean quantum oracle> for a <linear Boolean function>, and put $W=H^{\otimes(n+1)}$. The <CNOT gates> $C_{j\to y}^{a_j}$ implement $U_a$, where the data wires control the <ancilla qubit>. <CNOT control reversal in the Hadamard basis> and $W^2=I$ imply the exact <unitary operator> identity
+$$
+WU_aW=\prod_{j=1}^{n}C_{y\to j}^{a_j},
+\qquad
+WU_aW|x\rangle|b\rangle=|x\oplus ba\rangle|b\rangle.
+$$
+Here $\oplus$ on strings is <bitwise exclusive or>. To conjugate a product, insert $W^2=I$ between its factors; each factor reverses its control and target, and the unused <Hadamard gates> cancel. The <global phase> is exactly $1$. In particular, the identity holds on arbitrary <quantum superpositions>, not only on the initialized inputs of the <Bernstein-Vazirani algorithm>.
 
 = Heuristic algorithm
 {parent=Algorithm}
@@ -119,6 +256,11 @@ Bitwise AND combines binary representations position by position, setting a bit 
 = Exponential search
 {parent=Algorithm}
 
+= Exponential sign bracketing
+{parent=Exponential search}
+
+If $f(0)<0$ and $f(x)>0$ for all sufficiently large positive $x$, testing $1,2,4,\ldots$ eventually finds a positive endpoint. Keep the previous nonpositive endpoint to obtain a bracket. If $t$ is the first successful exponent, there are $t+1$ endpoint tests. Subsequent <sign-bracketing binary search> in the last interval takes $t-1$ tests for $t\geq1$, since its width is $2^{t-1}$. No monotonicity is needed, though intermediate sign crossings may be skipped. Fixed-width <integer overflow> and unreliable floating-point signs require explicit handling; eventual real positivity alone does not guarantee representable machine endpoints.
+
 = Coordinate compression
 {parent=Algorithm}
 
@@ -157,6 +299,14 @@ The Tonelli-Shanks algorithm finds a <square root> of a <quadratic residue> <mod
 
 = String-searching algorithm
 {parent=Algorithm}
+
+= Longest repeated substring
+{parent=String-searching algorithm}
+
+= Longest repeated segment
+{synonym}
+
+A longest repeated substring is a maximum-length contiguous <string> occurring at two distinct starting positions in a text. The occurrences may overlap unless a nonoverlap constraint is explicitly imposed. It can be found by comparing all pairs of suffixes, or by taking the maximum longest-common-prefix length of adjacent entries of a <suffix array>. The latter characterization concerns correctness; the time needed to build the <suffix array> depends on the construction algorithm.
 
 = FM-index
 {c}
@@ -279,6 +429,16 @@ An <algorithm> that splits choices into two groups, enumerates partial results f
 
 Given a finite sequence of <real numbers>, find a nonempty contiguous block with maximum sum. Its restriction to contiguous blocks distinguishes it from choosing an arbitrary <subset>. The problem admits a linear-time solution using <Kadane's algorithm>.
 
+= Maximum-subarray segment summary
+{parent=Maximum subarray problem}
+{title2=$(S,P,Q,B)$}
+
+For a segment, store its total sum $S$, maximum possibly-empty prefix sum $P$, maximum possibly-empty suffix sum $Q$ and maximum possibly-empty internal contiguous sum $B$. Adjacent segment summaries combine by
+$$
+(S,P,Q,B)=\left(S_L+S_R,\ \max(P_L,S_L+P_R),\ \max(Q_R,S_R+Q_L),\ \max(B_L,B_R,Q_L+P_R)\right).
+$$
+A prefix either stays on the left or includes the whole left segment and a right prefix. A suffix has the symmetric decomposition. An internal segment either stays in one child or crosses the boundary as a left suffix followed by a right prefix. These cases prove the formulas, including empty candidates. Store the corresponding endpoints to recover a winning segment. This constant-size summary gives a <linear time> <divide-and-conquer algorithm> for the empty-allowed <maximum subarray problem>.
+
 = Kadane's algorithm
 {parent=Maximum subarray problem}
 {c}
@@ -288,10 +448,65 @@ For input $a_1,\ldots,a_n$, let $E_i$ be the largest sum of a nonempty contiguou
 = Search algorithm
 {parent=Algorithm}
 
+= Iterative lengthening search
+{parent=Search algorithm}
+
+= ILS
+{c}
+{synonym}
+
+<Iterative lengthening search> repeatedly runs <cost-bounded depth-first search>, starting with threshold zero and replacing each unsuccessful threshold by the smallest rejected <path cost>. It uses a <depth-first search> stack rather than the potentially large <search frontier> of <uniform-cost search>.
+
+Suppose an optimal <plan> has cost $C^*$ and each pass terminates. At every unsuccessful threshold $L<C^*$, some first rejected prefix of an optimal <plan> has <path cost> at most $C^*$. Therefore the next threshold is no larger than $C^*$. Any first returned <goal state> has cost at most $C^*$ and hence exactly $C^*$. Finite <branching factor> and a positive lower bound on <step costs> ensure that only finitely many <search nodes> precede that cost, giving completeness as well as optimality. With arbitrary real <step costs>, the threshold increments can be much smaller than the smallest <step cost>: the difference between two <path costs> need not itself be a <step cost>.
+
+= Staircase matrix search
+{parent=Search algorithm}
+
+Search a matrix whose rows and columns are both nondecreasing by inspecting the top-right corner of the remaining rectangle. If that value is below the target, discard its row; if above, discard its column; if equal, return its coordinates. The <loop invariant> retains every possible match inside the rectangle. Each failure decreases its remaining height plus width by one, proving at most $n+m-1$ inspections for positive dimensions and constant <auxiliary space>. Row monotonicity alone is insufficient for the column exclusion.
+
+= AND-OR search
+{parent=Search algorithm}
+{c}
+
+A <search algorithm> whose OR nodes represent controllable choices and whose AND nodes require solutions for every possible outcome of a chosen action. In <nondeterministic planning>, a successful OR choice needs successful continuations for all its AND children. In <contingent planning>, those children can represent different observations and updated <belief states>. Cycle handling must match the required solution concept: ignoring a repeated state is not a proof that the goal will inevitably be reached.
+
+= Two-sum problem
+{parent=Search algorithm}
+
+Find two distinct input positions whose values sum to a target, or establish that no such pair exists. Distinct values are not required: two equal values may form a pair when they occur at different positions. On a <sorted array>, <distinct-index two-sum by suffix lower bounds> gives $O(N\log N)$ <running time>, while a <two-pointer technique> can give linear time.
+
+= Ternary lower-bound search
+{parent=Search algorithm}
+
+A <lower-bound search> that probes two positions to retain one of three subintervals. For unresolved $[lo,hi)$ of positive length $d$, put $q=\lfloor d/3\rfloor$, $m_1=lo+q$ and $m_2=hi-1-q$. If $a(m_1)\geq x$, retain $[lo,m_1)$; if $a(m_2)<x$, retain $[m_2+1,hi)$; otherwise retain $[m_1+1,m_2)$. <Sortedness> preserves the lower-bound partition. The new interval lengths are $q,q,d-2q-2$, and the feasible middle case has nonnegative length at most $q$. This proves strict progress and $O(\log(N+1))$ comparison cost. Equality must retain the first possible boundary rather than return an arbitrary matching occurrence.
+
+= Optimal search algorithm
+{parent=Search algorithm}
+
+A <search algorithm> is optimal for a specified objective if its returned solution has the best objective value among all solutions. The objective is part of the claim: minimizing the number of actions does not generally maximize a reward assigned to terminal states. <Breadth-first tree search> optimizes total cost when all actions have the same positive cost.
+
+= Complete search algorithm
+{parent=Search algorithm}
+
+A <search algorithm> is complete for a specified class of problems if it finds a solution whenever a solution exists in that class. This definition need not require termination on unsolvable instances; an additional termination guarantee should be stated separately. A finite <branching factor> makes <breadth-first tree search> complete for finite-depth solutions, while <depth-first tree search> additionally needs a reason it cannot be trapped on an infinite branch.
+
+= Tree search
+{parent=Search algorithm}
+
+A <search algorithm> that explores action histories in a <search tree>. Two histories ending in the same state remain distinct nodes unless an additional repetition rule identifies them. Consequently a finite <state space> can generate an infinite <search tree>: a legal stay action at a nonterminal state already suffices. A <graph search> instead records explored states to control repetitions. Confusing these models changes termination and completeness claims.
+
 = Backtracking
 {parent=Algorithm}
 
 Build a candidate incrementally, abandoning a partial candidate as soon as no valid completion is possible. A <depth-first search> explores one choice, restores the previous state, and tries the next. Constraint propagation and bounds can greatly reduce the visited <state space>, although the worst-case <time complexity> may remain exponential.
+
+= Backtracking leaf bound
+{parent=Backtracking}
+{title2=$L\le\prod_i|D_i|$}
+
+Suppose <backtracking> assigns each of finitely many variables once along each branch, branching only on distinct values in its initial nonempty <constraint domain> $D_i$. Then the number of leaves is at most $\prod_i|D_i|$, even if inconsistent partial assignments terminate early. Ignore constraints and associate a leaf with every full domain assignment extending its partial assignment. Each leaf has at least one such extension. Different leaves have disjoint extension families: at their first diverging choice they assigned different values to the same selected variable. These nonempty disjoint families lie in a <Cartesian product> of <cardinality> $\prod_i|D_i|$, proving the bound. The selected next variable can depend on the preceding assignments, provided each full assignment follows a unique branch.
+
+The bound is exact for an unpruned enumeration tree, but need not be attained when actual constraints cause <search pruning>. Counting complete satisfying assignments alone also does not count failed partial leaves.
 
 = Sliding-window algorithm
 {parent=Algorithm}
@@ -503,6 +718,11 @@ For example, a shared telescope can accept several observation requests with fix
 
 <Greedy algorithms> are attractive because a single pass can replace a search through many candidate <subsets>. However, "locally best" is only a design proposal. A problem-specific <greedy-choice property>, often established by an <exchange argument>, must connect the local decision to the actual <objective function>. The largest-individual-value rule in the <0-1 knapsack problem> fails; <Dijkstra's algorithm> needs its nonnegative-edge assumptions. A rule's success in one <optimization> task does not justify it in another.
 
+= Counterexample to removing a longest increasing subsequence
+{parent=Greedy algorithm}
+
+Repeatedly removing a longest <strictly increasing subsequence> need not minimise the number of increasing subsequences in a partition. In $(2,4,1,3)$, removing $(2,3)$ leaves the decreasing pair $(4,1)$, for three subsequences overall. The partition $(2,4)$ and $(1,3)$ uses only two and is optimal because the original sequence is not increasing.
+
 = Greedy-choice property
 {parent=Greedy algorithm}
 
@@ -592,6 +812,11 @@ For a separate two-job example, let $X=[0,2)$ have reward one and $Y=[1,3)$ rewa
 A <precondition> $P$ describes permitted starting circumstances; a <postcondition> $Q$ describes the required result. <Partial correctness> says that starting with $P$ and finishing implies $Q$. <Total correctness> also guarantees finishing. A <loop invariant> supplies the connection between these conditions during repeated steps.<CS 2112 Fall 2019/Loop invariants>[CS 2112 Fall 2019; Loop invariants, Using loop invariants to show code is correct: Establishment, Preservation, Postcondition, and Termination]{ref}
 
 Correctness is relative to a <formal specification>. Returning the first entry of an <array> correctly implements "return the first entry", but fails "return the <maximum>" on $[3,1,4,4,2]$. A fast wrong answer does not acquire <algorithm correctness> from its <time complexity>. Numerical closeness matters only when the <formal specification> allows an approximation. <Software testing> and <test coverage> provide evidence about selected executions; they do not by themselves establish <algorithm correctness> for every permitted <input>.
+
+= Recursion invariant
+{parent=Algorithm correctness}
+
+A relationship between a recursive procedure's arguments, accumulated state and original input that holds at every reachable <recursive call>. For accumulator-based <exponentiation by squaring>, $acc\,base^{remaining}=x^n$ is a <recursion invariant> under exact arithmetic. The base case converts it into the desired result, while the recursive step and a decreasing argument justify preservation and termination.
 
 = Partial correctness
 {parent=Algorithm correctness}
@@ -740,6 +965,23 @@ For the <summation loop verification>, require a nonnegative <integer> <input> $
 
 Precision alone does not ensure a useful requirement. The <postcondition> $s\geq0$ permits returning zero for every nonnegative <integer> <input>; it does not specify the intended <triangular number>. Conversely, an impossible <precondition> permits no starts, making a universal correctness claim vacuous. Check both that intended <inputs> are admitted and that admitted <outputs> express the intended task.
 
+= Frame condition
+{parent=Formal specification}
+
+A clause stating which parts of a <program state> an operation preserves. A query's returned value alone does not prohibit it from also mutating the receiver; a binary update's result equation alone does not preserve its distinct operand. Explicit <frame conditions> rule out these behaviors and make substitution and composition arguments possible.
+
+= Planning safety certificate
+{parent=Formal specification}
+
+An auxiliary <planning fluent> certifying that a safety condition has been checked for the current state in <automated planning>. A checking action requires facts establishing the condition and adds the certificate; the hazardous action requires that certificate.
+
+Every action capable of invalidating the check must delete the certificate. Otherwise checking a safe configuration and then changing it could authorize an unsafe action using stale evidence. For river crossing, certify that the departure bank contains no incompatible pair, invalidate the certificate on every load, unload or crossing, and require it before sailing. This compiles a safety test into positive <STRIPS> <preconditions> when a suitable finite static compatibility relation is supplied.
+
+= Planning state invariant
+{parent=Formal specification}
+
+A property true initially and preserved by every applicable action in an <automated planning> model. <Mathematical induction> on the plan length then proves it for every reachable state. Typical examples are unique object locations, a capacity bound, and exactly one occupancy marker being true. An invariant is a consequence to prove from the action rules; merely declaring the intended capacity in prose does not enforce it.
+
 = Precondition
 {parent=Formal specification}
 
@@ -854,6 +1096,12 @@ The <loop invariant> just before inspecting index $i$ is: $0\leq i\leq n$, and n
 
 A terminating check returning whether two values match under a specified relation. Mathematical equality is one such relation; a chosen <equivalence relation> can instead express matching keys. <Linear search> only needs this check, whereas <binary search> also uses relative order. The cost of an <equality test> depends on the representation and implementation of its operands.
 
+= Equality-only grouping lower bound
+{parent=Equality test}
+{title2=$\binom n2$}
+
+In the comparison model exposing only an <equality test> between otherwise opaque values, partitioning $n$ values into <equivalence classes> takes $\Omega(n^2)$ tests in the worst case. Run the algorithm on pairwise distinct values. If any pair remains untested, changing just those two values to equal is consistent with every answer observed so far but changes the required output partition. Every pair must therefore be tested. With a compatible <total order>, <comparison sort> can instead group equal values in $O(n\log n)$ time.
+
 = Strength reduction
 {parent=Algorithm}
 
@@ -904,6 +1152,45 @@ With an <adjacency list> representation, constant-cost discovery checks and fram
 One start explores only its <connected component of a graph>. To cover a disconnected <graph>, start again at every still-undiscovered <vertex> while keeping all discovery marks; the discovery <trees> form a <forest>. <Depth-first search> is useful for <reachability>, constructing a <spanning tree> of a <connected graph>, and organizing the return steps needed by a <depth-first traversal of a tree>. For detecting a <graph cycle> in a <simple graph> that is an <undirected graph>, an <edge> to an already discovered <vertex> other than the current <parent in a rooted tree> closes a <graph cycle>; the immediate return <edge> to that <parent in a rooted tree> is not itself a <graph cycle>.
 
 // Target: computer-science.bigb
+
+= Cost-bounded depth-first search
+{parent=Depth-first search}
+{title2=$g(v)\leq L$}
+
+A <cost-bounded depth-first search> follows the usual <depth-first search> order but immediately rejects a generated <search node> whose accumulated <path cost> exceeds a threshold $L$. It can also return the least rejected <path cost>, providing the next threshold for <iterative lengthening search>. Positive <step costs> ensure that a rejected prefix cannot become a cheaper extension. With finite <branching factor> and every <step cost>ing at least $\epsilon>0$, every admitted <search node> has <search depth> at most $\lfloor L/\epsilon\rfloor$, so the pass terminates. Merely requiring every individual <step cost> to be positive does not exclude an infinite branch of finite total <path cost>.
+
+= Explicit-stack depth-first tree traversal
+{parent=Depth-first search}
+
+An <explicit-stack depth-first tree traversal> stores pending subtree roots instead of suspended recursive calls. In a <binary tree>, visit the current node, defer its nonempty right child on a <stack>, and continue with its left child; pop when the current subtree is empty. The unvisited subtrees remain disjoint and, together with the visited nodes, partition the original tree. This <loop invariant> proves that accumulating each visited label gives the tree sum. At most one right sibling per ancestor is pending, so auxiliary storage is $O(d)$ for depth $d$ and running time is $\Theta(N)$ for $N$ nodes. Unlike a full recursive <stack frame>, a pending entry need contain only a subtree <pointer>.
+
+= DFS edge classification
+{parent=Depth-first search}
+{c}
+
+Classify <directed edges> relative to a <depth-first search> forest. Tree <edges> discover a new <vertex>; forward <edges> reach a proper descendant without being its discovery <edge>; back <edges> reach an active ancestor; cross <edges> connect completed branches or trees. Discovery and finish intervals are nested for ancestry. The classification depends on the chosen search order, not only on the <graph>.
+
+= Back edge in depth-first search
+{parent=DFS edge classification}
+
+A <directed edge> from a <vertex> to an active ancestor in its <depth-first search>. Together with the tree path from that ancestor it witnesses a <directed cycle>.
+
+= Forward edge in depth-first search
+{parent=DFS edge classification}
+
+A <directed edge> to a proper descendant in the <depth-first search> forest that is not a tree <edge>. Its endpoints satisfy $d(u)<d(v)<f(v)<f(u)$.
+
+= DFS discovery and finishing times
+{c}
+{parent=Depth-first search}
+{title2=$d(v),f(v)$}
+
+A traversal clock incremented on each vertex discovery and finish records two times per vertex. The active <recursion> interval of an ancestor contains that of each descendant. A finished vertex has no unexamined outgoing edge. These facts constrain possible finishing orders even when traversal order is unspecified.
+
+= Depth-first tree search
+{parent=Depth-first search}
+
+The <tree search> version of <depth-first search> follows one action history until it ends, then returns to another choice. Repeated states do not automatically stop a branch. An infinite branch can prevent discovery of a goal on a different finite branch, so this method is not generally a <complete search algorithm>. A finite <search tree> restores completeness, but the first successful history need not minimize cost or maximize a terminal reward.
 
 = Iterative deepening depth-first search
 {parent=Depth-first search}
@@ -1020,6 +1307,19 @@ A <recursive procedure> refers to itself, directly or through another procedure.
 
 <Recursion> is especially expressive when a <data structure> already decomposes into smaller structures. A <binary tree> has two child <subtrees>, so <structural recursion> can follow its shape. A short rule for each case can describe an entire traversal or computation. The distinction between a <recursive procedure> and the <recursive process> it generates helps connect that compact description to its resource use.<Structure and Interpretation of Computer Programs by Harold Abelson and others>[Structure and Interpretation of Computer Programs, second edition, §1.2.1: procedure versus process; §1.2.2: closing discussion before Counting change, hierarchical data and straightforward definitions]{ref}
 
+= Recursion tree
+{parent=Recursion (computer science)}
+
+A <recursion tree> records recursive calls as nodes and their direct recursive subcalls as children. Its node labels can record the work done outside those subcalls. Summing the work over levels or charging it to nodes proves a total <running time> bound. For $T(n)=aT(n/b)+f(n)$, level $j$ has approximately $a^j$ instances of size $n/b^j$, so its nonrecursive work is $a^jf(n/b^j)$. Summing those quantities explains the cases of the <master theorem>.
+
+= Tail recursion
+{parent=Recursion (computer science)}
+
+= Tail-recursive
+{synonym}
+
+<Recursion> in which the recursive call is the last operation required to obtain the current call's result. An accumulator can encode the state that would otherwise be updated by a loop. A suitable <compiler> can replace the call by a jump, avoiding growing <call stack> storage. In <Scala>, a tail-recursion annotation requests a check that the recursive method is eligible for this transformation.
+
 = McCarthy 91 function
 {parent=Recursion (computer science)}
 {c}
@@ -1122,6 +1422,11 @@ Halving the <input> is only one part of the design. The number of <recursive cal
 
 For <algorithm correctness>, specify the meaning of each returned answer, prove the <base cases>, and show that combining correct smaller answers gives the required <output>. <Induction> then proves correctness, provided every <recursive call> progresses towards a <base case>. The combination rule must reconstruct everything the caller needs: two sorted halves alone are not a <sorted array>, and four digit blocks alone are not their <integer> product.
 
+= Divide-and-conquer majority element
+{parent=Divide-and-conquer algorithm}
+
+An entry occurring strictly more than half the time in an <array> must occur strictly more than half the time in at least one half: otherwise the two frequency bounds sum to at most half the whole length. Recursively find each half's possible <majority element>, then verify at most two candidates over the whole subarray using only equality tests. <Induction> proves correctness, and linear combination work over a balanced <recursion> tree gives worst-case $\Theta(n\log n)$ time. A tagged absent result avoids confusing failure with a valid element.
+
 = CDQ divide and conquer
 {parent=Divide-and-conquer algorithm}
 {c}
@@ -1199,6 +1504,33 @@ $$
 i<j\ \text{and}\ k(A_i)=k(A_j)\quad\Longrightarrow\quad p(i)<p(j).
 $$
 Here $k$ is the <sort key> <function>. Sorting by the pair $(k(A_i),i)$ under <lexicographic order> gives the same order as <stable sorting> by $k$: the original position breaks ties without discarding associated data. For a two-field ordering, first apply <stable sorting> by the secondary <sort key>, then apply <stable sorting> by the primary <sort key>. The second pass retains the secondary order within each group of equal primary <sort keys>. For instance, $(2,B),(1,C),(2,A),(1,A)$ first becomes $(2,A),(1,A),(2,B),(1,C)$ by letter, then $(1,A),(1,C),(2,A),(2,B)$ by number.
+
+= Prefix reversal sorting
+{parent=Sorting algorithm}
+
+To sort a <permutation> using <prefix reversals>, work backwards through final positions. On an active prefix of length $m$, find its largest value. If it is already at the final position, shorten the active prefix. Otherwise move it to the front with one reversal if necessary, then reverse the entire active prefix to put it last. Already settled suffix positions are untouched.
+
+The settled suffix is a <loop invariant>, and active-prefix length decreases to one. This proves reachability of the identity <permutation> in at most $2(n-1)$ nontrivial flips. The construction is a finite upper bound, not a promise of minimum length; <breadth-first search> can find the minimum for small instances.
+
+= Selection sort
+{parent=Sorting algorithm}
+
+Selection sort repeatedly chooses a minimum element from the unprocessed collection and moves it to the next output position. After each step the output <string prefix> is sorted and no larger than any remaining element. Repeated linear minimum scans give quadratic worst-case time. A <linked list> implementation can detach and append existing nodes using constant auxiliary space while preserving duplicate elements. The sorted result is nondecreasing, not strictly increasing when duplicates occur.
+
+= Quicksort
+{parent=Sorting algorithm}
+
+A <divide-and-conquer algorithm> that partitions entries relative to a pivot, recursively sorts the smaller and larger partitions, and combines their results. A three-way partition keeps all equal keys in a central bucket. Correctness follows from the partition order and recursive correctness; excluding the pivot from child inputs provides decreasing finite lengths. The choice of pivot controls balance and therefore running time.
+
+= Three-way quicksort
+{parent=Quicksort}
+
+Partitioning into keys smaller than, equal to and greater than the pivot. Only the smaller and greater partitions need recursive sorting. Keeping the common partition helper in both a direct sorter and a tree-building factorisation ensures that flattening the tree introduces no extra key comparisons.
+
+= Bitonic sorting algorithm
+{parent=Sorting algorithm}
+
+A <divide-and-conquer algorithm> that sorts two halves, reverses one result to form a <bitonic sequence>, then performs a bitonic merge. For the shuffle-and-adjacent-comparison merging network on $n=2^k$ entries, $k$ passes each cost $\Theta(n)$, so merging costs $\Theta(n\log n)$. The complete <recurrence relation> is $T(n)=2T(n/2)+\Theta(n\log n)$, giving $\Theta(n(\log n)^2)$ time. A compare-exchange operation preserves the <multiset> of entries while putting its two selected entries in order.
 
 = Patience sorting
 {parent=Sorting algorithm}
@@ -1621,6 +1953,42 @@ The <loop invariant> is: the <array> stays sorted, $0\leq L\leq R+1\leq n$, and 
 For a nonempty range of size $s=R-L+1$, an unsuccessful comparison leaves at most $\lfloor s/2\rfloor$ candidates. Thus sizes satisfy $s_k\leq\lfloor n/2^k\rfloor$ after $k$ unsuccessful comparisons. This proves termination and, for $n\geq1$, at most $\lfloor\log_2 n\rfloor+1$ middle-entry comparisons. The final singleton still needs inspection: $n=1$ requires one comparison, not zero. For $n=15$, the bound is four. This is the halving argument behind logarithmic <time complexity>.https://www.cs.princeton.edu/courses/archive/fall24/cos126/static/lectures/42Algorithms.pdf[Princeton COS 126: binary search analysis]{ref}
 
 A <decision tree> with $q$ binary tests has at most $2^q$ leaves. Distinguishing $n$ possible matching positions therefore requires $q\geq\lceil\log_2 n\rceil$. This lower bound counts binary tests, whereas the bound above counts three-way comparisons.
+
+= Missing-value search by deficient value intervals
+{parent=Binary search}
+
+Suppose a candidate <integer interval> contains $W$ possible values and an active <array> segment contains exactly all occurrences from that interval, with $m<W$ entries. The <pigeonhole principle> guarantees a missing value. Split the value interval into widths $W_L,W_R$ and use <array partitioning> to obtain occurrence counts $m_L,m_R$. If $m_L<W_L$, retain the left side. Otherwise $m_R=m-m_L<W-W_L=W_R$, so retain the right side. This works with duplicate entries because it needs only the inequality between occurrences and possible values.
+
+Balancing the value widths gives $W_{i+1}\leq\lceil W_i/2\rceil$, while the active scan length remains less than $W_i$. The total work is bounded by a <geometric series> and logarithmic loop overhead, hence $O(W_0)$ <time complexity>. On reaching width one, the retained occurrence count is zero, proving that the sole candidate is absent globally. This is a <binary search> over deficient value intervals, with local in-place <array partitioning>, rather than repeated full-array scans.
+
+= Average successful search in a perfect binary search tree
+{parent=Binary search}
+{title2=$e_{2^k-1}=k-1+\frac{k}{2^k-1}$}
+
+For $n=2^k-1$ distinct keys and a uniformly chosen present target, early-return <binary search> takes mean $k-1+k/n$ iterations. There are $2^d$ targets needing $d+1$ probes, so sum $(d+1)2^d$ over depths zero through $k-1$ and divide by $n$. A boundary search that always closes the interval takes exactly $k$ iterations. Their expected difference is $1-k/n<1$, even though an individual shallow target can save many probes.
+
+= Descending boundary search
+{parent=Binary search}
+{title2=$u[0..a)>z\geq u[b..n)$}
+
+For a nonincreasing <array>, maintain indices $0\leq a\leq b\leq n$ such that entries before $a$ exceed the target and entries from $b$ onward are at most the target. Probe the middle of the half-open interval. A value above the target advances $a$ past that index; otherwise <set> $b$ to that index. The interval length decreases geometrically. At termination the common boundary is the first possible match, so one guarded equality test decides presence even with duplicates.
+
+= Sign-bracketing binary search
+{parent=Binary search}
+{title2=$f(l)\leq0<f(r)$}
+
+Suppose <integer> endpoints satisfy $l<r$ and $f(l)\leq0<f(r)$. Repeatedly test an interior midpoint and replace the endpoint with its matching sign. The <loop invariant> is the ordered opposite-sign bracket. The positive <integer> width is a <loop variant>, and at termination $r=l+1$. Thus an adjacent sign transition can be located in $O(\log(r-l))$ evaluations without assuming that $f$ is monotone. If $f$ extends continuously between the endpoints, the <intermediate value theorem> associates the sign bracket with a zero. This is different from finding the first true position of a globally monotone predicate.
+
+= Distinct-index two-sum by suffix lower bounds
+{parent=Binary search}
+
+For each candidate first index $i$ in a <sorted array>, use <lower-bound search> for $t-a(i)$ only in the suffix starting at $i+1$. A matching result is automatically at a different position. The outer <loop invariant> excludes all solutions whose smaller index precedes $i$; an unsuccessful suffix search extends this exclusion by one. Exhaustion proves absence of any pair. Searching all suffixes gives $O(N\log(N+1))$ <running time> and constant <auxiliary space>. Compute the complement in a sufficiently wide type to avoid <integer overflow> before comparison.
+
+= Lower-bound search
+{parent=Binary search}
+{title2=$p=\min(\{i:a(i)\geq x\}\cup\{N\})$}
+
+For a nondecreasing <sorted array> $a[0..N)$ and target $x$, find the unique position $p\in[0,N]$ such that every earlier value is below $x$ and every later value is at least $x$. Equivalently, $p=\min(\{i\in[0,N):a(i)\geq x\}\cup\{N\})$. Uniqueness follows because, if $p<q$ both satisfied the partition, $a(p)$ would have to be both at least $x$ and below $x$. A half-open search interval maintains an excluded prefix of smaller values and an excluded suffix of greater-or-equal values. Allowing the sentinel $N$ handles an empty array or a target beyond its last entry.
 
 = Karatsuba multiplication
 {parent=Algorithm}

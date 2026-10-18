@@ -1,0 +1,726 @@
+= Digital systems, linear algebra, introduction to formal proof resit
+{scope}
+{title2=A10101W1}
+
+Solutions to all eight questions of the 7 September 2022 resit. https://www.whatdotheyknow.com/request/ba_computer_science_past_papers/response/2577745/attach/2/202402%20183%20CS%20Papers.zip?cookie_passthrough=1[Released Oxford examination archive], member `2021/L/a10101w1.pdf`. The dated cover establishes the year despite the undated held filename and misleading archive directory. The <Thumb instruction set> listings assume the 32-bit <AAPCS32> data layout; the timer calculation in Question 2 corrects a numerical slip in the paper.
+
+== 1
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Use `r0` for the argument and result. With 32-bit <integers> and <pointers>, the three fields have byte offsets 0, 4 and 8. Assume an acyclic finite <binary tree>, no concurrent mutation, a valid aligned <call stack>, and no signed <integer overflow> in any evaluated sum. These are representation and arithmetic assumptions, rather than properties of arbitrary <C programming language> implementations.
+
+```
+.syntax unified
+.cpu cortex-m0
+.thumb
+.global sum_rec
+.thumb_func
+sum_rec:
+    cmp  r0, #0
+    beq  .Lempty
+    push {r4, r5, r6, lr}    @ 16-byte frame; r6 is alignment padding
+    movs r4, r0              @ retain this invocation's node
+    ldr  r5, [r4, #0]        @ running value begins with its label
+    ldr  r0, [r4, #4]
+    bl   sum_rec             @ r0 = left subtree sum
+    adds r5, r5, r0
+    ldr  r0, [r4, #8]
+    bl   sum_rec             @ r0 = right subtree sum
+    adds r0, r0, r5
+    pop  {r4, r5, r6, pc}    @ restore caller state and return
+.Lempty:
+    movs r0, #0
+    bx   lr
+```
+
+The node and partial sum are held in <callee-saved registers> `r4,r5`. Each recursive invocation saves its caller's values before replacing them, so a child returns with the parent's values intact. Saving `lr` preserves the return address across the two `bl` instructions. <Caller-saved registers> may be overwritten by a child; no parent value is left live only in them. Pushing four words maintains eight-byte <stack alignment> at recursive calls.<Procedure Call Standard for the Arm Architecture by ARM Limited>[AAPCS32, base standard: core-register roles, stack constraints and result return]{ref}
+
+Correctness follows by <structural induction>. An empty subtree returns zero. For a nonempty subtree, assume both recursive calls return their respective label sums. The final addition then combines the node's label with exactly those two sums, so **`r0` returns the sum of all labels**. The instruction forms and field offsets fit the short load and arithmetic encodings.<Thumb 16-bit instruction set quick reference by Arm>[Move, Add, Load, Push/Pop and Branch tables]{ref}
+
+=== b
+{scope}
+
+==== Solution
+
+Use an <explicit-stack depth-first tree traversal>. Descend the left branch immediately and put each nonempty right subtree on a <stack> for later. For the same node declarations as in the paper, an original <C programming language> implementation is:
+
+```
+int sum_iter(tree t)
+{
+    tree pending[32];
+    unsigned top = 0;
+    int total = 0;
+    while (t != NULL || top != 0) {
+        if (t == NULL) {
+            t = pending[--top];
+        } else {
+            total += t->data;
+            if (t->right != NULL)
+                pending[top++] = t->right;
+            t = t->left;
+        }
+    }
+    return total;
+}
+```
+
+The <loop invariant> says that the accumulated labels plus the sums of the current subtree and all pending subtrees equal the original tree sum, with the unvisited subtrees disjoint. Visiting a node adds its label and replaces its subtree by its two children. Popping merely changes which pending subtree is current. When both current and pending subtrees are absent, the invariant proves the result.
+
+At most one unvisited right sibling is pending at each level of the current ancestor path. If depth means the number of nonempty nodes on a longest root-to-leaf path, depth at most 32 requires at most 31 pending right siblings. A 32-word array is therefore sufficient; it also covers the convention that depth counts at most 32 edges. The depth promise makes unchecked pushes valid here. For arbitrary input, a production implementation should check capacity rather than overwrite its frame.
+
+A corresponding <Thumb instruction set> implementation keeps the total in `r4`, the array base in `r5`, and its next-free address in `r6`:
+
+```
+.global sum_iter_asm
+.thumb_func
+sum_iter_asm:
+    push {r4, r5, r6, lr}
+    sub  sp, sp, #128        @ 32 pending pointers
+    mov  r5, sp              @ base of pending array
+    mov  r6, sp              @ empty stack: next-free equals base
+    movs r4, #0
+.Lvisit:
+    cmp  r0, #0
+    beq  .Ltake_pending
+    ldr  r1, [r0, #0]
+    adds r4, r4, r1          @ consume this node's label
+    ldr  r1, [r0, #8]
+    cmp  r1, #0
+    beq  .Lleft
+    str  r1, [r6, #0]        @ defer the nonempty right subtree
+    adds r6, r6, #4
+.Lleft:
+    ldr  r0, [r0, #4]        @ continue down the left branch
+    b    .Lvisit
+.Ltake_pending:
+    cmp  r6, r5
+    beq  .Ldone
+    subs r6, r6, #4
+    ldr  r0, [r6, #0]
+    b    .Lvisit
+.Ldone:
+    movs r0, r4
+    add  sp, sp, #128
+    pop  {r4, r5, r6, pc}
+```
+
+The <stack pointer> stays fixed while the array is used; `r6` is a separate cursor inside that array. All <callee-saved registers> touched by the function are restored. **Each nonempty node contributes its label exactly once.** As in part (a), require that every partial total fits the signed result type; a representable final answer alone does not prevent overflow in a different summation order.
+
+=== c
+{scope}
+
+==== Solution
+
+Let $N$ be the number of nonempty nodes and $d$ the maximum number on a root-to-leaf path. Both listings take **$\Theta(N)$ time** on a unit-cost machine: each node is visited once and its three fields are read once. The recursive listing executes two child calls per nonempty node, including calls on empty children; there are $2N+1$ invocations in total. It saves and restores four words for every nonempty invocation. The iterative listing has one function frame, no recursive calls, and one push/pop pair per deferred nonempty right subtree. Thus it removes repeated call/return and frame-transfer overhead, although its extra loop tests also cost instructions. Exact cycle comparisons need a specified processor, memory timing and compiler; an optimizing compiler may alter either implementation.
+
+For these particular <assembly language> listings, the recursive <call stack> uses $16d$ bytes above the caller's frame; empty calls allocate no additional frame. The iterative listing uses a fixed $128+16=144$ bytes, even for a shallow or empty tree. With $d\leq32$, the recursive maximum is 512 bytes, versus 144 bytes for this fixed-array iteration. If the promised depth of 32 instead counts edges, the recursive bound is $16\cdot33=528$ bytes; the same 32-word pending array still suffices. Conversely, for $d\leq8$ recursion uses at most 128 bytes and is smaller than the fixed array. When sized dynamically to depth, both approaches use $O(d)$ auxiliary storage, but their stored information differs: full suspended invocation state versus pending subtree roots. Therefore **recursion is not intrinsically always slower or larger**; the claim depends on generated code, tree shape and the choice to reserve a maximum-size explicit array.
+
+== 2
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Keep successive timestamps in raw unsigned ticks, and convert their modular difference to milliseconds only after subtraction. The first pulse establishes a timestamp; it does not create a fictitious interval from startup. Store valid intervals in a five-element <ring buffer>. During startup, average the one to four intervals actually available; return zero until there is at least one valid interval. Here zero is explicitly an unavailable-data sentinel.
+
+The following <C programming language> code uses the supplied register names through an abstract <memory-mapped input-output> register interface. The board port supplies the actual register mapping and interrupt vector; no undocumented addresses are assumed. The two interrupt-mask hooks have the exact semantics described below and are interface requirements, not names asserted to exist in an unspecified device library.
+
+```
+#include <stdint.h>
+#include <stdbool.h>
+
+struct gpio_registers { volatile uint32_t EVENT; };
+struct timer_registers { volatile uint32_t COUNT; };
+extern struct gpio_registers GPIO;
+extern struct timer_registers TIMER;
+
+uint32_t irq_save_disable(void);
+void irq_restore(uint32_t old_mask);
+
+static volatile uint32_t interval_ms[5];
+static volatile uint32_t next_slot = 0;
+static volatile uint32_t valid = 0;
+static volatile uint32_t previous_tick = 0;
+static volatile bool have_previous = false;
+
+void gpio_handler(void)
+{
+    if (GPIO.EVENT == 0)
+        return;
+    uint32_t now = TIMER.COUNT;
+    GPIO.EVENT = 0;                 /* acknowledge with the specified write */
+    if (have_previous) {
+        uint32_t ticks = now - previous_tick;
+        interval_ms[next_slot] = ticks / UINT32_C(16000);
+        next_slot = (next_slot + 1) % 5;
+        if (valid < 5)
+            ++valid;
+    } else {
+        have_previous = true;
+    }
+    previous_tick = now;
+}
+
+uint32_t get_pulse(void)
+{
+    uint32_t local[5];
+    uint32_t mask = irq_save_disable();
+    uint32_t n = valid;
+    for (uint32_t i = 0; i < n; ++i)
+        local[i] = interval_ms[i];
+    irq_restore(mask);             /* restore the earlier mask, not just enable */
+
+    if (n == 0)
+        return 0;
+    uint64_t total = 0;
+    for (uint32_t i = 0; i < n; ++i)
+        total += local[i];
+    if (total == 0)
+        return 0;
+    /* Mean duration is total/n milliseconds; round bpm to nearest integer. */
+    return (uint32_t)((UINT64_C(60000) * n + total / 2) / total);
+}
+```
+
+Before the buffer fills, its valid entries occupy positions $0,\ldots,n-1$. Once full, all five positions are valid, so their order is irrelevant to their sum. The conversion uses 16,000 ticks per millisecond. Truncating each interval introduces less than one millisecond of error per interval. The desired conversion is **$60000n/\sum_i\Delta_i$ beats per minute**, the reciprocal of the mean interval; averaging the individual values $60000/\Delta_i$ is generally different.
+
+`irq_save_disable` saves the previous interrupt mask and prevents the GPIO handler from running until `irq_restore` restores that mask. Both hooks must include compiler memory barriers. On an appropriate privileged Cortex-M target, the implementation can use `MRS PRIMASK`, `CPSID i` and `MSR PRIMASK`, with a compiler memory clobber. These target operations implement <interrupt masking>; they are not expressible as portable ISO C alone. One concrete GCC/Clang-compatible privileged Cortex-M port for those hooks is:
+
+```
+uint32_t irq_save_disable(void)
+{
+    uint32_t old_mask;
+    __asm__ volatile ("mrs %0, primask\n\tcpsid i"
+                      : "=r" (old_mask) : : "memory");
+    return old_mask;
+}
+
+void irq_restore(uint32_t old_mask)
+{
+    __asm__ volatile ("msr primask, %0"
+                      : : "r" (old_mask) : "memory");
+}
+```
+
+The compiler memory clobbers prevent access motion across the mask changes. Saving and restoring the entire prior mask is intentional; an unconditional enable would break an enclosing <critical section>.<CMSIS-Core register access documentation by Arm>[PRIMASK, __get_PRIMASK, __disable_irq and __set_PRIMASK]{ref}
+
+All state is initialized before enabling the peripheral interrupt. Assume the timer read is coherent, the handler is not reentered, and the device follows the stated write-zero acknowledgment semantics.
+
+=== b
+{scope}
+
+==== Solution
+
+The <interrupt handler> is the only writer of `interval_ms`, `valid` and `next_slot`. The foreground function takes an <interrupt-safe ring-buffer snapshot> inside a short <critical section>, copying the count and exactly that many valid entries before restoring the previous mask. It performs the comparatively expensive summation and division after interrupts are restored. A new pulse then affects the next query, while the current query consistently describes the earlier snapshot.
+
+Without exclusion, the foreground could read an old entry, be interrupted while the buffer is updated, then read new entries or an inconsistent count. Even indivisible 32-bit loads would not make that multi-element snapshot atomic. The <volatile-qualified objects in C> ensure that the compiler performs required shared or device accesses; `volatile` **does not provide mutual exclusion or a coherent multiword snapshot**.<C11 committee draft N1570>[Sections 5.1.2.3 and 6.7.3, observable volatile accesses and type qualifiers]{ref}
+
+This design assumes a single-core foreground/interrupt execution model: no other interrupt, DMA engine or core modifies the protected buffer. The mask hooks must prevent compiler reordering across their boundaries and really mask the GPIO interrupt. Restoring the saved mask also makes the function safe to call when interrupts were already disabled. Keep the <critical section> short enough that the event register does not coalesce multiple heartbeats while interrupts are masked; otherwise the hardware interface cannot reconstruct events it never recorded.
+
+=== c
+{scope}
+
+==== Solution
+
+A 32-bit free-running timer operates modulo $M=2^{32}$. If its previous reading is $p$, and the actual elapsed count is $d$ with $0\leq d<M$, the new reading is $(p+d)\bmod M$. The <modulo-counter elapsed-time identity> therefore gives
+$$
+\boxed{(\texttt{uint32\_t})(\texttt{now}-\texttt{previous\_tick})=d.}
+$$
+<Unsigned integer arithmetic in C> reduces the subtraction modulo $2^{32}$, so the identity remains valid when a wrap occurs between pulses. For example, readings $2^{32}-8000$ and $8000$ give 16,000 ticks, hence one millisecond, rather than a negative interval.<C11 committee draft N1570>[Section 6.2.5 paragraph 9, unsigned arithmetic modulo one greater than the maximum representable value]{ref}
+
+At the specified clock rate, **the true wrap period is $2^{32}/16{,}000{,}000=268.435456$ seconds**. The printed 256 seconds is inconsistent with the other two specifications. The implementation uses the stated 32-bit width and 16 MHz rate. Assuming consecutive handled pulses are less than 256 seconds apart is a sufficient conservative bound; the exact allowable bound is less than 268.435456 seconds.
+
+This calculation requires less than one entire timer modulus of elapsed ticks between successive stored timestamps. If a whole wrap or several wraps elapse, identical register readings cannot reveal how many occurred; an overflow counter or an independent longer-range clock would be needed. Also assume pulse events are not lost and interrupt latency is constant or sufficiently small for the required accuracy: timestamps read in software measure handler-to-handler intervals, not perfect hardware capture times. Conversion to milliseconds occurs after modular subtraction, so separately rounded absolute timestamps cannot corrupt the wrap calculation.
+
+== 3
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+The lower <NMOS transistor> network conducts through either the $a,b$ series branch or the $b,c$ series branch. Complete the upper <PMOS transistor> network by the series-parallel dual: between $V_{dd}$ and an intermediate node put $p(a)$ and $p(b)$ in parallel, and between that node and $z$ put $p(b)$ and $p(c)$ in parallel. There are **four upper transistors**, complementing the four lower transistors. Use the usual body ties to the corresponding supply rails. Each $p(x)$ denotes a <PMOS transistor> controlled by input $x$, so it conducts when $x=0$.
+
+The upper conducting condition is $(\neg a\lor\neg b)\land(\neg b\lor\neg c)$, exactly the complement of $ab\lor bc$. Thus for every stable input the output has a conducting path to exactly one rail in the ideal static <CMOS> model. The left panel below specifies the added network independently of the source drawing; join its lower terminal to the existing output.
+
+\Image[digital-systems-linear-algebra-introduction-to-formal-proof-resit-cmos.png]
+{title=Original solution schematics: the required four-device pull-up network, and a factored six-transistor realization of the same gate. Bubbles identify PMOS gates.}
+
+=== b
+{scope}
+
+==== Solution
+
+The pull-down <Boolean function> is $ab\lor bc=b(a\lor c)$. A conducting pull-down makes $z=0$, so
+$$
+\boxed{z=\neg\bigl(b\land(a\lor c)\bigr)=\neg b\lor(\neg a\land\neg c).}
+$$
+In particular, if $b=0$ the output is always high; if $b=1$, the output is high precisely when both other inputs are low. These cases give the <truth table> without confusing a network's conducting condition with the output voltage.
+
+=== c
+{scope}
+
+==== Solution
+
+Factor the common input before constructing the networks. Use an <NMOS transistor> controlled by $b$ in series with parallel <NMOS transistors> controlled by $a$ and $c$. Its conducting condition remains $b(a\lor c)$. The complementary upper network is a <PMOS transistor> controlled by $b$ in parallel with a series chain of <PMOS transistors> controlled by $a$ and $c$; its conducting condition is $\neg b\lor\neg a\neg c$.
+
+This is the right panel in part (a). It uses **three lower plus three upper transistors, six in total instead of eight**, and needs no separate inverter or complemented external input. The <complementary CMOS network duality> ensures the same static <Boolean function> and complementary rail connections.
+
+=== d
+{scope}
+
+==== Solution
+
+Use a <synchronous sequential circuit> with four <Moore machine> states. $R$ is ready, $P$ is the one-cycle pulse state, $D$ is disabled with no qualifying final zero, and $Z$ is disabled after one sampled zero. Reset into $R$, so an initial sampled high generates a pulse immediately. The complete transition/output table is:
+
+|| State
+|| Code $q_1q_0$
+|| Next if $a=0$
+|| Next if $a=1$
+|| $z$
+
+| $R$
+| $00$
+| $R$
+| $P$
+| $0$
+
+| $P$
+| $10$
+| $Z$
+| $D$
+| $1$
+
+| $D$
+| $11$
+| $Z$
+| $D$
+| $0$
+
+| $Z$
+| $01$
+| $R$
+| $D$
+| $0$
+
+A particularly small implementation uses two <D flip-flops> with the next-state equations
+$$
+\boxed{q_1^+=a,\qquad q_0^+=q_1\lor(q_0\land a),\qquad z=q_1\land\neg q_0,\qquad(q_1,q_0)_{\rm reset}=(0,0).}
+$$
+Both <D flip-flops> share the clock; their outputs feed the displayed <logic gates>. The output depends only on the stored state, not combinationally on the external input. At each edge, evaluate the right-hand sides using the old state and the sampled input, then update both flip-flops together. The resulting $z$ applies throughout the following clock period.
+
+From $R$, a high enters $P$. The next edge always leaves $P$, so the pulse lasts exactly one period. In the disabled states, a high leads to $D$ and erases progress towards rearming. A zero enters $Z$, and a second successive zero enters $R$. A later high can then enter $P$. This proves both the two-zero requirement and the startup exception. For example, sampled inputs $1,1,0,1,0,0,1,0,0,1$ yield outputs $1,0,0,0,0,0,1,0,0,1$.
+
+\Image[digital-systems-linear-algebra-introduction-to-formal-proof-resit-rearming.png]
+{title=Original Moore-state design and clocked example for the two-zero rearming pulse detector. State and output are shown after each sampling edge.}
+
+The construction is a <synchronous pulse detector with two-zero rearming>. Assume $a$ meets setup/hold requirements at the sampling edges. A genuinely asynchronous input would first require synchronization, with its associated latency; that is separate from this sampled-input specification.
+
+== 4
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+The update must place the sum of the two current entries in the first coordinate and retain the old first coordinate in the second. Thus choose the <matrix>
+$$
+\boxed{A=\begin{pmatrix}1&1\\1&0\end{pmatrix}.}
+$$
+By <matrix multiplication>, $A(L_n,L_{n-1})^T=(L_n+L_{n-1},L_n)^T=(L_{n+1},L_n)^T$ for every $n\geq1$, using the given <recurrence relation>. This is the companion-matrix representation of the <Lucas numbers>.
+
+=== b
+{scope}
+
+==== Solution
+
+Use <mathematical induction> on $n$. For $n=0$, the identity <matrix> gives $(1,2)^T=(L_1,L_0)^T$. If $A^n(1,2)^T=(L_{n+1},L_n)^T$, applying $A$ and using part (a) gives $A^{n+1}(1,2)^T=(L_{n+2},L_{n+1})^T$. Therefore
+$$
+\boxed{A^n\begin{pmatrix}1\\2\end{pmatrix}=\begin{pmatrix}L_{n+1}\\L_n\end{pmatrix}\quad(n\geq0).}
+$$
+The base case is essential: the starting vector represents consecutive <Lucas numbers>, not two arbitrary initial values.
+
+=== c
+{scope}
+
+==== Solution
+
+The <characteristic polynomial> is
+$$
+\det(tI-A)=\det\begin{pmatrix}t-1&-1\\-1&t\end{pmatrix}=t^2-t-1.
+$$
+Its two distinct real roots are the <eigenvalues>
+$$
+\boxed{\varphi=\frac{1+\sqrt5}{2}>0,\qquad \psi=\frac{1-\sqrt5}{2}<0.}
+$$
+Their product is $-1$, so $\psi=-1/\varphi$. Equivalently, $\varphi^2=\varphi+1$ implies $1/\varphi=\varphi-1$. The positive <eigenvalue> is the <golden ratio>.
+
+=== d
+{scope}
+
+==== Solution
+
+For an <eigenvalue> $t\in\{\varphi,\psi\}$, the equation $A(x,y)^T=t(x,y)^T$ gives $x=ty$ and $(t+1)y=t^2y$. The second identity holds because $t^2=t+1$. Taking $y=1$ gives the <eigenvectors>
+$$
+\boxed{v_\varphi=\begin{pmatrix}\varphi\\1\end{pmatrix},\qquad v_\psi=\begin{pmatrix}\psi\\1\end{pmatrix}.}
+$$
+Each associated <eigenspace> consists of all scalar multiples of its displayed vector. A zero vector is excluded when speaking of an <eigenvector>.
+
+=== e
+{scope}
+
+==== Solution
+
+The requested order is $A=P^{-1}DP$. To obtain this order directly, put the transposes of the two <eigenvectors> in the rows of $P$, using the fact that $A$ is symmetric:
+$$
+\boxed{P=\begin{pmatrix}\varphi&1\\\psi&1\end{pmatrix},\qquad D=\begin{pmatrix}\varphi&0\\0&\psi\end{pmatrix}.}
+$$
+Then $\det P=\varphi-\psi=\sqrt5\ne0$, so $P$ is an <invertible matrix>, with
+$$
+P^{-1}=\frac1{\sqrt5}\begin{pmatrix}1&-1\\-\psi&\varphi\end{pmatrix}.
+$$
+Multiplication gives $PA=\bigl(\begin{smallmatrix}\varphi+1&\varphi\\\psi+1&\psi\end{smallmatrix}\bigr)=DP$, since $\varphi^2=\varphi+1$ and $\psi^2=\psi+1$. Multiplying by $P^{-1}$ proves the required <diagonalization>. Putting the <eigenvectors> in columns would instead give the equally standard order $A=QDQ^{-1}$, so the convention must be checked rather than copied mechanically.
+
+=== f
+{scope}
+
+==== Solution
+
+The initial vector decomposes especially simply in the <eigenbasis>:
+$$
+\begin{pmatrix}1\\2\end{pmatrix}=v_\varphi+v_\psi,
+$$
+because $\varphi+\psi=1$. Applying $A^n$ multiplies the two <eigenvectors> by $\varphi^n$ and $\psi^n$. Part (b) then yields
+$$
+\begin{pmatrix}L_{n+1}\\L_n\end{pmatrix}=\varphi^n\begin{pmatrix}\varphi\\1\end{pmatrix}+\psi^n\begin{pmatrix}\psi\\1\end{pmatrix}.
+$$
+Reading the second coordinate gives the <Lucas closed form>
+$$
+\boxed{L_n=\varphi^n+\psi^n=\left(\frac{1+\sqrt5}{2}\right)^n+\left(\frac{1-\sqrt5}{2}\right)^n\quad(n\geq0).}
+$$
+At $n=0$ this is 2 and at $n=1$ it is 1. Each summand obeys the same <recurrence relation>, which independently verifies the formula and explains why the irrational parts cancel to give an <integer>.
+
+== 5
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Choose **$A=I_2$ and $B=3I_2$**. Then $AB=3I_2=A^2+A+I_2$. Both are real $2\times2$ <matrices>, as required.
+
+=== b
+{scope}
+
+==== Solution
+
+Rearrange the identity into
+$$
+A(B-A-I)=I.
+$$
+Taking <determinants> gives $\det A\,\det(B-A-I)=1$. Hence $\det A\ne0$, so **$A$ is an <invertible matrix>**, with $A^{-1}=B-A-I$. This uses that the <matrices> are finite and square: a right inverse then implies a two-sided inverse. Applying the identity to a vector in the <kernel> without first establishing commutation would not justify cancelling an $A$ on the wrong side. The argument is a case of <invertibility forced by a polynomial product identity>.
+
+=== c
+{scope}
+
+==== Solution
+
+Multiply the original equation on the left by $A^{-1}$ to obtain
+$$
+B=A+I+A^{-1}.
+$$
+Each term on the right commutes with $A$. Thus
+$$
+\boxed{BA=A^2+A+I=AB.}
+$$
+No general commutativity of <matrix multiplication> is being assumed; it follows from this particular expression for $B$.
+
+=== d
+{scope}
+
+==== Solution
+
+Let $Av=\lambda v$ for a real <eigenvalue> $\lambda$ and a nonzero real <eigenvector> $v$. Part (b) gives $\lambda\ne0$ and $A^{-1}v=\lambda^{-1}v$. The expression for $B$ in part (c) therefore gives
+$$
+Bv=(A+I+A^{-1})v=(\lambda+1+\lambda^{-1})v.
+$$
+Consequently **$\lambda+1+\lambda^{-1}$ is a real <eigenvalue> of $B$**, with the same <eigenvector> $v$. For a real <matrix> and real <eigenvalue>, a nonzero real vector can be chosen in the real <kernel> of $A-\lambda I$; no complex-vector assumption is needed.
+
+=== e
+{scope}
+
+==== Solution
+
+For scalar $a=A\ne0$, part (c) gives
+$$
+B=\frac{a^2+a+1}{a}=\frac{(a+\tfrac12)^2+\tfrac34}{a}.
+$$
+The numerator is strictly positive for every real $a$, and the denominator is nonzero. Therefore **$B\ne0$ and hence $B$ is invertible**. This proof uses the order structure of the real scalars; it does not say that the <matrix> $A^2+A+I$ must be nonsingular in higher dimension.
+
+=== f
+{scope}
+
+==== Solution
+
+An integer-entry example is
+$$
+\boxed{A=\begin{pmatrix}0&-1\\1&-1\end{pmatrix}.}
+$$
+Direct <matrix multiplication> gives $A^2=\bigl(\begin{smallmatrix}-1&1\\-1&0\end{smallmatrix}\bigr)$, so adding $A$ and $I_2$ gives the zero <matrix>. Equivalently, this is the <companion matrix> of $t^2+t+1$ and has the two nonreal cube roots of unity as <eigenvalues>. The direct multiplication is already a complete proof. It also shows why part (e) does not extend to all real square <matrices>: with this $A$, choosing $B=0$ satisfies the original product identity.
+
+== 6
+{scope}
+
+=== a
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+For $u=(1,1,1)^T$, the <all-ones matrix> is $A=uu^T$, so $Au=3u$ and $Av=0$ whenever $v_1+v_2+v_3=0$. These subspaces have dimensions one and two and span $\mathbb R^3$. Thus **the <eigenvalues> are $3$ and $0$**.
+
+==== ii
+{scope}
+
+===== Solution
+
+The <eigenspace> for 3 has <basis> $\{(1,1,1)^T\}$. The <eigenspace> for 0 is the plane $v_1+v_2+v_3=0$, with <basis>
+$$
+\boxed{E_3=\operatorname{span}\{(1,1,1)^T\},\qquad E_0=\operatorname{span}\{(1,0,-1)^T,(0,1,-1)^T\}.}
+$$
+The last two vectors are linearly independent and every vector in the plane equals $v_1(1,0,-1)^T+v_2(0,1,-1)^T$.
+
+=== b
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+Assume $n\geq1$. With $u=(1,\ldots,1)^T$, the <all-ones matrix> satisfies $Av=(\sum_jv_j)u$. Hence **$n$ is an <eigenvalue>, and for $n\geq2$ the other <eigenvalue> is $0$**. At $n=1$ the <matrix> is $[1]$, so 1 is its only <eigenvalue>; zero is not an <eigenvalue> with a nonzero <eigenvector> in that case.
+
+==== ii
+{scope}
+
+===== Solution
+
+A <basis> of $E_n$ is $\{u\}$. For $n\geq2$,
+$$
+\boxed{E_0=\{v:\sum_jv_j=0\}=\operatorname{span}\{e_1-e_n,\ldots,e_{n-1}-e_n\}.}
+$$
+The displayed vectors are linearly independent by their first $n-1$ coordinates, and every vector with zero coordinate sum has exactly that expansion. At $n=1$ this list is empty and the <kernel> is $\{0\}$; it is not an additional <eigenspace> associated with a present <eigenvalue>. This is the <spectrum of an all-ones matrix>.
+
+==== iii
+{scope}
+
+===== Solution
+
+The decomposition into $\operatorname{span}\{u\}$ and the zero-sum <vector subspace> gives <characteristic polynomial> $t^{n-1}(t-n)$. For $n\geq2$, **$n$ has <algebraic multiplicity> and <geometric multiplicity> one; zero has both multiplicities $n-1$**. At $n=1$, only the <eigenvalue> 1 occurs, with both multiplicities one. Referring to a multiplicity zero for the absent root zero is merely a bookkeeping convention, not an assertion that it is an <eigenvalue>.
+
+==== iv
+{scope}
+
+===== Solution
+
+**The <all-ones matrix> is diagonalizable for every $n\geq1$.** The vector $u$ together with the $n-1$ vectors from part (ii) is an <eigenbasis>. Independence follows because a multiple of $u$ has coordinate sum $n$ times that multiple, whereas every other <basis> vector has coordinate sum zero. In this <basis> the <diagonal matrix> is $\operatorname{diag}(n,0,\ldots,0)$. At $n=1$ the one-vector <basis> suffices. Alternatively, the <spectral theorem for real symmetric matrices> applies. If dimension zero is allowed by the convention for $\mathbb N$, the empty $0\times0$ <matrix> has no <eigenvalues>, an empty <basis> and a vacuous <diagonalization>.
+
+=== c
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+If $B^k=0$ with $k\geq1$, put $S=I+B+\cdots+B^{k-1}$. The <matrix geometric series> telescopes on both sides:
+$$
+(I-B)S=S(I-B)=I-B^k=I.
+$$
+Thus **$I-B$ is nonsingular**, and
+$$
+\boxed{(I-B)^{-1}=\sum_{j=0}^{k-1}B^j.}
+$$
+This is a finite polynomial identity for a <nilpotent matrix>; no convergence argument or bound $\|B\|<1$ is required.
+
+==== ii
+{scope}
+
+===== Solution
+
+Write $B=QDQ^{-1}$ with $D$ a <diagonal matrix>. Then $0=B^k=QD^kQ^{-1}$, so each diagonal entry $\lambda_i$ satisfies $\lambda_i^k=0$ and therefore $\lambda_i=0$. Hence $D=0$ and **$B=0$**. Conversely the zero <matrix> is diagonalizable and nilpotent. This proves the existing result that <a diagonalizable nilpotent matrix is zero>; nilpotence alone does not imply a zero <matrix>, because nonzero nilpotent Jordan blocks exist.
+
+== 7
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Reading the <abstract syntax tree> recursively gives the eight distinct <subformulas>
+$$
+\boxed{A,\ B,\ C,\ \neg A,\ \neg B,\ C\to\neg A,\ \neg B\land(C\to\neg A),\ A\lor(\neg B\land(C\to\neg A)).}
+$$
+A <subformula> includes the complete <propositional formula> itself as well as the operands of its connectives. There are nine occurrences in the <abstract syntax tree>, because the atomic formula $A$ occurs twice, but only eight different <propositional formulas> in the set.
+
+=== b
+{scope}
+
+==== Solution
+
+Eliminate the <logical implication> and apply <De Morgan's laws>:
+$$
+(A\lor B)\to(B\land C)\equiv\neg(A\lor B)\lor(B\land C)\equiv\boxed{(\neg A\land\neg B)\lor(B\land C).}
+$$
+This is <disjunctive normal form>: a <logical disjunction> of conjunctions of <literals>. It has four <literal> occurrences, namely $\neg A,\neg B,B,C$, meeting the stated bound.
+
+=== c
+{scope}
+
+==== Solution
+
+Repeated use of $U\to V\equiv\neg U\lor V$ yields
+$$
+\varphi_n\equiv\neg A_n\lor\neg A_{n-1}\lor\cdots\lor\neg A_2\lor A_1.
+$$
+This <logical disjunction> is false exactly when $A_2,\ldots,A_n$ are all true and $A_1$ is false. There is precisely one such <Boolean valuation> out of the $2^n$ assignments to the $n$ independent propositional variables. Thus **the number of <satisfying assignments> is $2^n-1$**. This is the <satisfying-assignment count for nested implications>; the implication brackets associate to the right here.
+
+=== d
+{scope}
+
+==== Solution
+
+Simultaneous <propositional substitution> gives
+$$
+\varphi S=((X\land Y)\to\neg(X\lor Y))\lor(\neg Y\land\neg(X\land Y)).
+$$
+Let $K=\neg(X\land Y)$. The first disjunct equals $K\lor\neg(X\lor Y)$. By <De Morgan's laws>, $\neg(X\lor Y)=\neg X\land\neg Y$ implies $K=\neg X\lor\neg Y$, so absorption reduces that first disjunct to $K$. The second disjunct is $\neg Y\land K$ and is also absorbed by $K$. Therefore
+$$
+\boxed{\varphi S\equiv\neg(X\land Y)\equiv\neg X\lor\neg Y.}
+$$
+The resulting <Boolean function> is false only when both $X$ and $Y$ are true, providing a four-row <truth table> check.
+
+=== e
+{scope}
+
+==== Solution
+
+Assume the <logical conjunction> temporarily, then eliminate the premise's <logical disjunction> by cases. A <natural deduction> proof, with each indented assumption delimiting its own subproof, is:
+
+```
+1.  not P or not Q                    premise
+2.  | P and Q                        temporary assumption
+3.  | P                              and-elim-L, 2
+4.  | Q                              and-elim-R, 2
+5.  | | not P                        first disjunction case
+6.  | | false                        not-elim, 3,5
+7.  | | not Q                        second disjunction case
+8.  | | false                        not-elim, 4,7
+9.  | false                          or-elim, 1, cases 5-6 and 7-8
+10. not (P and Q)                     not-intro, discharge 2-9
+```
+
+Lines 5–6 and 7–8 are separate sibling subproofs, not one nested inside the other. Both derive the same contradiction under the common assumption on line 2. <Logical disjunction> elimination discharges the two case assumptions, and <negation> introduction then discharges the <logical conjunction> assumption. The sole undischarged premise is the required one. This proof uses only the supplied <logical conjunction>, <logical disjunction> and <negation> rules; no converse form of <De Morgan's laws> is being assumed as an extra rule.
+
+== 8
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Using <first-order logic> with equality, one suitable sentence is
+$$
+\boxed{\exists e\,\bigl(Eq(e)\land\exists u\exists v\,[u\ne v\land Sol(e,u)\land Sol(e,v)\land\forall w\,(Sol(e,w)\to(w=u\lor w=v))]\bigr).}
+$$
+The distinct witnesses give at least two solutions, and the universal clause excludes every third solution. All <variables> are bound, and the same equation variable $e$ is used in every solution predicate. This is an instance of a <first-order definition of exactly finitely many witnesses>.
+
+=== b
+{scope}
+
+==== Solution
+
+On the universe $\mathbb Z$, interpret the <first-order signature> by
+$$
+\boxed{c_1^{\mathcal A}=c_2^{\mathcal A}=0,\quad f^{\mathcal A}(x,y)=x+y,\quad R_2^{\mathcal A}=\mathbb Z_{\geq0},\quad R_1^{\mathcal A}=\{(u,v)\in\mathbb Z^2:u\leq v\}.}
+$$
+This assigns both constants, a total binary function, a unary relation and a binary relation, so it specifies a complete <first-order structure>. If $R_2(x)$ and $R_2(y)$ both hold, then $x,y\geq0$, and hence $f(c_1,c_2)=0\leq x+y=f(x,y)$, proving the consequent. If either premise fails, the implication is true. Thus the universally quantified implication holds for every pair of <integers>, nonvacuously for every pair of nonnegative <integers>. Distinct constant symbols need not denote distinct objects unless a separate axiom requires it.
+
+=== c
+{scope}
+
+==== Solution
+
+Describe a branching vertex by the <first-order logic> sentence
+$$
+\beta=\exists x\exists y\exists z\,[E(x,y)\land E(x,z)\land y\ne z],
+$$
+and the existence of a sink by $\delta=\exists x\forall y\,\neg E(x,y)$. The directed path has sinks but no branching vertex; the directed cycle has neither sinks nor branching vertices; the directed arborescence has a branching vertex. Thus the following three sentences distinguish the named structures in order:
+$$
+\boxed{\varphi_1=\delta\land\neg\beta,\qquad\varphi_2=\forall x\exists y\,E(x,y),\qquad\varphi_3=\beta.}
+$$
+Here $\beta,\delta$ are abbreviations for the displayed formulas; replacing them gives sentences in the single-relation <first-order signature> $\{E\}$. Explicitly, $\varphi_1$ says that some vertex has no successor and that no vertex has two distinct successors. The <truth table> across the three structures is:
+
+|| Sentence
+|| $\mathcal G_1$
+|| $\mathcal G_2$
+|| $\mathcal G_3$
+
+| $\varphi_1$
+| $1$
+| $0$
+| $0$
+
+| $\varphi_2$
+| $0$
+| $1$
+| $0$
+
+| $\varphi_3$
+| $0$
+| $0$
+| $1$
+
+The conditions distinguish these three finite structures; they are not claimed to characterize all directed paths, cycles or trees among arbitrary <directed graphs>. Only local <out-degrees> and the presence of a sink are needed, without quantifying over paths of unbounded length.
+
+=== d
+{scope}
+
+==== Solution
+
+The occurrence of $y$ in $P(x,y)$ lies under the quantifier $\exists x$. Directly inserting the term $x+z$ would capture its free $x$: the result $\exists x\,P(x,x+z)$ would make the inserted $x$ bound and change the intended dependence on the original free value. Therefore the term is not free for the literal substitution requested.
+
+Perform <capture-avoiding first-order substitution> by first renaming <bound variables> to fresh names. Renaming the first binder to $u$ is necessary; renaming the second to $v$ is optional but makes the result especially clear. These renamings give the equivalent formula $(\exists u\,P(u,y))\lor(\exists v\,Q(v))$. Substituting only the free occurrences of $y$ now gives
+$$
+\boxed{(\exists u\,P(u,x+z))\lor(\exists v\,Q(v)).}
+$$
+Both $x$ and $z$ in the inserted term remain <free variables>. The original $\exists z$ has scope only over its own disjunct and would not capture the inserted $z$ in the first disjunct; its optional renaming is not a necessary capture repair. This distinction avoids confusing reuse of a letter elsewhere with binding within the relevant scope.
+
+=== e
+{scope}
+
+==== Solution
+
+First negate the implication, then move the <negation> through the existential quantifier and the <logical conjunction>:
+$$
+\begin{aligned}
+\neg\varphi
+&\equiv(\forall x\,P(x))\land\neg\exists y\,(Q(y)\land z<y)\\
+&\equiv\boxed{(\forall x\,P(x))\land\forall y\,(\neg Q(y)\lor\neg(z<y)).}
+\end{aligned}
+$$
+This is <negation normal form>, because each <negation> is immediately in front of an atomic predicate. The occurrence of $z$ remains free. Keeping $\neg(z<y)$ also avoids assuming any additional order axioms for the relation symbol $<$; if it has its usual linear-order interpretation, that atom can instead be expressed as $z\geq y$.

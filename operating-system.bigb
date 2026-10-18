@@ -7,6 +7,10 @@ A concrete example makes the separation useful: two <operating-system processes>
 
 <Unix> provides an influential example of this design. In their July 1974 paper, Dennis M. Ritchie and Ken Thompson date its earliest version to approximately 1969–70 and describe <operating-system processes>, a hierarchical <file system>, and <inodes> separating <directory entries> from <file metadata>. This is a documented historical example, rather than a claim that every <operating system> uses <Unix> conventions. https://www.cs.cmu.edu/~15712/papers/ritchie74.pdf[Ritchie and Thompson, The UNIX Time-Sharing System, Communications of the ACM 17(7), 1974, sections 1, 3 and 4]{ref}
 
+= Phōs
+{parent=Operating system}
+{c}
+
 = POSIX
 {parent=Operating system}
 {c}
@@ -82,6 +86,13 @@ A processor event attributable to instruction execution, such as a <page fault> 
 
 Software supplying device-specific operations behind an <operating system> interface. For these examples its responsibilities include <DMA> setup and completion handling, or checking status for <polled input-output>. https://pages.cs.wisc.edu/~remzi/OSTEP/file-devices.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 36, section 36.7: the driver abstraction]{ref}
 
+= Request-reply sensor conversion
+{parent=Device driver}
+
+A <device driver> protocol giving each accepted client request its own fresh hardware conversion. A single driver owns the device registers, queues requests, starts one conversion, waits for its completion, reads the result and replies to the identified requester before starting the next conversion. Sender identity and a per-call token prevent reply confusion. A <FIFO queue> prevents later accepted requests from overtaking earlier ones.
+
+Safety follows from at most one active conversion and exclusive register ownership. <Starvation freedom> additionally needs finite conversion time, eventual interrupt delivery, fair request acceptance and scheduling, and clients ready to receive their replies. These are progress assumptions, not consequences of <mutual exclusion> alone.
+
 = Interrupt
 {parent=Operating system}
 {wiki}
@@ -95,6 +106,24 @@ The usual device route is a request through an <interrupt controller>, architect
 The <CPU> and entry code preserve the state needed to resume interrupted execution, including the <instruction pointer>. Handling may enter a higher <processor privilege level> when interrupting ordinary program execution, but an <interrupt> can also arrive while privileged code is already running. The protected entry route and handler placement depend on the architecture and <operating system>; a <microkernel> need not place all <device driver> work where a <monolithic kernel> does. An <interrupt> entry is also distinct from a <context switch> to another <operating-system process>. https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-mechanisms.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 6, sections 6.2–6.3: protected entry, saved state and switching]{ref}https://docs.kernel.org/arch/x86/entry_64.html[Linux kernel documentation, Kernel Entries: entry from user mode and already executing kernel code]{ref}
 
 // Target: computer-science.bigb
+
+= Event counter
+{parent=Interrupt}
+
+An <event counter> records a number of observed events, unlike a <single-bit event latch> which records only whether any event occurred. A software <event counter> shared with an <interrupt handler> needs atomic updates or a suitable <critical section>. Its finite capacity imposes a maximum backlog unless overflow is handled explicitly.
+
+= Timer interrupt
+{parent=Interrupt}
+
+An <interrupt> requested by a <hardware timer>, for example when a free-running <digital counter> reaches a programmed comparison value. Scheduling the next deadline permits other work or sleep between timed state transitions.
+
+= Single-bit event latch
+{parent=Interrupt}
+
+= Event latch
+{synonym}
+
+A <single-bit event latch> remembers whether at least one event has occurred since it was cleared. It does not count how many events occurred: histories with one and two unacknowledged events produce the same visible state. Therefore no software reading only that state can distinguish those histories. Exact counting needs a minimum rearming interval assumption or richer hardware, such as a counter or queue.
 
 = Interrupt-driven input-output
 {parent=Interrupt}
@@ -110,11 +139,21 @@ The useful idea is to spend attention when something changes. Sparse events can 
 
 The <Linux kernel>'s NAPI mechanism is a concrete combination: an <interrupt> normally schedules event processing, which polls for work with a receive budget. Further <interrupts> remain masked during that polling, and are enabled again when polling finishes. NAPI also supports busy polling; the exact processing context and configuration vary. This is a documented <Linux kernel> design, not a requirement on every <operating system>. https://docs.kernel.org/networking/napi.html[Linux kernel documentation, NAPI: basic operation, datapath API, scheduling and IRQ masking]{ref}
 
+= Lost-wakeup avoidance
+{parent=Interrupt-driven input-output}
+
+A completion can occur after a device is started but before its driver begins waiting. Preserve that completion in a pending notification or use an atomic condition-check-and-wait operation. Establish the interrupt route before starting the device, and clear stale status before the new start, not afterwards. Otherwise a fast completion can be erased and a completed request can wait indefinitely.
+
 = Interrupt handler
 {parent=Interrupt}
 {wiki}
 
 Code entered to handle an <interrupt>. It identifies and acknowledges relevant device state and arranges service, possibly deferring work. The <Linux kernel>'s generic flow layer and <device driver> callback have distinct responsibilities. https://docs.kernel.org/core-api/genericirq.html[Linux kernel documentation, generic IRQ handling: interrupt control flow and default flow implementations]{ref}
+
+= Shared interrupt demultiplexing
+{parent=Interrupt handler}
+
+When several devices share an <interrupt>, the handler examines each device's pending status and acknowledges every active source. Separate tests allow simultaneous requests to be serviced. A source becoming pending during the scan must cause another <interrupt> or be found by a justified rescan; the necessary behaviour depends on the <interrupt controller> and device protocol.
 
 = Interrupt controller
 {parent=Interrupt}
@@ -333,6 +372,18 @@ For example, B first runs at time 2 under <round-robin scheduling>, so its <sche
 
 The appeal is that shared progress can improve responsiveness: B and C get their first <CPU> service sooner under <round-robin scheduling>, while A completes later. The <arithmetic mean> of the <scheduling response times> falls from $10/3$ to $1$; the <arithmetic mean> of the <scheduling turnaround times> is $19/3$ for both policies in this particular example. These are different goals, and this workload establishes no universal ranking. Giving each continuously runnable task repeated turns is a practical form of fairness. A smaller <scheduling quantum> can shorten waits between turns, but makes <context switches> more frequent when competitors remain runnable. If each full slice performs $q$ units of useful work and incurs a fixed switching cost $s$, the overhead fraction in that simplified repeated cycle is $s/(q+s)$. Real costs and workloads determine the choice. https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched.pdf[Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau, Operating Systems: Three Easy Pieces, chapter 7, sections 7.2–7.3 and 7.6–7.7: metrics, FCFS and round robin]{ref}
 
+= Priority scheduling
+{parent=Process scheduling}
+
+A <process scheduling> policy that prefers runnable <operating-system processes> with higher assigned priority. With <scheduling preemption>, urgent service work can displace a running background task. Bounded response still requires bounded higher-priority work and adequate CPU capacity; continuously runnable high-priority work can deny lower-priority work progress.
+
+= Nonpreemptive strict-priority arbitration
+{parent=Process scheduling}
+
+At each service decision, choose the highest-priority pending request, preserving <FIFO queue> order within a priority class. A running owner retains the resource until it releases it; a higher-priority arrival changes the next choice rather than interrupting current work. Two priority classes can be represented by two <FIFO queues>, consulting the urgent one first.
+
+This policy preserves the ownership safety argument of a <message-passing mutual exclusion server>. It does not by itself give <starvation freedom> to lower-priority requests when higher-priority traffic can continue indefinitely. Priority is evaluated on requests known to the arbiter at the decision point; a message not yet received cannot influence that decision.
+
 = Ready queue
 {parent=Process scheduling}
 
@@ -479,6 +530,31 @@ A dependence of behavior on the relative timing or ordering of concurrent activi
 
 Coordinating concurrent activities so that required ordering and visibility rules hold. <Mutual exclusion> is one form of <synchronization>; waiting for another <software thread> to finish is another.
 
+= Lost wake-up
+{parent=Synchronization (computing)}
+
+A <lost wake-up> occurs when a notification arrives after a worker checks for work but before it safely starts waiting, so the worker sleeps despite available work. Avoid it by coupling the condition check with the wait protocol, or by using a persistent notification that is checked atomically with entering sleep. A queue test followed by an unrelated sleep instruction is insufficient.
+
+= Message passing
+{parent=Synchronization (computing)}
+
+<Operating-system processes> communicate by sending and receiving messages. A <message-passing mutual exclusion server> can centralize ownership of a shared resource: clients request permission, wait for a grant, and release the resource when finished. Correctness depends on an explicit delivery and failure model; reliable delivery and compliant clients suffice for the basic ownership protocol.
+
+= Head-of-line blocking
+{parent=Message passing}
+
+Delay to otherwise serviceable work because a preceding operation cannot complete. A timer service using serial <synchronous message passing> can block on one unready subscriber before delivering notifications to other ready subscribers. Buffered delivery moves the issue to queue capacity and service rate rather than guaranteeing its absence.
+
+= Synchronous message passing
+{parent=Message passing}
+
+A <message passing> discipline in which a send completes only when a matching receive accepts the message. This rendezvous transfers both data and control dependencies: an unready recipient can block a service and thereby delay its other clients. A reply is a separate send unless the interface supplies <synchronous send-and-receive>.
+
+= Synchronous send-and-receive
+{parent=Synchronous message passing}
+
+A <system call> that sends a request and commits the caller to receiving the matching reply as one coordinated operation, often named `sendrec`. It avoids the gap in which a client has completed a send but has not yet entered a receive. It does not make the service nonblocking or eliminate <deadlock> caused by other circular dependencies.
+
 = Mutual exclusion
 {parent=Synchronization (computing)}
 
@@ -500,6 +576,13 @@ The <binomial coefficient> $\binom{6}{3}=20$ counts the <thread interleavings> p
 <Mutual exclusion> is a <safety property>: two participants must never be inside the protected <critical section> together. Eventual entry for every persistent requester is a <liveness property>, expressed here as <starvation freedom>. A protocol that never admits anyone satisfies the first requirement while failing the second. Nor does a <mutex> alone promise which waiting <software thread> enters next, or that a producer runs before a consumer. Such application ordering needs an additional <synchronization> protocol.<Defining Liveness by Bowen Alpern and others>[pp. 181–182: mutual exclusion, finite witnesses to safety violations, and eventual service]{ref}
 
 The <sequential consistency> assumptions delimit this calculation. In C++, unsynchronized conflicting accesses to an ordinary shared object can be a <data race>, which makes behavior undefined; the 20 schedules are not a prediction for that program. An <atomic operation> with relaxed ordering also supplies no <acquire-release synchronization> for other data. A real <mutex> must supply both exclusive entry and the required <happens-before> ordering between its users.<Working Draft, Standard for Programming Language C++ (N4861)>{ref}
+
+= Message-passing mutual exclusion server
+{parent=Mutual exclusion}
+
+Maintain an owner identity, initially empty, and a <FIFO queue> of accepted client requests. A request appends its sender to the <FIFO queue>. A release from the owner clears the owner. Whenever there is no owner and the <FIFO queue> is nonempty, remove its oldest request, record that client as owner, and send a grant. The server processes these state changes sequentially.
+
+**Safety proof.** At most one grant is outstanding: a new grant requires an empty owner field, and a valid release clears precisely the preceding ownership. Compliant clients access the resource only while holding their grant, so <mutual exclusion> follows. With reliable eventual <message passing>, continued server execution and finite resource-use durations, the <FIFO queue> also gives <starvation freedom> for accepted requests, since later requests cannot overtake them.
 
 = Critical section
 {parent=Mutual exclusion}
@@ -548,6 +631,12 @@ A requirement of eventual progress, with no finite prefix ruling out its eventua
 {parent=Liveness property}
 
 For acquisition of a <mutex>, the guarantee that every persistent requester eventually succeeds, under specified scheduling assumptions and with owners eventually releasing. Some <software threads> repeatedly succeeding while another waits forever violates <starvation freedom> without violating <mutual exclusion>. A finite bound on the wait, and service in arrival order, are additional requirements.
+
+= LIFO starvation
+{parent=Starvation freedom}
+{c}
+
+With a <LIFO stack> of waiting requests, an old request may remain at the bottom while a new request arrives before each completion and is served next. Every service can finish in finite time while the old request waits forever. A <FIFO queue> prevents this overtaking within one priority class. <Nonpreemptive strict-priority arbitration> can separately starve a lower-priority class; using a <LIFO stack> adds potential starvation even among requests of equal priority.
 
 = Deadlock
 {parent=Synchronization (computing)}

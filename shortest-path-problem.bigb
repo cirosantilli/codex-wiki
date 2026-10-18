@@ -14,6 +14,42 @@ Each <edge> can be traversed in either direction at the same cost. The direct <g
 
 Thus fewest <edges> and least total cost are different objectives. <Breadth-first search> minimizes the number of <edges>, which suffices when every <edge> has the same positive cost. Unequal nonnegative costs call for the <Dijkstra algorithm>. On a map, weights might be minutes rather than kilometres: a longer-looking route can arrive sooner. This is why a <weighted graph> separates the network's connections from what a particular journey costs.
 
+= Shortest cycle by repeated shortest-path trees
+{parent=Shortest path problem}
+
+In a positive-weight <directed graph>, run the <Dijkstra algorithm> from each source $s$ and minimize $d_s(u)+w(u,s)$ over closing <edges>. In an <undirected graph>, minimize $d_s(u)+w(u,v)+d_s(v)$ only over <edges> absent from the current <shortest-path tree>. A <tree> <edge> would otherwise give a spurious traversal out and back. A non-tree candidate contains a genuine cycle no longer than its score, even when the two <tree> routes share a prefix.
+
+For the undirected optimum, choose a shortest cycle and a source on it. If an incident cycle <edge> is absent from the <tree>, its candidate is bounded by the cycle length. Otherwise its two neighbours lie in distinct <tree> branches, and some <edge> on the remaining cycle segment crosses branches. That <edge> is non-tree; shortest distances to its endpoints are bounded by the two complementary cycle segments, again giving a candidate no greater than the optimum. Thus the minimum candidate equals the shortest-cycle length. Repeated <Dijkstra algorithm> runs take $O((|V|^2+|V||E|)\log(|V|+1))$ <running time> with a <binary heap>.
+
+= Hop-bounded shortest-route recurrence
+{parent=Shortest path problem}
+{title2=$D_r(v)=\min\{D_{r-1}(v),\min_{(u,v)\in E}(D_{r-1}(u)+w(u,v))\}$}
+
+Let $D_r(v)$ be the minimum weight of a route from a fixed source to $v$ using at most $r$ <edges>; repeated <vertices> are permitted. Initialise $D_0$ to zero at the source and infinity elsewhere. Every feasible route either already uses at most $r-1$ <edges> or appends one <edge> to such a route, proving the displayed <dynamic programming> recurrence. Reading exclusively from the previous row enforces the <edge> budget. Negative cycles cause no unbounded objective because the budget is finite. Each round scans all <edges>, costing $O(m)$ when only edge-incident <vertices> and the specified endpoints are processed. With nonnegative weights, cycle removal gives an equally good or better simple path within the budget.
+
+= Integer-weight shortest-path tie-breaking lemma
+{parent=Shortest path problem}
+{title2=$w'(e)=|V|w(e)+1$}
+
+In a finite graph with positive integral <edge> weights, replacing $w(e)$ by $|V|w(e)+1$ makes every transformed <shortest path> minimise original weight first and <edge> count second. Positive weights imply that an optimal route is simple, with at most $|V|-1$ <edges>. Original integral path weights that differ have a gap of at least one; multiplication by $|V|$ outweighs every possible difference in simple-path <edge> counts. Among equal-weight paths, only the added <edge> count differs. Thus a single ordinary <shortest path> computation solves lexicographic weight-and-hop minimisation.
+
+= Minimum-hop dominance for nearly unit weights
+{parent=Shortest path problem}
+
+For a graph on $n$ vertices with all edge weights in $[1,1+1/n]$, every minimum-weight <shortest path> has the smallest possible number of edges. Indeed, positivity permits a simple optimum, and a simple $r$-edge path weighs at most $r+r/n<r+1$ for $r\leq n-1$, while any path with more edges weighs at least $r+1$. A <breadth-first search> followed by weighted <dynamic programming> along increasing-hop edges therefore solves the single-source problem in $O(|V|+|E|)$ time. Choosing an arbitrary breadth-first tree alone is insufficient: equal-hop routes may still have different weights.
+
+= Shortest-path pursuit distance bound
+{parent=Shortest path problem}
+{title2=$d_{t+1}\le d_t-a+b$}
+
+Suppose two pieces occupy a common <connected component of a graph> in an unweighted <undirected graph>. For <integers> $a>b\ge0$, in each round an evader moves at most $b$ <edges>, then a pursuer moves up to $a$ <edges> along a <shortest path> to the new evader position, stopping upon capture. Let $d_t$ be their finite <graph distance> at a surviving round boundary.
+
+The <triangle inequality> bounds the separation after the evader moves by $d_t+b$. If that separation is at most $a$, the pursuer captures it. Otherwise the pursuer reduces it by exactly $a$, giving
+$$
+1\le d_{t+1}\le d_t-(a-b).
+$$
+Hence every surviving history has at most $\lfloor(d_0-1)/(a-b)\rfloor$ rounds. With a finite <branching factor>, the surviving <search tree> is finite and <depth-first tree search> becomes a <complete search algorithm>. This does not make its first goal optimal for arbitrary rewards. Initial <reachability> is essential: an infinite <graph distance> supplies no decreasing finite bound.
+
 = Bottleneck shortest path problem
 {parent=Shortest path problem}
 {title2=$\min_{P:x\leadsto y}\max_{e\in E(P)}\ell(e)$}

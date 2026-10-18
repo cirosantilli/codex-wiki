@@ -28,6 +28,33 @@ For a general <integrand>, the <composite midpoint quadrature rule> and <composi
 
 More elaborate choices exploit other information: <Gaussian quadrature> obtains high <polynomial> exactness from carefully chosen <quadrature nodes>, and <Simpson's rule> uses a quadratic <interpolant>. Adaptive <numerical integration> compares approximations and concentrates samples where they disagree, often saving evaluations. Such a difference is an error estimate, not a certified bound without further assumptions: both approximations can miss the same feature.<Fundamentals of Numerical Computation by Tobin A. Driscoll and others/5.7 Adaptive integration>[Fundamentals of Numerical Computation by Tobin A. Driscoll and others; §5.7.1, equation 5.7.4: a difference-based error estimate; §5.7.2: interval bisection; Example 5.7.2 and concluding discussion: requested accuracy is not guaranteed]{ref}
 
+= Balancing quadrature truncation and round-off error
+{parent=Numerical integration}
+{title2=$C n^{-p}\approx\delta\ \Longrightarrow\ n\approx(C/\delta)^{1/p}$}
+
+If a <quadrature> error bound is $C n^{-p}$ and the relevant numerical resolution is $\delta$, equating these scales gives an estimate of the strip count beyond which that truncation guarantee reaches the <rounding> scale. For the <composite Simpson's rule>, $p=4$. This estimate is useful for choosing a sensible order of magnitude, but a worst-case bound need not equal the actual <quadrature> error.
+
+For a normal <floating-point number> in base two, the spacing depends on the exponent of the result; half the spacing is a natural final-storage <rounding> scale. <Machine epsilon> instead measures the gap above one. <Function>-evaluation errors, accumulation of summation error, cancellation, and the arithmetic used for the nodes can impose an earlier practical accuracy limit. Thus final storage precision alone cannot give a universal optimal strip count.
+
+= Separable integrand
+{parent=Numerical integration}
+{title2=$\int_{\prod_j I_j}\prod_jg_j(x_j)\,dx=\prod_j\int_{I_j}g_j(t)\,dt$}
+
+An integrand is separable across coordinates when it factors as $g(x_1,\ldots,x_d)=\prod_{j=1}^dg_j(x_j)$. On a product domain, the <Fubini theorem> reduces its <integral> to a product of one-dimensional <integrals>, provided the factors are <integrable>; for nonnegative factors the <Tonelli theorem> gives the extended-value version.
+
+A finite sum of separable terms can likewise be integrated as a finite sum of products. For example,
+$$
+\int_{[0,1]^d}\sum_{i=1}^m e^{\|x-a_i\|^2}\,dx
+=\sum_{i=1}^m\prod_{j=1}^d\int_0^1e^{(t-a_{ij})^2}\,dt.
+$$
+For fixed centres, the factors are smooth on compact <intervals>. Repeated one-dimensional <composite Simpson's rule> refinements have fourth-order discretization error, avoiding the exponential tensor-grid cost of a generic $d$-dimensional rule. The numerical constants and possible <floating-point overflow> still depend on the scale of the factors; separability removes a dimension-dependent combinatorial cost, not all conditioning difficulties.
+
+= Tensor-product quadrature
+{parent=Numerical integration}
+{title2=$Q(f)=\sum_{i_1,\ldots,i_d}w_{i_1}\cdots w_{i_d}f(x_{i_1},\ldots,x_{i_d})$}
+
+On a product domain, apply a one-dimensional <quadrature rule> independently in each coordinate. The resulting <quadrature nodes> form a product grid and the <quadrature weights> multiply. With $m$ subdivisions per direction in fixed dimension $d$, the evaluation count is $N=O(m^d)$. If the one-dimensional rule has error $O(m^{-p})$, uniformly for the required coordinate slices, and its weight sums are bounded, telescoping the $d$ integration operators against their quadrature operators gives total error $O(m^{-p})=O(N^{-p/d})$. Thus <composite Simpson's rule> has $p=4$ for sufficiently smooth integrands, but loses efficiency as $d$ increases.
+
 = Finite samples do not certify quadrature accuracy
 {parent=Numerical integration}
 {title2=$p(x)=\prod_{j=1}^m(x-x_j)^2$}

@@ -44,6 +44,17 @@ A <zeros trick> implements a positive <likelihood function> $L(\theta)$ by addin
 
 <Variational inference> approximates a <posterior distribution> by minimizing a <Kullback-Leibler divergence> over a chosen family of <probability distributions>. For an unnormalized <posterior density> $h$ and a trial <probability density function> $q$, minimizing $\mathbb E_q[\log q-\log h]$ is equivalent to minimizing $\operatorname{KL}(q\Vert h/\int h)$.
 
+= Combined score and pathwise gradient estimator
+{parent=Variational inference}
+{title2=$\nabla_\lambda\mathbb E_{s_\lambda}W_\lambda=\mathbb E_{s_\lambda}[W_\lambda\nabla_\lambda\log s_\lambda+\nabla_\lambda W_\lambda]$}
+
+Under fixed-support regularity permitting <differentiation under the integral sign>, apply the <product rule> to $\int s_\lambda W_\lambda$. The first derivative term is $\int W_\lambda\nabla s_\lambda=\mathbb E[W_\lambda\nabla\log s_\lambda]$ and the second is $\mathbb E[\nabla W_\lambda]$. This proves the displayed identity. For an <evidence lower bound>, take $W_\lambda=\log p(t_\lambda(\varepsilon),x)-\log q_\lambda(t_\lambda(\varepsilon))$, holding noise $\varepsilon$ fixed in the inner derivatives. Parameter-independent continuous noise contributes a <reparameterization gradient>; untransformed discrete choices contribute a <score-function gradient estimator>. A mixed base law cannot be called parameter independent if its discrete factors retain variational parameters.<Gradient Estimation Using Stochastic Computation Graphs by John Schulman and others>[Section 3.1, Theorem 1; Appendix A]{ref}
+
+= Guide program
+{parent=Variational inference}
+
+A <guide program> is a <probabilistic program> whose generated <probability distribution> approximates a model's <posterior distribution>. Its adjustable parameters are fitted by <variational inference>. The guide must assign <probability> only where the target allows it when minimizing $D_{\rm KL}(q\Vert p)$, but a tractable guide can still miss important target regions.
+
 = Reparameterization gradient
 {parent=Variational inference}
 
@@ -257,6 +268,12 @@ The prior curve in <Bayesian posterior> makes this preference visible; <moment m
 
 A <prior distribution> lets earlier evidence or elicited knowledge contribute to <statistical inference> when the current <sample size> is limited. It also exposes assumptions that can be checked by <prior elicitation> and a <prior predictive check>. Before the same eight heads and two tails, a <uniform prior> $\operatorname{Beta}(1,1)$ would give <posterior mean> $9/12=3/4$, compared with $5/7$ under $\operatorname{Beta}(2,2)$: the observations do not uniquely determine a <Bayesian posterior>. Even a <uniform prior> makes a choice of parameter coordinates; its child article explains why changing coordinates can destroy uniformity.
 
+= Base rate
+{parent=Prior probability}
+{title2=$P(H)$}
+
+A class prevalence applicable before considering the current case-specific evidence. Under random sampling from the relevant reference population, it sets the prior class <probability> used in <Bayes' theorem>.
+
 = Prior mean
 {parent=Prior probability}
 {title2=$\mathbb E_\pi[\Theta]$}
@@ -386,6 +403,12 @@ For a vector parameter with finite second moments and <posterior mean> $m_y$, th
 {synonym}
 
 The distribution of a new or missing quantity integrates its model over the <Bayesian posterior>: $p(y^*\mid y)=\int p(y^*\mid\phi,y)p(\phi\mid y)d\phi$. Both parameter and residual uncertainty should enter predictive draws used for <multiple imputation>.
+
+= Posterior predictive repeated-success identity
+{parent=Posterior predictive distribution}
+{title2=$\mathbb P(Y_1=\cdots=Y_k=1\mid D)=\mathbb E[\pi(\Theta)^k\mid D]$}
+
+If future <Bernoulli random variables> are conditionally independent given a shared parameter $\Theta$, with success <probability> $\pi(\Theta)$, their all-success <conditional probability> is $\pi(\Theta)^k$. Taking a posterior <expectation> proves the identity. For $k\geq1$, <Jensen's inequality> and $0\leq\pi\leq1$ give $(\mathbb E[\pi\mid D])^k\leq\mathbb E[\pi^k\mid D]\leq\mathbb E[\pi\mid D]$. For two distinct future trials the posterior <covariance> is $\mathbb E[\pi^2\mid D]-(\mathbb E[\pi\mid D])^2=\operatorname{Var}(\pi\mid D)$. Thus shared parameter uncertainty can induce positive dependence even when trials are conditionally independent.
 
 = Posterior predictive check
 {parent=Posterior predictive distribution}
@@ -955,6 +978,17 @@ $$
 $$
 This acceptance rule enforces <detailed balance> with the target density $\pi$.
 
+= Barker acceptance probability
+{parent=Metropolis–Hastings algorithm}
+{c}
+{title2=$\beta(x,y)=\dfrac{\pi(y)q(y,x)}{\pi(x)q(x,y)+\pi(y)q(y,x)}$}
+
+= Barker acceptance rule
+{synonym}
+{c}
+
+The <Barker acceptance probability> accepts a proposal using the displayed ratio. If $a=\pi(x)q(x,y)$ and $b=\pi(y)q(y,x)$, the accepted flux is $ab/(a+b)$, symmetric in the two states. This proves <detailed balance>; define acceptance as zero when $a=b=0$. Rejected proposals contribute to the diagonal <transition probability>. Replacing $\pi$ by an unnormalized target leaves the ratio unchanged. For a common proposal, $t/(1+t)\leq\min(1,t)$ shows that its acceptance <probability> never exceeds the <Metropolis–Hastings acceptance probability>. The name refers to <A. A. Barker>'s work on <Monte Carlo methods> for a plasma; the initials are retained without an unverified expansion.<Monte Carlo Calculations of the Radial Distribution Functions for a Proton-Electron Plasma by A. A. Barker>[Australian Journal of Physics 18, 119–134 (1965), bibliographic provenance]{ref}
+
 = Metropolis sampling on fixed-cardinality subsets
 {c}
 {parent=Metropolis–Hastings algorithm}
@@ -1041,6 +1075,13 @@ The preconditioned Crank–Nicolson algorithm, or pCN algorithm, uses a <Gaussia
 
 Random-walk Metropolis proposes a symmetric increment from the current state and accepts a proposal $y$ from $x$ with probability $\min\{1,\pi(y)/\pi(x)\}$.
 
+= Poisson Metropolis chain
+{parent=Random-walk Metropolis algorithm}
+{c}
+{title2=$u_n=\tfrac12\min(1,\lambda/(n+1)),\ d_n=\tfrac12\min(1,n/\lambda)$}
+
+A <Poisson Metropolis chain> samples a <Poisson distribution> by proposing an upward or downward unit step with equal <probability> and reflecting a downward proposal at zero into a self-proposal. Its upward and downward <transition probabilities> are the displayed $u_n,d_n$, with $d_0=0$, and the diagonal entry is $1-u_n-d_n$. For $\pi_n=e^{-\lambda}\lambda^n/n!$, adjacent stationary fluxes equal $\tfrac12\min(\pi_n,\pi_{n+1})$. Hence <detailed balance> holds. Positive adjacent <probabilities> imply an <irreducible Markov chain>; $P(0,0)\geq1/2$ implies <aperiodicity>. The normalized invariant <Poisson distribution> implies <positive recurrence>, so the <countable-state Markov chain convergence theorem> applies. The boundary proposal <probability> is essential: forcing every proposal at zero to go upward would require a different acceptance ratio.
+
 = Positive-parameter random walk with boundary rejection
 {parent=Random-walk Metropolis algorithm}
 {title2=$v'=v+\eta,\quad\eta\sim N(0,s^2)$}
@@ -1060,6 +1101,12 @@ A small proposal scale increases acceptance while making successive states almos
 {synonym}
 
 An independence Metropolis–Hastings algorithm proposes from a fixed density $q$ independent of the current state. If $\sup_x\pi(x)/q(x)<\infty$, it is uniformly and hence geometrically ergodic.
+
+= Independent stationary proposal lemma
+{parent=Independence Metropolis–Hastings algorithm}
+{title2=$q(x,y)=\pi(y)\Rightarrow P(x,y)=\pi(y)$}
+
+If a <Metropolis–Hastings algorithm> proposes fresh draws from its target <stationary distribution> $\pi$, its acceptance ratio on the positive support is $\pi(y)\pi(x)/(\pi(x)\pi(y))=1$. Therefore every proposal is accepted, and $P(x,y)=\pi(y)$. From the first update onward the recorded states are <independent and identically distributed random variables> with law $\pi$, regardless of the initial state in the support. An arbitrary initial state is excluded when claiming an unbiased finite-sample average.
 
 = Effective sample size of a Markov chain
 {title2=$N_{\mathrm{eff}}$}

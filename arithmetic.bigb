@@ -56,6 +56,29 @@ In the <natural numbers>, exact <division> need not be possible. <Euclidean divi
 
 <Division> of <integers> that returns an <integer> quotient rather than an exact <fraction>. A rounding convention is required for negative operands. For $n\ge0$ and $d>0$, the quotient is $q=\lfloor n/d\rfloor$ and the <remainder> is $r=n-qd$ with $0\le r<d$.
 
+= Packed restoring division
+{parent=Integer division}
+{title2=$p_k=bQ_k+R_k$}
+
+For an $n$-bit unsigned dividend $a$ and positive divisor $b$, read the dividend <bits> from most to least significant. If the processed prefix is $p$, maintain $p=bQ+R$ with $0\le R<b$. Appending <bit> $d$ gives trial <remainder> $T=2R+d$; append <quotient> <bit> $[T\ge b]$ and replace the <remainder> by $T-b[T\ge b]$. This preserves the <quotient>–<remainder> identity.
+
+The old dividend and new <quotient> can share one $n$-bit <processor register>: after $k$ iterations its value is $(a2^k\bmod2^n)+Q_k$, where $Q_k<2^k$. The shifted dividend occupies the upper positions and the accumulated <quotient> occupies the lower positions, so no information is overwritten. The high <processor register> holds $R_k$. For an $n$-bit dividend the next trial <remainder> is no larger than the next prefix, hence fits in $n$ <bits> through the final iteration. This last bound is specific to the dividend width; it must not be assumed for unrestricted multiword dividends.
+
+= Signed power-of-two division by biasing
+{parent=Integer division}
+{title2=$\operatorname{trunc}(a/2^k)=\left\lfloor(a+(2^k-1)\mathbf1_{a<0})/2^k\right\rfloor$}
+
+For signed <two's complement> <integers>, a conditional positive bias converts the rounding behaviour of an <arithmetic right shift> into <C integer division>. It can be formed without a conditional branch by turning the sign <bit> into either zero or a low-$k$-<bit> <bit mask>.
+
+**Proof.** Nonnegative $a$ needs no adjustment. If $a<0$, write $-a=2^kq+r$, $0\leq r<2^k$. Then $a+(2^k-1)=-2^kq+(2^k-1-r)$, whose quotient rounded down is $-q$, exactly the quotient truncated towards zero. The bias fits safely for $1\leq k<n$ in an $n$-<bit> signed word: it is added only to negative inputs, and the largest possible adjusted input is $2^k-2$. The corresponding remainder is $((a+b)\bmod2^k)-b$, where $b=(2^k-1)\mathbf1_{a<0}$.
+
+= C integer division
+{parent=Integer division}
+{c}
+{title2=$a=bq+r,\quad q=\operatorname{trunc}(a/b)$}
+
+For representable integer quotients with nonzero divisor, <C integer division> discards the fractional part towards zero and defines the remainder by $a=bq+r$. Thus a nonzero remainder has the dividend's sign. For example, $-13=5(-2)+(-3)$, so division by five returns quotient $-2$ and remainder $-3$. This convention differs from division rounded down, which would return quotient $-3$ and nonnegative remainder $2$. Division by zero and an unrepresentable quotient are excluded.<C11 committee draft N1570>[section 6.5.5 paragraphs 5–6]{ref}
+
 = Quotient
 {parent=Division (mathematics)}
 {title2=$a/b$}
@@ -70,6 +93,20 @@ A ratio compares two quantities $a,b$, written $a:b$ and corresponding to <divis
 
 For example, $6:4$ and $3:2$ specify the same <ratio> because $6/4=3/2$. Multiplying both entries by the same nonzero scale preserves the <quotient>: $(ca)/(cb)=a/b$. This is useful when comparing mixtures or scaling a recipe; doubling both ingredient amounts preserves their <ratio>, while adding the same amount to both generally does not. For quantities with the same physical units, their <ratio> is <dimensionless>, connecting this elementary calculation with <dimensional analysis>.
 
+= Percentage
+{parent=Ratio}
+{title2=$x\%=x/100$}
+{wiki}
+
+A <percentage> expresses a <ratio> in hundredths: $p$ as a fraction is $100p\%$. For example, $18/60=0.3=30\%$. Comparing two <percentages> requires specifying whether the change is an absolute difference in <percentage points> or a relative change divided by the initial value.
+
+= Percentage point
+{parent=Percentage}
+{title2=$\mathrm{pp}$}
+{wiki}
+
+A <percentage point> is one hundredth on a <probability> or proportion scale. A change from $20\%$ to $25\%$ is $5$ <percentage points>, while the relative increase is $(25-20)/20=25\%$. These answer different questions and have different denominators.
+
 = Inequality
 {disambiguate=mathematics}
 {parent=Arithmetic}
@@ -80,6 +117,12 @@ For example, $6:4$ and $3:2$ specify the same <ratio> because $6/4=3/2$. Multipl
 {synonym}
 
 An <inequality> compares mathematical quantities using an ordering, such as $a<b$ or $a\leq b$ for <real numbers>. A strict <inequality> excludes equality; a non-strict <inequality> allows it. For example, $4<5$ is strict, while $4\leq4$ is true because equality is allowed. Adding the same <real number> preserves either comparison; multiplying by a negative <real number> reverses its direction.
+
+= Strict inequality
+{parent=Inequality (mathematics)}
+{title2=$a<b$}
+
+An ordered comparison such as $a<b$, excluding equality. In a sorted search, strict comparisons distinguish regions that can be discarded from boundary positions that may contain an equal target.
 
 = Linear inequality
 {parent=Inequality (mathematics)}
@@ -416,6 +459,21 @@ The Archimedean property says that the <natural numbers> are unbounded in the <r
 
 A binary number is a number represented in base two.
 
+= Binary-addition carry invariant
+{parent=Binary number}
+{title2=$V(x_{\rm suffix})+V(y_{\rm suffix})=V(result_{\rm suffix})+carry\,2^k$}
+
+After adding $k$ least-significant <binary digits>, the numerical sum of the two processed input suffixes equals the written $k$ result digits plus $carry\,2^k$, with $carry\in\{0,1\}$. Initially both suffixes are empty. For the next column, write $(x_k+y_k+carry)\bmod2$ and pass $\lfloor(x_k+y_k+carry)/2\rfloor$ to the next column. Multiplying these column quantities by $2^k$ preserves the equation. After all columns, the remaining carry supplies the extra leading digit, proving correctness without converting either full input to a machine integer.
+
+= Unsigned interpretation of a bit string
+{parent=Binary number}
+{title2=$\operatorname{bin}(A)=\sum_{i=0}^{n-1}a_i2^i$}
+
+= Unsigned interpretation
+{synonym}
+
+For an $n$-<bit> <binary string> $A=a_{n-1}\cdots a_0$, the <unsigned interpretation> assigns positive positional weights $2^i$ to its <bits>. Its values range from zero to $2^n-1$. The same stored <bits> have <two's complement> value $\operatorname{bin}(A)-a_{n-1}2^n$, so interpreting a <machine word> is a separate choice from storing its <bits>.
+
 = Bit length
 {parent=Binary number}
 
@@ -425,6 +483,12 @@ The number of <binary digits> in the usual representation of a positive <integer
 {parent=Binary number}
 
 Every real number in $[0,1]$ is a sum $\sum_{j\geq1}\varepsilon_j2^{-j}$ with binary digits $\varepsilon_j\in\{0,1\}$.
+
+= Binary fraction
+{parent=Binary expansion}
+{title2=$\sum_j b_j2^j,\quad b_j\in\{0,1\}$}
+
+A base-two positional <fraction> with a binary point separating nonnegative and negative powers of two. For example, $10.101_2=2+1/2+1/8=21/8$. A finite expansion is a <dyadic rational>: with $F$ fractional places, its value is an <integer> divided by $2^F$. Conversely, any nonnegative <reduced fraction> whose denominator is a power of two has a finite <binary expansion>. Leading <integer> zeroes and trailing fractional zeroes do not change its value.
 
 = Hyperbinary representation
 {parent=Binary expansion}
@@ -650,6 +714,19 @@ $$
 explains a geometric interpretation: if the weights were masses placed at positions $x_i$, the <weighted mean> would be their <center of mass>. Here $8(66-60)=2(90-66)=48$, so the two sides balance even though their distances from the mean differ.
 
 Weights need an interpretation. They can represent numbers of observations, masses, or probabilities in a finite <probability distribution>. These meanings lead to the same formula, while answering different questions. For instance, <combining means of groups> uses group sizes as weights to recover the mean over individual observations. For a <function> $f$ and nonnegative weight function $w$, the analogous <integral> is $\int wf/\int w$, provided $wf$ is integrable and the total weight $\int w$ is positive and finite.
+
+= Pooled-mean compatibility under rounding
+{parent=Weighted arithmetic mean}
+{title2=$\overline y=\sum_g(n_g/N)\overline y_g$}
+
+= Rounded subgroup-mean compatibility
+{synonym}
+
+For a <partition of a set> of complete sample observations into groups of known sizes $n_g$ and total $N$, its <sample mean> is the <weighted mean> of the group <sample means>. Indeed, dividing $\sum_g\sum_{i\in g}y_i=\sum_g n_g\overline y_g$ by $N$ proves the identity. If the printed group means $m_g$ each have absolute <rounding error> at most $\delta_g$, their compatible pooled mean lies in
+$$
+\left[\sum_g\frac{n_g}{N}(m_g-\delta_g),\ \sum_g\frac{n_g}{N}(m_g+\delta_g)\right].
+$$
+This follows because all the weights are nonnegative. Equivalently, the pooled absolute <rounding error> is at most $\sum_g(n_g/N)\delta_g$, by the <triangle inequality>. A printed overall mean must have a <rounding> interval intersecting this interval. Disjoint intervals prove incompatibility, rather than merely a difference of displayed decimals. This is a necessary consistency check for means of the same complete sample; it cannot silently equate a full-sample mean with a different complete-case mean or establish a unique repair to inconsistent output.
 
 = Combining means of groups
 {parent=Weighted arithmetic mean}
