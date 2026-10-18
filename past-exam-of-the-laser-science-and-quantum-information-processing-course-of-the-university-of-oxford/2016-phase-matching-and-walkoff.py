@@ -1,0 +1,93 @@
+"""Original LiNbO3 phase-index plot and true-angle walk-off sketch.
+Tested: Python 3.14, NumPy 2.3.5, Matplotlib 3.10.7. Output: CWD PNG only.
+"""
+
+from pathlib import Path
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.patches import Arc
+import numpy as np
+
+
+def main():
+    plt.rcParams.update({"font.size": 12, "axes.spines.top": False,
+                         "axes.spines.right": False, "figure.facecolor": "white"})
+    no1, ne1, no2, no3 = 2.2579, 2.1782, 2.2322, 2.1649
+    lam1, lam2, lam3 = 780.0, 1064.0, 2922.0
+    nstar = lam1 * (no2 / lam2 + no3 / lam3)
+    theta = np.arcsin(np.sqrt((1 / nstar**2 - 1 / no1**2) /
+                             (1 / ne1**2 - 1 / no1**2)))
+    rho = np.arctan((no1**2 / ne1**2) * np.tan(theta)) - theta
+    theta_deg, rho_deg = np.degrees([theta, rho])
+    blue, orange, green, gray = "#126782", "#b55d15", "#287d53", "#5b6570"
+    fig, (ax, rays) = plt.subplots(1, 2, figsize=(12, 6.8),
+                                  gridspec_kw={"width_ratios": (1.05, 1)})
+    angles = np.linspace(0, np.pi / 2, 800)
+    neff = 1 / np.sqrt(np.cos(angles)**2 / no1**2 + np.sin(angles)**2 / ne1**2)
+    ax.plot(np.degrees(angles), neff, lw=2.5, color=blue, label=r"$n_{e,\mathrm{eff}}(\theta)$ at 780 nm")
+    ax.axhline(nstar, color=orange, ls="--", lw=1.8, label=rf"Required $n_\star={nstar:.5f}$")
+    ax.plot([theta_deg, theta_deg], [2.17, nstar], color=green, ls=":", lw=1.5)
+    ax.scatter([theta_deg], [nstar], color=green, s=55, zorder=4)
+    ax.annotate(rf"$\theta_\mathrm{{pm}}={theta_deg:.2f}^\circ$", (theta_deg, nstar),
+                (theta_deg + 8, nstar + 0.018), color=green,
+                arrowprops={"arrowstyle": "->", "color": green})
+    ax.text(2, no1 + 0.003, r"$n_{o1}=2.2579$", fontsize=11)
+    ax.text(58, ne1 - 0.004, r"$n_{e1}=2.1782$", fontsize=11)
+    ax.set(xlim=(0, 90), ylim=(2.17, 2.267), xticks=(0, 15, 30, 45, 60, 75, 90),
+           xlabel=r"Wavevector angle to optic axis $\theta$ (degrees)",
+           ylabel="Refractive index", title="Collinear type I phase matching")
+    ax.legend(loc="upper right", frameon=False, fontsize=10)
+    ax.grid(alpha=0.16)
+    # Both ray directions and angle arcs use the actual calculated angles.
+    length = 4.0
+    k = length * np.array([np.cos(theta), np.sin(theta)])
+    s = length * np.array([np.cos(theta + rho), np.sin(theta + rho)])
+    rays.annotate("", (4.5, 0), (0, 0), arrowprops={"arrowstyle": "->", "color": gray, "lw": 1.7})
+    rays.text(3.0, -0.23, "Optic axis", ha="center", color=gray)
+    for endpoint, color in ((k, blue), (s, orange)):
+        rays.annotate("", endpoint, (0, 0),
+                      arrowprops={"arrowstyle": "->", "color": color, "lw": 2.2, "shrinkA": 0})
+    rays.scatter([0], [0], s=22, color=gray)
+    rays.annotate(r"Pump wavevector $\mathbf{k}_e$", k * 0.90, (3.1, 1.6),
+                  color=blue, fontsize=11, arrowprops={"arrowstyle": "-", "color": blue})
+    rays.annotate(r"Energy flow $\mathbf{S}_e$", s, (0.35, 3.65),
+                  color=orange, fontsize=12, arrowprops={"arrowstyle": "-", "color": orange})
+    rays.add_patch(Arc((0, 0), 1.7, 1.7, theta1=0, theta2=theta_deg,
+                       color=blue, lw=1.5))
+    rays.text(1.02 * np.cos(theta / 2), 1.02 * np.sin(theta / 2),
+              r"$\theta$", color=blue, fontsize=15)
+    rays.add_patch(Arc((0, 0), 6.4, 6.4, theta1=theta_deg,
+                       theta2=theta_deg + rho_deg, color=orange, lw=2))
+    arc_mid = 3.2 * np.array([np.cos(theta + rho / 2), np.sin(theta + rho / 2)])
+    rays.annotate(rf"$\rho={rho_deg:.2f}^\circ$", arc_mid, (3.05, 3.1),
+                  color=orange, fontsize=14, arrowprops={"arrowstyle": "->", "color": orange})
+    rays.text(0.05, -0.8, "Negative uniaxial: energy flows farther\nfrom the optic axis than the wavevector.",
+              fontsize=11, color=gray)
+    rays.set(xlim=(-0.25, 4.65), ylim=(-1.0, 4.1), aspect="equal",
+             title="Pump walk-off (angles to scale)")
+    rays.set_axis_off()
+    fig.suptitle(r"LiNbO$_3$: phase matching and extraordinary-wave walk-off", fontsize=17, y=0.97)
+    fig.text(0.5, 0.9, r"780 nm $\;(e)\;\longrightarrow\;$ 1064 nm $\;(o)\; +\;$ 2922 nm $\;(o)$ (rounded)",
+             ha="center", fontsize=14)
+    fig.text(0.5, 0.16,
+             r"$n_{e,\mathrm{eff}}^{-2}(\theta)=\cos^2\theta/n_{o1}^2+\sin^2\theta/n_{e1}^2$"
+             r"     $n_\star=\lambda_1(n_{o2}/\lambda_2+n_{o3}/\lambda_3)$",
+             ha="center", fontsize=13)
+    fig.text(0.5, 0.085,
+             r"$\rho=\tan^{-1}[(n_{o1}^2/n_{e1}^2)\tan\theta]-\theta$"
+             r"     $n_{o2}=2.2322,\quad n_{o3}=2.1649$",
+             ha="center", fontsize=13)
+    fig.text(0.5, 0.025, "Phase matching aligns wavevectors; pump energy transport is deflected by the walk-off angle.",
+             ha="center", fontsize=11, color=gray)
+    fig.subplots_adjust(left=0.075, right=0.975, bottom=0.29, top=0.79, wspace=0.24)
+    fig.savefig(Path.cwd() / Path(__file__).with_suffix(".png").name,
+                dpi=140, facecolor="white", transparent=False,
+                metadata={"Software": "Matplotlib"})
+    plt.close(fig)
+
+
+if __name__ == "__main__":
+    main()
