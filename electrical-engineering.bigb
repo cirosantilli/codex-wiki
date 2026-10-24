@@ -10,10 +10,57 @@ The connection is useful in both directions. A <series RLC circuit> selects a ba
 
 <Digital electronics> represents information by discrete signal levels. <Combinational logic> computes from current inputs; <sequential logic> also uses stored state.
 
+= Binary multiplier
+{parent=Digital electronics}
+
+A digital circuit implementing <binary multiplication>. A <combinational logic> implementation forms shifted partial products with <AND gates> and combines them with <adders>. A <sequential circuit> can instead reuse one <adder>, storing a partial sum, a shifted multiplicand, and the remaining multiplier in <digital registers>. If those quantities are $P,M,Q$, the update $P\gets P+(Q_0?M:0)$, $M\gets2M$, $Q\gets\lfloor Q/2\rfloor$ preserves $P+MQ$. Starting with $(0,X,Y)$ and stopping when $Q=0$ therefore produces $P=XY$, provided widths prevent overflow.
+
+= Output pulse
+{parent=Digital electronics}
+
+A temporary excursion of an output logic signal to its active level. A clocked controller may specify the duration in complete <clock periods>, rather than relying on an analogue delay.
+
+= Seven-segment display
+{parent=Digital electronics}
+{wiki}
+
+A display whose seven separately controlled bars can form digit shapes. A <combinational logic> decoder maps an encoded digit to seven output <bits>. Active-high versus active-low control and the required behaviour for unused input codes belong to the decoder's specification.
+
+= Binary-coded decimal
+{parent=Digital electronics}
+{wiki}
+
+= BCD
+{c}
+{synonym}
+
+Represent a decimal number by coding each <decimal digit> separately as four <bits> of weights $8,4,2,1$. The codes 10–15 are unused for one digit; a <Boolean circuit> must specify whether these combinations produce a defined result or are <don't-care conditions>.
+
+= Round-robin arbitration
+{parent=Digital electronics}
+
+An arbiter selects at most one asserted request, searching cyclically after the most recent successful recipient. After a grant it advances that remembered position. This implements circular priority among <bits> representing competing requests; it is distinct from assigning a fixed priority forever.
+
+= Round-robin arbitration with idle memory
+{parent=Round-robin arbitration}
+
+Store both the last recipient index $L$ and a current-grant valid <bit> $V$. With $k$ possible recipients, an idle period clears $V$ while preserving $L$. The <Moore machine> grants requester $j$ precisely when $V\land[L=j]$ holds. For $k>1$, its $k$ idle states are distinguishable by a subsequent pair of competing requests with different positions in the cyclic order; active states have distinct outputs. Thus all $2k$ states are distinguishable and $\lceil\log_2(2k)\rceil$ state bits suffice and are necessary for this output convention. A continuously asserted request receives a grant within $k$ decisions, because before that grant the cyclic scan cannot pass it to choose a later asserted request.
+
 = Clock signal
 {parent=Digital electronics}
 
 A recurring digital signal whose designated <clock edge> triggers a state update. A rising <clock edge> is the transition from the low level to the high level; a falling <clock edge> is the reverse.
+
+= Clock cycle
+{parent=Clock signal}
+
+One complete repetition of a periodic <clock signal>, for example from one rising <clock edge> to the next. Its duration is the <clock period>. A <synchronous sequential circuit> can update its stored state once per designated <clock edge>; a one-cycle output pulse remains asserted for one such interval.
+
+= Clock period
+{parent=Clock signal}
+{title2=$T_c=1/f_c$}
+
+The time between equivalent <clock edges> in consecutive cycles of a periodic <clock signal>. It is the reciprocal of the clock's <frequency>.
 
 = Processor clock frequency
 {parent=Clock signal}
@@ -43,6 +90,27 @@ A circuit producing a periodic output at an <integer> fraction of the input <fre
 
 A <sequential circuit> has stored state. Its future output can therefore depend on earlier inputs as well as the present inputs.
 
+= Electronic dice
+{parent=Sequential logic}
+
+An electronic display cycling through the six die faces while a switch is pressed. A <modulo-six counter> and <combinational logic> can drive seven lights arranged as die pips. The apparent unpredictability comes from uncertainty in release timing relative to a rapid <clock signal>; deterministic cycling alone does not establish equal outcome probabilities.
+
+= Digital register
+{parent=Sequential logic}
+
+A fixed-width collection of <flip-flops> storing a <binary representation>. A synchronous load-enabled <digital register> captures all its input <bits> on the active <clock edge> when load is asserted and otherwise retains its old value. One <multiplexer> before each <D flip-flop> can select new data or feedback from its old output. A <processor register> is a particular use inside a processor; temporary state in a standalone <binary multiplier> is another.
+
+= Shift register
+{parent=Digital register}
+{wiki}
+
+A chain of <digital registers> that transfers each stored value to the next stage at a <clock edge>. A serial-in parallel-out <shift register> exposes the stored history simultaneously. With the current input and $k-1$ delayed samples, <combinational logic> can evaluate a <function> of the latest $k$ samples.
+
+= Serial-in parallel-out shift register
+{parent=Shift register}
+
+A <shift register> accepting one sample at each <clock edge> and exposing every stored stage as a parallel output.
+
 = State-transition diagram
 {parent=Sequential logic}
 
@@ -52,6 +120,12 @@ A <directed graph> with one vertex for each state and labelled edges for the per
 {parent=Sequential logic}
 
 A counter stores a <binary representation> of a state, usually advancing by one increment or decrement modulo $2^n$ when it has $n$ <bits>.
+
+= Modulo-six counter
+{parent=Binary counter}
+{title2=$q^+=(q+1)\bmod6$}
+
+A <digital counter> cycling through six stored values. With ordinary <binary representation>, the valid three-<bit> states are $000,001,010,011,100,101$. The unused encodings require either an initialization assumption or specified recovery transitions.
 
 = Ripple counter
 {parent=Binary counter}
@@ -63,10 +137,28 @@ A cascade in which an output transition of one <flip-flop> clocks the next. With
 
 A <flip-flop> stores one <bit> and updates it at a specified <clock edge>; an <asynchronous clear> can override that clocked update. Signal polarity is part of the specification, not something inferred from the name alone.
 
+= Clock-to-Q delay
+{parent=Flip-flop}
+{title2=$t_{\mathrm{CQ}}$}
+
+The time from a triggering <clock edge> to the corresponding settled output of a <flip-flop>, under specified loading. The time available between successive active <clock edges> must accommodate this delay, the <combinational critical path>, the receiving <flip-flop>'s <setup time>, and any clock uncertainty.
+
 = Setup and hold time
 {parent=Flip-flop}
 
 The data input must remain stable for a specified interval before the sampling <clock edge> and a specified interval after it. Violations can prevent a well-defined sampled <bit>.
+
+= Hold time
+{parent=Setup and hold time}
+{title2=$t_{\mathrm{hold}}$}
+
+The minimum interval after an active <clock edge> during which the data input of a <flip-flop> must remain stable for specified operation. It constrains how quickly a newly launched value may reach the receiving <flip-flop>.
+
+= Setup time
+{parent=Setup and hold time}
+{title2=$t_{\mathrm{setup}}$}
+
+The minimum interval before an active <clock edge> during which the data input of a <flip-flop> must remain stable for specified operation. It constrains the latest arrival of new data at the receiving <flip-flop>.
 
 = Asynchronous clear
 {parent=Flip-flop}
@@ -517,6 +609,12 @@ A researcher whose work includes image-to-sound sensory-substitution engineering
 {c}
 
 An <electrical engineer> whose experiments investigated selection and recognition of simultaneous speech.
+
+\Image[https://mathshistory.st-andrews.ac.uk/Biographies/Cherry_Colin/cherry_colin.jpeg]
+{width=260}
+{title=Portrait of <Colin Cherry>}
+{source=https://mathshistory.st-andrews.ac.uk/Biographies/Cherry_Colin/pictdisplay/}
+{description=Historical photograph hosted by the MacTutor History of Mathematics archive at the University of St Andrews.}
 
 = Work by Colin Cherry
 {parent=Colin Cherry}

@@ -1,0 +1,775 @@
+= Digital systems, linear algebra, introduction to formal proof
+{scope}
+{title2=4224}
+
+The original cover dates this paper to 20 June 2014. The solutions follow the printed numbering and use the supplied <natural deduction> rules, including <double-negation elimination>. In the proof tables, the context column lists the numbered assumptions still in force; temporary assumptions are explicitly discharged by the indicated rule.<Digital systems, linear algebra, introduction to formal proof examination paper by the University of Oxford (2014)>[Cover and Figures 1–3, printed pages 1 and 9]{ref}
+
+== 1
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+A <MIPS R-type instruction> has the 32-<bit> <instruction encoding>
+$$
+\underbrace{\mathrm{op}}_{6}\ \underbrace{\mathrm{rs}}_{5}\ \underbrace{\mathrm{rt}}_{5}\ \underbrace{\mathrm{rd}}_{5}\ \underbrace{\mathrm{shamt}}_{5}\ \underbrace{\mathrm{funct}}_{6}.
+$$
+For `add $x,$y,$z`, the <processor register> indices are $\mathrm{rs}=y$, $\mathrm{rt}=z$ and $\mathrm{rd}=x$, while $\mathrm{shamt}=0$. The main <opcode> selects the R-type family and the function field selects addition. The <register file> reads its two operands from instruction <bits> 25:21 and 20:16. In the original <datapath>, `RegDst=1` selects <bits> 15:11 as the destination, `ALUSrc=0` selects the second <register file> output, and `ALUFunc=ADD` makes the <arithmetic logic unit> add its inputs. The result returns to `wdata`; `RegWrite=1` writes it to $x$ at the active <clock edge>. The `zero` output is irrelevant here.<Digital systems, linear algebra, introduction to formal proof examination paper by the University of Oxford (2014)>[Question 1 datapath, printed page 2: the input-0 and input-1 multiplexer labels determine these control polarities]{ref}
+
+A <MIPS I-type instruction> instead has the <instruction encoding>
+$$
+\underbrace{\mathrm{op}}_{6}\ \underbrace{\mathrm{rs}}_{5}\ \underbrace{\mathrm{rt}}_{5}\ \underbrace{\mathrm{immediate}}_{16}.
+$$
+For `addi $x,$y,n`, $\mathrm{rs}=y$, $\mathrm{rt}=x$, and the low sixteen <bits> contain the <immediate operand>. The <register file> supplies $y$ to the first <arithmetic logic unit> input. Set `RegDst=0` to select <bits> 20:16 for the destination, and `ALUSrc=1` to select the extended <immediate operand> for the second input. The <opcode> directly requests addition, so `ALUFunc=ADD` and `RegWrite=1`. The second <register file> read is unused. The returned result is written into $x$.
+
+The <sign extension> circuit retains the low sixteen <bits> and copies <bit> 15 into all sixteen new high positions:
+$$
+\boxed{\operatorname{sext}(n)_{15:0}=n,\qquad \operatorname{sext}(n)_{31:16}=\underbrace{n_{15}\cdots n_{15}}_{16\text{ copies}}.}
+$$
+Thus <sign extension> preserves the signed <two's complement> value: `0x7fff` becomes `0x00007fff`, whereas `0x8000` becomes `0xffff8000`. For both instructions, the architectural result above assumes no signed overflow; the full <MIPS architecture> specifies an overflow exception, which is outside this simplified <datapath>.
+
+=== b
+{scope}
+
+==== Solution
+
+Add <zero extension> alongside <sign extension>, and a <multiplexer> controlled by a new signal `ExtSign` to select between them before the existing immediate-input connection. Equivalently, make the extender itself selectable:
+$$
+\boxed{\mathrm{extended}_{15:0}=n,\qquad \mathrm{extended}_{31:16}=\begin{cases}n_{15}\cdots n_{15},&\mathrm{ExtSign}=1,\\0\cdots0,&\mathrm{ExtSign}=0.\end{cases}}
+$$
+Decode `ori` to `ExtSign=0`, `RegDst=0`, `ALUSrc=1`, `RegWrite=1` and `ALUFunc=OR`. The <arithmetic logic unit> then performs <bitwise OR> between $y$ and the zero-extended <immediate operand> and writes the result to $x$. Extend the <arithmetic logic unit>'s control decoding if OR was not already available. Decode `addi` to `ExtSign=1`; the new signal is irrelevant for <MIPS R-type instructions> because `ALUSrc=0`.
+
+<Zero extension> matters even when the most significant immediate <bit> is one: `ori` with `0x8000` must only affect the low half of the destination, whereas <sign extension> would incorrectly force every high <bit> to one.<MIPS32 Architecture For Programmers Volume II by MIPS Technologies>[ORI instruction entry: the 16-bit immediate is zero-extended before the logical operation]{ref}
+
+=== c
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+Use byte addresses, so adjacent 32-<bit> <array> elements are four bytes apart. The following <MIPS instructions> include harmless `sll $zero,$zero,0` instructions in every <branch delay slot>; the second load is followed by another independent instruction before its value is consumed, also accommodating an early <MIPS architecture> with a load-use delay. All mnemonics here denote individual <machine instructions>.
+
+```
+        beq   $t3,$zero,done  # n=0: do not access any array
+        sll   $zero,$zero,0
+loop:
+        lw    $t4,0($t0)      # current a element
+        lw    $t5,0($t1)      # current b element
+        addiu $t0,$t0,4       # advance a; also separates lw from its use
+        subu  $t6,$t4,$t5     # current difference, modulo 2^32
+        sw    $t6,0($t2)      # store current c element
+        addiu $t1,$t1,4
+        addiu $t2,$t2,4
+        addiu $t3,$t3,-1      # one fewer element remains
+        bne   $t3,$zero,loop
+        sll   $zero,$zero,0
+done:
+```
+
+A <loop invariant> at the head of the loop, after $k$ completed iterations, is that the three addresses point to elements $k$, the count is $n-k$, and every output element before $k$ equals the corresponding difference. One iteration reads element $k$, stores its difference and advances to $k+1$, preserving the <loop invariant>. The remaining count is a nonnegative <loop variant> decreasing by one, so the loop ends with $k=n$.
+
+The code uses `subu` to avoid signed-overflow traps: the suffix does not restrict the operands to unsigned values. Its precise result is
+$$
+\boxed{c_i\equiv a_i-b_i\pmod{2^{32}}\quad(0\leq i<n).}
+$$
+For representable signed differences this is exactly $c_i=a_i-b_i$. If trapping signed arithmetic is required instead, use `sub` and assume all differences are representable. The <arrays> must occupy valid word-aligned storage with no address wrap; the usual separate output <array> avoids overwriting unread inputs.
+
+==== ii
+{scope}
+
+===== Solution
+
+Make the code a leaf procedure called `array_diff`, copy the four argument <processor registers> into the temporaries used above, and replace the final label by a return. The copies are real `addu` instructions, avoiding an unexplained `move` pseudo-instruction:
+
+```
+array_diff:
+        addu  $t0,$a0,$zero
+        addu  $t1,$a1,$zero
+        addu  $t2,$a2,$zero
+        addu  $t3,$a3,$zero
+        # insert the code of (i), including its initial zero-count test
+        # use the local label array_diff_done in place of done
+array_diff_done:
+        jr    $ra
+        sll   $zero,$zero,0
+```
+
+In the literal insertion, the `done:` line from (i) is the `array_diff_done:` line displayed here; it is not a second return block. Under the usual <calling convention>, temporary <processor registers> are caller-saved. This procedure calls no other procedure and changes no saved <processor registers>, so it needs no <stack frame> or saved <return address>.
+
+For a 32-<bit> constant $K$, define $H_K=\lfloor K/2^{16}\rfloor$ and $L_K=K\bmod2^{16}$ using its unsigned <binary representation>. Load it with `lui` followed by `ori`; both are single <MIPS instructions>. For base addresses $A,B,C$ and count $N$, the main program is:
+
+```
+main:
+        lui   $a0,H_A
+        ori   $a0,$a0,L_A
+        lui   $a1,H_B
+        ori   $a1,$a1,L_B
+        lui   $a2,H_C
+        ori   $a2,$a2,L_C
+        lui   $a3,H_N
+        ori   $a3,$a3,L_N
+        jal   array_diff
+        sll   $zero,$zero,0
+main_after_call:
+        # c now contains the differences; continue the main program here
+```
+
+Here each `H_...` and `L_...` is an assembler-time numeric constant, not an executed operation. `lui` places the high half and clears the low half; `ori` inserts the low half without <sign extension>. Thus
+$$
+\boxed{(H_K\ll16)\mathbin{\mathrm{OR}}L_K=K.}
+$$
+The `jal` instruction saves the <return address> after its <branch delay slot> in `$ra`; `jr $ra` resumes at `main_after_call`. A main routine that itself needs to return to a caller must save its incoming `$ra` before `jal` and restore it afterwards.
+
+== 2
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Names live in <directory entries>. Each ordinary <directory entry> associates a component name with an <inode number>; the corresponding <inode> describes the <file> and locates its contents. A name is therefore not stored as the identity of the <inode>, and <hard links> can give one <inode> several names.
+
+To resolve `/var/mail/user`, start from the root <file-system directory>'s <inode>, read its <directory entries> and find `var`. Follow that entry's <inode number> to the `var` <inode>; read that <file-system directory> and find `mail`; repeat for `user`. The final <inode> supplies the <file metadata> and addresses needed to read the <file data blocks>. The intermediate <file-system directories> require search permission. This describes ordinary pathname traversal without a <symbolic link> or mount point changing the route.
+$$
+\boxed{\text{component name}\longrightarrow\text{directory entry}\longrightarrow\text{inode}\longrightarrow\text{contents}.}
+$$
+
+=== b
+{scope}
+
+==== Solution
+
+An <inode> holds <file metadata>: object type, owner and group identities, access permissions, <file> size, access/modification/status-change timestamps, and the <hard link> count. It also holds the information locating the contents, traditionally direct addresses and <indirect block pointers>. Device-special <files> instead need device-identifying information. The <file>'s name and parent pathname belong to <directory entries>, not to the ordinary <inode>.
+$$
+\boxed{\text{inode} = \text{metadata and content-location information}.}
+$$
+
+=== c
+{scope}
+
+==== Solution
+
+A traditional <inode> uses a fixed number of direct pointers to <file data blocks>, followed by singly, doubly and sometimes triply <indirect block pointers>. A singly <indirect block pointer> reaches one address block whose entries point to <file data blocks>. A doubly <indirect block pointer> reaches a block of pointers to singly indirect address blocks; a triply indirect one adds another level. The <file data blocks> need not be physically contiguous.
+
+This <multilevel inode indexing> keeps the <inode> compact. A small <file> uses direct pointers without allocating address blocks, while a large <file> allocates deeper address blocks only as needed. If each address block holds $q$ addresses, the successive levels cover $q,q^2,q^3$ <file data blocks>. The logical <file offset> selects a path arithmetically, so random access does not require walking through all preceding <file data blocks>.
+$$
+\boxed{\text{small files: direct access; large files: additional indirection levels}.}
+$$
+
+=== d
+{scope}
+
+==== Solution
+
+An <access control list> is attached to an object, such as a <file>, and lists which subjects or groups may perform which operations. Access requires checking the requesting identity against that object's list. A <security capability> is an unforgeable reference to an object carrying specified rights; possessing valid authority is what permits access. Protected storage or another integrity mechanism must prevent users manufacturing stronger <security capabilities>.
+
+The traditional <Unix> owner/group/other read-write-execute permissions are a compact, restricted <access control list>: the <inode> records the owner, group and permission <bits>, and the <operating system> compares these against the caller's credentials.
+$$
+\boxed{\text{Traditional Unix file protection is closest to access control lists}.}
+$$
+An already-open <file descriptor> can behave like a limited handle carrying rights, but that does not change the identity-based nature of the initial pathname permission check.
+
+=== e
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+Each address uses $32/8=4$ bytes, so an address block holds $q=2048/4=512$ pointers. Use zero-based <file offsets>. The requested <file offset> has
+$$
+3000=1\cdot2048+952.
+$$
+Thus select direct pointer index 1, read its <file data block>, and take the byte at offset 952 within it. No address block is needed:
+$$
+\boxed{1\text{ data-block read, assuming the inode is already resident}.}
+$$
+Fetching an uncached <inode> adds one read. If “byte 3000” instead uses one-based numbering, the within-block offset is 951; it is still the second <file data block>, with the same read count. Pathname lookup is separate from accessing a known <inode>.
+
+==== ii
+{scope}
+
+===== Solution
+
+The logical <file data block> index and within-block <file offset> are
+$$
+2^{24}+20000=8201\cdot2048+1568.
+$$
+Direct pointers cover logical indices 0 through 9. The singly indirect region covers 10 through $10+512-1=521$. The requested <file data block> therefore lies in the doubly indirect region, at relative index
+$$
+8201-(10+512)=7679=14\cdot512+511.
+$$
+Follow the doubly <indirect block pointer> in the <inode>, read its top address block and select entry 14, read that second address block and select entry 511, then read the resulting <file data block> and take byte offset 1568. These entry indices are zero-based.
+$$
+\boxed{3\text{ block reads: two address blocks and one data block}.}
+$$
+This assumes a resident <inode> and no useful <buffer cache> entries for the three blocks; an uncached <inode> adds one read. Under one-based byte numbering the last offset is 1567, without changing either address-block index or the read count.
+
+=== f
+{scope}
+
+==== Solution
+
+With a resident <inode>, the deepest allowed path uses two address blocks and one <file data block>, so every byte through the end of the doubly indirect region meets the three-read bound. There are ten directly addressed <file data blocks>, 512 singly addressed ones and $512^2$ doubly addressed ones. Therefore the largest contiguous <file> satisfying this bound is
+$$
+\boxed{2048(10+512+512^2)=537\,939\,968\text{ bytes}.}
+$$
+The next byte requires the triply indirect region, with three address-block reads and a fourth read for the <file data block>.
+
+The resident-<inode> convention is essential. If the question's three reads must also include fetching a previously uncached <inode>, only two further reads remain; the maximum is then
+$$
+\boxed{2048(10+512)=1\,069\,056\text{ bytes, if the inode read is included}.}
+$$
+Neither figure includes arbitrary pathname-resolution reads. These are worst-case counts in the traditional fully allocated <multilevel inode indexing> model; existing <buffer cache> entries can reduce them.
+
+== 3
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Use three <D flip-flops> whose stored <bits> $A,B,C$ represent $4A+2B+C$. Initialize them to $000$. The <Moore machine>'s output is this stored <binary representation>, and its <state transition table> is:
+
+\Table[
+\Tr[\Th[Present $ABC$]\Th[Next $A^+B^+C^+$]]
+\Tr[\Td[$000$]\Td[$001$]]
+\Tr[\Td[$001$]\Td[$010$]]
+\Tr[\Td[$010$]\Td[$011$]]
+\Tr[\Td[$011$]\Td[$100$]]
+\Tr[\Td[$100$]\Td[$101$]]
+\Tr[\Td[$101$]\Td[$000$]]
+]
+
+Treat the two unused <state encodings> $110,111$ as <don't-care conditions> when minimizing the <sum of products>. With juxtaposition for AND, $+$ for OR and a bar for NOT, one minimal choice is
+$$
+\boxed{D_A=A\overline C+BC,\qquad D_B=B\overline C+\overline A\,\overline B C,\qquad D_C=\overline C.}
+$$
+For $D_A$, the required ones at $011$ and $100$ cannot share one valid <implicant>: their differing <bits> would force inclusion of required zeros. Pair $011$ with the unused $111$ to get $BC$, and $100$ with unused $110$ to get $A\overline C$. Neither term can lose a <Boolean literal> without covering a required zero.
+
+For $D_B$, state $001$ is isolated from every other required one and from the unused states by required zeros, so it forces the three-<Boolean literal> term $\overline A\,\overline B C$. State $010$ pairs with unused $110$ to give $B\overline C$. Finally $D_C=\overline C$ is a single <Boolean literal>. Thus the three expressions are minimal <sum of products> expressions under the stated unused-state convention. In fact these choices also recover from $110\to111\to100$, so initialization into an unused state eventually joins the intended <modulo-six counter> cycle.
+
+=== b
+{scope}
+
+==== Solution
+
+Let the stored <bits> be $G,H$, with $G$ most significant. The required <Gray code> transitions give
+$$
+00\to01\to11\to10\to00,\qquad\boxed{D_G=H,\qquad D_H=\overline G.}
+$$
+Connect $H$ directly to the first <D flip-flop>'s data input and feed $G$ through one <NOT gate> to the second input. Drive both enable inputs with $E$ and both clock inputs with the same clock. Thus $E=0$ holds both stored <bits>; $E=1$ takes the next <Gray-code counter> state at the active <clock edge>. Reset initializes $GH=00$.
+
+\Image[digital-systems-2014-counters.png]
+{title=Enabled <Gray-code counter> and synchronous SOS sequencer: all stored <bits> share one clock}
+
+With ordinary uncomplemented $Q$ outputs, one <NOT gate> is minimal: wiring alone cannot produce $\overline G$. If a <D flip-flop> already provides a complementary output, that output supplies the inversion without an external <logic gate>. This is a <Moore machine> because its output $GH$ depends only on stored state; $E$ controls transitions.
+
+=== c
+{scope}
+
+==== Solution
+
+Use a <synchronous counter cascade>, with the three-<bit> <modulo-six counter> advancing on every active <clock edge> and the <Gray-code counter> advancing only when the old binary state is $101$. Its enable can therefore be
+$$
+\boxed{E=A C.}
+$$
+On the six valid binary states, $AC=1$ only at $101$. Both <digital counters> sample the same clock: at an edge leaving $101$, the binary output becomes $000$ and $GH$ simultaneously advances to the next <Gray code>. At all other edges $GH$ holds. Starting from $GHABC=00000$, this gives exactly the listed 24-state sequence. Use the shared clock and an enable, rather than making a combinational terminal-state signal into a new clock.<Digital systems, linear algebra, introduction to formal proof examination paper by the University of Oxford (2014)>[Question 3(c), printed page 4: original 24-row state/output table]{ref}
+
+For the output $Y$, every state with $C=1$ has $Y=1$. For $C=0$, the only extra high states are $GH=01$ with binary state $010$, and $GH=11$ with binary state $000$ or $100$. On valid states these conditions are $H\overline G B$ and $HG\overline B$, respectively. Hence
+$$
+\boxed{Y=C+H\overline G B+HG\overline B=C\lor\bigl(H\land(G\mathbin{\oplus}B)\bigr).}
+$$
+The lower circuit in the figure implements this with an AND for $E$, an <exclusive or> on $G,B$, an AND with $H$, and an OR with $C$. The resulting <Morse code> output blocks, in <Gray code> order $00,01,11,10$, are
+$$
+010101\quad011101\quad110111\quad010101.
+$$
+Across the two middle blocks these join to three three-clock highs separated by one-clock lows; the first and last blocks provide the three single-clock highs of each S. The specified table is a repeating SOS symbol pattern; its wraparound has a one-clock low, rather than an added inter-message pause. The output is a <Moore machine> decoding of current stored <bits>; its value changes after those <bits> settle.
+
+== 4
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Apply the <elementary row operations> from bottom to top: $R_4\gets R_4-R_3$, $R_3\gets R_3-R_2$, and $R_2\gets R_2-R_1$. This order ensures that each subtraction uses the original preceding row. The result is the <upper triangular matrix>
+$$
+T=\begin{pmatrix}a&a&a&a\\0&b-a&b-a&b-a\\0&0&c-b&c-b\\0&0&0&d-c\end{pmatrix}.
+$$
+Put $\delta_1=a$, $\delta_2=b-a$, $\delta_3=c-b$, $\delta_4=d-c$. Row $i$ is either zero if $\delta_i=0$, or has its first nonzero entry in column $i$. Thus, for arbitrary real parameters, a <row echelon form> is obtained by retaining the nonzero rows of $T$ in their existing order and moving every zero row to the bottom. This deals explicitly with vanishing parameters; an <upper triangular matrix> with an intermediate zero row is not yet a <row echelon form>.
+
+The subtractions preserve the <determinant>, so the original <matrix> has
+$$
+\det M=a(b-a)(c-b)(d-c).
+$$
+A square <matrix> is invertible exactly when its <determinant> is nonzero. Consequently,
+$$
+\boxed{M\text{ invertible}\iff a\ne0,\quad b\ne a,\quad c\ne b,\quad d\ne c.}
+$$
+These conditions concern consecutive parameters: no ordering, positivity, or pairwise distinctness of all four is required. More generally the <rank of a matrix> here is the number of nonzero $\delta_i$, because the retained nonzero rows have distinct leading columns.
+
+=== b
+{scope}
+
+==== Solution
+
+Summing the <flow conservation> equations over all four junctions cancels every internal flow. The total entering flow is $300+500+250+50+100=1200$, and the known exiting flow is $700+200=900$. Thus
+$$
+\boxed{f_1=1200-900=300.}
+$$
+The original arrows point $A\to B$, $C\to A$, $B\to D$, and $C\to D$ for $f_2,f_3,f_4,f_5$, respectively. In particular, $f_1$ exits north from $A$.<Digital systems, linear algebra, introduction to formal proof examination paper by the University of Oxford (2014)>[Question 4(b) traffic diagram, printed page 5]{ref}
+
+The individual <flow conservation> equations are
+$$
+\begin{aligned}
+A:&\quad300+f_3=f_1+f_2,\\
+B:&\quad500+250+f_2=f_4,\\
+C:&\quad50+100=f_3+f_5,\\
+D:&\quad f_4+f_5=700+200.
+\end{aligned}
+$$
+Choose $t=f_5$. Substitution gives all solutions of these <linear equations>:
+$$
+\boxed{(f_1,f_2,f_3,f_4,f_5)=(300,150-t,150-t,900-t,t),\qquad0\leq t\leq150.}
+$$
+The inequalities enforce nonnegative flows on all one-way streets. The last junction equation follows from the first three and total <flow conservation>, so it introduces no further restriction.
+
+The maximum is $\boxed{f_5=150}$. It makes $f_2=f_3=0$. At $A$, all 300 vehicles arriving from the west turn north and leave along $f_1$; none arrives from $C$ or continues east to $B$.
+
+== 5
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+For a real $m\times n$ <matrix> $A$, the <row space> is the <linear span> of its rows in $\mathbb R^n$, and the <column space> is the <linear span> of its columns in $\mathbb R^m$. Its <null space> consists of the input <vectors> sent to zero:
+$$
+\operatorname{Null}(A)=\{x\in\mathbb R^n:Ax=0\}.
+$$
+The <rank of a matrix> is
+$$
+\boxed{\operatorname{rank}A=\dim\operatorname{Col}(A)=\dim\operatorname{Row}(A).}
+$$
+The equality of row and column dimensions is the row-rank/column-rank theorem. Each displayed space is a <linear subspace> of the indicated ambient <vector space>.
+
+=== b
+{scope}
+
+==== Solution
+
+Write the columns of $A$ as $a_1,\ldots,a_n$ and the coordinates of the <vector> $x$ as $x_1,\ldots,x_n$. By the definition of <matrix multiplication>,
+$$
+\boxed{y=Ax=x_1a_1+\cdots+x_na_n\in\operatorname{span}\{a_1,\ldots,a_n\}=\operatorname{Col}(A).}
+$$
+Indeed, its $i$th coordinate is $\sum_{j=1}^n A_{ij}x_j$, exactly the $i$th coordinate of this <linear combination>. Since the <column space> contains every <linear combination> of the columns, the claim holds for every <vector> $x$.
+
+=== c
+{scope}
+
+==== Solution
+
+Swap the first two rows, then perform $R_2\gets R_2+R_1$ and $R_3\gets R_3-2R_1$. These <elementary row operations> give
+$$
+A\sim\begin{pmatrix}1&-2&2&3&-1\\0&0&5&10&-10\\0&0&1&2&-2\end{pmatrix}.
+$$
+Scale row 2 by $1/5$, subtract it from row 3, and finally subtract twice row 2 from row 1. The <reduced row echelon form> is
+$$
+R=\begin{pmatrix}1&-2&0&-1&3\\0&0&1&2&-2\\0&0&0&0&0\end{pmatrix}.
+$$
+<Elementary row operations> preserve the <row space>. The two nonzero rows of $R$ are <linearly independent>, since their leading entries lie in different columns. Hence
+$$
+\boxed{\text{row-space basis }\{(1,-2,0,-1,3),(0,0,1,2,-2)\},\qquad\operatorname{rank}A=2.}
+$$
+
+=== d
+{scope}
+
+==== Solution
+
+The <pivot columns> of the <reduced row echelon form> are columns 1 and 3. Take those columns of the original <matrix>, since <elementary row operations> need not preserve the original <column space>:
+$$
+\boxed{\left\{\begin{pmatrix}-1\\1\\2\end{pmatrix},\begin{pmatrix}3\\2\\5\end{pmatrix}\right\}.}
+$$
+For an explicit spanning check, column 2 is $-2a_1$, column 4 is $-a_1+2a_3$, and column 5 is $3a_1-2a_3$. The first two coordinates of the displayed columns form a $2\times2$ <matrix> of <determinant> $-5\ne0$, proving their <linear independence>. They are therefore a <basis> of the <column space>.
+
+=== e
+{scope}
+
+==== Solution
+
+The right-hand <vector> is in the <column space>, because
+$$
+2\begin{pmatrix}-1\\1\\2\end{pmatrix}+\begin{pmatrix}3\\2\\5\end{pmatrix}=\begin{pmatrix}1\\4\\9\end{pmatrix}.
+$$
+Consequently the <linear system> is consistent. A concrete solution is
+$$
+\boxed{x=(2,0,1,0,0)^{\mathsf T}.}
+$$
+As a compatibility check, the original rows satisfy $r_1+11r_2-5r_3=0$, and the right-hand entries satisfy the same relation $1+11\cdot4-5\cdot9=0$. There are infinitely many solutions, obtained by adding any <vector> in the <null space> to the displayed solution.
+
+=== f
+{scope}
+
+==== Solution
+
+The <reduced row echelon form> yields
+$$
+x_1-2x_2-x_4+3x_5=0,\qquad x_3+2x_4-2x_5=0.
+$$
+Take the <free variables in a linear system> to be $s=x_2$, $t=x_4$, $u=x_5$. Then
+$$
+x=s\begin{pmatrix}2\\1\\0\\0\\0\end{pmatrix}+t\begin{pmatrix}1\\0\\-2\\1\\0\end{pmatrix}+u\begin{pmatrix}-3\\0\\2\\0\\1\end{pmatrix}.
+$$
+Thus
+$$
+\boxed{\text{null-space basis }\{(2,1,0,0,0)^{\mathsf T},(1,0,-2,1,0)^{\mathsf T},(-3,0,2,0,1)^{\mathsf T}\},\qquad\dim\operatorname{Null}(A)=3.}
+$$
+Each listed <vector> lies in the <null space>, and every solution has the displayed form. Their coordinates in positions 2, 4 and 5 prove <linear independence>. The dimension also follows from the <rank-nullity theorem>: $5-2=3$.
+
+== 6
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+An <elementary matrix> acts on rows by multiplication on the left. Apply the desired <elementary row operation> to the <identity matrix> to construct it. In the order requested, the three <elementary matrices> and their <inverse matrices> are
+$$
+\boxed{E_1=\begin{pmatrix}2&0&0\\0&1&0\\0&0&1\end{pmatrix},\quad E_1^{-1}=\begin{pmatrix}1/2&0&0\\0&1&0\\0&0&1\end{pmatrix};}
+$$
+$$
+\boxed{E_2=\begin{pmatrix}1&0&0\\0&1&0\\-2&0&1\end{pmatrix},\quad E_2^{-1}=\begin{pmatrix}1&0&0\\0&1&0\\2&0&1\end{pmatrix};}
+$$
+$$
+\boxed{E_3=\begin{pmatrix}1&0&0\\0&0&1\\0&1&0\end{pmatrix},\quad E_3^{-1}=E_3.}
+$$
+The inverse operations halve row 1, add twice row 1 to row 3, and interchange rows 2 and 3 again, respectively.
+
+=== b
+{scope}
+
+==== Solution
+
+Use $R_2\gets R_2+2R_1$ and $R_3\gets R_3-3R_1$, followed by $R_3\gets R_3+R_2$. These <elementary row operations> give
+$$
+\begin{pmatrix}1&4&1\\-2&-4&0\\3&8&0\end{pmatrix}\sim\begin{pmatrix}1&4&1\\0&4&2\\0&-4&-3\end{pmatrix}\sim\underbrace{\begin{pmatrix}1&4&1\\0&4&2\\0&0&-1\end{pmatrix}}_U.
+$$
+The elimination multipliers are $m_{21}=-2$, $m_{31}=3$, $m_{32}=-1$. Record them in the <unit lower triangular matrix> $L$:
+$$
+\boxed{A=LU,\qquad L=\begin{pmatrix}1&0&0\\-2&1&0\\3&-1&1\end{pmatrix},\quad U=\begin{pmatrix}1&4&1\\0&4&2\\0&0&-1\end{pmatrix}.}
+$$
+To see the <elementary matrix> relation directly, let $F_{21}=I+2e_{21}$, $F_{31}=I-3e_{31}$ and $F_{32}=I+e_{32}$, where $e_{ij}$ has a single 1 in position $(i,j)$. Then $U=F_{32}F_{31}F_{21}A$, and reversing and inverting these operations gives $L=F_{21}^{-1}F_{31}^{-1}F_{32}^{-1}$. Direct <matrix multiplication> also verifies the stated <LU decomposition>.
+
+=== c
+{scope}
+
+==== Solution
+
+Solve two triangular <linear systems>, rather than forming an <inverse matrix>:
+$$
+\boxed{Ly=b\quad\text{by forward substitution},\qquad Ux=y\quad\text{by back substitution}.}
+$$
+For this <LU decomposition>, <forward substitution> gives $y_1=b_1$, $y_2=b_2+2y_1$ and $y_3=b_3-3y_1+y_2$. Then <back substitution> gives
+$$
+x_3=-y_3,\qquad x_2=\frac{y_2-2x_3}{4},\qquad x_1=y_1-4x_2-x_3.
+$$
+All diagonal entries used as divisors are nonzero. The same <LU decomposition> can be reused for many right-hand <vectors>, with only these two triangular solves repeated.
+
+=== d
+{scope}
+
+==== Solution
+
+A <triangular matrix> has <determinant> equal to the product of its diagonal entries. Since $L$ is a <unit lower triangular matrix>, $\det L=1$. Thus
+$$
+\boxed{\det A=\det L\det U=1\cdot(1\cdot4\cdot(-1))=-4.}
+$$
+Equivalently, the elimination used only row additions, which leave the <determinant> unchanged; there were no row swaps or row scalings to account for.
+
+== 7
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+The <conjunction introduction rule> derives $\phi\land\psi$ from proofs of $\phi$ and $\psi$ in the current context. The <disjunction elimination rule> derives a common conclusion $\kappa$ from $\phi\lor\psi$, a subproof of $\kappa$ under temporary assumption $\phi$, and a subproof of $\kappa$ under temporary assumption $\psi$. The <implication introduction rule> derives $\phi\to\psi$ by temporarily assuming $\phi$ and proving $\psi$.
+
+The rectangular boxes delimit subproofs and the scope of their temporary assumptions. The <disjunction elimination rule> discharges the two case assumptions; the <implication introduction rule> discharges its antecedent assumption. Formulas depending on a boxed assumption cannot simply escape that box. Other undischarged assumptions remain in force, and nested boxes can access the assumptions of enclosing boxes.
+$$
+\boxed{\text{Boxes record local assumptions and their discharge, not additional premises}.}
+$$
+
+=== b
+{scope}
+
+==== Solution
+
+Work backwards from the outermost available <logical connective>. One strategy applies the <disjunction elimination rule> to the premise first, constructs the whole target in each case, and then closes the cases. In the tables, a context such as $\{1,2\}$ means that assumptions on lines 1 and 2 remain open. A range in a discharge rule denotes the entire local subproof.
+
+\Table[
+\Tr[\Th[Line]\Th[Context]\Th[Formula]\Th[Justification]]
+\Tr[\Td[1]\Td[$\{1\}$]\Td[$(P\land Q)\lor(P\land R)$]\Td[Premise]]
+\Tr[\Td[2]\Td[$\{1,2\}$]\Td[$P\land Q$]\Td[Temporary assumption]]
+\Tr[\Td[3]\Td[$\{1,2\}$]\Td[$P$]\Td[<conjunction elimination rule> $\land\text{-elim-L}$ on 2]]
+\Tr[\Td[4]\Td[$\{1,2\}$]\Td[$Q$]\Td[<conjunction elimination rule> $\land\text{-elim-R}$ on 2]]
+\Tr[\Td[5]\Td[$\{1,2\}$]\Td[$Q\lor R$]\Td[<disjunction introduction rule> $\lor\text{-intro-L}$ on 4]]
+\Tr[\Td[6]\Td[$\{1,2\}$]\Td[$P\land(Q\lor R)$]\Td[<conjunction introduction rule> $\land\text{-intro}$ on 3, 5]]
+\Tr[\Td[7]\Td[$\{1,7\}$]\Td[$P\land R$]\Td[Temporary assumption]]
+\Tr[\Td[8]\Td[$\{1,7\}$]\Td[$P$]\Td[<conjunction elimination rule> $\land\text{-elim-L}$ on 7]]
+\Tr[\Td[9]\Td[$\{1,7\}$]\Td[$R$]\Td[<conjunction elimination rule> $\land\text{-elim-R}$ on 7]]
+\Tr[\Td[10]\Td[$\{1,7\}$]\Td[$Q\lor R$]\Td[<disjunction introduction rule> $\lor\text{-intro-R}$ on 9]]
+\Tr[\Td[11]\Td[$\{1,7\}$]\Td[$P\land(Q\lor R)$]\Td[<conjunction introduction rule> $\land\text{-intro}$ on 8, 10]]
+\Tr[\Td[12]\Td[$\{1\}$]\Td[$P\land(Q\lor R)$]\Td[<disjunction elimination rule> $\lor\text{-elim}$ on 1, 6, 11; discharge 2, 7]]
+]
+
+A second strategy applies the <conjunction introduction rule> backwards to the target first. Prove $P$ and $Q\lor R$ separately, each by the <disjunction elimination rule> on the premise, and combine them:
+
+\Table[
+\Tr[\Th[Line]\Th[Context]\Th[Formula]\Th[Justification]]
+\Tr[\Td[1]\Td[$\{1\}$]\Td[$(P\land Q)\lor(P\land R)$]\Td[Premise]]
+\Tr[\Td[2]\Td[$\{1,2\}$]\Td[$P\land Q$]\Td[Temporary assumption]]
+\Tr[\Td[3]\Td[$\{1,2\}$]\Td[$P$]\Td[<conjunction elimination rule> $\land\text{-elim-L}$ on 2]]
+\Tr[\Td[4]\Td[$\{1,4\}$]\Td[$P\land R$]\Td[Temporary assumption]]
+\Tr[\Td[5]\Td[$\{1,4\}$]\Td[$P$]\Td[<conjunction elimination rule> $\land\text{-elim-L}$ on 4]]
+\Tr[\Td[6]\Td[$\{1\}$]\Td[$P$]\Td[<disjunction elimination rule> $\lor\text{-elim}$ on 1, 3, 5; discharge 2, 4]]
+\Tr[\Td[7]\Td[$\{1,7\}$]\Td[$P\land Q$]\Td[Temporary assumption]]
+\Tr[\Td[8]\Td[$\{1,7\}$]\Td[$Q$]\Td[<conjunction elimination rule> $\land\text{-elim-R}$ on 7]]
+\Tr[\Td[9]\Td[$\{1,7\}$]\Td[$Q\lor R$]\Td[<disjunction introduction rule> $\lor\text{-intro-L}$ on 8]]
+\Tr[\Td[10]\Td[$\{1,10\}$]\Td[$P\land R$]\Td[Temporary assumption]]
+\Tr[\Td[11]\Td[$\{1,10\}$]\Td[$R$]\Td[<conjunction elimination rule> $\land\text{-elim-R}$ on 10]]
+\Tr[\Td[12]\Td[$\{1,10\}$]\Td[$Q\lor R$]\Td[<disjunction introduction rule> $\lor\text{-intro-R}$ on 11]]
+\Tr[\Td[13]\Td[$\{1\}$]\Td[$Q\lor R$]\Td[<disjunction elimination rule> $\lor\text{-elim}$ on 1, 9, 12; discharge 7, 10]]
+\Tr[\Td[14]\Td[$\{1\}$]\Td[$P\land(Q\lor R)$]\Td[<conjunction introduction rule> $\land\text{-intro}$ on 6, 13]]
+]
+
+Both derivations establish
+$$
+\boxed{((P\land Q)\lor(P\land R))\vdash P\land(Q\lor R).}
+$$
+Counting only applications of <inference rules>, each proof has **nine** steps: four <conjunction elimination rule> applications, two <disjunction introduction rule> applications, and three remaining applications. The first uses two <conjunction introduction rule> applications and one <disjunction elimination rule>; the second uses one and two, respectively. The second has two additional temporary-assumption lines, giving 14 displayed lines instead of 12, but assumptions are not additional inference applications. Its duplicated case analysis is exchanged for avoiding construction of the complete <logical conjunction> separately in both cases. In a proof tree it also repeats the use of the original premise.
+
+=== c
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+Introduce the three <logical implications> from the outside in. Under assumptions $P\to Q$, $Q\to R$, and $P$, apply the <implication elimination rule> twice, then use <assumption discharge> in reverse order:
+
+\Table[
+\Tr[\Th[Line]\Th[Context]\Th[Formula]\Th[Justification]]
+\Tr[\Td[1]\Td[$\{1\}$]\Td[$P\to Q$]\Td[Temporary assumption]]
+\Tr[\Td[2]\Td[$\{1,2\}$]\Td[$Q\to R$]\Td[Temporary assumption]]
+\Tr[\Td[3]\Td[$\{1,2,3\}$]\Td[$P$]\Td[Temporary assumption]]
+\Tr[\Td[4]\Td[$\{1,2,3\}$]\Td[$Q$]\Td[<implication elimination rule> $\to\text{-elim}$ on 1, 3]]
+\Tr[\Td[5]\Td[$\{1,2,3\}$]\Td[$R$]\Td[<implication elimination rule> $\to\text{-elim}$ on 2, 4]]
+\Tr[\Td[6]\Td[$\{1,2\}$]\Td[$P\to R$]\Td[<implication introduction rule> $\to\text{-intro}$ on 5; discharge 3]]
+\Tr[\Td[7]\Td[$\{1\}$]\Td[$(Q\to R)\to(P\to R)$]\Td[<implication introduction rule> $\to\text{-intro}$ on 6; discharge 2]]
+\Tr[\Td[8]\Td[$\varnothing$]\Td[$(P\to Q)\to((Q\to R)\to(P\to R))$]\Td[<implication introduction rule> $\to\text{-intro}$ on 7; discharge 1]]
+]
+
+Thus
+$$
+\boxed{\vdash(P\to Q)\to((Q\to R)\to(P\to R)).}
+$$
+
+==== ii
+{scope}
+
+===== Solution
+
+Under $P$, the first assumption yields $Q\to R$, while the second yields $Q$. Apply the <implication elimination rule> once more to obtain $R$, and discharge the three temporary assumptions:
+
+\Table[
+\Tr[\Th[Line]\Th[Context]\Th[Formula]\Th[Justification]]
+\Tr[\Td[1]\Td[$\{1\}$]\Td[$P\to(Q\to R)$]\Td[Temporary assumption]]
+\Tr[\Td[2]\Td[$\{1,2\}$]\Td[$P\to Q$]\Td[Temporary assumption]]
+\Tr[\Td[3]\Td[$\{1,2,3\}$]\Td[$P$]\Td[Temporary assumption]]
+\Tr[\Td[4]\Td[$\{1,2,3\}$]\Td[$Q\to R$]\Td[<implication elimination rule> $\to\text{-elim}$ on 1, 3]]
+\Tr[\Td[5]\Td[$\{1,2,3\}$]\Td[$Q$]\Td[<implication elimination rule> $\to\text{-elim}$ on 2, 3]]
+\Tr[\Td[6]\Td[$\{1,2,3\}$]\Td[$R$]\Td[<implication elimination rule> $\to\text{-elim}$ on 4, 5]]
+\Tr[\Td[7]\Td[$\{1,2\}$]\Td[$P\to R$]\Td[<implication introduction rule> $\to\text{-intro}$ on 6; discharge 3]]
+\Tr[\Td[8]\Td[$\{1\}$]\Td[$(P\to Q)\to(P\to R)$]\Td[<implication introduction rule> $\to\text{-intro}$ on 7; discharge 2]]
+\Tr[\Td[9]\Td[$\varnothing$]\Td[$(P\to(Q\to R))\to((P\to Q)\to(P\to R))$]\Td[<implication introduction rule> $\to\text{-intro}$ on 8; discharge 1]]
+]
+
+The two uses of $P$ are permitted in ordinary <natural deduction>. Therefore
+$$
+\boxed{\vdash(P\to(Q\to R))\to((P\to Q)\to(P\to R)).}
+$$
+
+==== iii
+{scope}
+
+===== Solution
+
+The premise turns an assumed $\neg P$ into a <contradiction>. Use the <negation introduction rule> to obtain $\neg\neg P$, then the supplied classical <double-negation elimination> rule:
+
+\Table[
+\Tr[\Th[Line]\Th[Context]\Th[Formula]\Th[Justification]]
+\Tr[\Td[1]\Td[$\{1\}$]\Td[$\neg P\to\bot$]\Td[Premise]]
+\Tr[\Td[2]\Td[$\{1,2\}$]\Td[$\neg P$]\Td[Temporary assumption]]
+\Tr[\Td[3]\Td[$\{1,2\}$]\Td[$\bot$]\Td[<implication elimination rule> $\to\text{-elim}$ on 1, 2]]
+\Tr[\Td[4]\Td[$\{1\}$]\Td[$\neg\neg P$]\Td[<negation introduction rule> $\neg\text{-intro}$ on 3; discharge 2]]
+\Tr[\Td[5]\Td[$\{1\}$]\Td[$P$]\Td[<double-negation elimination> $\neg\neg\text{-elim}$ on 4]]
+]
+
+Hence $\boxed{(\neg P\to\bot)\vdash P}$. The final classical rule is essential: deriving $\neg\neg P$ alone is not yet a proof of $P$ in <intuitionistic propositional logic>.
+
+==== iv
+{scope}
+
+===== Solution
+
+Assuming $\neg P$ lets the <disjunction introduction rule> produce the <logical disjunction> excluded by the premise. This gives a <contradiction>, so conclude by <negation introduction> and <double-negation elimination>:
+
+\Table[
+\Tr[\Th[Line]\Th[Context]\Th[Formula]\Th[Justification]]
+\Tr[\Td[1]\Td[$\{1\}$]\Td[$\neg(\neg P\lor\neg Q)$]\Td[Premise]]
+\Tr[\Td[2]\Td[$\{1,2\}$]\Td[$\neg P$]\Td[Temporary assumption]]
+\Tr[\Td[3]\Td[$\{1,2\}$]\Td[$\neg P\lor\neg Q$]\Td[<disjunction introduction rule> $\lor\text{-intro-L}$ on 2]]
+\Tr[\Td[4]\Td[$\{1,2\}$]\Td[$\bot$]\Td[<negation elimination rule> $\neg\text{-elim}$ on 3, 1]]
+\Tr[\Td[5]\Td[$\{1\}$]\Td[$\neg\neg P$]\Td[<negation introduction rule> $\neg\text{-intro}$ on 4; discharge 2]]
+\Tr[\Td[6]\Td[$\{1\}$]\Td[$P$]\Td[<double-negation elimination> $\neg\neg\text{-elim}$ on 5]]
+]
+
+Thus
+$$
+\boxed{\neg(\neg P\lor\neg Q)\vdash P.}
+$$
+No separate result about $Q$ or use of a derived De Morgan rule is needed.
+
+== 8
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+A variable $v$ is fresh for the relevant context when it occurs free in none of its undischarged assumptions. For the <existential quantifier elimination rule>, it must also not occur free in the final conclusion $\kappa$ or the existential premise: it is a new <eigenvariable>, allowed in the temporary witness assumption $\phi(v)$ and formulas inside that witness subproof. Bound variable names can always be renamed to avoid collisions.
+
+The premise $\exists x\,\phi(x)$ guarantees some witness, without saying which object it is. Temporarily call one such witness $v$ and assume $\phi(v)$. If the subproof yields $\kappa$ without depending on any special identity or extra property of $v$, its conclusion holds whichever witness exists. The <existential quantifier elimination rule> therefore discharges $\phi(v)$ and retains only the original existential premise and other open assumptions.
+$$
+\boxed{\Gamma,\phi(v)\vdash\kappa\quad\Longrightarrow\quad\Gamma,\exists x\,\phi(x)\vdash\kappa,\qquad v\notin\operatorname{FV}(\Gamma,\kappa,\exists x\,\phi(x)).}
+$$
+This <eigenvariable condition> prevents inferring $\phi(v)$ for a previously chosen object merely from existence. In particular, $\exists x\,Q(x)$ does not license $Q(v)$ outside the discharged witness subproof.
+
+=== b
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+The existential premise is $\exists x\,(Q(x)\to R(x))$, with the <logical implication> inside the <existential quantifier>. Eliminate it using a fresh witness $a$, specialize $\forall x\,Q(x)$ to that same witness, and introduce the required <existential quantifier> before closing the witness subproof:
+
+\Table[
+\Tr[\Th[Line]\Th[Context]\Th[Formula]\Th[Justification]]
+\Tr[\Td[1]\Td[$\{1\}$]\Td[$\exists x\,(Q(x)\to R(x))$]\Td[Premise]]
+\Tr[\Td[2]\Td[$\{1,2\}$]\Td[$\forall x\,Q(x)$]\Td[Premise]]
+\Tr[\Td[3]\Td[$\{1,2,3\}$]\Td[$Q(a)\to R(a)$]\Td[Temporary assumption]]
+\Tr[\Td[4]\Td[$\{1,2,3\}$]\Td[$Q(a)$]\Td[<universal elimination> $\forall\text{-elim}$ on 2; instantiate at $a$]]
+\Tr[\Td[5]\Td[$\{1,2,3\}$]\Td[$R(a)$]\Td[<implication elimination rule> $\to\text{-elim}$ on 3, 4]]
+\Tr[\Td[6]\Td[$\{1,2,3\}$]\Td[$\exists x\,R(x)$]\Td[<existential quantifier introduction rule> $\exists\text{-intro}$ on 5; witness $a$]]
+\Tr[\Td[7]\Td[$\{1,2\}$]\Td[$\exists x\,R(x)$]\Td[<existential quantifier elimination rule> $\exists\text{-elim}$ on 1, 6; discharge 3; $a$ fresh]]
+]
+
+The <eigenvariable> $a$ is absent from the premises and from $\exists x\,R(x)$. Consequently,
+$$
+\boxed{\exists x\,(Q(x)\to R(x)),\ \forall x\,Q(x)\vdash\exists x\,R(x).}
+$$
+
+==== ii
+{scope}
+
+===== Solution
+
+Extract the universally quantified <logical implication> and the existentially quantified <logical conjunction> from the premise. Use one fresh witness $a$ for both conjuncts of the latter, so that the resulting $R(a)$ and $\neg S(a)$ concern the same object:
+
+\Table[
+\Tr[\Th[Line]\Th[Context]\Th[Formula]\Th[Justification]]
+\Tr[\Td[1]\Td[$\{1\}$]\Td[$(\forall x\,(Q(x)\to R(x)))\land(\exists x\,(Q(x)\land\neg S(x)))$]\Td[Premise]]
+\Tr[\Td[2]\Td[$\{1\}$]\Td[$\forall x\,(Q(x)\to R(x))$]\Td[<conjunction elimination rule> $\land\text{-elim-L}$ on 1]]
+\Tr[\Td[3]\Td[$\{1\}$]\Td[$\exists x\,(Q(x)\land\neg S(x))$]\Td[<conjunction elimination rule> $\land\text{-elim-R}$ on 1]]
+\Tr[\Td[4]\Td[$\{1,4\}$]\Td[$Q(a)\land\neg S(a)$]\Td[Temporary assumption]]
+\Tr[\Td[5]\Td[$\{1,4\}$]\Td[$Q(a)$]\Td[<conjunction elimination rule> $\land\text{-elim-L}$ on 4]]
+\Tr[\Td[6]\Td[$\{1,4\}$]\Td[$\neg S(a)$]\Td[<conjunction elimination rule> $\land\text{-elim-R}$ on 4]]
+\Tr[\Td[7]\Td[$\{1,4\}$]\Td[$Q(a)\to R(a)$]\Td[<universal elimination> $\forall\text{-elim}$ on 2; instantiate at $a$]]
+\Tr[\Td[8]\Td[$\{1,4\}$]\Td[$R(a)$]\Td[<implication elimination rule> $\to\text{-elim}$ on 7, 5]]
+\Tr[\Td[9]\Td[$\{1,4\}$]\Td[$R(a)\land\neg S(a)$]\Td[<conjunction introduction rule> $\land\text{-intro}$ on 8, 6]]
+\Tr[\Td[10]\Td[$\{1,4\}$]\Td[$\exists x\,(R(x)\land\neg S(x))$]\Td[<existential quantifier introduction rule> $\exists\text{-intro}$ on 9; witness $a$]]
+\Tr[\Td[11]\Td[$\{1\}$]\Td[$\exists x\,(R(x)\land\neg S(x))$]\Td[<existential quantifier elimination rule> $\exists\text{-elim}$ on 3, 10; discharge 4; $a$ fresh]]
+]
+
+The witness $a$ occurs in no undischarged premise or final conclusion. Therefore the <existential quantifier elimination rule> is valid and gives
+$$
+\boxed{(\forall x\,(Q(x)\to R(x)))\land(\exists x\,(Q(x)\land\neg S(x)))\vdash\exists x\,(R(x)\land\neg S(x)).}
+$$
+
+=== c
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+Use the <equality introduction rule> to prove $t_1=t_1$. In the <equality elimination rule>, choose the <first-order formula> $\phi(z)$ to be $z=t_1$. Substituting $t_2$ for $t_1$ in its first position proves symmetry:
+
+\Table[
+\Tr[\Th[Line]\Th[Context]\Th[Formula]\Th[Justification]]
+\Tr[\Td[1]\Td[$\{1\}$]\Td[$t_1=t_2$]\Td[Premise]]
+\Tr[\Td[2]\Td[$\{1\}$]\Td[$t_1=t_1$]\Td[<equality introduction rule> $=\text{-intro}$]]
+\Tr[\Td[3]\Td[$\{1\}$]\Td[$t_2=t_1$]\Td[<equality elimination rule> $=\text{-elim}$ on 1, 2]]
+]
+
+Thus $\boxed{t_1=t_2\vdash t_2=t_1}$. This uses only the two supplied equality rules; symmetry has not been assumed as an additional rule.
+
+==== ii
+{scope}
+
+===== Solution
+
+Eliminate the existential premise with fresh witness $a$. Its first conjunct gives $Q(a)$ and its second gives $\forall y\,(Q(y)\to y=a)$. For a fresh arbitrary $b$, one direction of the desired <logical biconditional> follows by <universal elimination>. For the other, $b=a$ must be reversed before transporting $Q(a)$ to $Q(b)$ using the supplied oriented <equality elimination rule>.
+
+\Table[
+\Tr[\Th[Line]\Th[Context]\Th[Formula]\Th[Justification]]
+\Tr[\Td[1]\Td[$\{1\}$]\Td[$\exists x\,(Q(x)\land\forall y\,(Q(y)\to y=x))$]\Td[Premise]]
+\Tr[\Td[2]\Td[$\{1,2\}$]\Td[$Q(a)\land\forall y\,(Q(y)\to y=a)$]\Td[Temporary assumption]]
+\Tr[\Td[3]\Td[$\{1,2\}$]\Td[$Q(a)$]\Td[<conjunction elimination rule> $\land\text{-elim-L}$ on 2]]
+\Tr[\Td[4]\Td[$\{1,2\}$]\Td[$\forall y\,(Q(y)\to y=a)$]\Td[<conjunction elimination rule> $\land\text{-elim-R}$ on 2]]
+\Tr[\Td[5]\Td[$\{1,2\}$]\Td[$Q(b)\to b=a$]\Td[<universal elimination> $\forall\text{-elim}$ on 4; instantiate at $b$]]
+\Tr[\Td[6]\Td[$\{1,2,6\}$]\Td[$b=a$]\Td[Temporary assumption]]
+\Tr[\Td[7]\Td[$\{1,2,6\}$]\Td[$b=b$]\Td[<equality introduction rule> $=\text{-intro}$]]
+\Tr[\Td[8]\Td[$\{1,2,6\}$]\Td[$a=b$]\Td[<equality elimination rule> $=\text{-elim}$ on 6, 7]]
+\Tr[\Td[9]\Td[$\{1,2,6\}$]\Td[$Q(b)$]\Td[<equality elimination rule> $=\text{-elim}$ on 8, 3]]
+\Tr[\Td[10]\Td[$\{1,2\}$]\Td[$b=a\to Q(b)$]\Td[<implication introduction rule> $\to\text{-intro}$ on 9; discharge 6]]
+\Tr[\Td[11]\Td[$\{1,2\}$]\Td[$Q(b)\leftrightarrow b=a$]\Td[<biconditional introduction rule> $\leftrightarrow\text{-intro}$ on 5, 10]]
+\Tr[\Td[12]\Td[$\{1,2\}$]\Td[$\forall y\,(Q(y)\leftrightarrow y=a)$]\Td[<universal introduction> $\forall\text{-intro}$ on 11; $b$ fresh]]
+\Tr[\Td[13]\Td[$\{1,2\}$]\Td[$\exists x\,\forall y\,(Q(y)\leftrightarrow y=x)$]\Td[<existential quantifier introduction rule> $\exists\text{-intro}$ on 12; witness $a$]]
+\Tr[\Td[14]\Td[$\{1\}$]\Td[$\exists x\,\forall y\,(Q(y)\leftrightarrow y=x)$]\Td[<existential quantifier elimination rule> $\exists\text{-elim}$ on 1, 13; discharge 2; $a$ fresh]]
+]
+
+Here $b$ is absent from every open assumption when line 12 uses <universal introduction>. In line 13 the <existential quantifier> binds the witness position occupied by $a$; the conclusion then has no free $a$, allowing line 14 to close its witness subproof. Hence
+$$
+\boxed{\exists x\,(Q(x)\land\forall y\,(Q(y)\to y=x))\vdash\exists x\,\forall y\,(Q(y)\leftrightarrow y=x).}
+$$
+The premise says an object satisfying $Q$ exists and every object satisfying $Q$ equals it. The <logical biconditional> adds the converse explicitly: every object equal to that witness also satisfies $Q$.

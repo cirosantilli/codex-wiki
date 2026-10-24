@@ -1,0 +1,367 @@
+= Advanced data structures and algorithms
+{scope}
+{title2=A10399W1}
+
+Solutions to the paper dated 5 June 2015.<Advanced Data Structures and Algorithms examination paper by the University of Oxford (2015)>[Cover, formal code A10399W1; question pages 2–3]{ref} All thirteen numbered subparts are treated. The original cover and both question pages have been checked, including the directions and labels of the <flow network> diagram. The <binary counter> and <decimal counter> analyses use the conventional all-zero initial state; the effect of allowing a different initial state is stated explicitly.
+
+== 1
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+The <accounting method> assigns each operation a charge, its <amortized cost>, that can differ from its actual cost. Cheap operations save the excess charge as credits associated with the <data structure> or its entries. An expensive operation spends these previously saved credits. The essential <invariant> is that the credit balance never becomes negative.
+
+If the initial balance is zero, operation $i$ has actual cost $c_i$, charge $\widehat c_i$, and leaves balance $B_i$, then
+$$
+B_i=B_{i-1}+\widehat c_i-c_i,\qquad
+\sum_{i=1}^n c_i=\sum_{i=1}^n\widehat c_i-B_n\leq\sum_{i=1}^n\widehat c_i.
+$$
+Thus **a nonnegative credit balance makes the total charge an upper bound on the total actual cost for every operation sequence**. In particular, a <constant time> charge proves a <linear time> total. The argument is a deterministic <amortized analysis>; it requires no <probability distribution> on the operations. A nonzero initial balance must be included as an additive term in the bound.
+
+=== b
+{scope}
+
+==== Solution
+
+**Yes: starting from zero, $n$ increments of the <decimal counter> cost $\Theta(n)$ <digit> changes**, uniformly in the number $k$ of <digits>. An increment changes the trailing <digits> equal to $9$ into $0$ and increases the next <digit>. Number <digits> from $0$ at the least significant end. <Digit> $i$ changes once every $10^i$ increments, so the exact number of changes is
+$$
+C_{10}(n,k)=\sum_{i=0}^{k-1}\left\lfloor\frac{n}{10^i}\right\rfloor
+\leq n\sum_{i=0}^{\infty}10^{-i}=\frac{10n}{9}.
+$$
+Here the <floor function> counts carries reaching each position, and the last equality sums a <geometric series>. Since <digit> $0$ changes on every increment, $C_{10}(n,k)\geq n$ for $k\geq1$. The loop tests and carry handling add only a constant amount per changed <digit> and per operation, giving the same <time complexity>.
+
+An <accounting method> explanation is also possible. Charge two credits for each change of <digit> $0$: one pays for that change and one joins a common bank. For $n$ increments the higher <digits> change at most $n/9$ times, so their costs can be covered from that bank; the displayed prefix bound ensures that it never goes negative.
+
+The formula allows wraparound modulo $10^k$; alternatively, restrict to increments before overflow. Initializing the <array> itself costs $\Theta(k)$ if that is counted separately. If the initial <digits> are arbitrary, the number of changes at position $i$ is at most $\lceil n/10^i\rceil$, giving $O(n+k)$ in <Big O notation>. Starting with all <digits> equal to $9$ makes the first increment cost $k$, so the initial-state convention matters.
+
+=== c
+{scope}
+
+==== Solution
+
+For an initially zero <binary counter>, <bit> $i$ changes precisely on increments whose indices are divisible by $2^i$. Weighting each such change by $2^i$ gives the exact total
+$$
+\boxed{C(n,k)=\sum_{i=0}^{k-1}2^i\left\lfloor\frac{n}{2^i}\right\rfloor.}
+$$
+For $n\geq1$ and $k\geq1$, put $r=\min\{k,1+\lfloor\log_2 n\rfloor\}$. All summands with $i\geq r$ vanish; each of the other summands is at most $n$. Therefore
+$$
+\boxed{C(n,k)\leq nr=O\!\left(n\min\{k,1+\log_2 n\}\right).}
+$$
+This is sharper than simply charging $n$ for each of all $k$ positions when $n$ is small. To show that the order is best possible, use $\lfloor x\rfloor\geq x/2$ for $x\geq1$. For every $0\leq i<r$,
+$$
+2^i\left\lfloor\frac{n}{2^i}\right\rfloor\geq\frac n2,
+\qquad
+\frac{nr}{2}\leq C(n,k)\leq nr.
+$$
+Thus the <asymptotic analysis> gives a tight bound. If wraparound is excluded, $n<2^k$, and this becomes $\Theta(n(1+\log_2 n))$, often written $\Theta(n\log n)$ for $n\geq2$. If wraparound is allowed and $n\geq2^k$, it becomes $\Theta(nk)$. For $n=0$, the cost is zero.
+
+For completeness, the same conclusion cannot be asserted uniformly over arbitrary initial <binary counter> states. An initial value $2^k-1$ makes the first increment change every <bit>, costing $2^k-1$. A general upper bound follows by replacing each <floor function> in the count by a <ceiling function>:
+$$
+C_{\mathrm{arbitrary}}(n,k)
+\leq\sum_{i=0}^{k-1}2^i\left\lceil\frac n{2^i}\right\rceil
+\leq nr+2^k-1.
+$$
+To see the second inequality, split at $r$: for $i<r$, use $\lceil n/2^i\rceil\leq n/2^i+1$, and for $i\geq r$, use $\lceil n/2^i\rceil=1$. For $n\geq1$ the worst initial-state cost is consequently $\Theta(nr+2^k)$. This qualification separates initialization from the usual <amortized analysis> starting at zero.
+
+=== d
+{scope}
+
+==== Solution
+
+Use two permanent <stacks>, $F$ and $B$, and one temporary <stack>, $T$. At operation boundaries $T$ is empty. Maintain the <representation invariant> that the <deque>, read from front to back, is the top-to-bottom contents of $F$ followed by the bottom-to-top contents of $B$. Thus the tops of $F$ and $B$ are the two accessible ends. Maintain their sizes using two counters, requiring only $O(1)$ additional storage in <Big O notation>.
+
+Adding at the front pushes onto $F$; adding at the back pushes onto $B$. Removing at an end whose permanent <stack> is nonempty simply pops that <stack>. If both permanent <stacks> are empty, report an empty <deque>.
+
+Suppose a front removal finds $F$ empty and $B$ contains $m>0$ elements. Rebalance as follows:
+
+* Move the top $\lfloor m/2\rfloor$ elements of $B$ onto $T$.
+* Move all remaining $\lceil m/2\rceil$ elements of $B$ onto $F$.
+* Move all elements of $T$ back onto $B$.
+* Pop and return the top of $F$.
+
+The parked elements are the back half of the <deque>; the unparked elements are the front half. Moving the front half onto $F$ reverses their <stack> order and exposes the correct front element. Parking and restoring the back half reverses it twice, preserving its original order in $B$. The temporary <stack> is empty again. For a back removal with $B$ empty, exchange the roles of $F$ and $B$ throughout. **Rebalance approximately half the elements, so both ends retain accessible elements after a large transfer.**
+
+For the <amortized analysis>, count each push or pop as one unit and use the <potential method> with
+$$
+\Phi=3\bigl||F|-|B|\bigr|.
+$$
+Initially the <deque> is empty, so $\Phi=0$, and $\Phi$ is always nonnegative. An ordinary insertion or removal costs one unit and changes the size difference by at most one, giving <amortized cost> at most $4$.
+
+For a rebalancing removal, let $h=\lfloor m/2\rfloor$. The parked half makes two transfers per element and the other half makes one; each transfer is a pop and a push. Including the final removal, the actual cost is
+$$
+c=4h+2(m-h)+1=2m+2h+1\leq3m+1.
+$$
+Before rebalancing the absolute size difference is $m$. Immediately after the split it is at most $1$, and after the removal it is at most $2$. Hence
+$$
+\widehat c=c+\Delta\Phi\leq(3m+1)+3(2-m)=7.
+$$
+Size tests and counter updates change only these constants. Summing the <amortized costs> and using nonnegative final potential proves **$O(1)$ amortized running time for all four operations, with three <stacks> and $O(1)$ additional storage**. An individual rebalancing operation can still take <linear time> in the current size.
+
+== 2
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+A <flow network> is a finite <directed graph> $G=(V,E)$ with nonnegative <flow network edge capacities> $c_e$, together with distinct source and sink <vertices> $s,t$. A <feasible flow> in the nonnegative directed-<edge> convention is a <function> $f:E\to\mathbb R_{\geq0}$ satisfying the <capacity constraints> and <flow conservation>:
+$$
+0\leq f_{uv}\leq c_{uv}\quad(uv\in E),\qquad
+\sum_{u:uv\in E}f_{uv}=\sum_{w:vw\in E}f_{vw}\quad(v\notin\{s,t\}).
+$$
+Its <flow value> is the net outflow at the source,
+$$
+|f|=\sum_{w:sw\in E}f_{sw}-\sum_{u:us\in E}f_{us},
+$$
+which equals the net inflow at the sink by <flow conservation>.
+
+A <cut of a flow network> is a <partition of a set> $(S,V\setminus S)$ with $s\in S$ and $t\notin S$. Its <cut capacity> counts only directed <edges> leaving $S$:
+$$
+c(S,V\setminus S)=\sum_{u\in S,\ v\notin S:\,uv\in E}c_{uv}.
+$$
+The net <flow> across the <cut of a flow network> subtracts <flow> on <edges> returning into $S$, and equals $|f|$.
+
+For the following parts, a <circulation with vertex demands> has no exceptional source or sink in the original <directed graph>. Instead it satisfies net inflow minus net outflow equal to $d_v$ at every <vertex>. Thus positive demands consume <flow>, and negative demands supply <flow>.
+
+=== b
+{scope}
+
+==== Solution
+
+Write <flow balance> using the positive-inflow convention
+$$
+\sum_{u:uv\in E}f_{uv}-\sum_{w:vw\in E}f_{vw}=d_v.
+$$
+Remove the <lower bounds on network flow> by writing $f_{uv}=\ell_{uv}+x_{uv}$, where only $\ell_{BC}=4$ is nonzero. Then $0\leq x_{uv}\leq c_{uv}-\ell_{uv}$, and its required <flow balance> is
+$$
+d'_v=d_v-\left(\sum_u\ell_{uv}-\sum_w\ell_{vw}\right).
+$$
+In the order $A,B,C,D$, the lower-bound contribution is $(0,-4,4,0)$, so
+$$
+(d'_A,d'_B,d'_C,d'_D)=(-6,1,0,5).
+$$
+The resulting <flow network edge capacities> are
+$$
+c'_{AB}=5,\quad c'_{AC}=2,\quad c'_{BC}=5,\quad c'_{BD}=3,\quad c'_{CD}=5.
+$$
+Add a new source $s$ with an <edge> $s\to A$ of <flow network edge capacity> $6$, and a new sink $t$ with <edges> $B\to t$ and $D\to t$ of <flow network edge capacities> $1$ and $5$. A <feasible flow> saturating these new <edges> is equivalent to a solution for $x$: ordinary <flow conservation> in the enlarged <flow network> produces exactly the residual supplies and demands above. All source and sink <edges> must be saturated, requiring <flow value> $6$.
+
+\Image[advanced-data-structures-2015-extended-flow.png]
+{title=Extended <flow network> after removing the lower bound; labels show final <flow> divided by <flow network edge capacity>}
+{description=The auxiliary <edges> are blue. The displayed <flow> saturates the auxiliary source and sink <edges>, certifying that all adjusted demands are met. The original <edge> $BC$ regains its four-unit lower bound only after this auxiliary problem is solved.}
+
+Start the <Edmonds–Karp algorithm> at zero <flow>. Repeated <breadth-first search> in the <residual network> permits the following shortest <augmenting paths>; when paths tie, choose the one through $B$ first.
+
+|| Step
+|| <Augmenting path>
+|| Added <flow>
+|| Total <flow value>
+
+| $1$
+| $s\to A\to B\to t$
+| $\min(6,5,1)=1$
+| $1$
+
+| $2$
+| $s\to A\to B\to D\to t$
+| $\min(5,4,3,5)=3$
+| $4$
+
+| $3$
+| $s\to A\to C\to D\to t$
+| $\min(2,2,5,2)=2$
+| $6$
+
+The first <augmenting path> has three <edges>. Once $B\to t$ is saturated, the next shortest possibilities have four <edges>, so steps $2$ and $3$ respect the <breadth-first search> rule. Each augmentation adds the usual backward <edges> to the <residual network>, though these particular augmentations need only forward <edges>. Now $s\to A$ is saturated, so no further <augmenting path> exists. The <cut of a flow network> with source side $\{s\}$ has <cut capacity> $6$, proving that the obtained <flow> is a <maximum flow>.
+
+The original-<edge> values for $x$ are $(4,2,0,3,2)$ in the order $AB,AC,BC,BD,CD$. Restore the lower bound to obtain
+$$
+\boxed{(f_{AB},f_{AC},f_{BC},f_{BD},f_{CD})=(4,2,4,3,2).}
+$$
+All original <capacity constraints> hold, and $f_{BC}=4$ meets its lower bound. The net inflows at $A,B,C,D$ are respectively
+$$
+-4-2=-6,\qquad 4-4-3=-3,\qquad 2+4-2=4,\qquad 3+2=5.
+$$
+**The original network therefore admits a feasible <circulation with vertex demands>.**
+
+=== c
+{scope}
+
+==== Solution
+
+For any feasible <circulation with vertex demands>, sum its defining <flow balance> over all <vertices>:
+$$
+\sum_{v\in V}d_v
+=\sum_{v\in V}\sum_{u:uv\in E}f_{uv}
+-\sum_{v\in V}\sum_{w:vw\in E}f_{vw}.
+$$
+Every directed <edge> $ab\in E$ contributes $+f_{ab}$ exactly once to the first sum, at its head $b$, and $-f_{ab}$ exactly once to the second, at its tail $a$. The two sums therefore contain exactly the same terms. They cancel, giving
+$$
+\boxed{\sum_{v\in V}d_v=0.}
+$$
+This is global <flow conservation>: internal transport cannot create or destroy the total amount. <Lower bounds on network flow> and <capacity constraints> restrict which <flows> are feasible but do not affect the cancellation. The condition is necessary, not sufficient: insufficient <flow network edge capacities> can still prevent satisfying balanced demands.
+
+=== d
+{scope}
+
+==== Solution
+
+For each user define its <set> of eligible ads by
+$$
+E_i=\{j:\mathcal S^i\cap\mathcal S_j\ne\varnothing\}.
+$$
+This uses the <intersection> of demographic-group memberships: belonging to one advertised group suffices, because the eligibility condition is a <set union>. A user in several groups still receives at most one ad.
+
+A direct <algorithm> is to process users independently. For user $u_i$, scan ads $a_j$ until finding one for which some group $S_\ell$ belongs to both $\mathcal S^i$ and $\mathcal S_j$. Assign that ad and stop processing this user. If no such ad exists, leave the user unassigned. There is no upper bound on the number of different users who can receive the same ad, so these decisions do not compete for an ad resource.
+
+For correctness, every produced impression has a shared permitted group, and the stopping rule assigns at most one ad to each user. Conversely, a user with $E_i=\varnothing$ cannot receive an ad in any <feasible solution>. Since every other user can contribute at most one impression, every <feasible solution> has value at most
+$$
+\bigl|\{i:E_i\ne\varnothing\}\bigr|.
+$$
+The <algorithm> attains this bound, proving
+$$
+\boxed{\text{maximum impressions}=\bigl|\{i:\mathcal S^i\cap\mathcal S_j\ne\varnothing\text{ for some }j\}\bigr|.}
+$$
+Represent each membership <set> by a length-$k$ <array> of <Boolean variables>. Testing one user-ad pair costs $O(k)$, so all tests and input setup take $O(nmk+(n+m)k+n+m+k)$ time in <Big O notation>, which is <polynomial time> in all three parameters. For positive $n,m,k$, this simplifies to $O(nmk)$.
+
+A <maximum flow> formulation gives the same result if desired: add <edges> $s\to u_i$ with <flow network edge capacity> $1$, $u_i\to a_j$ with <flow network edge capacity> $1$ exactly when $j\in E_i$, and $a_j\to t$ with <flow network edge capacity> $n$. By the <integral max-flow theorem>, an integral <maximum flow> selects valid impressions. Setting the last <flow network edge capacity> to $1$ would impose an extra restriction absent from this paper.
+
+== 3
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Using the <standard maximum form of a linear program>, write
+$$
+\boxed{\max c^Tx\quad\text{subject to }Ax\leq b,\quad x\geq0,}
+$$
+where $x\in\mathbb R^n$, $A\in\mathbb R^{m\times n}$, $b\in\mathbb R^m$, and $c\in\mathbb R^n$. The inequalities are coordinatewise, and $c^Tx$ is the <objective function>. General <linear programs> can be put in this form: reverse the sign of a minimization <objective function>, reverse lower-bound <linear inequalities>, replace an equality by two opposite <linear inequalities>, and replace each unrestricted variable by the difference of two nonnegative variables. Some conventions instead call the equality-constraint version standard form; the convention here is the maximum-with-upper-bounds convention.
+
+Introduce nonnegative <slack variables> $x_{n+i}=b_i-\sum_{j=1}^n a_{ij}x_j$. The equivalent <slack form of a linear program> is
+$$
+\boxed{
+\begin{aligned}
+z&=\sum_{j=1}^n c_jx_j,\\
+x_{n+i}&=b_i-\sum_{j=1}^n a_{ij}x_j\quad(1\leq i\leq m),\\
+x_j&\geq0\quad(1\leq j\leq n+m).
+\end{aligned}}
+$$
+The original variables are initially nonbasic and the <slack variables> basic. More generally, a <slack form of a linear program> specifies disjoint index <sets> $N,B$ and writes
+$$
+z=v+\sum_{j\in N}c_jx_j,\qquad
+x_i=b_i-\sum_{j\in N}a_{ij}x_j\quad(i\in B),\qquad
+x_i\geq0\quad(i\in N\cup B).
+$$
+Thus each <basic variable> and the <objective function> are expressed using only <nonbasic variables>. Setting all <nonbasic variables> to zero gives the associated <basic solution>, which is a <feasible solution> exactly when the resulting basic values are nonnegative. The <slack form of a linear program> does not itself require that initial <basic solution> to be feasible.
+
+=== b
+{scope}
+
+==== Solution
+
+A <vertex cover> of an <undirected graph> $G=(V,E)$ is a <subset> $C\subseteq V$ containing at least one endpoint of every <edge>. The optimization version of the <vertex cover> problem minimizes $|C|$; the <vertex cover decision problem> asks whether a cover of size at most a given bound exists.
+
+Let $x_v=1$ mean that <vertex> $v$ is selected. An <integer program> for minimum-size <vertex cover> is
+$$
+\boxed{
+\begin{aligned}
+\min\quad&\sum_{v\in V}x_v\\
+\text{subject to}\quad&x_u+x_v\geq1&& (uv\in E),\\
+&x_v\in\{0,1\}&& (v\in V).
+\end{aligned}}
+$$
+The <linear programming relaxation> replaces $x_v\in\{0,1\}$ by $0\leq x_v\leq1$. The <edge> inequalities enforce coverage, and the <objective function> counts selected <vertices> in the <integer program>.
+
+For a <graph triangle> with <vertices> $1,2,3$, the three covering constraints are
+$$
+x_1+x_2\geq1,\qquad x_2+x_3\geq1,\qquad x_3+x_1\geq1.
+$$
+Adding them gives $2(x_1+x_2+x_3)\geq3$. Therefore the relaxed <objective function> is at least $3/2$. The <feasible solution> $x_1=x_2=x_3=1/2$ attains that lower bound, so
+$$
+\boxed{\operatorname{OPT}_{\mathrm{LP}}=\frac32.}
+$$
+In contrast, one <vertex> leaves the opposite <edge> uncovered and any two <vertices> cover all three <edges>, giving integer optimum $2$. The example exhibits a genuinely non-integer optimal value, rather than merely a fractional <feasible solution>.
+
+=== c
+{scope}
+
+==== Solution
+
+Assume job sizes $t_i\geq0$ and machine speeds $s_j>0$, with at least one machine. Let $y_{ij}\geq0$ be the amount of job $T_i$ assigned to machine $M_j$, and let $T\geq0$ be the proposed <makespan>. Use the <linear program>
+$$
+\boxed{
+\begin{aligned}
+\min\quad&T\\
+\text{subject to}\quad&\sum_{j=1}^m y_{ij}=t_i&& (1\leq i\leq n),\\
+&\sum_{i=1}^n y_{ij}\leq s_jT&& (1\leq j\leq m),\\
+&y_{ij}\geq0&& (1\leq i\leq n,\ 1\leq j\leq m),\\
+&T\geq0.
+\end{aligned}}
+$$
+The first family of constraints assigns every job completely. The second bounds each machine's completion time by $T$, since $L_j/s_j\leq T$ is equivalent to $L_j\leq s_jT$. It is a <linear inequality> because $s_j$ is an input constant. There is no integrality restriction: jobs are divisible as specified in this <scheduling> model.
+
+To verify the formulation, any actual allocation defines the variables above, with $T$ equal to its largest completion time, and satisfies every constraint. Conversely, from a <feasible solution>, assign amount $y_{ij}$ to machine $M_j$ and process its assigned pieces consecutively. Its total time is at most $T$, so the <linear program> realizes the claimed <makespan>.
+
+There is also a useful exact check. Put $W=\sum_i t_i$ and $S=\sum_j s_j$. Summing machine constraints gives $W\leq ST$, so $T\geq W/S$. Assigning
+$$
+y_{ij}=t_i\frac{s_j}{S}
+$$
+makes every machine's completion time $W/S$, proving
+$$
+\boxed{T^*=\frac{\sum_i t_i}{\sum_j s_j}.}
+$$
+This relies on the paper's divisible-work model, in which machine completion times depend only on total assigned size. If $W=0$, the optimum is $0$.
+
+=== d
+{scope}
+
+==== Solution
+
+A <feasible point> $x$ is an <extreme point> solution of a <linear program> if it cannot be written as a nontrivial <convex combination> of two distinct <feasible points>. Explicitly, if
+$$
+x=\lambda y+(1-\lambda)z,\qquad y,z\text{ feasible},\quad0<\lambda<1,
+$$
+then $y=z=x$. Equivalently, **$x$ lies in no open <line segment> joining two distinct <feasible points>**. Being an <extreme point> concerns the <feasible region>; it does not by itself mean that $x$ optimizes the <objective function>.
+
+=== e
+{scope}
+
+==== Solution
+
+Let $G=(L\cup R,E)$ be the given <bipartite graph>. A <matching in a graph> selects <edges> with no shared endpoint. For each <edge> $e$, introduce an indicator $x_e$ for selection. The <integer program> for a <maximum cardinality matching> is
+$$
+\boxed{
+\begin{aligned}
+\max\quad&\sum_{e\in E}x_e\\
+\text{subject to}\quad&\sum_{e\ni v}x_e\leq1&& (v\in L\cup R),\\
+&x_e\in\{0,1\}&& (e\in E).
+\end{aligned}}
+$$
+Its <linear programming relaxation> is
+$$
+P=\left\{x\in\mathbb R^E:x_e\geq0\ (e\in E),\quad\sum_{e\ni v}x_e\leq1\ (v\in L\cup R)\right\},
+$$
+with the same <objective function>. Explicit upper bounds $x_e\leq1$ may be included, but they already follow from a constraint at either endpoint.
+
+We prove that every <extreme point> of $P$ is integral by showing that any <feasible point> with a fractional coordinate admits a two-sided perturbation. Given such an $x$, form the <fractional support graph> $H$ with exactly those <edges> for which $0<x_e<1$. This is a nonempty <bipartite graph>. A <vertex> incident to one of these <edges> cannot also meet an <edge> with value $1$, because its incident sum would exceed $1$.
+
+First suppose $H$ contains a <graph cycle>. Choose a simple one, $e_1,\ldots,e_q$. Its length $q$ is even since $H$ is a <bipartite graph>. Define a nonzero <vector> $h$ by alternating $+1,-1$ along the <graph cycle> and putting $0$ on other <edges>. At each <vertex> on the <graph cycle>, the two changed coordinates have opposite signs, so its incident sum is unchanged. Choose
+$$
+0<\varepsilon<\min_{e\text{ on the cycle}}\{x_e,1-x_e\}.
+$$
+Then $x^+=x+\varepsilon h$ and $x^-=x-\varepsilon h$ are distinct <feasible points>: no coordinate leaves $[0,1]$ and all incident sums are unchanged. Since $x=(x^++x^-)/2$, it is not an <extreme point>.
+
+Otherwise $H$ is a <forest>. Choose a <connected component of a graph> containing an <edge>, and a simple <graph path> in it between two <tree leaves>. Alternate $+1,-1$ along the <graph path> to define $h$. Every internal <vertex> of the <graph path> still has unchanged incident sum, including any additional <edges> branching from it. At either endpoint, exactly one incident <edge> has fractional value; all other incident coordinates are $0$, since a coordinate $1$ is impossible there. Thus each endpoint has strictly positive slack $1-\sum_{e\ni v}x_e$ in its degree constraint. Choose $\varepsilon>0$ smaller than these two slacks and smaller than every $x_e$ and $1-x_e$ along the <graph path>. Both $x+\varepsilon h$ and $x-\varepsilon h$ remain feasible: the endpoint sums can increase or decrease by $\varepsilon$, and the internal sums do not change. Again $x$ is the midpoint of distinct <feasible points>, contradicting extremality.
+
+Both cases exclude fractional coordinates at an <extreme point>. Therefore
+$$
+\boxed{\text{every extreme point of }P\text{ has }x_e\in\{0,1\}\text{ and represents a matching}.}
+$$
+The nonempty bounded <linear polyhedron> $P$ has an optimal <extreme point> for the stated <linear function>, so the relaxation yields a <maximum cardinality matching>. This is stronger than the existence of one integral optimum: it proves integrality of every <extreme point>. It does not claim that every optimal <feasible point> is integral; convex mixtures of distinct optimal <matchings in a graph> can be fractional.

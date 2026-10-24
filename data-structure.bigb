@@ -7,6 +7,50 @@ Suppose three requests arrive as $(5,\mathrm{Ada}),(2,\mathrm{Bo}),(4,\mathrm{Cy
 
 This is a useful design principle: preserve just enough organization for the operations the application needs. Maintaining a <sorted array> gives the whole order, but moving entries to insert a new key can be expensive. A <binary heap> keeps a weaker <heap order> that supports fast repeated selection without maintaining a <sorted array>. A good <data structure> makes an <algorithm>'s next step easy.
 
+= List-based set representation
+{parent=Data structure}
+
+Represent a <finite set> by a <list> of its elements. Allowing repeated elements makes <set union> cheap by <list concatenation>; imposing uniqueness requires membership checks. A representation sorted by a <total order> and containing no duplicates permits <set union> and <set intersection> by a simultaneous scan in <linear time>. These are different <representation invariants> for the same abstract <set>.
+
+= Skip list
+{parent=Data structure}
+{wiki}
+
+= Skiplist
+{synonym}
+
+A <skip list> stores an ordered <sequence> in a bottom <linked list>, with successively sparser <linked lists> above it. Searching moves right while the next key is too small, then down a level. Randomly chosen node heights give logarithmic expected search and update <time complexity> with a suitable height policy. Repeated keys require distinguishing equal-valued nodes by identity when removing their links.
+
+= B+ tree
+{c}
+{parent=Data structure}
+{wiki}
+
+A balanced search <tree> used for database indexes. Records occur at the leaves; internal nodes direct searches using separator keys. A <B+ tree> with maximum fan-out $f$ has at most $f$ children per internal node.
+
+= B+ tree node split
+{c}
+{parent=B+ tree}
+
+An overflowing <B+ tree> node is replaced by two nodes and a separator is passed to its parent. Splitting the root creates a new root with two children and increases the height by one.
+
+= Sentinel value
+{parent=Data structure}
+{wiki}
+
+A distinguished value marking a boundary or special condition, such as the end of an input <sequence>. It must be distinguishable from every ordinary data value.
+
+= Decimal counter
+{parent=Data structure}
+{title2=$A\in\{0,\ldots,9\}^k$}
+
+A <decimal counter> stores a nonnegative <integer> using an <array> of base-ten <digits>, with the least significant <digit> first. Increment resets trailing nines and increases the next <digit>, or wraps modulo $10^k$ if all $k$ <digits> are nines. Starting at zero, the exact number of <digit> changes in $n$ increments is $\sum_{i=0}^{k-1}\lfloor n/10^i\rfloor\leq10n/9$. This is an <aggregate analysis> proving a constant <amortized cost> per increment under unit-cost <digit> updates. An arbitrary initial value contributes an additional $O(k)$ in <Big O notation>.
+
+= Referential integrity
+{parent=Data structure}
+
+A constraint requiring stored identifiers or references to denote valid represented entities, except for explicitly permitted absent-reference markers. For a node <set> $T$ with successor identifiers, integrity can require each nonnull successor identifier to equal the identifier of some node in $T$. This is separate from identifier uniqueness and from order constraints on values along edges.
+
 = Persistent data structure
 {parent=Data structure}
 {wiki}
@@ -14,6 +58,11 @@ This is a useful design principle: preserve just enough organization for the ope
 A <data structure> whose previous versions remain usable after an update. An immutable representation can return a new root while retaining old roots. Persistence is a version-availability property; it does not require copying the whole structure, and it does not by itself guarantee a particular <time complexity> or <space complexity>.
 
 Path copying in a balanced <tree> can preserve old versions while allocating only the updated root-to-leaf path. A <linked list> can share an unchanged suffix but may copy a long prefix for a positional edit. Retained versions extend the lifetime of their reachable data, which matters when comparing snapshot history with edit-specific inverse commands.
+
+= Covariant persistent multiset
+{parent=Persistent data structure}
+
+An immutable <multiset> can expose a <covariant type parameter> because reading an element only produces that type. Addition accepts a new type parameter with a <lower type bound>, `add[U >: T](x: U)`, and returns a new `ISet[U]`. The old `ISet[T]` retains its contents and original element guarantee. Deletion returns both the removed value and a new remaining multiset; it does not mutate the old one. Duplicate occurrences are preserved.
 
 = Structural sharing
 {parent=Persistent data structure}
@@ -36,6 +85,36 @@ A sequential-access object with a non-consuming current-value operation and a se
 {parent=Data structure}
 
 A stateful interface exposing a remaining <sequence> through an availability test and an operation returning and consuming its head. An iterator can represent an infinite sequence without materializing all elements, provided demanded steps terminate. Destructive iterators generally require exclusive ownership of their consumption state; sharing an iterator is not the same as creating a fresh independent traversal.
+
+= Bidirectional iterator
+{parent=Iterator}
+
+An <iterator> with forward and backward cursor movement. With the cursor between elements, `next` crosses and returns the element to the right, and `prev` crosses and returns the element to the left. Memoizing a forward-only source's consumed prefix supports arbitrary backward travel over that prefix without replaying source effects. The required history storage grows with the farthest explored position, even if the current cursor later moves backward.
+
+= Lookahead iterator
+{parent=Iterator}
+
+An <iterator> that physically consumes and caches source elements to determine whether another logical result exists. A prepared optional result makes repeated availability queries idempotent. This is useful when a result requires a complete group of source elements and the underlying <iterator> exposes neither its remaining length nor a rewind operation. Source consumption is owned by the wrapper; clients must not independently advance the underlying <iterator>.
+
+= Iterator snapshot
+{parent=Iterator}
+
+A new cursor with the same remaining <sequence> and an independent consumption position. Copying only a wrapper that still points to the same destructive source does not suffice: that gives <shared iterator consumption>. Cached lookahead and phase flags are part of the state that a snapshot must preserve. Element values need not be deep-copied merely to duplicate the cursor.
+
+= Memoized iterator snapshot
+{parent=Iterator snapshot}
+
+Represent a generated <sequence> by shared memoized <lazy list> cells and let each iterator hold its own current cell reference. Copy that reference into a new iterator object. Advancing one cursor changes no other cursor, while every cell's future tail is generated once. Thus even a privately stateful generator can supply identical future values to independently consumed snapshots, provided its state is owned by this shared sequence and not mutated externally. Retained older cursors can keep cached prefixes alive. <Scala 2.12 Stream API documentation>[Opening description and memoization example]{ref}
+
+= Memoized successor chain for stateful iterator copies
+{parent=Memoized iterator snapshot}
+
+Represent each generated <sequence> position by an immutable head and a lazily memoized successor, and give each <iterator> its own pointer into the shared chain. Computing a successor invokes the privately owned generator once; lagging copies reuse that same successor. Consequently a mutable <programming closure> generating <Fibonacci numbers> can support interleaved independent cursor positions. Sharing only the generator and a copied current value would instead consume the generator's mutable state twice. This construction can retain all cells between the fastest and slowest live cursors; it does not guarantee constant <memory usage>.
+
+= Prefix-dropping iterator
+{parent=Iterator}
+
+Discard input values until the first one satisfying a <predicate>, then return that value and every remaining value without testing the predicate again. A <demand-driven filtering iterator> instead keeps testing and can discard later values too. A buffered first match must survive repeated availability tests and <iterator snapshots>. A flag distinguishes the initial seeking phase from the already-positioned remainder.
 
 = Demand-driven filtering iterator
 {parent=Iterator}
@@ -105,6 +184,31 @@ A character <rank query> asks how many occurrences of character $c$ appear in th
 
 A <list> is an ordered collection in which entries may repeat. Removing duplicates would discard information about both multiplicity and, depending on the representation, order. A <linked list> and an <array> are different ways to implement list operations.
 
+= Duplicate removal
+{parent=List (abstract data type)}
+
+Replacing a <list> by a <list> containing each of its distinct elements once. Retaining first occurrences gives a stable order. A recursive implementation emits the head and removes all its occurrences from the tail before continuing. On an infinite input with only finitely many distinct values, detecting that there are no further new values may diverge; on an infinite input with infinitely many distinct values and terminating equality tests, each successive new value has a finite position and can be emitted.
+
+= First-occurrence duplicate removal
+{parent=Duplicate removal}
+
+Retain the first occurrence of each distinct value in a <list>. The <right fold> `foldr (\x ys -> x : filter (/= x) ys) []` preserves this order under <lazy evaluation>. With terminating <equality tests>, an infinite input containing infinitely many distinct values produces every finite output prefix. If only finitely many distinct values occur, those values appear but the remaining infinite input cannot generally be certified empty: the result has an undefined tail rather than a terminating empty <list>.
+
+= List reversal
+{parent=List (abstract data type)}
+
+Reverse the order of a finite <list>. Reversal is an <involution> and satisfies $(AB)^R=B^RA^R$ for <list concatenation>. In an <array> segment of length $n$, exchanging symmetric offsets $j$ and $n-1-j$ for $0\leq j<\lfloor n/2\rfloor$ realizes reversal in constant auxiliary space.
+
+= Concatenation tree
+{parent=List (abstract data type)}
+
+A <tree> representation of a <list> with empty nodes, single-element nodes and binary concatenation nodes. Concatenation constructs one node without traversing either operand. The representation need not be unique: adding empty branches changes its size without changing the denoted <list>. An accumulator-based traversal gives <linear flattening of a binary tree> in the representation's size rather than merely the output length.
+
+= List zip
+{parent=List (abstract data type)}
+
+Combine corresponding entries of two <lists> into a <list> of <tuples>. The usual finite-list operation stops when either input ends. A <lazy evaluation> implementation can produce entries from infinite <lists>, but its exact strictness depends on the order of <pattern matching> in the definition.
+
 = Index-function representation of a list
 {parent=List (abstract data type)}
 {title2=$f:\mathbb Z\to\operatorname{Maybe}(A)$}
@@ -162,6 +266,9 @@ A <list> obtained by dropping an initial segment. The whole list and, for finite
 = Prefix of a list
 {parent=List (abstract data type)}
 
+= Prefix
+{synonym}
+
 = List prefix
 {synonym}
 
@@ -182,6 +289,17 @@ An initial segment of a <string>, including the empty <string> or the whole <str
 {synonym}
 
 A tree-based <data structure> that orders each parent relative to its children so that an extremal value is available at the root. In a <max-heap>, every parent is at least as large as its children. Heap implementations provide one way to realize a <priority queue>; the abstract queue and its implementing structure are distinct concepts.
+
+= d-ary heap
+{parent=Heap data structure}
+{wiki}
+
+A <heap data structure> stored as a complete rooted tree with up to $d$ children per <vertex>, where $d\geq2$. The final level is filled from left to right. For zero-based <array> storage, the parent of entry $i>0$ is $\lfloor(i-1)/d\rfloor$, and its child number $j\in\{0,\ldots,d-1\}$ has index $di+j+1$ when that index is inside the active heap. There are at most $O(1+\log_d n)$ levels containing $n$ entries.
+
+= d-ary min-heap
+{parent=d-ary heap}
+
+A <d-ary heap> in which each parent key is no greater than each child key. Transitivity makes the root a minimum. Removing the root requires choosing a smallest child at each downward step, taking $O(d\log_d n)$ time in the usual $2\leq d\leq n$ range. Decreasing a key or inserting a new leaf only compares along one chain of parents, taking $O(\log_d n)$ time in that range. These <priority queue> bounds assume constant-time key comparisons and available array capacity. An <indexed priority queue> must also update its item-to-index table after every swap.
 
 = Meldable heap
 {parent=Heap data structure}
@@ -211,8 +329,19 @@ A min-heap has every parent key no greater than its child keys. The root therefo
 = Associative array
 {parent=Data structure}
 
+= Map data structure
+{synonym}
+
 = Dictionary
 {synonym}
+
+A collection associating keys with values and supporting lookup by key. Unlike an ordered <list> of guarded alternatives, a simple map does not directly represent sequentially evaluated, potentially repeated label expressions with first-match behavior.
+
+= Association list
+{parent=Associative array}
+{wiki}
+
+An <associative array> represented by a <list> of key-value pairs. Looking up a key scans entries until a matching key is found, giving linear worst-case search cost in the number of entries when key comparisons have unit cost.
 
 = Sparse map with a default value
 {parent=Associative array}
@@ -244,6 +373,12 @@ A suffix automaton is a finite automaton recognizing all suffixes of a fixed <st
 = deque
 {synonym}
 
+= Three-stack deque
+{parent=Double-ended queue}
+{title2=$\Phi=3\bigl||F|-|B|\bigr|$}
+
+A <deque> can use two permanent <stacks> holding the front and back portions, plus an empty temporary <stack>. When removal encounters an empty side, park the top half of the other side in the temporary <stack>, reverse its remaining half into the empty side, and restore the parked half. This preserves order and balances the permanent <stacks>. The <potential method> with $\Phi=3\bigl||F|-|B|\bigr|$ pays for the <linear time> transfer from the previous size imbalance, giving constant <amortized cost> for all four endpoint operations with only a fixed number of size counters.
+
 = Deque endpoint invariant
 {parent=Double-ended queue}
 
@@ -259,6 +394,11 @@ A monotonic queue keeps candidate values in sorted order while a window moves th
 
 = Trie
 {parent=Data structure}
+
+= Trie search with a letter multiset
+{parent=Trie}
+
+Use <backtracking> through a dictionary <trie>, decrementing and restoring the available count for each traversed letter. Visit each letter-labelled child once when its count is positive, rather than choosing between indistinguishable occurrences. Every reachable complete word is then produced once, including words using only a subcollection of the original letter <multiset>.
 
 = Binary trie
 {parent=Trie}
@@ -392,6 +532,11 @@ Distinct items may share a priority. Inserting $(2,\mathrm{Eli})$ alongside $(2,
 
 The interface specifies behavior; the <data structure> determines costs. A <binary heap> implements a <priority queue> with constant-time `peek` and logarithmic-time insertion and `extract-min`, under the cost assumptions below. Scheduling by urgency or by the time of the next event needs exactly this repeated next-item selection. MIT's notes use these applications to motivate the <priority queue> interface.https://ocw.mit.edu/courses/6-006-introduction-to-algorithms-spring-2020/40d4851e550507ca14dc778b9b2266cc_MIT6_006S20_lec8.pdf[MIT 6.006, lecture 8: priority queues and binary heaps, pp. 1–2]{ref}
 
+= Indexed priority queue
+{parent=Priority queue}
+
+A <priority queue> whose entries have stable identifiers and an auxiliary map from each identifier to its current storage location. An indexed <binary heap> can therefore support membership and locating an entry in constant time, followed by a key decrease in logarithmic time. Every heap swap must update both affected map entries; otherwise later updates can modify the wrong item.
+
 = Maximum priority queue
 {parent=Priority queue}
 
@@ -469,6 +614,11 @@ To build a <binary heap>, begin at index $\lfloor n/2\rfloor-1$ and work backwar
 The <Dijkstra algorithm> additionally needs to decrease the priority of an existing <vertex> when its <tentative distance> improves. Given its current index, lowering the key followed by <sift up> takes $O(\log n)$ time for $n\ge2$. An indexed <binary heap> maintains a separate map from item identity to its current index and updates that map after every exchange. For <vertices> numbered in a fixed range, the map can be another <array>, giving constant-time index lookup. An ordinary unindexed <binary heap> supplies no such guarantee: locating an arbitrary item can require scanning $n$ entries. Item identity and priority must remain distinct, especially when several <vertices> have equal <tentative distances>.
 
 The attractive compromise is local organization with global usefulness. A <binary heap> maintains only the <heap order>, yet every `extract-min` gives the next smallest key. Repeated extraction of the original example gives $2,3,4,5,7,8,9$, so a <priority queue> also supplies a <sorting algorithm> without storing a <sorted array> between extractions.
+
+= Best-case maximum deletion in a binary heap
+{parent=Binary heap}
+
+In the implementation that exchanges the root with the final leaf and then applies <heapify down>, a <max-heap> of size at least four with distinct keys requires at least one downward exchange: the old final leaf's parent remains and has a larger key. One downward exchange can suffice, even for large heaps, by promoting the opposite root child and letting the moved key dominate that child's descendants. Thus the best case is two pairwise exchanges when the initial root/final-leaf exchange is counted. This is a convention about that implementation: a hole-moving implementation uses assignments rather than pairwise exchanges, and the worst case still has logarithmic <time complexity>.
 
 = Bottom-up heap construction
 {parent=Binary heap}
@@ -762,6 +912,48 @@ Inserting $X$ after $B$ in an <array> holding $A,B,C$ with one unused slot produ
 
 A fixed-capacity <array> cannot accept another entry when full. A resizable representation can allocate a larger <array> and copy the entries. Doubling capacity when full gives $O(1)$ append cost by <amortized analysis> over a <sequence> starting empty, but a single append that copies $n$ entries still has $O(n)$ worst-case <time complexity>. The outline is a <geometric series>: copied capacities $1,2,4,\ldots,2^k$ sum to $2^{k+1}-1$, less than twice the number of appends that triggered the last copy. Middle insertion still pays for its shifts. https://opendatastructures.org/ods-java/2_1_ArrayStack_Fast_Stack_O.html[Pat Morin, Open Data Structures, sections 2.1.2–2.1.3: resizing and amortized costs]{ref}
 
+= Array reversal
+{parent=Array (data structure)}
+
+Reverse the order of entries in an <array> segment by exchanging its outermost unprocessed pair and moving inward. This takes linear time and constant <auxiliary space>. Reversing two adjacent blocks separately and then reversing their union rotates the blocks while restoring each block's internal order.
+
+= Subarray
+{parent=Array (data structure)}
+
+A contiguous portion of an <array>, or a rectangular restriction to contiguous coordinate ranges for a multidimensional <array>.
+
+= Array rotation
+{parent=Array (data structure)}
+
+A right <array rotation> by $k$ sends the entry originally at offset $j$ to offset $(j+k)\bmod n$ for nonempty length $n$. Equivalently it changes adjacent blocks $AB$ into $BA$ when $|B|=k$. Identity rotations include $k=0$ and $k=n$.
+
+Three reversals implement the operation: $AB\to A^RB\to A^RB^R\to BA$. Alternatively repeatedly use a <block swap> to put the smaller block in its final position and recurse on the remaining unresolved segment. Replacing that tail recursion by parameter updates gives constant auxiliary storage. If $S(a,b)$ counts swaps for blocks of lengths $a,b>0$, then $S(a,a)=a$ and $S(a,b)=\min(a,b)+S(\min(a,b),|a-b|)$ for unequal lengths. The <Euclidean algorithm> shows by <induction> that $S(a,b)=a+b-\gcd(a,b)$, so a right rotation uses $n-\gcd(n,k)$ element swaps for $0<k<n$.
+
+= Swap
+{parent=Array (data structure)}
+
+Exchange two stored values while preserving all others. For an <array>, a temporary value implements `x := a[i]; a[i] := a[j]; a[j] := x`. For distinct indices this uses two element reads and two element writes. The operation is an <involution>, and its <permutation> is a <transposition>.
+
+= Block swap
+{parent=Swap}
+
+Exchange two equally long disjoint segments of an <array>, preserving the order within each segment. Applying one <swap> at each corresponding offset exchanges length-$n$ blocks in $n$ swaps and constant auxiliary storage. Disjointness ensures that an earlier swap does not overwrite an original value needed by a later pair.
+
+= Bitonic segment
+{parent=Array (data structure)}
+
+Here a bitonic contiguous segment may be weakly increasing then weakly decreasing, or the reverse. Equivalently, remove zero signs from its adjacent differences: the remaining signs change at most once. This convention includes monotone and constant segments. A plateau can lie at the shared boundary between two directions, so maximal bitonic segments can overlap across that entire plateau.
+
+= Longest bitonic contiguous segment
+{parent=Bitonic segment}
+
+A <linear time> scan can retain the earliest start of the current monotone suffix, the earliest start of the current bitonic suffix, the most recent nonzero direction and the endpoint of its most recent strict step. At a strict direction reversal, the new bitonic suffix begins at the old monotone start; the new monotone suffix begins at the old strict-step endpoint. Zero differences leave these boundaries unchanged. The suffix invariants show that no longer valid suffix is discarded, and recording the largest length gives a global optimum using constant auxiliary storage.
+
+= Constant segment of an array
+{parent=Array (data structure)}
+
+A contiguous segment whose elements all have the same value. Its longest suffix after scanning a new element extends the previous constant suffix when the adjacent values agree, and otherwise starts again with length one. Keeping the largest suffix length seen gives a <linear time> longest-segment scan.
+
 = Majority element
 {parent=Array (data structure)}
 {title2=$2\,\#\{i:A_i=x\}>n$}
@@ -804,6 +996,11 @@ The useful combination is order plus direct indexed access: <binary search> elim
 {title2=$i$}
 
 An <integer> identifying a position in an <array>. With zero-based indexing and capacity $m$, valid <array indices> are $0,\ldots,m-1$. An <array index> identifies the slot rather than its stored value.
+
+= Array bounds
+{parent=Array index}
+
+The permitted <array indices> for a length-$n$ <array> are $0,\ldots,n-1$ under zero-based indexing. A one-past-the-end index $n$ can describe an empty remaining segment but cannot be dereferenced. Proving bounds safety requires showing that every executed read and write uses a permitted index, including evaluations in a loop guard. A known target inside the array can sometimes supply a stronger <loop invariant> than an explicit bounds test.
 
 = Dynamic array
 {parent=Array (data structure)}
@@ -911,6 +1108,12 @@ The <FIFO queue> interface specifies removal order, not <time complexity>. A <li
 
 // Destination: computer-science.bigb
 
+= FIFO buffer
+{parent=FIFO queue}
+{c}
+
+A communicating <FIFO queue> that accepts values on an input channel and emits them, in the same order, on an output channel. An unbounded <FIFO buffer> always has room for a new input, even when its oldest pending output is also available.
+
 = Two-list functional queue
 {parent=FIFO queue}
 
@@ -934,6 +1137,22 @@ A <stack> is a <data structure> with last-in, first-out behavior: `push` adds an
 
 A <stack> records work that must be resumed in reverse order: the most recent unfinished task is handled first. <Depth-first search> uses this discipline to finish a newly entered branch before resuming the older branch that led to it. <Breadth-first search> uses a <FIFO queue> to resume the oldest pending <vertex> instead. Both are small interfaces whose removal rule changes the shape of a <graph search>.
 
+= Minimum stack
+{parent=Stack (data structure)}
+
+A <stack> supporting access to its <minimum> in constant <time complexity> when its contents are nonempty. Each <linked list node> stores its value and the minimum of the suffix beginning there. Pushing computes one new cached minimum; popping reveals the previous cached minimum. Keeping one cached value per node handles repeated minima without a special case.
+
+= Stack bottom marker
+{parent=Stack (data structure)}
+{title2=$\bot$}
+
+A designated <stack> symbol marking its bottom. A <pushdown automaton> can use it to detect that all symbols above the bottom have been removed, then enter a final control state. The marker must be distinct from the other <stack alphabet> symbols.
+
+= Stack invariant
+{parent=Stack (data structure)}
+
+A property of the evaluation <stack> at a specified program point. For expression <compilation>, a useful contract is that generated code transforms any incoming <stack> $\sigma$ into $\sigma,v$, leaving all pre-existing values unchanged. For a statement, a useful contract is preservation of $\sigma$.
+
 = Shared-array double stack
 {parent=Stack (data structure)}
 
@@ -945,6 +1164,23 @@ Two <stacks> can share a fixed <array> by growing inwards from opposite ends. St
 
 A <call stack> stores active procedure calls and the information needed to resume each caller, such as its return location and local variables. A call adds a frame; returning removes that frame and resumes the previous call. When <depth-first search> uses <recursion>, a frame also records where its <adjacency list> scan paused. The active frames describe a <graph path> from the starting <vertex> to the current <vertex>; finished calls have left the <call stack>, although their <vertices> remain marked as discovered.
 
+= Display for lexical scope
+{parent=Call stack}
+
+A table of <pointers> supporting direct access to active lexical environments without traversing a <static chain>. A conventional display is indexed by lexical level; a procedure-indexed alternative keeps the newest activation of each procedure and saves and restores the previous table entry on entry and return.
+
+For direct calls under <lexical scope>, the executing activation's <static chain> contains the newest surviving activations of its enclosing procedures. This follows by <mathematical induction> on calls and returns: a direct call inherits a suffix of the caller's chain, and a return restores the previous chain after intervening activations finish. With <procedural parameters>, a passed <programming closure> can instead refer to an older still-active enclosing activation, so simply consulting the newest-activation table is insufficient.
+
+= Dynamic chain
+{parent=Call stack}
+
+The chain of active callers obtained by following <dynamic links> from the current <stack frame>. It records call history, whereas a <static chain> records lexical environments.
+
+= Static chain
+{parent=Call stack}
+
+The sequence of <stack frames> reached by following <static links>. A variable declared $d$ lexical levels outside the current procedure is accessed by following $d$ <static links> and applying its known frame offset.
+
 = Stack alignment
 {parent=Call stack}
 
@@ -954,6 +1190,21 @@ A <call stack> stores active procedure calls and the information needed to resum
 {parent=Call stack}
 
 The record for one active invocation in a <call stack>, containing information such as local <variables> and the place to resume its caller. Returning removes that invocation's <stack frame>, allowing the caller's computation to continue.
+
+= Frame pointer
+{parent=Stack frame}
+
+A <processor register> or equivalent value designating a stable reference location within the current <stack frame>. Parameters, local variables and saved links can be accessed at fixed offsets from the <frame pointer> even if the evaluation <stack> changes height.
+
+= Dynamic link
+{parent=Stack frame}
+
+A <pointer> from an activation's <stack frame> to its caller's <stack frame>, used to restore the caller when the activation returns. The <dynamic link> is independent of a <static link> to the lexically enclosing environment.
+
+= Static link
+{parent=Stack frame}
+
+A <pointer> from an activation's <stack frame> to the activation providing its immediate lexical environment. A <static link> follows lexical enclosure rather than necessarily pointing to the caller. Calls through a <programming closure> obtain the environment from the passed closure.
 
 = Binary tree
 {parent=Data structure}
@@ -1114,6 +1365,78 @@ This combination is useful and attractive: one <data structure> supports directe
 
 // Destination: computer-science.bigb
 
+= Persistent binary search tree deletion
+{parent=Binary search tree}
+
+A <pure function> deletes a key from a <binary search tree> by rebuilding its search path and sharing untouched subtrees. At a matching node with two children, replace its key by the least key in its right subtree, removing that occurrence from the right subtree. The ordering invariant is preserved, with <time complexity> and fresh-node allocation proportional to the <height of a binary tree>.
+
+= Destructive binary search tree flattening
+{parent=Binary search tree}
+
+Turn a <binary search tree> into a sorted <doubly linked list> by reusing each <linked list node>'s left and right child fields as predecessor and successor fields. An <inorder traversal> determines the required order. A recursive implementation first saves both child references, flattens the disjoint child <subtrees>, and splices their endpoints around the root. <Structural induction> proves that it preserves every original entry exactly once and produces reciprocal links with null outside endpoints. An explicit <stack> implements the same traversal without <recursive calls>; each original right child must be saved before its field is overwritten. Both versions take linear <time complexity> and $O(h+1)$ <auxiliary space> for original height $h$. The old <binary search tree> representation is consumed, so outside aliases must not continue to interpret the changed links as child pointers.
+
+= Red-black tree
+{parent=Binary search tree}
+{wiki=Red–black_tree}
+
+A <red-black tree> colours each stored node red or black, treats absent-child sentinels as black, permits no red node to have a red child, and gives every path from a node to an absent-child sentinel the same number of black nodes. We also require a black root. These invariants bound its <height of a binary tree> by $2\log_2(n+1)$ for $n$ stored keys: a path has at most twice as many real nodes as black nodes, and a <subtree> of <black height> $b$ has at least $2^b-1$ real nodes by <mathematical induction>. The structure therefore supports logarithmic-time directed <binary search tree> lookup.
+
+= Red-black tree insertion
+{parent=Red-black tree}
+
+In the usual bottom-up algorithm, insert a red node by the <binary search tree> rule. If its parent is black, no repair is needed. If its parent and uncle are red, recolour both black and recolour the grandparent red, then continue upward. If the uncle is black, an inner configuration first rotates the parent to become an outer configuration; rotating the grandparent and exchanging its colour with the parent's resolves the red-red conflict. Apply the left/right mirror cases as needed and finish with a black root. The <tree rotations> preserve key order, and the colour changes preserve equal <black height>. Different valid insertion conventions can produce different valid <red-black trees>, so a worked trace must identify its convention.
+
+= All-black red-black tree size criterion
+{parent=Red-black tree}
+{title2=$n=2^h-1$}
+
+A <red-black tree> with no red stored nodes is a <perfect binary tree>. Indeed, every root-to-sentinel path has equal length because every real node is black; a missing branch at an earlier level would make its path shorter. Thus every real level is full. Its size is $2^h-1$ for some number $h$ of real levels. Conversely, colouring every stored node of a <perfect binary tree> black satisfies every red-black invariant. This proves both directions of the size criterion.
+
+= Black height
+{parent=Red-black tree}
+{title2=$\operatorname{bh}(v)$}
+
+For a node $v$ of a <red-black tree>, count black nodes strictly below $v$ on any path to an absent-child sentinel, including that black sentinel. The red-black invariants make this count independent of the path. Other conventions omit the sentinel or count $v$; specify the convention when using numerical values. Equality of the counts, rather than their common additive offset, is what the balancing condition requires.
+
+= Consecutive keys in a binary search tree
+{parent=Binary search tree}
+
+Two stored keys $a<b$ are consecutive when no stored key lies strictly between them. Their numerical difference need not be one. After <splaying> on $a$ followed by <splaying> on $b$, the node $a$ is the left child of $b$ with an empty right <subtree>. To prove this, after the first call $b$ is the minimum of the right <subtree> of $a$. The last step crossing $a$ is either a <zig step> or a right-left <zig-zag step>; both make $a$ the left child of $b$. A nonempty right <subtree> of $a$ would require a stored key strictly between them.
+
+= Splay tree
+{parent=Binary search tree}
+{wiki}
+
+A <splay tree> is a <binary search tree> whose access operations use <splaying> to move a selected key to the root through <tree rotations>. It stores no explicit balance or height information. A single access can take linear time, while the standard operations have logarithmic <amortized time complexity>. The distinction matters: <amortized analysis> bounds the total cost of an operation sequence, not the worst cost of every individual operation.<Self-Adjusting Binary Search Trees by Daniel Sleator and Robert Tarjan>[Author-hosted abstract: representation, operations and amortized logarithmic bound]{ref}
+
+= Splaying
+{parent=Splay tree}
+
+In ordinary bottom-up <splaying>, locate the selected node by a <binary search tree> search and repeatedly move it toward the root. If its parent is the root, perform a <zig step>. Otherwise use a <zig-zig step> when the node and its parent occupy the same left/right directions, or a <zig-zag step> when their directions differ. Each <tree rotation> preserves the <inorder traversal> and hence the represented key order. The process ends with the selected key at the root. Unsuccessful access policies can instead move the last visited node to the root; arguments about successful calls should say the requested key exists.
+
+= Splaying a chosen node into a leaf
+{parent=Splaying}
+{title2=$n\geq4\Longrightarrow\text{at most three successful splays suffice}$}
+
+Every node of a <splay tree> with at least four distinct keys can become a <leaf of a rooted tree> using only successful <splaying> operations. At an extreme key, access that key and then its sole adjacent stored key; the <consecutive keys in a binary search tree> property makes the extreme key a leaf. For an interior key $x$ with two larger stored keys, take consecutive $a<x<b<c$ and access $c,a,b$; the mirror construction handles two smaller keys.
+
+For a quick shape proof, use $k(L,R)$ for a node and its two <subtrees>. After accessing $c,a$, the right <subtree> of $a$ can only be $c(b(x,0),D)$, $c(x(0,b),D)$, $b(x,c(0,D))$, or $x(0,c(b,D))$, with outside <subtrees> $A$ below $a$ and $D$ above $c$. This follows by inspecting the final <zig step>, <zig-zig step> or <zig-zag step> that moves $a$ above the former root $c$. In each case, accessing $b$ yields $b(a(A,x),c(0,D))$, where $x$ is a leaf and $0$ denotes an empty <subtree>. These rotations prove the bound for arbitrary outside <subtrees>.
+
+= Zig-zag step
+{parent=Splaying}
+
+When a node and its parent occupy opposite left/right directions, rotate the selected node above its parent and then above its grandparent. These two <tree rotations> move the selected node two levels upward while preserving the <binary search tree> ordering.
+
+= Zig-zig step
+{parent=Splaying}
+
+When a node and its parent are both left children, first apply a right <tree rotation> to the grandparent, moving the parent upward, and then another right <tree rotation> moving the selected node upward. Use the left-right mirror image when both are right children. The order of these two <tree rotations> distinguishes the operation from repeatedly rotating only the selected node.
+
+= Zig step
+{parent=Splaying}
+
+A single <tree rotation> moving a node above its parent when that parent is the root. A left child uses a right <tree rotation>, and a right child uses a left <tree rotation>.
+
 = Undoing insertion of a new extreme key
 {parent=Binary search tree}
 
@@ -1188,6 +1511,11 @@ Deletion similarly needs the incoming link: to remove $X$ after known $B$, set `
 
 There are practical costs beyond <Big O notation>. Each singly linked <linked list node> needs a successor reference in addition to its item; separate allocation may add further overhead, while an <array> can reserve unused capacity. Consecutive <array> slots can make a scan reuse nearby contents already brought into a <memory cache>; separated <linked list nodes> can make link following wait for successive <computer memory> fetches. These are layout-dependent effects, not a guarantee that every <array> operation beats every <linked list> operation on every machine. An <array> of references can still lead to scattered objects, and <linked list nodes> can be allocated close together. https://people.freebsd.org/~lstewart/articles/cpumemory.pdf[Ulrich Drepper, What Every Programmer Should Know About Memory, sections 3.3 and 6.2: access patterns and cache use]{ref}
 
+= Linked-list deletion
+{parent=Linked list}
+
+Remove a node by changing the preceding link to its successor; deleting the head instead changes the external head pointer. A traversal retaining the last kept node can remove consecutive rejected nodes without advancing that predecessor. When every node is rejected, the head becomes the empty-list pointer.
+
 = Move-to-front heuristic
 {parent=Linked list}
 
@@ -1208,10 +1536,20 @@ A sentinel is a permanently present <linked list node> that is excluded from the
 
 A <linked list> whose nodes store predecessor and successor references satisfying reciprocal-link consistency. A known node can be unlinked in constant pointer work without searching for its predecessor. The representation uses extra references and requires both directions to be updated on insertion and deletion.
 
+= Lazy reversal of a doubly linked list
+{parent=Doubly linked list}
+
+Keep the physical <doubly linked list> unchanged and represent the logical <sequence> in either forward or backward order according to a <Boolean> flag. Toggling the flag reverses the logical contents in constant <time complexity>. Endpoint insertion and indexed access must interpret their positions using the flag, and the <abstraction function> explicitly accounts for this choice.
+
 = Singly linked list
 {parent=Linked list}
 
 A <linked list> in which each node stores a successor reference. Forward traversal is direct, but finding a predecessor generally requires a scan unless it is retained separately. A head and tail together with a cached length support constant-time <FIFO queue> operations.
+
+= Linked-list minimum extraction
+{parent=Singly linked list}
+
+Scan a nonempty <linked list> while remembering the predecessor of its least-valued node. A <sentinel node> supplies a predecessor even when the minimum is the first data node. Once the scan ends, bypass the selected node and detach its outgoing link. Using strict comparison retains the first occurrence among tied minima. Repeated extraction and tail-appending gives stable <selection sort> without replacing the data nodes or collapsing equal values.
 
 = In-place linked-list reversal
 {parent=Linked list}
@@ -1267,6 +1605,9 @@ A generic correct scan cannot always terminate with a certificate that a value i
 
 = Stream productivity
 {parent=Lazy list}
+
+= Productive
+{synonym}
 
 = Productivity
 {synonym}

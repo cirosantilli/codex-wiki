@@ -7,6 +7,11 @@ A concrete example makes the separation useful: two <operating-system processes>
 
 <Unix> provides an influential example of this design. In their July 1974 paper, Dennis M. Ritchie and Ken Thompson date its earliest version to approximately 1969–70 and describe <operating-system processes>, a hierarchical <file system>, and <inodes> separating <directory entries> from <file metadata>. This is a documented historical example, rather than a claim that every <operating system> uses <Unix> conventions. https://www.cs.cmu.edu/~15712/papers/ritchie74.pdf[Ritchie and Thompson, The UNIX Time-Sharing System, Communications of the ACM 17(7), 1974, sections 1, 3 and 4]{ref}
 
+= Multiuser operating system
+{parent=Operating system}
+
+An <operating system> supporting multiple users with distinct identities and protection requirements. <Access control> determines which users may access shared resources.
+
 = Phōs
 {parent=Operating system}
 {c}
@@ -79,6 +84,11 @@ A <security capability> authorizing a reply to a particular waiting caller. In t
 {parent=Operating system}
 
 A processor event attributable to instruction execution, such as a <page fault> during a memory access or a divide exception on <x86>. This causal connection distinguishes it from the asynchronous device <interrupts> discussed here. It also differs from a programming language's <exception handling>, which specifies how program-level exceptions propagate. https://docs.kernel.org/arch/x86/entry_64.html[Linux kernel documentation, Kernel Entries: architecturally defined exceptions]{ref}
+
+= Precise exception
+{parent=Synchronous processor exception}
+
+An exception presented with architectural state corresponding to a program-order boundary: older instructions have taken effect and younger ones have not. Private results in a <reorder buffer> can be discarded to recover this state.
 
 = Device driver
 {parent=Operating system}
@@ -372,6 +382,11 @@ For example, B first runs at time 2 under <round-robin scheduling>, so its <sche
 
 The appeal is that shared progress can improve responsiveness: B and C get their first <CPU> service sooner under <round-robin scheduling>, while A completes later. The <arithmetic mean> of the <scheduling response times> falls from $10/3$ to $1$; the <arithmetic mean> of the <scheduling turnaround times> is $19/3$ for both policies in this particular example. These are different goals, and this workload establishes no universal ranking. Giving each continuously runnable task repeated turns is a practical form of fairness. A smaller <scheduling quantum> can shorten waits between turns, but makes <context switches> more frequent when competitors remain runnable. If each full slice performs $q$ units of useful work and incurs a fixed switching cost $s$, the overhead fraction in that simplified repeated cycle is $s/(q+s)$. Real costs and workloads determine the choice. https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched.pdf[Remzi H. Arpaci-Dusseau and Andrea C. Arpaci-Dusseau, Operating Systems: Three Easy Pieces, chapter 7, sections 7.2–7.3 and 7.6–7.7: metrics, FCFS and round robin]{ref}
 
+= Nonpreemptive scheduling
+{parent=Process scheduling}
+
+A policy under which a running <operating-system process> keeps the <CPU> until its current <CPU burst> ends, it blocks or it voluntarily yields. A newly ready process waits instead of interrupting the current burst.
+
 = Priority scheduling
 {parent=Process scheduling}
 
@@ -415,6 +430,11 @@ The maximum amount of <CPU> execution allotted in one turn by <round-robin sched
 {parent=Process scheduling}
 
 Taking the <CPU> away from a still-runnable task before it voluntarily yields or finishes. <Round-robin scheduling> uses <scheduling preemption> when a <scheduling quantum> expires, commonly using a timer <interrupt> to regain control. <Kernel preemption> is the more specific question of whether an execution already within the <operating-system kernel> can be suspended for another runnable context.
+
+= Preemptive scheduling
+{parent=Scheduling preemption}
+
+A <process scheduling> policy that can replace a running, still-runnable task with another task. Time-sliced <round-robin scheduling> uses a <hardware timer> <interrupt> to regain control when a <scheduling quantum> expires.
 
 = Scheduling response time
 {parent=Process scheduling}
@@ -477,10 +497,30 @@ Separate <virtual memory> <address spaces> provide a usual default isolation bou
 
 This abstraction lets independent activities reuse the same executable while keeping their changing state separate. <Process scheduling> distributes <CPU> time; <virtual memory> interprets and protects addresses; <file descriptors> connect an execution to open resources. The useful design is controlled independence with explicit ways to share. Creating <operating-system processes>, maintaining their mappings and performing <context switches> require time and <computer memory>; isolation alone gives no universal performance guarantee.
 
+= I/O-bound process
+{c}
+{parent=Process (computing)}
+
+= Input-output-bound process
+{synonym}
+
+An <operating-system process> whose progress is mainly limited by <input-output> rather than useful <CPU> execution. It often has short <CPU bursts> separated by blocking waits.
+
+= CPU-bound process
+{c}
+{parent=Process (computing)}
+
+An <operating-system process> whose progress is mainly limited by <CPU> execution, typically with long <CPU bursts> relative to its <input-output> waits.
+
 = File descriptor
 {parent=Process (computing)}
 
 A nonnegative <integer> identifying an open access in one <operating-system process>. The program passes its value to operations such as reading and closing; the <operating-system kernel> interprets it through that <operating-system process>'s descriptor table. In the toy example, table entry `3` refers to an <open file description> for <inode> 42. Another <operating-system process>'s entry `3` can reach a different <file>, and a closed <file descriptor> value can be reused. https://pages.cs.wisc.edu/~remzi/OSTEP/file-intro.pdf[Arpaci-Dusseau and Arpaci-Dusseau, OSTEP chapter 39, section 39.3: per-process file descriptors]{ref}
+
+= File descriptor table
+{parent=File descriptor}
+
+A process-associated mapping from small nonnegative <integers> to <open file descriptions>, with descriptor-specific flags. Several <file descriptors> can share an <open file description>; their current <file offset> is then shared. The traditional model has one table per process, although operating systems can support explicit sharing between processes.
 
 = Open file description
 {parent=File descriptor}
@@ -488,6 +528,11 @@ A nonnegative <integer> identifying an open access in one <operating-system proc
 A record of an open access to a <file>, including its current position and access mode. Each <file descriptor> reaches one <open file description>, but several <file descriptors> can share it. Separately opening the same ordinary <file> creates separate <open file descriptions> with independent positions while still reaching the same <inode>. Thus <file descriptors>, <open file descriptions> and <hard links> have different counts. https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_258[The Open Group, POSIX.1-2017, section 3.258: open file description]{ref}
 
 // Target: computer-science.bigb
+
+= Open file table
+{parent=Open file description}
+
+The logical system-wide collection of <open file descriptions>. Each description represents an opening, including access mode, current <file offset> and a reference to the underlying <file>. Independent opens of the same <file> normally create different descriptions, whereas descriptor duplication can make multiple <file descriptors> share one description. A table is an abstract organization here, not a requirement that all entries occupy one fixed array.
 
 = Thread
 {parent=Process (computing)}
@@ -530,6 +575,67 @@ A dependence of behavior on the relative timing or ordering of concurrent activi
 
 Coordinating concurrent activities so that required ordering and visibility rules hold. <Mutual exclusion> is one form of <synchronization>; waiting for another <software thread> to finish is another.
 
+= Thundering herd
+{parent=Synchronization (computing)}
+
+Many waiting <software threads> wake for a state change that can benefit only one or a few of them. Repeated <monitor> reacquisition, failed predicate checks and <context switches> add overhead; selective notification can reduce it.
+
+= Semaphore
+{parent=Synchronization (computing)}
+{disambiguate=programming}
+{wiki}
+
+= Semaphore
+{synonym}
+
+A permit-based <synchronization> object. A down operation waits until it can consume a permit; an up operation supplies one. Unlike ownership-based <mutex> use, signalling can pass between different <software threads>.
+
+= FIFO semaphore
+{c}
+{parent=Semaphore (programming)}
+
+A <semaphore> that satisfies registered down requests in <FIFO queue> order. Direct handoff reserves a released permit for the oldest waiter rather than exposing it to competing newcomers. The ordering of truly concurrent registrations is determined by the registration mechanism.
+
+= Binary semaphore
+{parent=Semaphore (programming)}
+
+A <semaphore> with at most one available permit. Initially unavailable instances support event signalling; initially available instances can protect one-at-a-time access under a balanced acquisition-and-release discipline.
+
+= Counting semaphore
+{parent=Semaphore (programming)}
+
+A <semaphore> with a nonnegative number of available permits. Its contract must state initial availability and whether unmatched releases beyond an initial or configured bound are allowed.
+
+= Monitor
+{parent=Synchronization (computing)}
+{disambiguate=synchronization}
+{wiki}
+
+= Monitor
+{synonym}
+
+A construct combining <mutual exclusion> for operations on shared state with condition-based waiting. A waiting caller releases the <monitor> while asleep and must recheck its predicate after regaining access.
+
+= Spurious wakeup
+{parent=Monitor (synchronization)}
+{wiki}
+
+A wait returning without the application predicate necessarily becoming true. Rechecking that predicate in a loop also handles the separate possibility that another caller consumed the resource before the awakened caller could acquire the <monitor>.
+
+= Linearizability
+{parent=Synchronization (computing)}
+{wiki}
+
+= Linearizable
+{synonym}
+
+A concurrent object behaves as if its operations took effect at individual instants between invocation and response, respecting nonoverlapping operations' real-time order. A read overlapping a replacement can return the old version while remaining <linearizable>.
+
+= Linearization point
+{parent=Linearizability}
+
+The instant used to identify an operation's abstract effect in a proof of <linearizability>. Loading the published <pointer> can be the <linearization point> of an immutable snapshot read, with suitable ordering and lifetime guarantees.
+
 = Lost wake-up
 {parent=Synchronization (computing)}
 
@@ -539,6 +645,46 @@ A <lost wake-up> occurs when a notification arrives after a worker checks for wo
 {parent=Synchronization (computing)}
 
 <Operating-system processes> communicate by sending and receiving messages. A <message-passing mutual exclusion server> can centralize ownership of a shared resource: clients request permission, wait for a grant, and release the resource when finished. Correctness depends on an explicit delivery and failure model; reliable delivery and compliant clients suffice for the basic ownership protocol.
+
+= Control channel
+{parent=Message passing}
+
+A <message-passing channel> carrying protocol instructions, such as cancellation or permission to send, rather than ordinary application payloads. A reverse <control channel> can communicate consumer closure back to a remote producer.
+
+= Channel multiplexing
+{parent=Message passing}
+
+Sharing one <message-passing channel> among multiple logical streams by attaching a stream identity to each transferred value. Independent cancellation requires a protocol that conveys which stream is ending; bounded per-stream <flow control> can prevent <head-of-line blocking> from a single unready consumer.
+
+= Multiplexed channel
+{parent=Channel multiplexing}
+
+A <message-passing channel> carrying traffic for multiple logical producer-consumer pairs.
+
+= Channel demultiplexer
+{parent=Channel multiplexing}
+
+A process that receives tagged stream traffic and dispatches its values to the corresponding output ports.
+
+= Channel multiplexer
+{parent=Channel multiplexing}
+
+A process that tags values accepted from several input ports with stream identities and forwards them through a shared <message-passing channel>.
+
+= Heartbeat message
+{parent=Message passing}
+
+A periodic indication that a peer is still communicating even when it has no application data to send. Absence beyond a deadline can suggest a failure but does not distinguish a crash from excessive delay.
+
+= Message-passing channel
+{parent=Message passing}
+
+A communication object with an output port used to send values and an input port used to receive them. Its contract specifies ordering, capacity, sharing and closure. In <synchronous message passing>, a send completes through a matching receive; a buffered <message-passing channel> can retain accepted values until a receiver is ready.
+
+= Strict buffer
+{parent=Message-passing channel}
+
+A process with finite positive capacity whose output <sequence> is a prefix of its input <sequence> and whose input-output length discrepancy never exceeds that capacity. While active, it offers input whenever non-full and output whenever nonempty; upstream closure drains retained data, while downstream closure cancels delivery.
 
 = Head-of-line blocking
 {parent=Message passing}
@@ -664,6 +810,27 @@ A shared order governing acquisition of distinct <mutex> objects. To prevent cir
 
 Rules specifying which shared-data observations and operation orders are allowed. <Sequential consistency> is the model used in the two diagrams. A language <memory model> can permit weaker ordering and impose additional conditions on conflicting accesses. Correct use of an indivisible flag must therefore be checked against that <memory model>, including <happens-before> relationships for the data guarded by the flag.
 
+= Control dependency
+{parent=Memory model}
+
+A memory operation's execution is conditional on a preceding value. A <control dependency> alone does not generally order two reads on <POWER architecture> or the relevant ARM <memory models>; it must not be substituted for an <address dependency> in pointer-publication reasoning.
+
+= Address dependency
+{parent=Memory model}
+
+A value loaded by one instruction directly contributes, through register computation, to a later memory access's <memory address>. Loading a <pointer> and then reading fields through that saved <pointer> is a natural example. This differs from a <control dependency>.
+
+= Total store order
+{parent=Memory model}
+
+An architectural <memory model> preserving store-to-store and load-to-load ordering while allowing a later load to a different address to bypass a locally buffered store. This permits the two-zero store-buffering outcome while requiring no extra hardware fence for simple immutable pointer publication.
+
+= Memory barrier
+{parent=Memory model}
+{wiki}
+
+An operation constraining specified memory-access orderings. The strength and scope of a <memory barrier> matter; it does not by itself provide <mutual exclusion> or safe <memory reclamation>.
+
 = Sequential consistency
 {parent=Memory model}
 {wiki}
@@ -697,3 +864,9 @@ An operation that takes effect indivisibly relative to the specified competing a
 {parent=Atomic operation}
 
 An <atomic operation> that reads a shared object's value and changes it as one indivisible action. For an increment from $0$, the two operations under <mutual exclusion> produce $1$ then $2$ in either <software thread> order. A <test-and-set> is another example. The operation's ordering guarantees for other data still depend on the <memory model> and its selected <acquire-release synchronization> semantics.
+
+= Compare-and-swap
+{parent=Atomic read-modify-write}
+{wiki}
+
+An <atomic read-modify-write> that replaces a location only if its current value matches an expected value. An update based on an old version can retry after a failed <compare-and-swap> instead of blindly overwriting a competing writer's change.

@@ -1,0 +1,423 @@
+= Computer graphics
+{scope}
+{title2=A10403W1}
+
+Solutions to all three questions of the paper dated 8 June 2015. Products of transformation <matrices> act on column <vectors>, with the rightmost factor acting first; the order issue in <past-exam-of-the-computer-science-course-of-the-university-of-oxford/2015/computer-graphics/2/b/iii> is discussed explicitly.<Computer Graphics examination paper by the University of Oxford (2015)>[Cover and printed pp. 2–6, A10403W1]{ref}
+
+== 1
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+Three advantages of <integer arithmetic> for <raster graphics> are:
+
+* **Cheap, fast operations.** Historically, <integer> addition, subtraction and shifts needed much less hardware and execution time than <floating-point arithmetic>, especially on machines without a <floating-point unit>. An incremental <Bresenham's line algorithm> needs only a few additions and a decision per <pixel>.
+* **Exact decisions.** Provided <integer overflow> is excluded, the scaled <midpoint line decision> is exact. There is no accumulated <rounding error> that can move a decision across a half-<pixel> boundary; equality has a reproducible tie rule.
+* **Simple storage and hardware.** <Integer> coordinates already identify <pixels>. An implementation can keep coordinates and decision variables in ordinary registers and use a small add/compare datapath, avoiding conversion between <floating-point numbers> and <integer> screen addresses.
+
+These are historical and structural advantages, not a claim that every modern processor executes every <integer> operation faster. An <integer> implementation still needs sufficient width for its intermediate results. The compact answer is
+$$
+\boxed{\text{fast elementary operations; exact decisions; simple hardware and storage}.}
+$$
+
+=== b
+{scope}
+
+==== Solution
+
+By exchanging axes, reversing endpoint order and reflecting coordinate signs where necessary, reduce a general <line segment> to the first octant:
+$$
+\Delta x=x_1-x_0>0,\qquad 0\leq\Delta y=y_1-y_0\leq\Delta x,\qquad m=\frac{\Delta y}{\Delta x}\in[0,1].
+$$
+The vertical case is handled by exchanging axes. In this octant, increasing $x$ by one requires increasing $y$ by either zero or one. Thus, from the currently plotted <pixel> $(x,y)$ the candidates are $E=(x+1,y)$ and $NE=(x+1,y+1)$.
+
+Use the <implicit equation> of the <line>
+$$
+f(X,Y)=\Delta y(X-x_0)-\Delta x(Y-y_0).
+$$
+At a fixed $X$, $f(X,Y)>0$ means that $(X,Y)$ lies below the exact <line>. The <midpoint line decision> evaluates $M=(x+1,y+1/2)$, halfway between the two candidate <pixel> centres. If $f(M)<0$, the exact <line> lies below $M$, so choose $E$; if $f(M)>0$, choose $NE$. At equality either candidate is equally near, but a fixed tie rule is essential. We choose $NE$ on a tie throughout these solutions:
+$$
+\boxed{f(x+1,y+1/2)<0\Rightarrow E;\qquad f(x+1,y+1/2)\geq0\Rightarrow NE.}
+$$
+This chooses the closest vertical-grid <pixel> centre in each column, with ties rounded upward. Since $0\leq m\leq1$, the result has one <pixel> per column and consecutive <pixels> share an edge or a corner.
+
+=== c
+{scope}
+
+==== Solution
+
+Multiply the <midpoint line decision> by two to remove the fraction. At the current <pixel> $(x,y)$, maintain
+$$
+d=2f(x+1,y+1/2)=2\Delta y(x+1-x_0)-2\Delta x(y-y_0)-\Delta x.
+$$
+At the initial endpoint this is $d_0=2\Delta y-\Delta x$. If $E$ is chosen, the next decision midpoint is displaced by $(1,0)$ and $d$ increases by $2\Delta y$. If $NE$ is chosen, its displacement is $(1,1)$ and $d$ increases by $2(\Delta y-\Delta x)$. Both increments are constant, so the per-<pixel> work uses only <integer arithmetic>:
+$$
+\boxed{d_0=2\Delta y-\Delta x,\quad \operatorname{incrE}=2\Delta y,\quad \operatorname{incrNE}=2(\Delta y-\Delta x).}
+$$
+The completed code, using the tie rule of part (b), is:
+
+```
+void midpointLine(int x0, int y0, int x1, int y1)
+{
+    int dx, dy, incrE, incrNE, d, x, y;
+    x = x0; y = y0;
+    dx = x1 - x0;
+    dy = y1 - y0;
+    incrE = 2 * dy;
+    incrNE = 2 * (dy - dx);
+    d = 2 * dy - dx;
+    drawPoint(x, y);
+
+    while (x < x1) {
+        if (d < 0) {
+            d += incrE;
+        } else {
+            d += incrNE;
+            y++;
+        }
+        x++;
+        drawPoint(x, y);
+    }
+    return;
+}
+```
+
+Thus `guard1` is `x < x1`, and `guard2` is `d < 0`. Multiplication by two is the only multiplication. Signed decision variables are convenient because $d$ and `incrNE` can be negative; this remains an <integer arithmetic> algorithm. A strictly unsigned hardware representation would need an equivalent biased or separated-sign encoding. As with the printed `int` skeleton, assume all intermediate values fit the chosen type; <integer overflow> would invalidate the mathematical decisions.
+
+To verify the geometry, write $k=x-x_0$. The chosen ordinate is
+$$
+y(x)=y_0+\left\lfloor\frac{2\Delta y\,k+\Delta x}{2\Delta x}\right\rfloor.
+$$
+The <midpoint line decision> selects exactly this nearest <integer>, rounding halves upward. Its increment between successive columns is zero or one. At $k=0$ and $k=\Delta x$, it gives exactly $y_0$ and $y_1$, respectively, so both endpoints are included and the <line segment> has precisely $\Delta x+1$ distinct <pixels>.
+
+\Image[graphics-2015-midpoint-line.png]
+{title=Bresenham pixels for a slope of 3/8, with the upper pixel selected at the midpoint tie}
+
+For the illustrated endpoints $(1,1)$ and $(9,4)$, the ordinates are $1,1,2,2,3,3,3,4,4$. In particular the exact ordinate at $x=5$ is $5/2$, and the chosen <pixel> is $(5,3)$.
+
+=== d
+{scope}
+
+==== Solution
+
+The verifier can check the final geometric criterion directly, independently of the incremental decision variable. Set $dx=x_1-x_0$, $dy=y_1-y_0$, and define the scaled vertical residual
+$$
+e=2dy(x-x_0)-2dx(y-y_0).
+$$
+The exact <line> ordinate is $y_* = y_0+dy(x-x_0)/dx$, so $e=2dx(y_*-y)$. Nearest-<integer> selection with upward ties is precisely
+$$
+\boxed{x_0\leq x\leq x_1,\qquad -dx\leq e<dx.}
+$$
+The strictness matters: at a half-<integer> ordinate the upper <pixel> has $e=-dx$ and passes, whereas the lower <pixel> has $e=dx$ and fails. Each column has exactly one accepted <integer> ordinate.
+
+With `reject()` terminating verification unsuccessfully, suitable outline code is:
+
+```
+void checkPoint(int x, int y)
+{
+    Wide a = Wide(x) - x0;
+    if (a < 0) reject();                    // inequality 1
+    Wide b = Wide(x1) - x;
+    if (b < 0) reject();                    // inequality 2
+
+    Wide dx = Wide(x1) - x0;
+    Wide dy = Wide(y1) - y0;
+    Wide e = 2 * dy * a - 2 * dx * (Wide(y) - y0);
+    Wide lower = e + dx;
+    if (lower < 0) reject();                // inequality 3
+    Wide upper = dx - e;
+    if (upper <= 0) reject();               // inequality 4
+
+    counter[x]++;
+}
+```
+
+`Wide` denotes a signed <integer> type large enough for the products and differences, with conversion before subtraction. These are exactly four inequalities against zero, all applied to named <integer> variables. The arithmetic restriction on the drawing loop in part (c) does not restrict multiplication in this verifier. The screen endpoints are assumed valid, with $0\leq x_0<x_1<\texttt{MAX\_SCREEN\_WIDTH}$ and valid endpoint ordinates, so indexing is safe after the first two checks. These endpoint and screen preconditions belong in initialization if they are not guaranteed by the caller.
+
+No separate $y$-range tests are needed: for $x$ between the endpoints, $y_*$ lies in $[y_0,y_1]$, and its nearest <integer> lies in the same interval because both bounds are <integers>. The counters defer detection of omissions and repetitions to part (e). As for every finite counter, use adequate capacity or a sticky failure on overflow; saturating each counter at two also suffices because only zero, one, and “more than one” matter.
+
+=== e
+{scope}
+
+==== Solution
+
+After every proposed <pixel> has passed part (d), insist on exactly one call in every column of the closed endpoint interval:
+
+```
+void final()
+{
+    for (int x = x0; x <= x1; x++) {
+        if (counter[x] != 1) reject();
+    }
+    accept();
+}
+```
+
+Part (d) already rejected every out-of-range column and every incorrect ordinate. A zero counter now detects an omitted column; a counter greater than one detects a repeated call in that column. Because the residual interval in part (d) allows exactly one <integer> ordinate in each column, accepted calls in a repeated column must address the same <pixel>. Conversely, a counter of one in every column forces the complete set of nearest <pixels>, including both endpoints. Consecutive correct columns differ in ordinate by at most one, which proves that there are no gaps in the resulting thin <line segment>.
+
+The verifier certifies the final plotted set; it need not require calls to arrive in increasing $x$ order. Its final condition is simply
+$$
+\boxed{\operatorname{counter}[x]=1\quad\text{for every }x=x_0,\ldots,x_1.}
+$$
+
+== 2
+{scope}
+
+=== a
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+Represent a <point> by the column of <homogeneous coordinates> $(X,Y,Z,1)^T$. The actions of the four <matrices> are:
+
+|| Matrix
+|| Geometric action and parameters
+
+| $G(\theta)$
+| A <proper rotation> about the $x$-axis: $(X,Y,Z)\mapsto(X,Y\cos\theta-Z\sin\theta,Y\sin\theta+Z\cos\theta)$. The angle $\theta$ is in <radians>, with the usual right-hand sense.
+
+| $H(x,y,z)$
+| A <translation> by $(x,y,z)$: $(X,Y,Z)\mapsto(X+x,Y+y,Z+z)$.
+
+| $J(\lambda)$
+| Uniform scaling by $\lambda$: $(X,Y,Z)\mapsto(\lambda X,\lambda Y,\lambda Z)$. Positive $\lambda$ gives a <uniform dilation>; $\lambda=0$ collapses the object to the origin; negative $\lambda$ additionally reverses its direction through the origin.
+
+| $K(f)$
+| <Perspective projection> from the origin onto the plane $Z=f$, where $f\ne0$ is the <focal length> in the chosen coordinate units.
+
+The last operation produces $(X,Y,Z,Z/f)^T$. It requires a <perspective divide>: divide the first three components by the last. For $Z\ne0$,
+$$
+\boxed{K(f):\quad (X,Y,Z)\longmapsto\left(\frac{fX}{Z},\frac{fY}{Z},f\right).}
+$$
+This is why the last component of <homogeneous coordinates> cannot simply be discarded. <Points> with $Z=0$ have no finite projected position, and a visible scene normally uses $Z>0$ under this forward-axis convention. The first three transformations leave the last component equal to one and need no nontrivial divide. The displayed $K$ retains no depth variation after division; it describes projection onto the image plane, rather than a complete depth-buffer mapping.
+
+==== ii
+{scope}
+
+===== Solution
+
+Interpret the given focal point as the centre of <perspective projection>, $C=(0,6,-8)$. First translate it to the origin with $H(0,-6,8)$. The direction from $C$ to the world origin is then $(0,-6,8)$, of length 10. Choose the <rotation matrix> $G(\theta)$ so that this direction becomes $(0,0,10)$:
+$$
+\cos\theta=\frac45,\qquad \sin\theta=-\frac35,\qquad \theta=-\arctan\frac34.
+$$
+Indeed, the transformed $y$ component is $-6(4/5)-8(-3/5)=0$, and the transformed $z$ component is $(-6)(-3/5)+8(4/5)=10$. Thus the required mapping, followed by the <perspective divide>, is
+$$
+\boxed{M=K(5)\,G\!\left(-\arctan\frac34\right)\,H(0,-6,8).}
+$$
+For a world <point> $(x,y,z)$, its camera coordinates and projected device coordinates are
+$$
+X=x,\qquad Y=\frac45y+\frac35z,\qquad Z=10-\frac35y+\frac45z,
+$$
+$$
+(u,v)=\left(\frac{5x}{10-3y/5+4z/5},\frac{4y+3z}{10-3y/5+4z/5}\right),\qquad Z>0.
+$$
+The world origin projects to $(0,0)$ and lies at camera depth 10. A <point> five units along the unit viewing direction from $C$ has camera coordinates $(0,0,5)$, so it lies on the central image plane as expected. Here device coordinates are image-plane coordinates centred on the optical axis; an actual <pixel> viewport would require its own specified scale and offset.
+
+Only <rotations> about the $x$-axis are available. Consequently the camera's horizontal axis stays parallel to the world $x$-axis; the viewing direction lies in the world $yz$ plane. The available orientation has pitch but no independent yaw or roll. <Translations> move the camera and the projected origin but cannot supply the missing orientation degrees of freedom.
+
+=== b
+{scope}
+
+==== i
+{scope}
+
+===== Solution
+
+In the solid-modelling convention used here, a <rigid-body transformation> is an orientation-preserving <rigid transformation>, represented by a <proper rotation> and a <translation>. The proposed upper-left block $S$ is <orthogonal> but has
+$$
+S=\begin{pmatrix}0&1&0\\1&0&0\\0&0&1\end{pmatrix},\qquad S^TS=I,\qquad \det S=-1.
+$$
+It is a <reflection> in the <plane> $x=y$. It preserves distances, but reverses handedness, so it cannot describe continuous motion of a rigid solid through <proper rotations> and <translations>. Some mathematical uses of <rigid transformation> include this orientation-reversing case; the <determinant> is the distinction relevant to the warning.
+
+In a solid modeller, <triangle> winding and outward <normal vectors> must agree. A <reflection> reverses the winding: for edge <vectors> $a,b$,
+$$
+(Sa)\times(Sb)=\det(S)S(a\times b)=-S(a\times b).
+$$
+Simply transforming stored <normal vectors> by $S$ while retaining the original vertex order therefore makes the geometric and stored normals disagree. <Back-face culling>, inside/outside tests and <Phong reflection model> calculations can then use the wrong side. Code assuming a positive oriented volume can likewise interpret the reflected solid incorrectly. A modeller can support <reflections> if it deliberately corrects these orientation conventions.
+
+A suitable alternative rotates by $-\pi/2$ about $z$ and then translates upward by `height`. Writing $h=\texttt{height}$,
+$$
+\boxed{T=\begin{pmatrix}0&1&0&0\\-1&0&0&h\\0&0&1&0\\0&0&0&1\end{pmatrix},\qquad (x,y,z)\mapsto(y,h-x,z).}
+$$
+Its <rotation matrix> has determinant $+1$. The source bounds $0\leq x\leq h$, $0\leq y\leq w$, $z=0$ become $0\leq x'\leq w$, $0\leq y'\leq h$, $z'=0$, where $w=\texttt{width}$. A horizontal stripe $y=k\,\texttt{step}$ becomes the vertical stripe $x'=k\,\texttt{step}$, so even the stripe positions from the left edge are preserved. The face's $+z$ <normal vector> is also preserved.
+
+==== ii
+{scope}
+
+===== Solution
+
+The call constructs dimensions $(d,w,h)$ along the old $(x,y,z)$ axes. To obtain target dimensions $(w,h,d)$ and make an old layer $z=k\,\texttt{step}$ become a new layer $y'=k\,\texttt{step}$, use the cyclic permutation
+$$
+\boxed{P=\begin{pmatrix}0&1&0&0\\0&0&1&0\\1&0&0&0\\0&0&0&1\end{pmatrix},\qquad (x,y,z)\mapsto(y,z,x).}
+$$
+The new coordinate ranges are immediately $[0,w]$, $[0,h]$, $[0,d]$. Its spatial block is <orthogonal> with determinant $+1$, since a three-cycle is an even <permutation>. Hence this is a <proper rotation>, through $-2\pi/3$ about the axis in direction $(1,1,1)$ under the right-hand convention. No <translation> is required.
+
+==== iii
+{scope}
+
+===== Solution
+
+The multiplication order needs care. Use the standard right-hand <rotation matrices>, consistent with the printed $G$ and the stated positive $z$ <rotation>. For column <vectors>, direct multiplication of the two products *in the order printed* gives
+$$
+R_y(-\pi/2)R_z(-\pi/2)=\begin{pmatrix}0&0&-1\\-1&0&0\\0&1&0\end{pmatrix},\qquad (x,y,z)\mapsto(-z,-x,y),
+$$
+$$
+R_y(\pi/2)R_z(\pi/2)=\begin{pmatrix}0&0&1\\1&0&0\\0&1&0\end{pmatrix},\qquad (x,y,z)\mapsto(z,x,y).
+$$
+Both permute the dimensions $(d,w,h)$ into $(h,d,w)$, rather than the required $(w,h,d)$. Therefore, with ordinary column-vector <matrix multiplication>, **neither printed product is the permutation in part (ii)**. A <translation> can correct the position of a cuboid, but cannot correct these permuted side lengths for general $w,h,d$. This order mismatch is present in the original printed question.<Computer Graphics examination paper by the University of Oxford (2015)>[Printed p. 5, Question 2(b)(iii): the products are written with ROT_y to the left of ROT_z]{ref}
+
+The apparent intended comparison is obtained if “chain” means apply the $y$ <rotation> first, then the $z$ <rotation>. Under that interpretation the actual column-vector products have the reverse order:
+$$
+\boxed{R_z(-\pi/2)R_y(-\pi/2)=\begin{pmatrix}0&1&0\\0&0&1\\1&0&0\end{pmatrix}=P_{3\times3}.}
+$$
+Thus the *negative-angle sequence* is correct when read as operations performed from left to right. The positive-angle sequence gives
+$$
+R_z(\pi/2)R_y(\pi/2)=\begin{pmatrix}0&-1&0\\0&0&1\\-1&0&0\end{pmatrix},\qquad (x,y,z)\mapsto(-y,z,-x).
+$$
+It occupies $[-w,0]\times[0,h]\times[-d,0]$. Apply the world-space <translation>
+$$
+\boxed{t=(w,0,d),\qquad (x',y',z')=(w-y,z,d-x).}
+$$
+This puts the cuboid in $[0,w]\times[0,h]\times[0,d]$ and still maps $z=k\,\texttt{step}$ to $y'=k\,\texttt{step}$. The distinction is purely the action order: ordinary products act rightmost first, while a library may describe an ordered sequence of operations in application order. Giving the coordinate maps makes either convention explicit. If one merely wanted to place the literal printed negative product in the positive octant, its <translation> would instead be $(h,d,0)$, producing dimensions $(h,d,w)$ and still failing the requested general bounds.
+
+== 3
+{scope}
+
+=== a
+{scope}
+
+==== Solution
+
+At a surface <point> $p$, let $\hat N$ be the outward <unit normal vector>, $\hat V$ the <unit vector> from $p$ toward the viewer, and $\hat L$ the <unit vector> from $p$ toward the light. The incoming propagation direction is therefore $-\hat L$. The <specular reflection> direction $\hat R$ points away from the surface along the ideal reflected ray.
+
+Resolve $\hat L$ into its normal and tangential components:
+$$
+\hat L=(\hat N\cdot\hat L)\hat N+\bigl(\hat L-(\hat N\cdot\hat L)\hat N\bigr).
+$$
+Reflection of the incoming direction preserves its tangential component and reverses its normal component. Equivalently, the outgoing direction has the same normal component as $\hat L$ and the opposite tangential component, giving
+$$
+\boxed{\hat R=2(\hat N\cdot\hat L)\hat N-\hat L.}
+$$
+The <dot product> identity shows $\|\hat R\|=1$ when $\|\hat L\|=\|\hat N\|=1$.
+
+In the <Phong reflection model>, ambient lighting approximates unmodelled indirect illumination and is independent of these directions. The diffuse term models <Lambertian reflectance> and varies as $\max(0,\hat N\cdot\hat L)$. The specular term models a highlight around $\hat R$ and varies as $\max(0,\hat R\cdot\hat V)^n$, where $n>0$ controls its sharpness. For a visible front surface, a convenient per-colour-channel equation is
+$$
+\boxed{I=k_a I_a+I_L\left[k_d\max(0,\hat N\cdot\hat L)+k_s\,\chi\,\max(0,\hat R\cdot\hat V)^n\right],}
+$$
+where $I_a$ is ambient illumination, $I_L$ is the source strength at the surface including any chosen attenuation, $k_a,k_d,k_s\geq0$ are material weights, and $\chi$ is one when $\hat N\cdot\hat L>0$ and zero otherwise. The weights can be colour-dependent. An idealized point source's incident strength decreases as inverse distance squared; the empirical equation can also use a prescribed attenuation law.
+
+In degenerate geometric cases the effective weights switch off. A light behind or tangent to the surface contributes neither direct diffuse nor specular illumination. If $\hat R\cdot\hat V\leq0$, the specular term is zero. A viewpoint on the back side is rejected by <back-face culling> for a one-sided surface. A material with no highlight has $k_s=0$; with no diffuse response, $k_d=0$; without ambient illumination the ambient term vanishes. These zeros do not require renormalizing the other weights, and the empirical <Phong reflection model> does not impose a universal condition $k_a+k_d+k_s=1$. At coincident light/surface or eye/surface positions a direction cannot be normalized; such singular configurations require a separate convention, rather than substituting an undefined <unit vector> into the formula.
+
+=== b
+{scope}
+
+==== Solution
+
+A <bidirectional reflectance distribution function>, or <BRDF>, describes how a surface scatters incident illumination into each outgoing direction. At a fixed surface <point> $p$ and <wavelength>, its inputs are two directions above the surface, $\omega_i$ toward the incident source and $\omega_o$ toward the observer; equivalently these are two pairs of angular coordinates. Its output is the ratio of differential reflected <radiance> to differential incident <irradiance>:
+$$
+\boxed{f_r(p,\omega_i,\omega_o)=\frac{dL_o(p,\omega_o)}{dE_i(p,\omega_i)},\qquad [f_r]=\mathrm{sr}^{-1}.}
+$$
+Position and <wavelength> may be additional arguments when material properties vary. A colour implementation can return one value per colour channel. The <BRDF> is a material response, not the final outgoing light value: it must be combined with the incident illumination and the projected-angle factor.<Physically Based Rendering: From Theory to Implementation (4th edition) by Matt Pharr and others>[§4.3.1, definition of the BRDF as differential outgoing radiance divided by differential incident irradiance]{ref}
+
+For incident <radiance> $L_i$, the reflection part of the <rendering equation> is
+$$
+L_o(p,\omega_o)=\int_{\Omega^+}f_r(p,\omega_i,\omega_o)L_i(p,\omega_i)(\hat N\cdot\omega_i)\,d\omega_i.
+$$
+Emission is added separately if the surface itself emits. This integral explains how a <BRDF> replaces the assumed material response of a local lighting model. For <Lambertian reflectance>, $f_r=\rho_d/\pi$, so the cosine factor yields the diffuse term from part (a). A directional specular lobe supplies a highlight. The empirical <Phong reflection model> is an approximate angular-response model of this kind; its original direct specular term is not automatically a normalized, energy-conserving <BRDF>. The ambient term approximates missing illumination and is not itself a third direction-independent material scattering mechanism. More general <BRDFs> can reproduce measured surface behaviour, while illumination from other surfaces supplies indirect light in the <rendering equation>.
+
+=== c
+{scope}
+
+==== Solution
+
+Let the oriented vertices be $a,b,c$, in an order such that $n=(b-a)\times(c-a)$ points out of the front face. The given nondegeneracy guarantees $n\ne0$. A <ray> with nonzero direction $r$ approaches the front face only if
+$$
+n\cdot r<0.
+$$
+Reject $n\cdot r\geq0$. This combines <back-face culling> with rejection of parallel rays, including the coplanar case for this ordinary surface-hit test. The <ray-plane intersection> parameter is
+$$
+\lambda=\frac{n\cdot(a-o)}{n\cdot r}.
+$$
+Reject $\lambda<0$; for rays launched from existing surfaces use a positive lower cutoff to avoid counting the launch surface. Form $p=o+\lambda r$.
+
+Finally determine whether $p$ lies inside the <triangle>. For $u=b-a$, $v=c-a$, $w=p-a$, compute
+$$
+D=(u\cdot u)(v\cdot v)-(u\cdot v)^2>0,
+$$
+$$
+\beta=\frac{(v\cdot v)(w\cdot u)-(u\cdot v)(w\cdot v)}D,\qquad
+\gamma=\frac{(u\cdot u)(w\cdot v)-(u\cdot v)(w\cdot u)}D.
+$$
+These solve $p=a+\beta u+\gamma v$. The <barycentric coordinates> are $(1-\beta-\gamma,\beta,\gamma)$, so the complete acceptance criterion is
+$$
+\boxed{n\cdot r<0,\quad \lambda\geq0,\quad\beta\geq0,\quad\gamma\geq0,\quad\beta+\gamma\leq1;\qquad p=o+\lambda r.}
+$$
+The inequalities include the edges and vertices. A renderer sharing edges between <triangles> should use a consistent numerical edge convention; small <floating-point arithmetic> errors near a shared boundary should not create cracks. Normalizing $n$ is unnecessary for this intersection calculation because its scale cancels.
+
+=== d
+{scope}
+
+==== Solution
+
+For single-shot <ray tracing (computer graphics)>, construct one primary <ray> per <pixel>, normally through its centre on the image plane, with the camera centre as origin for <perspective projection>. Transform the <ray> into the scene's coordinates, or consistently transform all the scene geometry into camera coordinates.
+
+Intersect that primary <ray> with the scene's <triangles>, using part (c), and retain the accepted hit with the smallest nonnegative parameter $\lambda$. This nearest-hit selection supplies visibility: farther surfaces cannot show through the first opaque surface. If there is no hit, write the background colour. At a hit $p$, obtain its material colour and front <unit normal vector> and set $\hat V$ toward the camera.
+
+For each point light at $\ell_j$, form $\hat L_j=(\ell_j-p)/\|\ell_j-p\|$, calculate the <specular reflection> direction, and evaluate its diffuse and specular contributions using the <Phong reflection model>. Sum the contributions and add ambient illumination once:
+$$
+\boxed{I(p)=k_aI_a+\sum_j I_j(p)\left[k_d\max(0,\hat N\cdot\hat L_j)+k_s\chi_j\max(0,\hat R_j\cdot\hat V)^n\right].}
+$$
+The coloured surface can supply colour-dependent diffuse weights, and each source can have its own colour. Convert the result into the output image's colour encoding and range. Single-shot here means direct local shading after one primary visibility <ray>; no reflected or transmitted secondary viewing rays are followed. Part (e) adds secondary visibility queries for the lights.
+
+=== e
+{scope}
+
+==== Solution
+
+At each primary hit $p$, send a <shadow ray> toward each point light. An especially clear parameterization is
+$$
+s_j(t)=p+t(\ell_j-p),\qquad 0<t<1.
+$$
+If an opaque scene surface intersects this open segment, the source is hidden. The finite interval is essential: an object beyond the light must not cast a shadow at $p$. Exclude the launch surface with a small geometrically appropriate origin offset or positive minimum parameter, so <floating-point arithmetic> does not create a false self-intersection.
+
+Introduce a visibility factor $V_j(p)$ equal to zero when blocked and one otherwise. The modified equation is
+$$
+\boxed{I(p)=k_aI_a+\sum_j V_j(p)I_j(p)\left[k_d\max(0,\hat N\cdot\hat L_j)+k_s\chi_j\max(0,\hat R_j\cdot\hat V)^n\right].}
+$$
+A blocked light loses both its diffuse and specular contributions. The simple ambient approximation remains. Opaque point lights produce hard shadow boundaries. Use a consistent sidedness policy for occluders: an opaque closed solid blocks from either crossing side, so a two-sided blocker test is appropriate even when primary visibility uses <back-face culling>. An any-hit query can stop as soon as it finds one blocker before the light.
+
+=== f
+{scope}
+
+==== Solution
+
+A <bounding volume hierarchy> is a <tree> whose leaves contain geometric primitives, here <triangles>, and whose internal nodes store cheap-to-test <bounding volumes> containing all descendant geometry. A <bounding volume> may be an <axis-aligned bounding box> or a <sphere>. The key containment guarantee is
+$$
+\boxed{\text{ray misses a node's bounding volume}\Rightarrow\text{ray misses every triangle below that node}.}
+$$
+Traverse from the root. Reject a whole subtree when its <bounding volume> is missed; otherwise visit its children and perform the full <ray-triangle intersection> test only at surviving leaves. Hitting a <bounding volume> is only permission to investigate, not evidence of hitting an enclosed <triangle>.
+
+For nearest-hit queries, visit the nearer child first and keep the current nearest parameter. A second child whose volume begins farther away than this parameter can be pruned. For a <shadow ray>, restrict the traversal to the segment before the source and terminate at any blocker.
+
+A flat list of $N$ <triangles> needs up to $N$ detailed tests per primary <ray> or <shadow ray>. A well-built <bounding volume hierarchy> can reject large groups with a few cheap tests and substantially reduce the average work. A balanced, well-separated scene often gives traversal resembling a short root-to-leaf search, but balance alone does not guarantee logarithmic query time: extensive overlap or an unfortunate <ray> can force examination of most or all leaves. Its advantage is spatial rejection, not a universal worst-case bound.
+
+=== g
+{scope}
+
+==== Solution
+
+<Path tracing> estimates the <rendering equation> by a <Monte Carlo method>. Launch camera <rays>; at each surface hit sample an outgoing continuation direction according to a chosen <probability density function>, trace to the next hit, and continue through successive reflections. Accumulate emitted light or environment light with the product of scattering, cosine and inverse-density factors along the path. A bounce sampled with density $p(\omega)$ updates the path weight by
+$$
+\boxed{\beta\leftarrow\beta\,\frac{f_r(\omega,\omega_o)|\hat N\cdot\omega|}{p(\omega)}.}
+$$
+Average many independently sampled paths per <pixel>. Multiple bounces account for indirect illumination, including colour bleeding between surfaces, instead of approximating all of it by one ambient constant. Termination can use <Russian roulette (Monte Carlo)>: continue with probability $q>0$ and divide surviving weights by $q$, preserving the expected contribution. A fixed bounce cutoff is simpler but truncates transport.
+
+The elementary strategy that obtains illumination only when a randomly continued path *hits an emitter* fails for ideal point lights. From a surface <point>, an ideal point source occupies zero <solid angle>; sampling a direction from an ordinary continuous <probability density function> hits that one direction with probability zero. Thus this strategy almost surely never discovers the light, regardless of the number of samples. An area emitter occupies nonzero <solid angle> and can be hit.
+
+The qualification matters: practical <path tracing> can use point lights by explicitly sampling a source and connecting the current surface to it with a <shadow ray>, a technique called <next-event estimation>. For a point source the connection direction is known exactly, rather than discovered by a random hemisphere hit. Thus the restriction applies to naive emitter-hit <path tracing>, not to all <path tracing> algorithms.<Physically Based Rendering: From Theory to Implementation (4th edition) by Matt Pharr and others>[§12.2: point lights have delta-position emission and deterministic incident directions; §13.4: direct-light sampling is combined with scattering-direction sampling]{ref}

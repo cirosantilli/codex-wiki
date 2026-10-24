@@ -10,6 +10,31 @@ For a computed toy example, let one <file-system directory> contain names `a` an
 
 The separation is useful because a rename within this <file system>, from `a` to a previously unused name `c`, can change a <directory entry> without copying the six <bytes> of contents. The remaining name `b` still reaches <inode> 42. A successful write changing the first <byte> through either name changes what both names subsequently read, to `jello` followed by a newline. This sharing is the attraction of <hard links>, and also why a <hard link> is not an independent backup. A program that replaces a named <file> with a different <file> can instead make the names diverge. https://pubs.opengroup.org/onlinepubs/9799919799/functions/rename.html[The Open Group, POSIX.1-2024, rename: changing names and replacing directory entries]{ref}
 
+= Linked file allocation
+{parent=File system}
+
+A <file system> organization in which each <file data block> identifies its successor. It supports sequential traversal and growth without a fixed per-file index tree, but arbitrary <file offsets> require following the chain. Adding predecessor links permits reverse traversal.
+
+= Internal fragmentation
+{parent=File system}
+
+Allocated space unused inside an allocation unit. For a <computer file> stored in fixed-size <file data blocks>, the final partially occupied block can waste almost one block.
+
+= Free-block list
+{parent=File system}
+
+A representation of currently unallocated <disk block numbers>, maintained as a list or linked groups of available numbers. Allocation removes a number; deallocation returns it after ownership is relinquished. Reserved structures and blocks still owned by an unnamed but open <file> are unavailable. A <block allocation bitmap> is an alternative representation of the same allocation state.
+
+= Disk block number
+{parent=File system}
+
+A <disk block number> identifies a fixed-size storage region on a volume. It locates storage rather than naming a <file>. A <file> can occupy several numbered <file data blocks>, while a disk block containing several <inodes> can describe several <files>.
+
+= Disk compaction
+{parent=File system}
+
+Move file contents to consolidate their allocated regions. A per-file read-then-write cost model charges two transfers and, if specified, two separate seek and rotation overheads for each moved file. That model differs from an ideal sequential transfer of the same total number of bytes.
+
 = Computer file
 {parent=File system}
 
@@ -17,6 +42,12 @@ The separation is useful because a rename within this <file system>, from `a` to
 {synonym}
 
 An object whose contents and attributes can be accessed through <operating system> interfaces. Here an ordinary <file> means a <byte> sequence with <file metadata>, distinct from a <file-system directory> or a <symbolic link>. Its contents need not disappear when the creating <operating-system process> ends.
+
+= Sparse file
+{parent=Computer file}
+{wiki}
+
+A <computer file> whose logically zero-filled regions need not occupy physical <file data blocks>. The <file offset> and byte length describe the logical content independently of the blocks actually allocated.
 
 = File offset
 {parent=Computer file}
@@ -208,6 +239,11 @@ The appeal is that recovery knows exactly which updates to finish. It does not h
 
 The guarantee that recovery produces a valid <file system> state under a specified crash model. For the protected <file-system transaction> in our full-data example, the observable <file> is either `ABCD` or `ABCDEFGH`; it never names a free block or exposes a half-applied protected append after recovery. This concerns the recovered state. The intermediate final-location records during a <journal checkpoint> may disagree until <journal replay> finishes, and live concurrent access requires separate <synchronization (computing)>.
 
+= File-system consistency checker
+{parent=File-system crash consistency}
+
+A program that compares independently represented facts in a <file system>, such as the <hard link> counts in <inodes> versus references found in <directory entries>, or the <block allocation bitmap> versus block ownership recovered from <inodes> and reserved structures. Disagreement detects corruption; repair policies must decide which evidence to trust and preserve recoverable data. A scan of names alone is insufficient to infer live ownership while the <file system> is changing or has unnamed open <files>, so checking requires a suitable stable view.
+
 = File-system transaction
 {parent=File-system journaling}
 
@@ -342,3 +378,23 @@ An <inode> number is unique only within its <file system> among allocated object
 The design's appeal is that one <inode> unifies the <file metadata> and contents reached through several <directory entries>. Ritchie and Thompson's original 1974 account explicitly describes a <directory entry> as a name and an i-number, with the corresponding <inode> holding ownership, protection, size, content addresses and the <hard link> count. It gives a concrete early explanation of how names and <file> identity can evolve separately. https://www.cs.cmu.edu/~15712/papers/ritchie74.pdf[Ritchie and Thompson, The UNIX Time-Sharing System, 1974, section 4: implementation of the file system]{ref}
 
 // Target: computer-science.bigb
+
+= Indirect block pointer
+{parent=Inode}
+
+An address in a traditional <inode>-based <file system> that points to a block of further <disk block numbers>, rather than directly to user contents. If a block can store $q$ addresses, one singly indirect block can locate up to $q$ <file data blocks>, and a doubly indirect arrangement can locate up to $q^2$. The address blocks themselves consume allocated storage and must be reclaimed when their <file> no longer needs them. This lets small <files> use a short direct layout while supporting larger <files>.
+
+= Multilevel inode indexing
+{parent=Indirect block pointer}
+
+An <inode>-based <file system> uses direct pointers for small <files> and successive levels of <indirect block pointers> for larger ones. If an address block contains $q$ pointers, a depth-$k$ region addresses $q^k$ <file data blocks>. With the <inode> resident, an uncached byte access in that region requires $k$ address-block reads and one <file data block> read.
+
+= Inode table
+{parent=Inode}
+
+A persistent collection of <inodes> indexed by <inode numbers> in an <inode>-based <file system>. The same term can also denote an operating system's in-memory collection of active <inodes>; these must be distinguished. A persistent table belongs to a particular volume, while the system-wide active collection keys entries by both volume identity and <inode number>.
+
+= Inode number
+{parent=Inode}
+
+An <inode number> identifies an allocated <inode> within one <file system>. A <directory entry> stores a name and this number; it does not normally store the <file data block> addresses. Different volumes can reuse the same number for unrelated <files>, and a reclaimed number can later be reused on the same volume. This is therefore a local, current identity, rather than a permanent identifier.

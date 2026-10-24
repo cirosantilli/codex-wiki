@@ -2204,6 +2204,22 @@ For a real vector $x_0$ with support $S$, uniqueness in <basis pursuit> is equiv
 
 A vector is s-sparse if it has at most $s$ nonzero coordinates. For $x\in\mathbb R^N$, its best s-term $\ell^1$ approximation error is $\sigma_s(x)=\min_{z\text{ s-sparse}}\|x-z\|_1$, equal to the sum of the absolute values of the coordinates outside the largest $s$.
 
+= Sparse linked vector representation
+{parent=Sparse vector}
+
+Represent a finite <sparse vector> by a sorted <doubly linked list> of its nonzero coordinates. A <list header> stores the dimension; every ordinary <linked list node> stores a distinct valid coordinate index, its nonzero value, and predecessor and successor references. In a <circular linked list>, the endpoints connect to the header, and an all-zero <vector> has the header linked to itself in both directions. The <representation invariant> requires strictly increasing ordinary indices, valid bounds and mutually consistent forward and backward links. The <abstraction function> assigns zero to every coordinate absent from the list. The header is metadata, never an ordinary coordinate.
+
+For example, $(0,3,0,0,-2,0,0,5,0)$ has dimension nine and only three stored coordinates. The header's index field can store nine even though nine is not a valid coordinate index. Keeping the header distinct is therefore essential when searching for or removing entries.
+
+\Image[sparse-linked-vector.png]
+{title=A circular <sparse linked vector representation> stores only nonzero coordinates}
+
+= Sorted sparse dot product
+{parent=Sparse linked vector representation}
+{title2=$x\cdot y=\sum_{i\in\operatorname{supp}x\cap\operatorname{supp}y}x_i y_i$}
+
+For two <sparse vectors> with the same dimension and sorted nonzero entries, merge their coordinate lists. Equal indices contribute their product and advance both cursors. If one index is smaller, advance only that cursor: the other <vector> has zero at that coordinate, because all its smaller indices have already been processed and all remaining indices are larger. This proves a <loop invariant> consisting of the accumulated <inner product> over settled indices. Every iteration consumes at least one stored entry, giving <time complexity> $O(k_x+k_y+1)$ and constant <auxiliary space> for $k_x,k_y$ nonzero entries. The method avoids work proportional to the ambient dimension. Its <floating-point arithmetic> error remains distinct from its exact <algorithm correctness>.
+
 = L0 sparsity count
 {c}
 {parent=Sparse vector}
@@ -2292,6 +2308,13 @@ At $h=0.2$, the first values are $1,0.6,0.36,0.216$. At $t=1$, five steps give $
 For the <Dahlquist test equation> $y'=\lambda y$, the <Euler method> has <stability function> $R(z)=1+z$ with $z=h\lambda$. Its <absolute stability> region is $|1+z|\leq1$, the closed disk centred at $-1$ with radius one. For the present real decay problem and $h>0$, bounded numerical values require $0<h\leq1$; strict decay requires $0<h<1$. At $h=1$ the values alternate $1,-1,1,\ldots$ without decay. These conditions follow directly from the <amplification factor> $1-2h$, matching MIT's criterion for $y'=-ay$.https://web.mit.edu/10.001/Web/Course_Notes/Differential_Equations_Notes/node3.html[MIT 10.001, Forward and Backward Euler Methods, linear decay example]{ref}
 
 The <Euler method> is first order: with bounded second <derivative> and suitable <Lipschitz continuity>, its <global error> is $O(h)$ on a fixed interval. In this example the <logarithm> gives $\log(1-2h)=-2h-2h^2+O(h^3)$ for small positive $h$. At $t=nh$, this means $y_n=e^{-2t}(1-2th+O(h^2))$. It explains both the downward bias and why halving the step roughly halves the error once $h$ is sufficiently small.
+
+= Euler one-step defect
+{c}
+{parent=Euler method}
+{title2=$\delta_h=y(x+h)-y(x)-h f(x,y(x))=\tfrac12h^2y''(x)+O(h^3)$}
+
+For a smooth solution of $y'=f(x,y)$, <Taylor's theorem> gives the displayed <local truncation error> when an <Euler method> step starts at an exact solution value. Thus the one-step defect is $O(h^2)$. Dividing it by $h$ gives a <normalized local truncation error> of $O(h)$; these are different conventions for reporting the same residual. Also $y''=f_x+f_yf$ along the solution by the <chain rule>. A global $O(h)$ error conclusion additionally requires the usual regularity and stability control over successive steps.
 
 = A-stability
 {parent=Linear stability domain}
