@@ -22,6 +22,22 @@ Here $K$ is the <stiffness matrix> and $F$ is the vector of loads tested against
 
 The <finite element solution of the one-dimensional Poisson equation> below gives every entry explicitly. Refining the <finite element mesh> then improves the approximation by adding local degrees of freedom. For a symmetric <coercive bilinear form>, <Galerkin orthogonality> makes the discrete solution the best approximation in the <energy norm>; the geometry of <orthogonal projection> explains why this local construction yields a globally meaningful answer.
 
+= Residual adaptation with a uniform-refinement safeguard
+{parent=Finite element method}
+
+A reliable residual estimator certifies an error tolerance only when its upper bound is below the tolerance. To ensure eventual termination, residual-based element marking can be combined with occasional global bisection. For one-dimensional piecewise linear reaction-diffusion approximation, $R_h=f+p'u_h'-qu_h$ is bounded in $L^2$ by discrete energy stability, and the weighted estimator is at most $h_{\max}^2\|R_h\|_2$. Thus the safeguard $h_{\max}\to0$ forces the estimator to zero and makes the certified stopping test eventually succeed.
+
+= Finite element assembly
+{parent=Finite element method}
+
+Finite element assembly adds local element <matrices> and load vectors into a global <linear system> according to the correspondence between local and global degrees of freedom. A shared node receives contributions from every incident <finite element>. Boundary integrals, such as those in a <Robin boundary condition>, are assembled from local boundary-edge matrices in the same way.
+
+= Single free node on a four-triangle mixed-boundary mesh
+{parent=Finite element assembly}
+{title2=$2U_B=1/2,\quad U_B=1/4$}
+
+Triangulate the region $0\leq x,y\leq2$, $x+y\geq2$ by $x=1$, $y=1$, and $x+y=3$. Impose zero Dirichlet data on the horizontal and vertical exterior edges and zero Neumann data on the sloping edge. Only the midpoint $B=(1,1)$ of the sloping edge remains free in the continuous piecewise linear space. For source one, its stiffness entry is $1/2+1/2+1=2$, while its load is three triangle contributions of $1/6$. The single free value is therefore $1/4$.
+
 = Finite element solution of the one-dimensional Poisson equation
 {parent=Finite element method}
 {title2=$-u''=1$, $u(0)=u(1)=0$}
@@ -90,6 +106,17 @@ Thus $h=1/4$ gives $\|e\|_\infty=1/128=0.0078125$ and $\|e\|_a=1/(4\sqrt{12})\ap
 
 The spatial <Galerkin method> for the <heat equation> gives a <mass matrix> $M$ and a diffusion <stiffness matrix> $S$. With zero forcing, $\frac{d}{dt}(c^TMc)=-2c^TSc\leq0$. The <quadratic form> $c^TMc$ is the squared <L2 norm> of the represented finite-element function, proving an energy contraction. For nonzero forcing, the corresponding identity has the additional term $2c^TF$, which can be estimated using the <Cauchy-Schwarz inequality>.
 
+= Trapezoidal contractivity for a semidiscrete heat equation
+{parent=Semidiscrete finite element heat equation}
+{title2=$\|U^{k+1}\|_M\leq\|U^k\|_M$}
+
+If $M$ is symmetric positive definite and $K$ symmetric negative semidefinite, the update $(M-\Delta tK/2)U^{k+1}=(M+\Delta tK/2)U^k$ is uniquely solvable for every positive step. Multiply its difference form by $(U^{k+1}+U^k)^T$ to obtain
+$$
+\|U^{k+1}\|_M^2-\|U^k\|_M^2
+=\frac{\Delta t}2(U^{k+1}+U^k)^TK(U^{k+1}+U^k)\leq0.
+$$
+For finite element heat flow, the mass norm is precisely the spatial $L^2$ norm, giving unconditional stability of the <Crank-Nicolson method>.
+
 = Forward Euler limit for a consistent hat mass matrix
 {parent=Semidiscrete finite element heat equation}
 {title2=$0\leq\mu\leq\frac16\quad\text{uniformly over refinements}$}
@@ -100,6 +127,26 @@ For a uniform piecewise-linear Galerkin heat discretization, the consistent <mas
 {parent=Finite element method}
 
 A finite element specifies a reference region, a finite-dimensional space of local trial functions, and degrees of freedom that uniquely determine each such function. Assembling compatible copies over a <finite element mesh> gives a global trial space. For a one-dimensional linear element, the region is an interval, the functions are <affine functions>, and the degrees of freedom are the endpoint values.
+
+= Isoparametric finite element
+{parent=Finite element}
+
+An isoparametric <finite element> uses the same reference <shape functions> to interpolate its geometry and its unknown field. With reference functions $N_i$ and physical nodes $\mathbf x_i$, the geometry map is $F=\sum_i\mathbf x_iN_i$ and the physical functions are $N_i\circ F^{-1}$. The map must be one-to-one and have a nonvanishing <Jacobian determinant>. For bilinear quadrilaterals, compatible common edges have affine geometry maps and identical linear field traces, giving a continuous <conforming finite element space>. On a general quadrilateral the pulled-back functions need not be <polynomials> in physical coordinates.
+
+= Shape function
+{parent=Finite element}
+
+A shape function is a local <basis> function associated with a degree of freedom of a <finite element>. For nodal degrees of freedom it is one at its own node and zero at the other nodes, allowing local <interpolation> from the nodal values. For a <bilinear square finite element>, the four products of linear coordinate functions provide the nodal <shape functions>.
+
+= Bilinear square finite element
+{parent=Finite element}
+{title2=$Q_1=\operatorname{span}\{1,x,y,xy\}$}
+
+= Q1 square element
+{c}
+{synonym}
+
+A bilinear square <finite element> uses <polynomials> of degree at most one separately in each coordinate and takes values at the four corners as degrees of freedom. On the unit square its nodal <shape functions> are $(1-\xi)(1-\eta)$, $\xi(1-\eta)$, $\xi\eta$, and $(1-\xi)\eta$, in anticlockwise corner order. Each is a <tensor product> of one-dimensional linear <shape functions>. A function in this space need not be affine, since $\xi\eta$ has total degree two. On a physical square of side $h$, its Laplacian <stiffness matrix> has diagonal entries $2/3$, adjacent-corner entries $-1/6$ and opposite-corner entries $-1/3$. Its <Robin boundary condition> edge matrix has the two-node block $(h/6)\begin{pmatrix}2&1\\1&2\end{pmatrix}$ for a unit boundary coefficient.
 
 = Quadratic Lagrange triangle
 {parent=Finite element}
@@ -204,11 +251,24 @@ and zero entries for nonadjacent indices. The diagonal product $\phi_i^2$ is sym
 
 The stiffness matrix represents a variational <bilinear form> $a$ in a <finite element> basis. A symmetric <coercive bilinear form> gives a <positive-definite matrix>. Local support of the <piecewise-linear hat functions> produces a sparse <matrix>, allowing efficient numerical solution.
 
+= Five-point stiffness stencil on a diagonal triangular grid
+{parent=Stiffness matrix}
+{title2=$4U_{ij}-U_{i-1,j}-U_{i+1,j}-U_{i,j-1}-U_{i,j+1}$}
+
+For conforming piecewise affine elements on uniform squares split along their positive diagonals, a lower-triangle element matrix is $\frac12[[1,-1,0],[-1,2,-1],[0,-1,1]]$ in consecutive vertex order. <Finite element assembly> gives diagonal entry 4 and four axis-neighbor entries $-1$. The diagonal mesh edges contribute zero coupling because the corresponding local shape-function gradients are perpendicular. Strong Dirichlet elimination removes known-neighbor columns and adjusts the load.
+
 = Reaction-diffusion finite element matrix
 {parent=Stiffness matrix}
 {title2=$K=S+M$}
 
 For $-u''+u=f$ with homogeneous <Dirichlet boundary conditions>, the conforming <piecewise-linear hat functions> on a uniform grid give a diffusion <stiffness matrix> $S$ and a <mass matrix> $M$. Their nonzero entries are $S_{ii}=2/h$, $S_{i,i+1}=-1/h$, $M_{ii}=2h/3$, and $M_{i,i+1}=h/6$, with symmetric counterparts. The sum is a <positive-definite matrix> because its coefficient <quadratic form> is $\int((u_h')^2+u_h^2)$. For forcing $f(x)=x$, the load at $x_i$ is $hx_i$.
+
+= Reaction contribution in backward Euler energy dissipation
+{parent=Reaction-diffusion finite element matrix}
+{title2=$\frac{\|u^{m+1}\|_2^2-\|u^m\|_2^2+\|u^{m+1}-u^m\|_2^2}{2\Delta t}+\|u^{m+1}\|_{H^1}^2=0$}
+{c}
+
+For $u_t-u_{xx}+u=0$ with homogeneous mixed Dirichlet and <Neumann boundary conditions>, testing the <backward Euler method> <finite element> equation with the new solution gives the displayed identity. Both the squared <derivative> <norm> and the squared function <norm> are required in the dissipation, because diffusion and reaction contribute separately. Replacing the full $H^1$ <norm> by its seminorm omits the reaction term. Positivity gives unconditional decay of the $L^2$ <norm>.
 
 = Energy conservation for semidiscrete Galerkin advection
 {parent=Finite element method}
@@ -328,6 +388,17 @@ $$
 \leq Ch\|e\|_{H^1}\|e\|_{L^2}.
 $$
 Thus $\|e\|_{L^2}\leq Ch\|e\|_{H^1}$. Combining this with the <Céa lemma> and an $O(h)$ <energy norm> error gives an $O(h^2)$ <L2 norm> error. The additional order depends on the dual regularity assumption, which can fail on unsuitable domains.
+
+= Explicit one-dimensional dual residual bound in L2
+{parent=Aubin–Nitsche duality argument}
+{title2=$\|u-u_h\|_2\leq C(\sum_i h_i^4\|R_h\|_{2,I_i}^2)^{1/2}$}
+
+For $-(pu')'+qu=f$ with one homogeneous Neumann condition and one fixed Dirichlet value, the dual problem has error forcing and homogeneous corresponding boundary data. <Galerkin orthogonality> with its nodal interpolant yields an element-residual identity with no jump terms, because the interpolation error vanishes at every node. With $p_*=\min p>0$, $q_*=\min q>0$, $q^*=\max q$, one reliable constant is
+$$
+C=\frac1{\pi^2p_*}\left(1+\frac{q^*}{q_*}
++\frac{\|p'\|_\infty}{\sqrt{p_*q_*}}\right).
+$$
+The proof combines a dual $H^2$ estimate with two interval Poincaré inequalities. Constants are independent of the nonuniform mesh.
 
 = Piecewise-linear hat function
 {parent=Finite element method}

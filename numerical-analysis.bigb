@@ -7,6 +7,38 @@ Three questions organize error analysis. <Truncation error> measures the approxi
 
 For example, the <square root> $s(a)=\sqrt a$ has relative <condition number> $|as'(a)/s(a)|=1/2$ for $a>0$: a small relative change in $a$ produces about half that relative change in $s(a)$. In contrast, $g(a)=1/(1-a)$ has relative <condition number> $|a/(1-a)|$. Changing $a=0.99$ to $0.9901$ changes $g(a)=100$ to about $101.010101$: an input change of about $0.0101\%$ produces an output change of about $1.0101\%$. This sensitivity exists even with exact arithmetic. MIT's conditioning lecture separates the <condition number> from <roundoff error> in precisely this way.https://ocw.mit.edu/courses/18-335j-introduction-to-numerical-methods-spring-2019/pages/week-2/[Steven G. Johnson, MIT 18.335J, Lecture 5: Condition Numbers, 2019]{ref}
 
+= Time-stepping method
+{parent=Numerical analysis}
+
+A time-stepping method approximates the evolution of an <ordinary differential equation> by successive updates at discrete times. It can be applied after a spatial <finite element method> has converted a time-dependent <partial differential equation> into an <ordinary differential equation> system. The <implicit time-stepping method> is one class of such methods.
+
+= Implicit time-stepping method
+{parent=Time-stepping method}
+
+An implicit time-stepping method determines a new solution value through an equation involving that same value. A small-step <contraction mapping> argument often establishes local solvability when the vector field is <Lipschitz continuous>. Examples include the <Backward Euler method>, <implicit Runge-Kutta methods> and implicit <linear multistep methods>. Solvability of the update is a separate issue from <stability of a numerical method>.
+
+= Numerical differentiation
+{parent=Numerical analysis}
+{title2=$f'(x)\approx\dfrac{f(x+h)-f(x)}h$}
+
+<Numerical differentiation> estimates <derivatives> from finitely many <function> values, often by differentiating an <interpolation polynomial> or using a <finite difference>. Its error combines <truncation error> from the formula with errors already present in the sampled values and additional <roundoff error>. Decreasing the sample spacing can decrease <truncation error> while increasing the effect of uncertain values. This tradeoff is explained by the <ill-posedness of numerical differentiation> when only an absolute value-error bound is available.
+
+= Ill-posedness of numerical differentiation
+{parent=Numerical differentiation}
+{title2=$\|f_k\|_\infty\to0\text{ need not imply }\|f_k'\|_\infty\to0$}
+
+Recovering a <derivative> from values controlled only in the <uniform norm> is an <ill-posed problem>: the differentiation map is not <continuous> in those norms. On $[0,1]$, take $f_k(x)=\sin(kx)/k$. Then $\|f_k\|_\infty\leq1/k\to0$, while $f_k'(x)=\cos(kx)$ has <uniform norm> one for every $k$. Arbitrarily small value perturbations can therefore conceal nonvanishing <derivative> changes.
+
+<Numerical differentiation> can still be useful when additional smoothness bounds, a suitable sampling scale, or a <regularization> method control the admissible changes. The basic <noise amplification by differentiation of a linear interpolant> gives a finite-data version: endpoint uncertainty of size $\delta$ produces <derivative> uncertainty of order $\delta/h$ at spacing $h$.
+
+= Noise amplification by differentiation of a linear interpolant
+{parent=Ill-posedness of numerical differentiation}
+{title2=$\Delta p(x)=\delta x/h,\qquad\Delta p'(x)=\delta/h$}
+
+For <linear interpolation> at zero and $h>0$, an error $\delta$ in the second sampled value, with the first exact, changes the <linear interpolant> by $\Delta p(x)=\delta x/h$. On $[0,h]$, its <uniform norm> is exactly $|\delta|$, whereas the <derivative> change is the constant $\delta/h$. With independent absolute bounds $|\delta_0|,|\delta_1|\leq\delta$ on both samples, the value change remains at most $\delta$ and the <derivative> change is at most $2\delta/h$, attained for opposite endpoint errors.
+
+Thus bounded absolute sample noise can remain bounded under value <interpolation> while becoming unbounded under <numerical differentiation> as $h\to0$. Fixed nonzero sample noise also prevents exact convergence of the value approximation; stability against perturbations and convergence to exact data are different assertions. For a second-sample error $a\epsilon(h)$ with fixed $a>0$, value convergence requires $\epsilon(h)\to0$, while <derivative> convergence requires $\epsilon(h)=o(h)$ in <little o notation>, in addition to vanishing <truncation error>.
+
 = Discretization
 {parent=Numerical analysis}
 
@@ -102,6 +134,13 @@ An iteration converging to $x_*$ has exact asymptotic order $p$ if its nonzero e
 {title2=$|e_{k+1}|/|e_k|\to\rho\in(0,1)$}
 
 An <iteration of a map> has linear convergence to its <limit> when its nonzero errors $e_k=x_k-\alpha$ satisfy $|e_{k+1}|/|e_k|\to\rho$ for some $0<\rho<1$. The error eventually shrinks by approximately the same factor at each step. This is exact <order of convergence> one, in contrast to <quadratic convergence>.
+
+= Q-linear convergence
+{c}
+{parent=Linear convergence}
+{title2=$\limsup_k\|e_{k+1}\|/\|e_k\|<1$}
+
+A sequence with errors $e_k=x_k-x^*$ converges Q-linearly in a specified norm if there is a constant $q<1$ with $\|e_{k+1}\|\leq q\|e_k\|$ eventually. The limsup of consecutive nonzero error ratios is its asymptotic factor. This is stronger than merely having a bound $\|e_k\|\leq Cq^k$, which is called R-linear convergence. The norm and whether an iteration is one coordinate step or an entire sweep must be specified when quoting a factor.
 
 = Cubic convergence
 {parent=Order of convergence}
@@ -236,6 +275,17 @@ Let $F$ be twice <continuously differentiable> on an interval around a <zero of 
 
 For a short proof outline, apply <Taylor's theorem> between $t_r$ and $t_*$; subtract the defining <tangent line> equation. The linear error cancels, leaving $e_{r+1}=F''(\xi_r)e_r^2/(2F'(t_r))$. The displayed bound shrinks the error and preserves the chosen interval. If $F''(t_*)\ne0$, the error ratio tends to $|F''(t_*)/(2F'(t_*))|$; if it vanishes, convergence can be faster.
 
+= Cubic convergence of Newton optimization for an even quartic
+{parent=Local quadratic convergence of Newton iteration}
+{c}
+{title2=$f(x)=x^2/2+x^4/4$}
+
+For the <strictly convex> <polynomial> $f(x)=x^2/2+x^4/4$, applying <Newton root-finding iteration> to $f'(x)=x+x^3$ gives
+$$
+x_{k+1}=x_k-\frac{x_k+x_k^3}{1+3x_k^2}=\frac{2x_k^3}{1+3x_k^2}.
+$$
+The unique <minimum> is at zero. For any sufficiently small nonzero initial point, the errors satisfy $|x_{k+1}|/|x_k|^3\to2$, so the order is cubic, not merely quadratic. This provides a simple counterexample to treating the usual <quadratic convergence> theorem as an upper bound on possible orders. In general, the quadratic coefficient for <Newton root-finding iteration>[Newton optimization] near a nondegenerate <stationary point> is $f^{(3)}(x_*)/(2f''(x_*))$; when it vanishes, a higher order is possible.
+
 = Newton iteration in a Banach space
 {parent=Newton root-finding iteration}
 {c}
@@ -324,6 +374,14 @@ The initial <midpoint> is $m_0=1.5$. After four halvings the new <midpoint> is $
 {title=Bisection of a square-root bracket: the graph and first four retained intervals}
 
 The useful feature of the <bisection method> is that the retained width halves on every update, independently of the shape of the <function graph>. The <bisection error bound> therefore supplies an accuracy guarantee before the <zero of a function> is known. No <derivative> is needed, and a valid initial <root bracket> gives convergence without a close initial guess. This makes the <bisection method> a dependable fallback for the faster <Newton root-finding iteration>.
+
+= Root selection by bisection with multiple roots in the initial bracket
+{parent=Bisection method}
+{title2=$f(x)=x(x-1)(x-2)(x-5),\quad[a,b]=[-1,b]$}
+
+The <bisection method> preserves some root in a sign-changing bracket but does not select a fixed root when several are present. For the displayed <polynomial>, endpoint and midpoint roots are returned immediately. If $2<b<3$, the first midpoint lies in $(1/2,1)$ with negative function value, so the retained bracket contains only zero. If $b=3$, the first midpoint is exactly one. If $3<b\leq4$, that midpoint lies in $(1,3/2]$ with positive function value, so the retained bracket contains only two. At $b=2$ the right endpoint itself is the root two.
+
+Thus arbitrarily small changes of the initial endpoint across $b=3$ change the limiting root from zero to two, with one selected exactly at the transition. The guarantee concerns distance to a root inside the retained interval, rather than continuous dependence of that root's identity on the starting data.
 
 = Bisection error bound
 {parent=Bisection method}
@@ -751,6 +809,11 @@ The same cancellation idea appears in <step-doubling error estimation>. For an o
 \Include[error-control-for-ode-solvers]{parent=Numerical analysis}
 \Include[finite-volume-method]{parent=Numerical analysis}
 
+= Finite observations do not certify Richardson extrapolation accuracy
+{parent=Richardson extrapolation}
+
+<Richardson extrapolation> cancels a specified leading term in an <asymptotic expansion>, but an unquantified remainder does not certify a numerical error at two finite parameter values. For any positive distinct parameters $h_1,h_2$ and prescribed observations $v_1,v_2$, every candidate <limit> $L$ can be made consistent with a model $E(h)=L-ch^2-dh^3$: choose $c,d$ to solve $ch_i^2+dh_i^3=L-v_i$ for $i=1,2$. The coefficient <matrix> has nonzero <determinant> $h_1^2h_2^2(h_2-h_1)$. Thus the observations alone cannot identify $L$, even though every model has exactly the advertised $O(h^3)$ remainder in <Big O notation>. Quantitative remainder bounds or additional information are needed for an error certificate.
+
 = Interval bisection
 {parent=Numerical analysis}
 
@@ -800,11 +863,6 @@ Our example permits $\ell=1$ and $L=28$ on $[0,3]$. Strict increase alone suppli
 {title=Certified position error and output residual measure different distances}
 
 The guarantees require <continuity> and correct evaluations, not just narrowing endpoints. For the <strictly increasing function> $h(x)=x$ when $x<0$ and $h(x)=x+1$ when $x\geq0$, the target $1/2$ lies between $h(-1)$ and $h(1)$ but is never attained: a <jump discontinuity> defeats the existence argument. With <floating-point arithmetic> or an approximate evaluation, an incorrect comparison can discard the true solution. A certified <interval enclosure> of $f(m)$ wholly below or above $t$ certifies the corresponding decision; an enclosure containing $t$ is inconclusive, rather than proof of equality. If rounding makes the <midpoint> equal an endpoint, report the precision limit; see <bisection stopping criterion> for the rounded position bound. Both figures are exact mathematical examples, not measured data.
-
-= Implicit time-stepping method
-{parent=Numerical analysis}
-
-An implicit time-stepping method determines a new solution value through an equation involving that same value. A small-step <contraction mapping> argument often establishes local solvability when the vector field is <Lipschitz continuous>. Examples include the <Backward Euler method>, <implicit Runge-Kutta methods> and implicit <linear multistep methods>. Solvability of the update is a separate issue from <stability of a numerical method>.
 
 \Include[multigrid-method]{parent=Numerical analysis}
 
@@ -1308,6 +1366,16 @@ whose numerical <polynomial roots> are $1.985811$, $4.989942$, and $9.024247$, r
 
 S. Gerschgorin published the result in 1931 in *Über die Abgrenzung der Eigenwerte einer Matrix*, in the *Bulletin de l'Académie des Sciences de l'URSS*, issue 6, pages 749–754. The original paper's §2 states both <eigenvalue> inclusion and counting in separated groups of <Gershgorin discs>; §3 already discusses column bounds and transformations preserving the <eigenvalues>. Thus both the localization picture and ways to sharpen it were part of the original development.https://www.mathnet.ru/php/getFT.phtml?jrnid=im&paperid=5235&what=fullt&option_lang=eng[S. Gerschgorin, Über die Abgrenzung der Eigenwerte einer Matrix, 1931, pp. 749–754; original German paper in the journal archive]{ref}
 
+= Gershgorin exclusion for a matrix-pencil parameter
+{parent=Gershgorin circle theorem}
+{c}
+
+To exclude zero as an <eigenvalue> of $A+sB$, it is enough that every row has positive real diagonal entry exceeding the sum of the absolute values of its off-diagonal entries. All <Gershgorin discs> then lie strictly in the right half-plane. For
+$$
+A=\begin{pmatrix}2&-2&0\\-3&5&0\\1&2&3\end{pmatrix},\qquad B=\begin{pmatrix}2&0&0\\0&2&1\\0&1&2\end{pmatrix},
+$$
+the three diagonal-dominance margins of $A+sB$ are $2s,2+s,s$, all positive for $s>0$. Thus $A-\mu B$ is nonsingular for negative real $\mu$. Working with the pencil directly avoids computing either a <determinant> <polynomial> or $B^{-1}A$.
+
 = Gershgorin disc
 {parent=Gershgorin circle theorem}
 {c}
@@ -1331,6 +1399,16 @@ Let $C$ be a <connected component> of the union of the row <Gershgorin discs> of
 The separation is essential: overlapping <Gershgorin discs> do not individually promise one <eigenvalue> each. Discs that touch at a boundary point belong to the same <connected component>. For example, the <matrix> $\left(\begin{smallmatrix}2&1&0\\0&2&0\\0&0&8\end{smallmatrix}\right)$ has <Gershgorin discs> of radii $1,0,0$ with centres $2,2,8$. The component around $2$ comprises two indexed <disks> and contains the <eigenvalue> $2$ with <algebraic multiplicity> two; the isolated point at $8$ contains the remaining <eigenvalue>.
 
 For intuition, continuously turn on the off-diagonal entries using the <diagonal matrix> $E=\operatorname{diag}(a_{11},\ldots,a_{nn})$ and $A(t)=E+t(A-E)$, $0\leq t\leq1$. At $t=0$ the <eigenvalues> are the disk centres; at every later time the <Gershgorin discs> stay inside their final union. The <continuity> of the <eigenvalues> as a collection means that no <eigenvalue> can cross a gap between final components. The count gives a useful certificate that an <eigenvalue> cluster is complete.https://www.stat.uchicago.edu/~lekheng/courses/302/notes2.pdf[Gene H. Golub, CME 302, Lecture 2, §6: turning on the off-diagonal entries continuously]{ref}
+
+= Complementary row and column Gershgorin isolation
+{parent=Gershgorin eigenvalue counting}
+{c}
+
+A <matrix> and its <transpose> have the same <characteristic polynomial>, allowing two independent <Gershgorin eigenvalue counting> arguments for one <spectrum>. If isolated row discs certify simple <eigenvalues> near one group of centres and isolated column discs certify the remaining ones, pairwise separation of all the certified small discs establishes a simple spectrum even if neither full family has pairwise disjoint discs.
+
+For example, let $n=2m$, the diagonal centres be $1,\ldots,n$, and all adjacent off-diagonal entries have magnitude strictly below $1/4$. Add a corner entry $a_{n1}=c$. The row radii are below $1/4,1/2,\ldots,1/2,|c|+1/4$; the column radii reverse the two endpoint bounds. If $|c|\leq m-3/4$, rows isolate centres $1,\ldots,m$ and columns isolate centres $m+1,\ldots,n$. The nearest potentially enlarged-disc contact has centre separation $m$, while the radius sum is strictly less than $|c|+3/4\leq m$. Each of the $n$ certified small discs contains one simple <eigenvalue>. For real entries these <eigenvalues> are real, since a nonreal conjugate pair would put two roots in the same conjugation-invariant isolated disc.
+
+This is a sufficient uniform certificate. Overlap beyond this bound does not prove repeated <eigenvalues>; individual <matrices> can have simple real spectra well beyond a <Gershgorin disc> separation bound.
 
 = Gershgorin bounds for symmetric matrices
 {c}
@@ -1662,6 +1740,24 @@ The endpoint singularities of the weight are integrable. Thus the <Chebyshev pol
 
 Accuracy still depends on the target <function>. The <absolute value function> $|x|$ has a corner at zero, so the hypothesis requiring continuous <derivatives> in the displayed <polynomial interpolation error> bound fails. Endpoint clustering cannot remove that corner. A jump poses a stronger obstruction: <polynomials> are <continuous functions>, so they cannot converge in the <uniform norm> to a discontinuous <function> on the whole <interval>. Chebfun's documented examples show persistent overshoot for such jumps; these are a limitation of global <polynomial interpolation>, not a universal promise of rapid accuracy from <Chebyshev polynomials>.https://www.chebfun.org/docs/guide/guide04.html#4.3[Chebfun development team, Chebfun Guide, §4.3: polynomial interpolation of discontinuous functions]{ref}
 
+= Shifted Chebyshev equation and polynomial termination
+{parent=Chebyshev polynomial}
+{c}
+{title2=$z(z+2)y''+(z+1)y'-\alpha^2y=0$}
+
+At zero the <indicial equation> is $\sigma(2\sigma-1)=0$. The two <Frobenius series> have exponents zero and one half, with recurrence
+$$
+a_{n+1}=\frac{\alpha^2-(n+\sigma)^2}{(n+\sigma+1)(2n+2\sigma+1)}a_n.
+$$
+The denominators never vanish for these exponents. Unless a series terminates its coefficient ratio tends to $-1/2$, giving convergence within distance two of zero. If $\alpha=m$ is a <positive integer>, the exponent-zero series terminates at degree $m$. The substitution $t=z+1$ gives the standard <Chebyshev differential equation>, and this solution is a multiple of $T_m(z+1)$. For half-integer $\alpha$, termination can instead occur in the power-series factor of the exponent-one-half solution.
+
+= Chebyshev economization of a logarithm Taylor polynomial
+{parent=Chebyshev polynomial}
+{title2=$p_3=1/32+15x/16-3x^2/4+7x^3/12$}
+{c}
+
+Deleting the degree-four and degree-five Chebyshev components of $x-x^2/2+x^3/3-x^4/4+x^5/5$ gives the displayed cubic. The deleted terms are $-T_4/32+T_5/80$, whose supremum norm on $[-1,1]$ is exactly $7/160$, attained at $-1$. This bounds the additional polynomial change. It does not make the total uniform error for $\log(1+x)$ finite near its singular endpoint $-1$.
+
 = Chebyshev series
 {parent=Chebyshev polynomial}
 {c}
@@ -1718,6 +1814,13 @@ Among monic real polynomials of degree $n$, $2^{1-n}T_n$ uniquely minimizes the 
 {c}
 
 If $f$ has degree at most $n$ and $|f|<1$ on $[-1,1]$, alternation at the extrema of $T_n$ implies $|f(t)|<|T_n(t)|$ outside that interval.
+
+= Chebyshev minimax polynomial with exterior normalization
+{c}
+{parent=Chebyshev polynomial domination lemma}
+{title2=$p_k(t)=T_k(z(t))/T_k(z(0)),\quad z(t)=(2t-a-b)/(b-a)$}
+
+For $0<a<b$, the displayed polynomial minimizes $\max_{t\in[a,b]}|p(t)|$ among real polynomials of degree at most $k$ with $p(0)=1$. Its $k+1$ alternating extremal values prove the assertion: a strictly smaller competitor would make the difference change sign in each consecutive extremal interval and also vanish at zero outside $[a,b]$, giving too many roots. The normalizing factor makes either the monic or the usual <Chebyshev polynomial> convention give the same ratio. For $\kappa=b/a$ and $q=(\sqrt\kappa-1)/(\sqrt\kappa+1)$, its maximum is $2q^k/(1+q^{2k})$. This yields an error bound for polynomial acceleration of <Richardson iteration>.
 
 = Chebyshev interpolation represents external evaluation
 {parent=Chebyshev polynomial domination lemma}
@@ -1819,6 +1922,46 @@ Therefore the second-order <backward differentiation formula> $3U^{n+2}-4U^{n+1}
 {parent=Numerical analysis}
 {wiki}
 
+= Sequential quadratic programming
+{parent=Constrained optimization}
+{wiki}
+
+= SQP
+{c}
+{synonym}
+
+Sequential quadratic programming computes steps from a quadratic model of the <optimization Lagrangian> with linearized constraints. Its constrained <Newton system> couples a primal step and multiplier estimates. A <line search> or <trust region> then controls the use of that local model.
+
+= Sl1QP
+{parent=Sequential quadratic programming}
+{c}
+{title2=$\min_{\|s\|_\infty\leq\Delta}\ g^Ts+\frac12s^THs+\rho\|c+As\|_1$}
+
+= Sℓ1QP
+{c}
+{synonym}
+
+= Fletcher's Sℓ1QP method
+{c}
+{synonym}
+
+<Roger Fletcher>'s method uses an <L1 exact penalty> on linearized constraints and a bounded <trust region>. It therefore admits a model minimizer even when hard linearized constraints are inconsistent or the quadratic model is indefinite.<Sequential Quadratic Programming Methods by Philip E. Gill and Elizabeth Wong>[§3.3, equations (3.25)–(3.26)]{ref}
+
+= L1 exact penalty
+{parent=Constrained optimization}
+{title2=$f(x)+\rho\|c(x)\|_1$}
+
+An L1 penalty can enforce a constraint exactly at a finite weight, rather than only in an infinite-weight limit. For a convex equality-constrained problem with an optimal multiplier $y_*$ and <optimization Lagrangian> $f-y^Tc$, the lower bound $f(x)-y_*^Tc(x)\geq f(x_*)$ gives
+$$
+f(x)+\rho\|c(x)\|_1\geq f(x_*)+(\rho-\|y_*\|_\infty)\|c(x)\|_1.
+$$
+Thus $\rho>\|y_*\|_\infty$ makes every penalty minimizer feasible and optimal. Local versions require appropriate regularity and second-order assumptions. The nonsquared norm is essential to this finite-threshold property; a <quadratic penalty method> usually approaches feasibility only as its weight diverges.
+
+= Critical cone
+{parent=Constrained optimization}
+
+The critical cone consists of linearized feasible directions along which the <objective function> has zero first-order change. For constraints $c_i\geq0$, its directions satisfy $Dc_i\,d\geq0$ at active constraints and $\nabla f^Td=0$; equality constraints impose zero linearized residual. Under the usual regularity conditions, second-order <Karush-Kuhn-Tucker conditions> test the <optimization Lagrangian> <Hessian matrix> on this cone. Positive active multipliers force their corresponding directional residuals to vanish.
+
 = Nearest-point minimization outside a Euclidean ball
 {parent=Constrained optimization}
 {title2=$\operatorname*{arg\,min}_{\|x\|\geq R}\|x-a\|^2=Ra/\|a\|\quad(0<\|a\|<R)$}
@@ -1839,6 +1982,12 @@ Represent feasible variables using unconstrained coordinates. For example, $x=a+
 {title2=$g(x)=0,\ h(x)\leq0$}
 
 An optimization constraint restricts the feasible points in <constrained optimization>, for example by an equality $g(x)=0$ or an inequality $h(x)\leq0$. Extrema are considered on the resulting feasible set rather than on the whole domain of the objective.
+
+= Constraint violation
+{parent=Optimization constraint}
+{title2=$v_i(x)=\max\{-g_i(x),0\}$}
+
+For a constraint written $g_i(x)\geq0$, its violation is the nonnegative number $v_i(x)=\max\{-g_i(x),0\}$. It vanishes precisely when the constraint holds. An equality $h_j(x)=0$ has violation $|h_j(x)|$. A norm of all these violations measures total infeasibility; its numerical magnitude depends on the scaling of the constraint functions.
 
 = Equally spaced interpolation
 {parent=Numerical analysis}
@@ -1949,6 +2098,13 @@ The <Euclidean norm> preservation explains the appeal for <numerical stability>:
 
 \Include[gradient-descent]{parent=Numerical analysis}
 
+= Positive-pivot Givens QR factorization of an orthogonal matrix
+{parent=QR decomposition by Givens rotations}
+{title2=$R=\operatorname{diag}(1,\ldots,1,\det A)$}
+{c}
+
+Use determinant-one <Givens rotations> and choose every nonzero eliminated pair to leave a positive pivot. If the input square <matrix> $A$ is orthogonal, its resulting <upper triangular> factor $R$ is orthogonal too, and hence diagonal with entries of absolute value one. Positivity fixes the first $n-1$ entries to one, while <determinant> preservation fixes the last to $\det A$. A negative last entry is unavoidable when the input reverses orientation.
+
 = Peano kernel theorem
 {parent=Numerical analysis}
 {c}
@@ -1970,6 +2126,20 @@ $$
 K(\theta)=L[(x-\theta)^k_+/k!].
 $$
 It represents the error by integrating $K$ against the $(k+1)$st derivative.
+
+= Peano kernel norm
+{c}
+{parent=Peano kernel}
+{title2=$|L(u)|\leq\|K\|_{L^1}\|u^{(r)}\|_\infty$}
+
+The <Peano kernel theorem> writes a derivative-based error functional as $L(u)=\int K(t)u^{(r)}(t)\,dt$, so its bound in the displayed derivative <seminorm> is at most the <L1 norm> of the kernel. This is the sharp constant: continuous derivatives can approximate the sign of $K$ in the weighted integral, and integrating them $r$ times produces admissible test functions. If $K$ has one sign, a constant $r$th <derivative> already attains equality; in particular $\int K=L[x^r/r!]$. This provides a direct exact check on proposed error constants before estimating individual polynomial pieces.
+
+= Peano kernel of the third forward difference
+{c}
+{parent=Peano kernel}
+{title2=$K_h(t)=h^2B_2(t/h)$}
+
+For $h>0$, the third <forward difference> $L_hu=-u(0)+3u(h)-3u(2h)+u(3h)$ annihilates <polynomials> of degree at most two. Its <Peano kernel> is $K_h(t)=\tfrac12[3(h-t)_+^2-3(2h-t)_+^2+(3h-t)_+^2]$ for $0\leq t\leq3h$, extended by zero outside that interval. It is $h^2$ times the <quadratic cardinal B-spline> evaluated at $t/h$, is positive on $(0,3h)$, and has <integral> $h^3$. The <Peano kernel theorem> therefore represents $L_hu$ as a positive weighted average of the third <derivative>: $L_hu=h^3u^{(3)}(\xi)$ for some interior $\xi$ when that <derivative> is continuous. The kernel is the smooth error weight hidden inside a discrete difference.
 
 = Centered second-derivative Peano kernel
 {parent=Peano kernel}
@@ -2470,6 +2640,28 @@ A <collocation method> chooses an approximate solution from a finite-dimensional
 {wiki}
 
 The <QR algorithm> computes <eigenvalues> through repeated <QR decompositions> and similarity updates. Shifted and unshifted forms have different convergence rates; the <unshifted QR algorithm> uses a zero shift at every step.
+
+= Exact-shift diagonalization of a two-state swap matrix
+{parent=QR algorithm}
+{c}
+{title2=$\mu=\pm1$}
+
+For $A=\left(\begin{smallmatrix}0&1\\1&0\end{smallmatrix}\right)$, one shifted <QR algorithm> step with real <QR shift> $\mu$ gives, with a consistent choice of factor signs,
+$$
+A_1=\frac1{1+\mu^2}\begin{pmatrix}-2\mu&\mu^2-1\\\mu^2-1&2\mu\end{pmatrix}.
+$$
+To verify this, factor $A-\mu I=QR$ with $Q=(1+\mu^2)^{-1/2}\left(\begin{smallmatrix}-\mu&-1\\1&-\mu\end{smallmatrix}\right)$. Its columns are <orthonormal>, and $R=Q^T(A-\mu I)$ is upper triangular. Then $A_1=Q^TAQ$. Thus $A_1$ is diagonal exactly when $\mu=\pm1$, the two <eigenvalues>. The bottom-right-entry shift is zero and leaves the <matrix> unchanged under the positive-diagonal factor convention. This illustrates why a poorly chosen <QR shift> can stall even a two-by-two symmetric <eigenvalue> computation.
+
+= QR shift
+{parent=QR algorithm}
+{c}
+{title2=$A_k-\mu_kI=Q_kR_k$}
+
+A <QR shift> is a scalar $\mu_k$ subtracted before the <QR factorization> in a <QR algorithm> step and restored after reversing the factors:
+$$
+A_k-\mu_kI=Q_kR_k,\qquad A_{k+1}=R_kQ_k+\mu_kI=Q_k^TA_kQ_k.
+$$
+The final identity uses the <orthogonality> of $Q_k$, proving that the <eigenvalues> are preserved. Choosing a shift near an <eigenvalue> can accelerate <block deflation in the QR algorithm>. A common choice is the current bottom-right entry, but it can stall, as in <exact-shift diagonalization of a two-state swap matrix>.
 
 = Iterative method
 {parent=Numerical analysis}

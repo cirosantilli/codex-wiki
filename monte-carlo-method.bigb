@@ -111,6 +111,15 @@ Replacing a simulated quantity $H$ by $E[H\mid\mathcal G]$ preserves its expecta
 
 Independent <uniform distribution> draws $U_1,U_2$ on $(0,1)$ produce independent standard <normal distribution> draws $X_1=\sqrt{-2\log U_1}\cos(2\pi U_2)$ and $X_2=\sqrt{-2\log U_1}\sin(2\pi U_2)$. The proof transforms an independent uniform angle and radial density $re^{-r^2/2}$ through the polar-coordinate Jacobian.
 
+= Using the angular uniform in the Box-Muller radius breaks normality
+{c}
+{parent=Box-Muller transform}
+{title2=$Y=\sqrt{-2\log V}\sin(2\pi V)$}
+
+If $V$ is uniform on $(0,1)$, the displayed random variable is not standard normal. For $V\leq1/2$ it is nonnegative; for $V>1/2$, its radius is at most $\sqrt{2\log2}$, so it is always bounded below by $-\sqrt{2\log2}$. A <standard normal distribution> has an unbounded lower tail.
+
+The <Box-Muller transform> instead uses a common radius $\sqrt{-2\log U}$ independent of the angle $2\pi V$ in both Cartesian coordinates. Their polar density is $re^{-r^2/2}/(2\pi)$, and dividing by the coordinate Jacobian $r$ gives the product of two standard normal densities. Changing a logarithm's uniform input changes the distribution, even if the resulting expression superficially resembles that formula.
+
 = Nested Monte Carlo
 {parent=Monte Carlo method}
 
@@ -192,6 +201,21 @@ $$
 U\leq\frac{f(X)}{Mh(X)}.
 $$
 The accepted value has density $f$, the acceptance probability is $1/M$, and the expected number of proposals is $M$.
+
+= Deadline truncation bias in rejection sampling
+{parent=Rejection sampling}
+
+Stopping after a fixed number of <rejection sampling> proposals preserves the target law of accepted labels, conditional on the number accepted. Stopping instead after a fixed amount of elapsed computing time can change the finite-sample law if processing costs depend on the proposed state. The <Deadline truncation bias in rejection sampling>[deadline] may censor precisely the expensive states.
+
+For an exact counterexample, let both target and proposal be uniform on two states, so every proposal is accepted. Let processing cost be one time unit for the first state and two for the second. Stop between one and two units and retain only finished proposals. Conditional on obtaining an output, the first state is the only possible value, despite its target probability being one half. This proves that a runtime cutoff need not be an unbiased stopping rule for the realized finite output. It does not imply asymptotic <bias> of the indefinitely growing completed sequence; it identifies a finite-horizon censoring effect.
+
+= Bias from returning a rejected proposal after a rejection-sampling cap
+{parent=Rejection sampling}
+{title2=$f_n=(1-r^n)f+r^n g_R,\qquad g_R=(q-(1-r)f)/r$}
+
+Consider independent <rejection sampling> trials with proposal density $q$, accepted-value density $f$, acceptance probability $a\in(0,1)$ and rejection probability $r=1-a$. Splitting the proposal law by its accept/reject outcome gives $q=af+rg_R$, where $g_R$ is the <rejected-proposal distribution>.
+
+If an algorithm permits $n$ trials, returns the first accepted value when one occurs, and otherwise returns the final rejected proposal, its output density is the displayed mixture. The event of $n$ failures has probability $r^n$ and gives the conditional law $g_R$; every successful stopping trial gives law $f$. Hence the forced return introduces bias unless $g_R=f$, and its contribution decays geometrically with the cap. Conditional on success before any specified trial, the output still has law $f$, since accepted value and successful-trial index are independent.
 
 = Optimal geometric envelope for a Poisson distribution
 {parent=Rejection sampling}
@@ -341,6 +365,20 @@ $$
 \frac1m\sum_{i=1}^m g(Y_i)\frac{f(Y_i)}{h(Y_i)}.
 $$
 The summands have expectation $\int g(x)f(x)\,dx$, and the <strong law of large numbers> gives almost-sure convergence under integrability.
+
+= Optimal normal shift for normal-tail importance sampling
+{parent=Importance sampling}
+{title2=$2\mu=\varphi(z+\mu)/\bar\Phi(z+\mu)$}
+{c}
+
+To estimate $\mathbb P(Z>z)$ for a standard normal variable using proposal $N(\mu,1)$, the weighted indicator has second moment $e^{\mu^2}\bar\Phi(z+\mu)$. Differentiating it at a minimum gives the displayed equation. Since $\varphi(a)/\bar\Phi(a)=E[Z\mid Z>a]$, the minimizing shift is half the target conditional mean above the shifted threshold. The resulting estimator remains unbiased with the exact likelihood-ratio weight.
+
+= Normal variance mismatch in importance sampling
+{parent=Importance sampling}
+{title2=$w_\sigma(x)=\sigma^{-1}e^{(1-\sigma^{-2})x^2/2}$}
+{c}
+
+For target $p=N(0,\sigma^2)$ and proposal $q=N(0,1)$, this is the <importance weight>. Assuming only $E_pf^2<\infty$, the weighted estimator has guaranteed finite variance for $0<\sigma\leq1$, since $E_q(w_\sigma^2f^2)=E_p(w_\sigma f^2)\leq\sigma^{-1}E_pf^2$. For every $\sigma>1$, choosing $f^2=e^{ax^2}$ with $\max(0,\sigma^{-2}-1/2)<a<(2\sigma^2)^{-1}$ gives finite target second moment but infinite weighted second moment. With the additional assumption that $f$ is bounded, the sufficient range is instead $\sigma<\sqrt2$. The integrand hypothesis therefore matters.
 
 = Likelihood weighting
 {parent=Importance sampling}

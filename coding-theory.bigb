@@ -56,6 +56,20 @@ Channel coding represents messages with <codewords> chosen to withstand transmis
 
 A deterministic fixed-length channel code consists of a <channel encoder> $c$ and a <channel decoder> $d$. It represents $m$ possible messages by length-$n$ input <codewords> for a <communication channel>, and estimates the message from the resulting output word. Its <code rate> is $(\log_2m)/n$ <bits> per <channel> use. The <maximal decoding error probability> requires reliable recovery of every message, while an average error criterion depends on the chosen message <probability distribution>.
 
+= Random coding
+{parent=Channel code}
+
+Random coding constructs a <channel code> by sampling its codewords from a specified probability distribution and bounding the expected decoding error over that ensemble. If the expected average error is at most $\epsilon$, at least one deterministic codebook has average error at most $\epsilon$; otherwise every book would exceed the expectation bound. This is the <probabilistic method> applied to communication codes.
+
+For independently uniform binary codewords, a fixed competing word falls in any received word's radius-$r$ <Hamming ball> with probability $2^{-n}\sum_{j=0}^r\binom nj$. The <union bound> over competing messages, together with a bound on excessive channel noise, yields the basic random-coding error estimate. <Expurgation of a codebook> can then convert average-error control to <maximal decoding error probability> with negligible loss of asymptotic rate.
+
+= Expurgation of a codebook
+{parent=Channel code}
+
+Expurgation discards messages with unusually high conditional decoding error. If a codebook with $2M$ equally likely messages has average error at most $\epsilon$, at least $M$ messages have individual error at most $2\epsilon$, by <Markov's inequality>. Retaining those messages and restricting the decoder's candidates gives a codebook with maximal error at most $2\epsilon$, provided removal of candidates cannot spoil a previously successful decoding. This is the case for <bounded-distance decoding> with errors on ambiguity, and for a decoder that retains its former decisions whenever the decoded message remains.
+
+For a sequence of block lengths $n$, halving a book changes its logarithmic rate by $1/n$, which tends to zero. Thus a vanishing average-error bound from a <random coding> construction can be converted into a vanishing <maximal decoding error probability> at the same limiting rate. The probabilistic construction first supplies a deterministic book with sufficiently small average error; expurgation is a subsequent deterministic step.
+
 = Code encoding
 {parent=Coding theory}
 
@@ -1421,6 +1435,23 @@ For a fixed source distribution and code alphabet, an optimal <uniquely decodabl
 
 In a prefix code no codeword is the prefix of another, so concatenated messages have unique instantaneous decoding.
 
+= Redundancy of a binary prefix code
+{parent=Prefix code}
+{title2=$R=\bar\ell-H(X)$}
+
+The redundancy of a binary <prefix code> is its <expected codeword length> minus the <Shannon entropy> of its source. It measures the excess number of binary digits per source symbol above the information lower bound. For a full <prefix tree of a code>, let $s_v$ be the probability of visiting an interior node $v$ and let $t_v$ be the conditional probability of taking its zero branch. Then
+$$
+\bar\ell=\sum_v s_v,\qquad H(X)=\sum_vs_vh(t_v),\qquad R=\sum_vs_v[1-h(t_v)],
+$$
+where $h$ is <binary entropy>. The first identity counts one digit for each visited interior node. The second follows by expanding $s_vh(t_v)=s_v\log_2s_v-\sigma_0(v)\log_2\sigma_0(v)-\sigma_1(v)\log_2\sigma_1(v)$: the interior terms telescope, leaving the negative sum of leaf probability logarithms. The final identity follows by subtraction. It makes nonnegativity immediate and proves that zero redundancy occurs exactly when each positive-mass branch decision is balanced. Consequently the leaf probabilities then equal $2^{-\ell_x}$.
+
+= Shannon-Fano-Elias code
+{c}
+{parent=Prefix code}
+{title2=$l_k=\lceil-\log_2p_k\rceil+1$}
+
+For positive source <probabilities> in a fixed order, let $F_k=\sum_{r<k}p_r$ and $G_k=F_k+p_k/2$. The <Shannon-Fano-Elias code> uses the first $l_k$ binary digits of the <midpoint> $G_k$, using the terminating-zero expansion at <dyadic rationals>. Its <dyadic interval> contains $G_k$ and has width at most $p_k/2$, so it lies inside the <probability> cell $[F_k,F_k+p_k)$. These cells are disjoint, whereas a <codeword> that is a prefix of another has a <dyadic interval> containing the other <interval>. The code is therefore a <prefix code>. Since $l_k<-\log_2p_k+2$, averaging proves $\mathbb EL<H(X)+2$. This is a direct cumulative construction and does not require sorting the <probabilities> or constructing a Huffman tree.
+
 = Ternary prefix code
 {parent=Prefix code}
 {title2=$c:\mathcal X\to\{0,1,2\}^*$}
@@ -1503,6 +1534,15 @@ This follows by applying the entropy lower bound with the uniform source distrib
 {wiki=Shannon–Fano_coding}
 
 Shannon-Fano coding comprises two related <prefix code> constructions. Shannon coding assigns lengths $\lceil-\log_2p_i\rceil$ to symbols of probability $p_i$; Fano coding recursively partitions the ordered symbols into groups of nearly equal total probability and assigns a bit at each partition.
+
+= Fano slice code redundancy bound
+{parent=Shannon-Fano coding}
+
+Recursively split an ordered list of positive source probabilities into contiguous blocks, choosing each cut to minimize the difference between the total masses of the two children. The resulting binary <prefix code> has <expected codeword length> less than $H+2$, where $H$ is its source <Shannon entropy>. If the probabilities were in nonincreasing order, its expected length is less than $H+1$.
+
+To prove this, an interior node of mass $S$ with child masses $A,B$ contributes $S$ to the expected path length and $S h(A/S)$ to the <Shannon entropy>, by the <chain rule for information entropy>. The inequality $1-h(t)\le|2t-1|$ bounds that node's redundancy by $|A-B|$. If the cut is between probabilities $p_k,p_{k+1}$, shifting the cut by one position cannot improve the imbalance. On the heavier side this gives $|A-B|\le p_k$ or $p_{k+1}$, respectively; a singleton heavier side gives the same inequality directly. Thus $|A-B|\le\max(p_k,p_{k+1})$.
+
+Every original inter-symbol gap is used once in the recursive tree. Summing over gaps bounds total redundancy by $\sum_{k=1}^{m-1}(p_k+p_{k+1})=2-p_1-p_m<2$. In sorted order it is instead at most $\sum_{k=1}^{m-1}p_k=1-p_m<1$. These are expected-length guarantees, not an assertion that the resulting code is always optimal.
 
 = Shannon coding
 {c}
@@ -1594,6 +1634,11 @@ If $p<1/4$, choose $p<\delta<1/4$. Binary codes of relative minimum distance abo
 {parent=Coding theory}
 
 Maximum a posteriori decoding chooses the codeword maximizing prior probability times channel likelihood and minimizes average decision error.
+
+= Conditional entropy upper bound on minimum decoding error
+{parent=Maximum a posteriori decoding}
+
+For finite random variables $X,Y$, let $P_e$ be the error probability of <maximum a posteriori decoding> of $X$ from $Y$. Then $P_e\leq H(X\mid Y)/2$ when <conditional entropy> is measured in bits. At each positive-probability output $y$, the optimum success probability is the largest posterior atom $\Pi_y$, so its conditional error is $1-\Pi_y$. Apply the <entropy lower bound from the largest atom> to that posterior to get $2(1-\Pi_y)\leq H(X\mid Y=y)$, then average over $Y$. An arbitrary decoder need not satisfy this bound; it uses the optimum conditional decision rule.
 
 = Maximum-likelihood decoding
 {parent=Coding theory}
